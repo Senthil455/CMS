@@ -1,0 +1,21 @@
+root:
+  packages:
+    shared:
+      description: Shared types, endpoints, socket events
+      files:
+        - endpoints.ts
+        - events.ts
+
+    backend:
+      tech: fastify
+      structure:
+        - routers/
+        - services/
+        - infrastructures/
+        - models/
+
+    frontend:
+      tech: react-vite
+      structure:
+        - pages/
+        - components/

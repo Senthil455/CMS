@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.npm
+package-lock.json
+
+# Build Outputs
+dist/
+build/
+.vite/
+
+# Database
+*.db
+*.db-journal
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+packages/backend/dev.db
+packages/backend/dev.db-journal
+packages/shared/dist/
+packages/frontend/dist/

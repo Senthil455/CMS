@@ -1,0 +1,31 @@
+version: 1
+
+context:
+  include:
+    # Global project rules
+    - .antigravity/project.rules.md
+    - .antigravity/monorepo.structure.yaml
+
+    # Shared contracts
+    - .antigravity/shared.contracts.md
+
+    # Backend rules
+    - .antigravity/backend.fastify.md
+    - .antigravity/env.config.md
+
+    # Frontend rules
+    - .antigravity/frontend.react.md
+    - .antigravity/frontend.styles.md
+    - .antigravity/design.tokens.md
+    - .antigravity/frontend.data-fetching.md
+
+    # Code generation hints
+    - .antigravity/codegen.config.json
+priority: strict
+
+behavior:
+  failOnViolation: true
+  preferExamples: true
+examples:
+  include:
+    - .antigravity/examples/

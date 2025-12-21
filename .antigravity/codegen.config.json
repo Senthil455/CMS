@@ -1,0 +1,24 @@
+{
+    "language": "typescript",
+    "monorepo": true,
+    "backend": "fastify",
+    "frontend": "react-vite",
+    "communication": [
+        "rest",
+        "socket.io"
+    ],
+    "db": "sqlite",
+    "patterns": [
+        "repository",
+        "dependency-injection"
+    ],
+    "strict": true,
+    "frontendStyling": "tailwind",
+    "themes": [
+        "light-yellow",
+        "dark-gray"
+    ],
+    "themeStrategy": "dark-class",
+    "responsive": "mobile-first",
+    "forbidInlineStyle": true
+}
