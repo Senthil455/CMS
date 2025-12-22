@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { ChatMessage } from '@cms/shared';
-import type { IChatRepository } from '../models/chat-repository.interface';
+import type { IChatRepository } from './chat-repository.interface';
 
 export class SqliteChatRepository implements IChatRepository {
     constructor(private prisma: PrismaClient) { }

@@ -15,21 +15,33 @@ Rules:
 - Use lookup for many-to-one relations
 - Use collection for one-to-many relations
 
+PRIMARY KEY RULE:
+- Do NOT generate primary key fields
+- Do NOT generate identifier fields such as: id, ID, Id, _id, uuid, guid
+- Assume CMS automatically adds the primary key to every entity
+- Entities must only contain business/domain attributes
+- If an identifier field is generated, it MUST be removed before output
+
+NAMING RULES:
+Entity and attribute names must use camelCase only.
+
+
 VALID DATA TYPE ↔ DISPLAY TYPE PAIRS (STRICT)
 
-Int → Number
+int → number
 
-Datetime → LocalDatetime | Datetime | Date
+datetime → localDatetime | datetime | date
 
-String → Number | Datetime | Date | Text | Textarea | Image | Gallery | File | Dropdown | Multiselect
+string → number | datetime | date | text | textarea | image | gallery | file | dropdown | multiselect
 
-Text → Multiselect | Gallery | Textarea | Editor | Dictionary
+text → multiselect | gallery | textarea | editor | dictionary
 
-Lookup → Lookup | TreeSelect
+lookup → lookup | treeSelect
 
-Junction → Picklist | Tree
+junction → picklist | tree
 
-Collection → EditTable
+collection → editTable
+
 
 ENFORCEMENT:
 - Validate every attribute against the table above

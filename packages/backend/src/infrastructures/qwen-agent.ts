@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { IAgent, GenerateOptions } from '../models/agent.interface';
+import type { IAgent, GenerateOptions } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
 export class QwenAgent implements IAgent {

@@ -21,7 +21,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
 
             socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string }) => {
                 try {
-                    await fastify.chatService.handleUserMessage(userId, data.content, (message: any) => {
+                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, (message: any) => {
                         // Emit new messages only to the sender (private chat)
                         socket.emit(SOCKET_EVENTS.CHAT.NEW_MESSAGE, message);
 

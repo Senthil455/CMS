@@ -1,36 +1,7 @@
 import axios from 'axios';
 import type { User } from '@cms/shared';
 
-export interface EntitySchema {
-    id: number;
-    schemaId: string;
-    name: string;
-    type: string;
-    publicationStatus: string;
-    isLatest: boolean;
-    createdAt: string;
-    createdBy: string;
-    settings: {
-        entity: {
-            name: string;
-            displayName: string;
-            tableName: string;
-            primaryKey: string;
-            labelAttributeName: string;
-            attributes: {
-                field: string;
-                header: string;
-                dataType: string;
-                displayType: string;
-                inList: boolean;
-                inDetail: boolean;
-                isDefault: boolean;
-                options: string;
-                validation: string;
-            }[];
-        };
-    };
-}
+import type { EntitySchema, SaveEntityPayload } from '../models/schema';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }
@@ -66,6 +37,14 @@ export class CmsClient {
             }
         });
         return resp.data;
+    }
+
+    async saveEntity(externalCookie: string, payload: SaveEntityPayload) {
+        return axios.post(`${this.baseUrl}/api/schemas/entity/define`, payload, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
     }
 
     async logout(externalCookie: string) {

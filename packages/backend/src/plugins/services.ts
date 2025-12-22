@@ -36,7 +36,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         fs.readFile(path.join(assetsDir, 'schemas/attribute.json'), 'utf-8'),
     ]);
 
-    const chatService = new ChatService(repository, agent, prompt, entitySchema, attributeSchema, fastify.log);
+    const chatService = new ChatService(repository, agent, cmsClient, prompt, entitySchema, attributeSchema, fastify.log);
     const authService = new AuthService(cmsClient, fastify.log);
 
     fastify.decorate('chatService', chatService);

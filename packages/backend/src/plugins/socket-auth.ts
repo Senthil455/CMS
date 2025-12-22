@@ -43,8 +43,9 @@ const socketAuthPlugin: FastifyPluginAsync = async (fastify) => {
                     return next(new Error('Unauthorized: External profile invalid'));
                 }
 
-                // Store user in socket.data for later use
+                // Store user and externalCookie in socket.data for later use
                 socket.data.user = user;
+                socket.data.externalCookie = session.externalCookie;
                 next();
             } catch (err) {
                 next(new Error('Internal authentication error'));

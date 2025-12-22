@@ -6,7 +6,7 @@
     "field": {
       "minLength": 1,
       "type": "string",
-      "title":"Field",
+      "title": "Field",
       "description": "Field Name"
     },
     "header": {
@@ -32,11 +32,11 @@
       "title": "Is Default",
       "description": "System Generate"
     },
-    "dataType":{
+    "dataType": {
       "type": "string",
       "title": "Data Type",
       "description": "Data type",
-      "enum":[
+      "enum": [
         "string",
         "text",
         "int",
@@ -54,28 +54,20 @@
         "text",
         "textarea",
         "editor",
-
         "number",
-
         "localDatetime",
         "datetime",
         "date",
-
         "image",
         "gallery",
         "file",
-        
         "dictionary",
-        
         "dropdown",
         "multiselect",
-
         "lookup",
         "treeSelect",
-        
         "picklist",
         "tree",
-        
         "editTable"
       ]
     },
