@@ -8,7 +8,9 @@ export function useSocket() {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        socketRef.current = io(config.API_BASE_URL);
+        socketRef.current = io(config.API_BASE_URL, {
+            withCredentials: true,
+        });
 
         socketRef.current.on('connect', () => setIsConnected(true));
         socketRef.current.on('disconnect', () => setIsConnected(false));

@@ -1,5 +1,9 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import session from '@fastify/session';
+import SqliteStore from 'fastify-session-better-sqlite3-store';
+import Database from 'better-sqlite3';
 import fastifyIO from 'fastify-socket.io';
 import autoload from '@fastify/autoload';
 import { fileURLToPath } from 'url';
@@ -10,20 +14,50 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const server = Fastify({
-    logger: true,
+    logger: {
+        transport: {
+            target: 'pino-pretty',
+            options: {
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+            },
+        },
+    },
 });
 
 async function start() {
     try {
         // Register CORS
         await server.register(cors, {
-            origin: '*', // For demo, strictly should be frontend URL
+            origin: config.FRONTEND_URL,
+            credentials: true,
+        });
+
+        await server.register(cookie);
+
+        // Register Session with SQLite store
+        const db = new Database('sessions.db');
+        const store = new SqliteStore(db);
+        server.decorate('sessionStore', store);
+
+        await server.register(session, {
+            secret: config.SESSION_SECRET,
+            cookieName: config.SESSION_COOKIE_NAME,
+            store,
+            cookie: {
+                secure: false, // Set to true in production
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                maxAge: config.SESSION_MAX_AGE,
+            }
         });
 
         // Register Socket.io
         await server.register(fastifyIO, {
             cors: {
-                origin: '*',
+                origin: config.FRONTEND_URL,
+                credentials: true,
             },
         });
 

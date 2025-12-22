@@ -8,6 +8,7 @@ export class SqliteChatRepository implements IChatRepository {
     async save(message: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<ChatMessage> {
         const saved = await this.prisma.chatMessage.create({
             data: {
+                userId: message.userId,
                 content: message.content,
                 role: message.role,
             },
@@ -19,8 +20,9 @@ export class SqliteChatRepository implements IChatRepository {
         };
     }
 
-    async findAll(): Promise<ChatMessage[]> {
+    async findAll(userId: string): Promise<ChatMessage[]> {
         const messages = await this.prisma.chatMessage.findMany({
+            where: { userId },
             orderBy: { createdAt: 'asc' },
         });
         return messages.map(m => ({

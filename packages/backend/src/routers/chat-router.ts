@@ -2,9 +2,11 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { ENDPOINTS } from '@cms/shared';
 
 const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-    fastify.get(ENDPOINTS.CHAT.HISTORY, async (request, reply) => {
+    fastify.get(ENDPOINTS.CHAT.HISTORY, {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
         try {
-            const history = await fastify.chatService.getHistory();
+            const history = await fastify.chatService.getHistory(request.user!.id.toString());
             return { success: true, data: history };
         } catch (error) {
             fastify.log.error(error);
