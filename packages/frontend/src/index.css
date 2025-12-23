@@ -42,3 +42,65 @@
     @apply bg-app text-primary;
   }
 }
+
+/* Markdown Styles */
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    overflow-x: auto;
+    display: block;
+}
+
+.markdown-content th {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    font-weight: 700;
+}
+
+.markdown-content td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.markdown-content tr:last-child td {
+    border-bottom: none;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid var(--primary-muted);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--primary-muted);
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.markdown-content li {
+    margin: 0.25rem 0;
+}
+
+.markdown-content p {
+    margin: 0.5rem 0;
+}
+
+.markdown-content code {
+    background: var(--app-muted);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.85em;
+}
+
+.markdown-content pre {
+    background: var(--app-muted);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+}

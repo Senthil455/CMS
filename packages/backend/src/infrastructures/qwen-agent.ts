@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { IAgent, GenerateOptions } from './agent.interface';
+import type { IAgent, AgentMessage } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
 export class QwenAgent implements IAgent {
@@ -10,25 +10,18 @@ export class QwenAgent implements IAgent {
         private readonly logger: ServiceLogger
     ) { }
 
-    async generate(options: GenerateOptions): Promise<any[]> {
-        const { requirements, prompt: promptTemplate, schemas } = options;
+    async generate(system: string, developer: string, user: string): Promise<any> {
         try {
-            this.logger.info({ requirements }, 'QwenAgent generating entities from requirements');
+            this.logger.info('QwenAgent generating from merged prompt');
 
-            // 1. Construct final prompt using provided prompt and schemas
-            const schemasText = schemas.map(s => `${s.name.toUpperCase()} SCHEMA:\n${s.content}`).join('\n\n');
-
-            const prompt = promptTemplate
-                .replace('<schemas here>', schemasText)
-                .replace('<requirements here>', requirements);
-
-            console.log('QwenAgent generating entities from requirements\n', prompt);
+            // Merge parameters into a single string prompt
+            const prompt = system.replace('<developer>', developer).replace('<user>', user);
 
             const response = await axios.post(
                 this.apiUrl,
                 {
                     model: this.model,
-                    prompt,
+                    prompt: prompt,
                     format: "json",
                     stream: false
                 },
@@ -40,21 +33,21 @@ export class QwenAgent implements IAgent {
                 }
             );
 
-            console.log('QwenAgent response\n', response.data.response);
-            const parsed = JSON.parse(response.data.response);
-
-            // The prompt asks for { "entities": [ ... ] }
-            if (parsed.entities && Array.isArray(parsed.entities)) {
-                return parsed.entities;
+            if (response.data?.response) {
+                return JSON.parse(response.data.response);
             }
 
-            return [];
+            if (response.data?.choices?.[0]?.message?.content) {
+                return JSON.parse(response.data.choices[0].message.content);
+            }
+
+            return null;
         } catch (error: any) {
             this.logger.error({
                 error: error.message,
                 response: error.response?.data
             }, 'Qwen API Error');
-            throw new Error('Failed to generate entities via Qwen');
+            throw new Error('Failed to generate via Qwen');
         }
     }
 }

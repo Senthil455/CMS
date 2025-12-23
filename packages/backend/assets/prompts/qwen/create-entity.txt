@@ -3,7 +3,7 @@ You are a backend schema generator.
 Generate entity definitions STRICTLY following these JSON Schemas:
 
 SCHEMAS:
-<schemas here>
+<developer>
 
 
 Rules:
@@ -50,7 +50,7 @@ ENFORCEMENT:
 - Output ONLY valid JSON
 
 REQUIREMENTS:
-<requirements here>
+<user>
 
 Return format:
 {

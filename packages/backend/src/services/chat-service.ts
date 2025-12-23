@@ -4,15 +4,16 @@ import type { IAgent } from '../infrastructures/agent.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { type SchemaEntity, type SchemaAttribute, normalizeEntity, sortEntitiesByDependency } from '../models/schema';
+import type { AgentMessage } from '../infrastructures/agent.interface';
+import { CommandResolver } from '../models/command-resolver';
+import { EntityCreator } from '../models/entity-creator';
 
 export class ChatService {
     constructor(
         private readonly repository: IChatRepository,
-        private readonly agent: IAgent,
         private readonly cmsClient: CmsClient,
-        private readonly prompt: string,
-        private readonly entitySchema: string,
-        private readonly attributeSchema: string,
+        private readonly commandResolver: CommandResolver,
+        private readonly entityCreator: EntityCreator,
         private readonly logger: ServiceLogger
     ) { }
 
@@ -33,49 +34,27 @@ export class ChatService {
         const userMessage = await this.saveUserMessage(userId, content);
         onNewMessage(userMessage);
 
-        // 2. AI logic
-        try {
-            const entities = await this.agent.generate({
-                requirements: content,
-                prompt: this.prompt,
-                schemas: [
-                    { name: 'entity', content: this.entitySchema },
-                    { name: 'attribute', content: this.attributeSchema }
-                ]
-            });
+        // 2. Command Resolver
+        const resolved = await this.commandResolver.resolve(content);
+        if (resolved) {
+            const { agent, entityName } = resolved;
+            this.logger.info({ entityName }, 'Executing resolved agent');
 
-            // normalize attributes using model behavior
-            const normalizedEntities = entities.map((entity: any) => normalizeEntity(entity));
+            const context = {
+                userId,
+                externalCookie,
+                onNewMessage,
+                saveAssistantMessage: (content: string) => this.saveAssistantMessage(userId, content),
+                logger: this.logger,
+                cmsClient: this.cmsClient
+            };
 
-            let responseContent = `I have analyzed your requirements. Based on our online course system schema, I've generated the following entities:\n\n`;
-            normalizedEntities.forEach((entity, index) => {
-                responseContent += `${index + 1}. **${entity.name}** (Table: \`${entity.tableName}\`)\n`;
-            });
-
-            // 3. Save to CMS
-            const sortedEntities = sortEntitiesByDependency(normalizedEntities as SchemaEntity[]);
-            for (const entity of sortedEntities) {
-                try {
-                    await this.cmsClient.saveEntity(externalCookie, {
-                        type: 'entity',
-                        settings: {
-                            entity: entity as SchemaEntity
-                        }
-                    });
-                    this.logger.info({ entityName: entity.name }, 'Successfully saved entity to CMS');
-                } catch (saveError) {
-                    this.logger.error({ error: saveError, entityName: entity.name }, 'Failed to save entity to CMS');
-                }
-            }
-
-            responseContent += `\nI have saved these definitions for you. How else can I help?`;
-
-            const aiMessage = await this.saveAssistantMessage(userId, responseContent);
-            onNewMessage(aiMessage);
-        } catch (error) {
-            this.logger.error({ error }, 'Error in AI response generation');
-            const errorMessage = await this.saveAssistantMessage(userId, "I'm sorry, I encountered an error while processing your request.");
-            onNewMessage(errorMessage);
+            await agent.handle(content, entityName, context);
+            return;
         }
+
+        // Fallback or default behavior if no command resolved
+        const aiMessage = await this.saveAssistantMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
+        onNewMessage(aiMessage);
     }
 }

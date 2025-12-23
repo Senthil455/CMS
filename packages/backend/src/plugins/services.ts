@@ -6,7 +6,13 @@ import { SqliteChatRepository } from '../infrastructures/sqlite-chat-repository'
 import { ChatService } from '../services/chat-service';
 import { AuthService } from '../services/auth-service';
 import { QwenAgent } from '../infrastructures/qwen-agent';
+import { StubAgent } from '../infrastructures/stub-agent';
+import { OpenAIAgent } from '../infrastructures/openai-agent';
 import { CmsClient } from '../infrastructures/cms-client';
+import { CommandResolver } from '../models/command-resolver';
+import { EntityCreator } from '../models/entity-creator';
+import type { ChatAgent } from '../models/chat-agent';
+import type { IAgent } from '../infrastructures/agent.interface';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { config } from '../config';
@@ -22,21 +28,52 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const assetsDir = path.join(__dirname, '../../assets');
 
-    const agent = new QwenAgent(
-        config.QWEN_API_KEY || '',
-        config.QWEN_API_URL,
-        config.QWEN_MODEL,
-        fastify.log
-    );
+    let agent: IAgent;
+    if (config.AI_AGENT === 'stub') {
+        agent = new StubAgent();
+    } else if (config.AI_AGENT === 'openai') {
+        agent = new OpenAIAgent(
+            config.OPENAI_API_KEY || '',
+            config.OPENAI_API_URL,
+            config.OPENAI_MODEL,
+            fastify.log
+        );
+    } else {
+        agent = new QwenAgent(
+            config.QWEN_API_KEY || '',
+            config.QWEN_API_URL,
+            config.QWEN_MODEL,
+            fastify.log
+        );
+    }
 
-    // Load assets for ChatService
-    const [prompt, entitySchema, attributeSchema] = await Promise.all([
-        fs.readFile(path.join(assetsDir, 'prompts/qwen-entity.txt'), 'utf-8'),
+    // Load assets for ChatService and CommandResolver
+    const promptSubDir = config.AI_AGENT === 'openai' ? 'openai' : 'qwen';
+    const [createEntityPrompt, resolveCommandPrompt, entitySchema, attributeSchema] = await Promise.all([
+        fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/create-entity.txt`), 'utf-8'),
+        fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/resolve-command.txt`), 'utf-8'),
         fs.readFile(path.join(assetsDir, 'schemas/entity.json'), 'utf-8'),
         fs.readFile(path.join(assetsDir, 'schemas/attribute.json'), 'utf-8'),
     ]);
 
-    const chatService = new ChatService(repository, agent, cmsClient, prompt, entitySchema, attributeSchema, fastify.log);
+    const entityCreator = new EntityCreator(agent, createEntityPrompt, entitySchema, attributeSchema);
+
+    const agentMap: Record<string, ChatAgent> = {
+        list: entityCreator,
+        add: entityCreator,
+        edit: entityCreator,
+        delete: entityCreator,
+        create: entityCreator
+    };
+
+    const commandResolver = new CommandResolver(agent, resolveCommandPrompt, agentMap);
+    const chatService = new ChatService(
+        repository,
+        cmsClient,
+        commandResolver,
+        entityCreator,
+        fastify.log
+    );
     const authService = new AuthService(cmsClient, fastify.log);
 
     fastify.decorate('chatService', chatService);

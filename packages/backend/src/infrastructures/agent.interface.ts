@@ -1,9 +1,8 @@
-export interface GenerateOptions {
-    requirements: string;
-    prompt: string;
-    schemas: { name: string; content: string }[];
+export interface AgentMessage {
+    role: 'user' | 'developer' | 'system';
+    content: string;
 }
 
 export interface IAgent {
-    generate(options: GenerateOptions): Promise<any[]>;
+    generate(system: string, developer: string, user: string): Promise<any>;
 }

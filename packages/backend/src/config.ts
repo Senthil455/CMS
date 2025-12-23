@@ -13,6 +13,10 @@ const envSchema = z.object({
     QWEN_API_KEY: z.string().optional(),
     QWEN_API_URL: z.string().url().default('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'),
     QWEN_MODEL: z.string().default('qwen-plus'),
+    AI_AGENT: z.enum(['qwen', 'stub', 'openai']).default('qwen'),
+    OPENAI_API_KEY: z.string().optional(),
+    OPENAI_API_URL: z.string().url().default('https://api.openai.com/v1/chat/completions'),
+    OPENAI_MODEL: z.string().default('gpt-4o'),
 });
 
 const _env = envSchema.safeParse(process.env);
