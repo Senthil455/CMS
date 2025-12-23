@@ -7,7 +7,6 @@ import { EntityCreator } from './entity-creator';
 export interface ChatContext {
     userId: string;
     externalCookie: string;
-    onNewMessage: (msg: ChatMessage) => void;
     saveAssistantMessage: (content: string) => Promise<ChatMessage>;
     logger: ServiceLogger;
     cmsClient: CmsClient;

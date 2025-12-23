@@ -27,6 +27,8 @@ export class EntityCreator implements ChatAgent {
 
     async handle(userInput: string, _entityName: string, context: ChatContext): Promise<void> {
         try {
+            await context.saveAssistantMessage('I am analyzing your requirements...');
+
             const entities = await this.create(userInput);
 
             // normalize attributes using model behavior
@@ -47,6 +49,8 @@ export class EntityCreator implements ChatAgent {
                 responseContent += `\n---\n\n`;
             });
 
+            await context.saveAssistantMessage(responseContent);
+
             // 3. Save to CMS
             const sortedEntities = sortEntitiesByDependency(normalizedEntities as SchemaEntity[]);
             for (const entity of sortedEntities) {
@@ -65,12 +69,10 @@ export class EntityCreator implements ChatAgent {
 
             responseContent += `\nI have saved these definitions for you. How else can I help?`;
 
-            const aiMessage = await context.saveAssistantMessage(responseContent);
-            context.onNewMessage(aiMessage);
+            await context.saveAssistantMessage(responseContent);
         } catch (error) {
             context.logger.error({ error }, 'Error in EntityCreator handle');
-            const errorMessage = await context.saveAssistantMessage("I'm sorry, I encountered an error while generating your entities.");
-            context.onNewMessage(errorMessage);
+            await context.saveAssistantMessage("I'm sorry, I encountered an error while generating your entities.");
         }
     }
 }

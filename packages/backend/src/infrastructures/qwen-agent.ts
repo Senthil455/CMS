@@ -12,11 +12,11 @@ export class QwenAgent implements IAgent {
 
     async generate(system: string, developer: string, user: string): Promise<any> {
         try {
-            this.logger.info('QwenAgent generating from merged prompt');
 
             // Merge parameters into a single string prompt
             const prompt = system.replace('<developer>', developer).replace('<user>', user);
 
+            this.logger.info(prompt, 'QwenAgent generating from merged prompt');
             const response = await axios.post(
                 this.apiUrl,
                 {

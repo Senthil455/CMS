@@ -9,7 +9,7 @@ import { QwenAgent } from '../infrastructures/qwen-agent';
 import { StubAgent } from '../infrastructures/stub-agent';
 import { OpenAIAgent } from '../infrastructures/openai-agent';
 import { CmsClient } from '../infrastructures/cms-client';
-import { CommandResolver } from '../models/command-resolver';
+import { AgentResolver } from '../models/agent-resolver';
 import { EntityCreator } from '../models/entity-creator';
 import type { ChatAgent } from '../models/chat-agent';
 import type { IAgent } from '../infrastructures/agent.interface';
@@ -47,7 +47,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         );
     }
 
-    // Load assets for ChatService and CommandResolver
+    // Load assets for ChatService and AgentResolver
     const promptSubDir = config.AI_AGENT === 'openai' ? 'openai' : 'qwen';
     const [createEntityPrompt, resolveCommandPrompt, entitySchema, attributeSchema] = await Promise.all([
         fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/create-entity.txt`), 'utf-8'),
@@ -63,15 +63,14 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         add: entityCreator,
         edit: entityCreator,
         delete: entityCreator,
-        create: entityCreator
+        design: entityCreator
     };
 
-    const commandResolver = new CommandResolver(agent, resolveCommandPrompt, agentMap);
+    const agentResolver = new AgentResolver(agent, resolveCommandPrompt, agentMap);
     const chatService = new ChatService(
         repository,
         cmsClient,
-        commandResolver,
-        entityCreator,
+        agentResolver,
         fastify.log
     );
     const authService = new AuthService(cmsClient, fastify.log);

@@ -5,15 +5,13 @@ import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { type SchemaEntity, type SchemaAttribute, normalizeEntity, sortEntitiesByDependency } from '../models/schema';
 import type { AgentMessage } from '../infrastructures/agent.interface';
-import { CommandResolver } from '../models/command-resolver';
-import { EntityCreator } from '../models/entity-creator';
+import { AgentResolver } from '../models/agent-resolver';
 
 export class ChatService {
     constructor(
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
-        private readonly commandResolver: CommandResolver,
-        private readonly entityCreator: EntityCreator,
+        private readonly agentResolver: AgentResolver,
         private readonly logger: ServiceLogger
     ) { }
 
@@ -29,27 +27,30 @@ export class ChatService {
         return this.repository.save({ userId, content, role: 'assistant' });
     }
 
-    async handleUserMessage(userId: string, content: string, externalCookie: string, onNewMessage: (msg: ChatMessage) => void): Promise<void> {
+    async handleUserMessage(userId: string, content: string, externalCookie: string,
+        onNewMessage: (msg: ChatMessage) => void): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
         onNewMessage(userMessage);
 
         // 2. Command Resolver
-        const resolved = await this.commandResolver.resolve(content);
-        if (resolved) {
-            const { agent, entityName } = resolved;
-            this.logger.info({ entityName }, 'Executing resolved agent');
+        const agent = await this.agentResolver.resolve(content);
+        if (agent) {
+            this.logger.info('Executing resolved agent');
 
             const context = {
                 userId,
                 externalCookie,
-                onNewMessage,
-                saveAssistantMessage: (content: string) => this.saveAssistantMessage(userId, content),
+                saveAssistantMessage: async (content: string) => {
+                    const message = await this.saveAssistantMessage(userId, content);
+                    onNewMessage(message); // Emit the full ChatMessage to socket
+                    return message;
+                },
                 logger: this.logger,
                 cmsClient: this.cmsClient
             };
 
-            await agent.handle(content, entityName, context);
+            await agent.handle(content, '', context);
             return;
         }
 
