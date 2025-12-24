@@ -33,7 +33,6 @@ export class SystemDesigner implements ChatOrchestrator {
             schemasText,
             userInput
         );
-        console.log(JSON.stringify(response));
 
         return response;
     }
@@ -44,8 +43,18 @@ export class SystemDesigner implements ChatOrchestrator {
 
             const resp = await this.create(userInput);
 
+            // Save AI response to database log
+            await context.saveAiResponseLog('system-designer', JSON.stringify(resp));
+
+
+            // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
+            const entities = (resp.entities || []).map((e: any) => ({
+                ...e,
+                attributes: e.attributes || e.fields || []
+            }));
+
             // normalize attributes using model behavior
-            const normalizedEntities = resp.entities.map((entity: any) => new EntityModel(entity).normalize());
+            const normalizedEntities = entities.map((entity: any) => new EntityModel(entity).normalize());
 
             let responseContent = `I am system designer, I have analyzed your requirements. Based on your requirements, I've generated the following entities:\n\n`;
             normalizedEntities.forEach((entity, index) => {
@@ -65,10 +74,9 @@ export class SystemDesigner implements ChatOrchestrator {
             await context.saveAssistantMessage(responseContent);
 
             // 3. Save to CMS
-            const [normalEntities, junctionEntities] = EntityModel.splitByDataType(normalizedEntities as EntityDto[]);
 
             // Save normal entities first
-            for (const entity of normalEntities) {
+            for (const entity of normalizedEntities) {
                 try {
                     await this.cmsClient.saveEntity(context.externalCookie, {
                         type: 'entity',
@@ -79,22 +87,6 @@ export class SystemDesigner implements ChatOrchestrator {
                     this.logger.info({ entityName: entity.name }, 'Successfully saved entity to CMS');
                 } catch (saveError) {
                     this.logger.error({ error: saveError, entityName: entity.name }, 'Failed to save entity to CMS');
-                }
-            }
-
-            //todo: add junction fields to normal entities
-            // Save junction entities after normal entities
-            for (const entity of junctionEntities) {
-                try {
-                    await this.cmsClient.saveEntity(context.externalCookie, {
-                        type: 'entity',
-                        settings: {
-                            entity: entity as EntityDto
-                        }
-                    });
-                    this.logger.info({ entityName: entity.name }, 'Successfully saved junction entity to CMS');
-                } catch (saveError) {
-                    this.logger.error({ error: saveError, entityName: entity.name }, 'Failed to save junction entity to CMS');
                 }
             }
 

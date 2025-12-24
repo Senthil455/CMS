@@ -31,4 +31,19 @@ export class SqliteChatRepository implements IChatRepository {
             createdAt: m.createdAt.toISOString(),
         }));
     }
+
+    async saveAiResponseLog(orchestrator: string, response: string): Promise<void> {
+        await this.prisma.aiResponseLog.create({
+            data: {
+                orchestrator,
+                response,
+            },
+        });
+    }
+
+    async findAllAiResponseLogs(): Promise<any[]> {
+        return this.prisma.aiResponseLog.findMany({
+            orderBy: { timestamp: 'desc' },
+        });
+    }
 }

@@ -15,6 +15,7 @@ const __dirname = dirname(__filename);
 
 const server = Fastify({
     logger: {
+        level: config.LOG_LEVEL_FASTIFY,
         mixin: () => {
             const stack = new Error().stack;
             if (!stack) return {};
@@ -36,7 +37,7 @@ const server = Fastify({
             target: 'pino-pretty',
             options: {
                 translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
+                ignore: 'pid,hostname,component',
                 messageFormat: '{caller} {msg}',
             },
         },

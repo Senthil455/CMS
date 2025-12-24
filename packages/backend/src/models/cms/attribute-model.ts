@@ -8,25 +8,17 @@ const displayTypeToDataType: Record<string, string> = {
     'localDatetime': 'datetime',
     'datetime': 'datetime',
     'date': 'datetime',
-    // string → number | datetime | date | text | textarea | image | gallery | file | dropdown | multiselect
+
     'text': 'string',
-    'textarea': 'string',
+
     'image': 'string',
     'file': 'string',
     'dropdown': 'string',
-    // text → multiselect | gallery | textarea | editor | dictionary
+
     'multiselect': 'text',
     'gallery': 'text',
+    'textarea': 'text',
     'editor': 'text',
-    'dictionary': 'text',
-    // lookup → lookup | treeSelect
-    'lookup': 'lookup',
-    'treeSelect': 'lookup',
-    // junction → picklist | tree
-    'picklist': 'junction',
-    'tree': 'junction',
-    // collection → editTable
-    'editTable': 'collection',
 };
 
 export class AttributeModel {
@@ -39,16 +31,10 @@ export class AttributeModel {
         const mappedDataType = displayTypeToDataType[normalized.displayType];
         if (mappedDataType) {
             normalized.dataType = mappedDataType;
+        } else {
+            normalized.displayType = 'text';
+            normalized.dataType = 'text';
         }
-
-        if (normalized.dataType === 'lookup') {
-            if (normalized.field.endsWith('_id') || normalized.field.endsWith('Id')) {
-                if (!normalized.options) {
-                    normalized.options = normalized.field.replace(/(_id|Id)$/, '');
-                }
-            }
-        }
-
         return normalized;
     }
 }

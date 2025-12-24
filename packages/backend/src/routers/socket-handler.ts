@@ -8,7 +8,6 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         fastify.io.on('connection', async (socket: any) => {
             const user = socket.data.user;
             const userId = user.id.toString();
-            console.log('User connected:', user.username, socket.id);
 
             socket.on(SOCKET_EVENTS.CHAT.GET_HISTORY, async () => {
                 try {

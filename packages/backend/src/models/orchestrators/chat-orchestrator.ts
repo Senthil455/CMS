@@ -6,6 +6,7 @@ export interface ChatContext {
     userId: string;
     externalCookie: string;
     saveAssistantMessage: (content: string) => Promise<ChatMessage>;
+    saveAiResponseLog: (orchestrator: string, response: string) => Promise<void>;
 }
 
 export interface ChatOrchestrator {

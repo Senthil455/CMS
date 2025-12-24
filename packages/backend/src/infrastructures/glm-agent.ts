@@ -7,7 +7,6 @@ export class GLMAgent implements AIAgent {
         private readonly model: string,
         private readonly logger: ServiceLogger
     ) {
-        console.log(baseURL, model);
     }
 
     async generate(system: string, developer: string, user: string): Promise<any> {

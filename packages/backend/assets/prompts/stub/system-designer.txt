@@ -1,93 +1,379 @@
 {
-    "entities": [
+  "entities": [
+    {
+      "name": "Course",
+      "displayName": "Online Course",
+      "tableName": "courses",
+      "labelAttributeName": "title",
+      "attributes": [
         {
-            "name": "course",
-            "displayName": "Course",
-            "tableName": "courses",
-            "primaryKey": "id",
-            "labelAttributeName": "title",
-            "defaultPageSize": 10,
-            "defaultPublicationStatus": "published",
-            "pageUrl": "/courses",
-            "attributes": [
-                {
-                    "field": "title",
-                    "header": "Title",
-                    "dataType": "string",
-                    "displayType": "text",
-                    "inList": true,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "",
-                    "validation": "required"
-                },
-                {
-                    "field": "description",
-                    "header": "Description",
-                    "dataType": "text",
-                    "displayType": "editor",
-                    "inList": false,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "",
-                    "validation": ""
-                },
-                {
-                    "field": "price",
-                    "header": "Price",
-                    "dataType": "int",
-                    "displayType": "number",
-                    "inList": true,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "",
-                    "validation": ""
-                },
-                {
-                    "field": "lessons",
-                    "header": "Lessons",
-                    "dataType": "collection",
-                    "displayType": "editTable",
-                    "inList": false,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "lesson.course_id"
-                }
-            ]
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
         },
         {
-            "name": "lesson",
-            "displayName": "Lesson",
-            "tableName": "lessons",
-            "primaryKey": "id",
-            "labelAttributeName": "title",
-            "defaultPageSize": 10,
-            "defaultPublicationStatus": "published",
-            "pageUrl": "/lessons",
-            "attributes": [
-                {
-                    "field": "title",
-                    "header": "Title",
-                    "dataType": "string",
-                    "displayType": "text",
-                    "inList": true,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "",
-                    "validation": "required"
-                },
-                {
-                    "field": "course_id",
-                    "header": "Course",
-                    "dataType": "lookup",
-                    "displayType": "lookup",
-                    "inList": true,
-                    "inDetail": true,
-                    "isDefault": false,
-                    "options": "course",
-                    "validation": "required"
-                }
-            ]
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "description",
+          "header": "Description",
+          "displayType": "text",
+          "inDetail": true
+        },
+        {
+          "field": "duration",
+          "header": "Duration",
+          "displayType": "number",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "price",
+          "header": "Price",
+          "displayType": "currency",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "language",
+          "header": "Language",
+          "displayType": "select",
+          "options": [
+            "English",
+            "Spanish",
+            "French",
+            "German",
+            "Japanese",
+            "Chinese"
+          ],
+          "inList": true,
+          "inDetail": true
         }
-    ]
+      ]
+    },
+    {
+      "name": "User",
+      "displayName": "Student/User",
+      "tableName": "users",
+      "labelAttributeName": "fullName",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "fullName",
+          "header": "Full Name",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "email",
+          "header": "Email",
+          "displayType": "email",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "password",
+          "header": "Password",
+          "displayType": "password",
+          "validation": "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$",
+          "inList": false,
+          "inDetail": true
+        },
+        {
+          "field": "role",
+          "header": "Role",
+          "displayType": "select",
+          "options": [
+            "Student",
+            "Instructor",
+            "Admin"
+          ],
+          "inList": true,
+          "inDetail": true
+        }
+      ]
+    },
+    {
+      "name": "Enrollment",
+      "displayName": "Course Enrollment",
+      "tableName": "enrollments",
+      "labelAttributeName": "userFullNameAndCourseTitle",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "courseId",
+          "header": "Course ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "userId",
+          "header": "User ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "status",
+          "header": "Status",
+          "displayType": "select",
+          "options": [
+            "Active",
+            "Completed",
+            "Cancelled"
+          ],
+          "inList": true,
+          "inDetail": true
+        }
+      ]
+    },
+    {
+      "name": "Topic",
+      "displayName": "Course Topic",
+      "tableName": "topics",
+      "labelAttributeName": "title",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "courseId",
+          "header": "Course ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "description",
+          "header": "Description",
+          "displayType": "text",
+          "inDetail": true
+        }
+      ]
+    },
+    {
+      "name": "Resource",
+      "displayName": "Course Resource",
+      "tableName": "resources",
+      "labelAttributeName": "title",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "topicId",
+          "header": "Topic ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "type",
+          "header": "Type",
+          "displayType": "select",
+          "options": [
+            "Video",
+            "PDF",
+            "Text",
+            "Quiz"
+          ],
+          "inList": true,
+          "inDetail": true
+        }
+      ]
+    },
+    {
+      "name": "Assignment",
+      "displayName": "Course Assignment",
+      "tableName": "assignments",
+      "labelAttributeName": "title",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "courseId",
+          "header": "Course ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "topicId",
+          "header": "Topic ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "dueDate",
+          "header": "Due Date",
+          "displayType": "date",
+          "inList": true,
+          "inDetail": true
+        }
+      ]
+    },
+    {
+      "name": "Quiz",
+      "displayName": "Course Quiz",
+      "tableName": "quizzes",
+      "labelAttributeName": "title",
+      "attributes": [
+        {
+          "field": "id",
+          "header": "ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        },
+        {
+          "field": "courseId",
+          "header": "Course ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "topicId",
+          "header": "Topic ID",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": false
+        },
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "sourceEntity": "Course",
+      "targetEntity": "User",
+      "fieldName": "creatorId",
+      "label": "Creator",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "Course",
+      "targetEntity": "Topic",
+      "fieldName": "courseId",
+      "label": "Topics",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "Course",
+      "targetEntity": "Resource",
+      "fieldName": "courseId",
+      "label": "Resources",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "Course",
+      "targetEntity": "Assignment",
+      "fieldName": "courseId",
+      "label": "Assignments",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "Course",
+      "targetEntity": "Quiz",
+      "fieldName": "courseId",
+      "label": "Quizzes",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "User",
+      "targetEntity": "Enrollment",
+      "fieldName": "userId",
+      "label": "Courses Enrolled In",
+      "cardinality": "many-to-one"
+    },
+    {
+      "sourceEntity": "Enrollment",
+      "targetEntity": "Course",
+      "fieldName": "courseId",
+      "label": "Courses",
+      "cardinality": "one-to-many"
+    },
+    {
+      "sourceEntity": "Topic",
+      "targetEntity": "Resource",
+      "fieldName": "topicId",
+      "label": "Resources",
+      "cardinality": "many-to-one"
+    },
+    {
+      "sourceEntity": "Assignment",
+      "targetEntity": "Course",
+      "fieldName": "courseId",
+      "label": "Course",
+      "cardinality": "many-to-one"
+    },
+    {
+      "sourceEntity": "Quiz",
+      "targetEntity": "Course",
+      "fieldName": "courseId",
+      "label": "Course",
+      "cardinality": "many-to-one"
+    }
+  ]
 }

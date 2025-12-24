@@ -26,6 +26,10 @@ export class ChatService {
         return this.repository.save({ userId, content, role: 'assistant' });
     }
 
+    async getAiResponseLogs(): Promise<any[]> {
+        return this.repository.findAllAiResponseLogs();
+    }
+
     async handleUserMessage(userId: string, content: string, externalCookie: string,
         onNewMessage: (msg: ChatMessage) => void): Promise<void> {
         // 1. Save and notify user message
@@ -45,6 +49,9 @@ export class ChatService {
                     onNewMessage(message); // Emit the full ChatMessage to socket
                     return message;
                 },
+                saveAiResponseLog: async (orchestrator: string, response: string) => {
+                    await this.repository.saveAiResponseLog(orchestrator, response);
+                }
             };
 
             await orchestrator.handle(content, '', context);

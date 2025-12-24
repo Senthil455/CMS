@@ -20,6 +20,10 @@ const envSchema = z.object({
     GLM_API_KEY: z.string().optional(),
     GLM_API_URL: z.string().url().default('https://open.bigmodel.cn/api/paas/v4/chat/completions'),
     GLM_MODEL: z.string().default('glm-4'),
+    LOG_LEVEL_FASTIFY: z.enum(['debug', 'info', 'warn', 'error']).default('warn'),
+    LOG_LEVEL_SERVICE: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    LOG_LEVEL_MODEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    LOG_LEVEL_INFRASTRUCTURE: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 
 const _env = envSchema.safeParse(process.env);

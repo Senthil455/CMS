@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Save, Sun, Moon, LogOut, Settings, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Send, Loader2, Save, Sun, Moon, LogOut, Settings, User as UserIcon, ChevronDown, Database } from 'lucide-react';
 import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
 import { MessageBubble } from '../../components/message-bubble';
 import { type ChatMessage } from '@cms/shared';
+import { Link } from 'react-router-dom';
 
 export default function ChatPage() {
     const [input, setInput] = useState('');
     const [status, setStatus] = useState<string | null>(null);
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
-    const { history, isLoading, mutate } = useChatHistory();
+    const { history, isLoading } = useChatHistory();
     const { sendMessage, onNewMessage, onMessageSaved } = useSocket();
     const scrollRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -33,7 +34,7 @@ export default function ChatPage() {
     }, [history]);
 
     useEffect(() => {
-        const unsubNew = onNewMessage((msg) => {
+        const unsubNew = onNewMessage((msg: ChatMessage) => {
             setLocalMessages((prev) => {
                 if (prev.find((m) => m.id === msg.id)) return prev;
                 return [...prev, msg];
@@ -86,6 +87,14 @@ export default function ChatPage() {
                             {status}
                         </div>
                     )}
+                    <Link
+                        to="/ai-logs"
+                        className="p-2 hover:bg-app-muted rounded-full transition-colors border border-border text-primary flex items-center gap-2 px-3 shadow-sm hover:border-primary/50"
+                        title="View AI Logs"
+                    >
+                        <Database className="w-5 h-5" />
+                        <span className="text-xs font-bold hidden sm:inline">AI Logs</span>
+                    </Link>
                     <button
                         onClick={toggleTheme}
                         className="p-2 hover:bg-app-muted rounded-full transition-colors border border-border"

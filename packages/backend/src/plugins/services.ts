@@ -23,6 +23,10 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const prisma = new PrismaClient();
     await prisma.$connect();
 
+    const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+    const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
+    const serviceLogger = fastify.log.child({ component: 'SERVICE' }, { level: config.LOG_LEVEL_SERVICE });
+
     const repository = new SqliteChatRepository(prisma);
     const cmsClient = new CmsClient(config.CMS_BASE_URL);
 
@@ -38,20 +42,20 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
             config.OPENAI_API_KEY || '',
             config.OPENAI_API_URL,
             config.OPENAI_MODEL,
-            fastify.log
+            infraLogger
         );
     } else if (config.AI_AGENT === 'glm') {
         agent = new GLMAgent(
             config.GLM_API_URL,
             config.GLM_MODEL,
-            fastify.log
+            infraLogger
         );
     } else {
         agent = new QwenAgent(
             config.QWEN_API_KEY || '',
             config.QWEN_API_URL,
             config.QWEN_MODEL,
-            fastify.log
+            infraLogger
         );
     }
 
@@ -77,8 +81,8 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
             fs.readFile(path.join(assetsDir, 'schemas/relationship.json'), 'utf-8'),
         ]);
 
-    const systemDesigner = new SystemDesigner(agent, systemDesignerPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, fastify.log);
-    const modelExplorer = new ModelExplorer(cmsClient, fastify.log);
+    const systemDesigner = new SystemDesigner(agent, systemDesignerPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
+    const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
 
     const orchestratorMap: Record<string, ChatOrchestrator> = {
         list: modelExplorer,
@@ -93,9 +97,9 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         repository,
         cmsClient,
         orchestratorResolver,
-        fastify.log
+        serviceLogger
     );
-    const authService = new AuthService(cmsClient, fastify.log);
+    const authService = new AuthService(cmsClient, serviceLogger);
 
     fastify.decorate('chatService', chatService);
     fastify.decorate('authService', authService);

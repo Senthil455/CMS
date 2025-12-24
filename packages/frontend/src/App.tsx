@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ChatPage from './pages/chat-page';
+import AiLogsPage from './pages/ai-logs-page';
 import LoginPage from './pages/login-page';
 import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
@@ -32,6 +33,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-logs"
+          element={
+            <ProtectedRoute>
+              <AiLogsPage />
             </ProtectedRoute>
           }
         />

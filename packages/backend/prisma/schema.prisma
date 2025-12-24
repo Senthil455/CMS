@@ -14,3 +14,10 @@ model ChatMessage {
   role      String   // 'user' or 'assistant'
   createdAt DateTime @default(now())
 }
+
+model AiResponseLog {
+  id           Int      @id @default(autoincrement())
+  orchestrator String
+  response     String
+  timestamp    DateTime @default(now())
+}

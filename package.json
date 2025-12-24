@@ -6,6 +6,7 @@
     ],
     "scripts": {
         "dev:backend": "npm run dev --workspace=@cms/backend",
+        "debug:backend": "npm run debug --workspace=@cms/backend",
         "dev:frontend": "npm run dev --workspace=@cms/frontend",
         "build:shared": "npm run build --workspace=@cms/shared",
         "install:all": "npm install"
