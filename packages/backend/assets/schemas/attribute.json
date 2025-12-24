@@ -7,48 +7,29 @@
       "minLength": 1,
       "type": "string",
       "title": "Field",
-      "description": "Field Name"
+      "description": "The internal name of this attribute, used in the database and code (camelCase)"
     },
     "header": {
       "minLength": 1,
       "type": "string",
       "title": "Header",
-      "description": "Table Header"
+      "description": "The human-readable label shown in the UI for this field"
     },
     "inList": {
       "type": "boolean",
       "title": "In List",
-      "description": "In List Page",
+      "description": "Whether this field should appear in list views or tables in the UI",
       "default": true
     },
     "inDetail": {
       "default": true,
       "type": "boolean",
       "title": "In Detail",
-      "description": "In Detail Page"
-    },
-    "isDefault": {
-      "type": "boolean",
-      "title": "Is Default",
-      "description": "System Generate"
-    },
-    "dataType": {
-      "type": "string",
-      "title": "Data Type",
-      "description": "Data type",
-      "enum": [
-        "string",
-        "text",
-        "int",
-        "datetime",
-        "lookup",
-        "junction",
-        "collection"
-      ]
+      "description": "Whether this field should appear on detailed entity view pages"
     },
     "displayType": {
-      "title": "Display type",
-      "description": "Display type",
+      "title": "Display Type",
+      "description": "How the field should be displayed or edited in the UI",
       "type": "string",
       "enum": [
         "text",
@@ -63,23 +44,18 @@
         "file",
         "dictionary",
         "dropdown",
-        "multiselect",
-        "lookup",
-        "treeSelect",
-        "picklist",
-        "tree",
-        "editTable"
+        "multiselect"
       ]
     },
     "validation": {
       "title": "Validation Rule",
       "type": "string",
-      "description": "simple C# statements of Dynamic Expresso"
+      "description": "A regex pattern used to validate user input for this field"
     },
     "options": {
       "title": "Options",
       "type": "string",
-      "minLength": 0
+      "description": "Comma-separated list of options, required if displayType is 'dropdown' or 'multiselect'"
     }
   }
 }

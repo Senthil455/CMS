@@ -15,11 +15,29 @@ const __dirname = dirname(__filename);
 
 const server = Fastify({
     logger: {
+        mixin: () => {
+            const stack = new Error().stack;
+            if (!stack) return {};
+            const lines = stack.split('\n');
+            // Index 4 is usually the caller in this Fastify/Pino setup
+            const callerLine = lines[4] || '';
+            const match = callerLine.match(/\((.*):(\d+):(\d+)\)$|at (.*):(\d+):(\d+)$/);
+            if (match) {
+                const fullPath = match[1] || match[4];
+                const line = match[2] || match[5];
+                if (fullPath) {
+                    const fileName = fullPath.split('/').pop();
+                    return { caller: `${fileName}:${line}` };
+                }
+            }
+            return {};
+        },
         transport: {
             target: 'pino-pretty',
             options: {
                 translateTime: 'HH:MM:ss Z',
                 ignore: 'pid,hostname',
+                messageFormat: '{caller} {msg}',
             },
         },
     },

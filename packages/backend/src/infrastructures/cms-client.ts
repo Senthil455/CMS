@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { User } from '@cms/shared';
 
-import type { EntitySchema, SaveEntityPayload } from '../models/schema';
+import type { SchemaDto, SaveEntityPayload } from '../models/cms/dtos';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }
@@ -30,7 +30,7 @@ export class CmsClient {
         } as User;
     }
 
-    async getAllEntities(externalCookie: string): Promise<EntitySchema[]> {
+    async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
         const resp = await axios.get(`${this.baseUrl}/api/schemas?type=entity`, {
             headers: {
                 Cookie: externalCookie

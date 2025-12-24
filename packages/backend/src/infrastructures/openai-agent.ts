@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
-import type { IAgent, AgentMessage } from './agent.interface';
+import type { AIAgent, AgentMessage } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
-export class OpenAIAgent implements IAgent {
+export class OpenAIAgent implements AIAgent {
     private readonly openai: OpenAI;
 
     constructor(

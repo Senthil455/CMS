@@ -3,6 +3,6 @@ export interface AgentMessage {
     content: string;
 }
 
-export interface IAgent {
+export interface AIAgent {
     generate(system: string, developer: string, user: string): Promise<any>;
 }

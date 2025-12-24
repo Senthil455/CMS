@@ -25,29 +25,11 @@ PRIMARY KEY RULE:
 NAMING RULES:
 Entity and attribute names must use camelCase only.
 
+Use Relationship objects to describe ALL entity connections.
+Do NOT use ORM terms such as foreignKey, lookup, junction, join table.
+Use sourceEntity and targetEntity to indicate direction.
+Use cardinality to express relationship type.
 
-VALID DATA TYPE ↔ DISPLAY TYPE PAIRS (STRICT)
-
-int → number
-
-datetime → localDatetime | datetime | date
-
-string → number | datetime | date | text | textarea | image | gallery | file | dropdown | multiselect
-
-text → multiselect | gallery | textarea | editor | dictionary
-
-lookup → lookup | treeSelect
-
-junction → picklist | tree
-
-collection → editTable
-
-
-ENFORCEMENT:
-- Validate every attribute against the table above
-- NEVER output an invalid (dataType, displayType) pair
-- If invalid, fix it before output
-- Output ONLY valid JSON
 
 REQUIREMENTS:
 <user>
@@ -55,4 +37,5 @@ REQUIREMENTS:
 Return format:
 {
   "entities": [ ... ]
+  "relationships": [ ... ]
 }

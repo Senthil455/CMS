@@ -1,17 +1,16 @@
 import type { ChatMessage } from '@cms/shared';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
-import type { IAgent } from '../infrastructures/agent.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
-import { type SchemaEntity, type SchemaAttribute, normalizeEntity, sortEntitiesByDependency } from '../models/schema';
+import { type EntityDto, type AttributeDto } from '../models/cms/dtos';
 import type { AgentMessage } from '../infrastructures/agent.interface';
-import { AgentResolver } from '../models/agent-resolver';
+import { OrchestratorResolver } from '../models/orchestrators/orchestrator-resolver';
 
 export class ChatService {
     constructor(
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
-        private readonly agentResolver: AgentResolver,
+        private readonly orchestratorResolver: OrchestratorResolver,
         private readonly logger: ServiceLogger
     ) { }
 
@@ -34,9 +33,9 @@ export class ChatService {
         onNewMessage(userMessage);
 
         // 2. Command Resolver
-        const agent = await this.agentResolver.resolve(content);
-        if (agent) {
-            this.logger.info('Executing resolved agent');
+        const orchestrator = await this.orchestratorResolver.resolve(content);
+        if (orchestrator) {
+            this.logger.info('Executing resolved orchestrator');
 
             const context = {
                 userId,
@@ -46,11 +45,9 @@ export class ChatService {
                     onNewMessage(message); // Emit the full ChatMessage to socket
                     return message;
                 },
-                logger: this.logger,
-                cmsClient: this.cmsClient
             };
 
-            await agent.handle(content, '', context);
+            await orchestrator.handle(content, '', context);
             return;
         }
 

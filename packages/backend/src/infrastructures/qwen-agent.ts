@@ -1,8 +1,8 @@
 import axios from 'axios';
-import type { IAgent, AgentMessage } from './agent.interface';
+import type { AIAgent, AgentMessage } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
-export class QwenAgent implements IAgent {
+export class QwenAgent implements AIAgent {
     constructor(
         private readonly apiKey: string,
         private readonly apiUrl: string,
