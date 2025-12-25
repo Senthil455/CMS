@@ -20,12 +20,18 @@ export class SqliteChatRepository implements IChatRepository {
         };
     }
 
-    async findAll(userId: string): Promise<ChatMessage[]> {
+    async findAll(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
+        const where: any = { userId };
+        if (beforeId) {
+            where.id = { lt: beforeId };
+        }
+
         const messages = await this.prisma.chatMessage.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'asc' },
+            where,
+            orderBy: { id: 'desc' },
+            take: limit,
         });
-        return messages.map(m => ({
+        return messages.reverse().map(m => ({
             ...m,
             role: m.role as 'user' | 'assistant',
             createdAt: m.createdAt.toISOString(),

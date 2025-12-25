@@ -2,304 +2,159 @@
   "entities": [
     {
       "name": "Course",
-      "displayName": "Online Course",
       "tableName": "courses",
-      "labelAttributeName": "title",
       "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
         {
           "field": "title",
           "header": "Title",
           "displayType": "text",
           "inList": true,
-          "inDetail": true
+          "inDetail": true,
+          "validation": "^[a-zA-Z0-9\\s]{3,}$"
         },
         {
           "field": "description",
           "header": "Description",
-          "displayType": "text",
-          "inDetail": true
-        },
-        {
-          "field": "duration",
-          "header": "Duration",
-          "displayType": "number",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "price",
-          "header": "Price",
-          "displayType": "currency",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "language",
-          "header": "Language",
-          "displayType": "select",
-          "options": [
-            "English",
-            "Spanish",
-            "French",
-            "German",
-            "Japanese",
-            "Chinese"
-          ],
-          "inList": true,
-          "inDetail": true
-        }
-      ]
-    },
-    {
-      "name": "User",
-      "displayName": "Student/User",
-      "tableName": "users",
-      "labelAttributeName": "fullName",
-      "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "fullName",
-          "header": "Full Name",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "email",
-          "header": "Email",
-          "displayType": "email",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "password",
-          "header": "Password",
-          "displayType": "password",
-          "validation": "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$",
+          "displayType": "textarea",
           "inList": false,
-          "inDetail": true
+          "inDetail": true,
+          "validation": "^.{10,}"
         },
         {
-          "field": "role",
-          "header": "Role",
-          "displayType": "select",
-          "options": [
-            "Student",
-            "Instructor",
-            "Admin"
-          ],
-          "inList": true,
-          "inDetail": true
-        }
-      ]
-    },
-    {
-      "name": "Enrollment",
-      "displayName": "Course Enrollment",
-      "tableName": "enrollments",
-      "labelAttributeName": "userFullNameAndCourseTitle",
-      "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "courseId",
-          "header": "Course ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "userId",
-          "header": "User ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "status",
-          "header": "Status",
-          "displayType": "select",
-          "options": [
-            "Active",
-            "Completed",
-            "Cancelled"
-          ],
-          "inList": true,
-          "inDetail": true
-        }
-      ]
-    },
-    {
-      "name": "Topic",
-      "displayName": "Course Topic",
-      "tableName": "topics",
-      "labelAttributeName": "title",
-      "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "courseId",
-          "header": "Course ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "title",
-          "header": "Title",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "description",
-          "header": "Description",
-          "displayType": "text",
-          "inDetail": true
-        }
-      ]
-    },
-    {
-      "name": "Resource",
-      "displayName": "Course Resource",
-      "tableName": "resources",
-      "labelAttributeName": "title",
-      "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "topicId",
-          "header": "Topic ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "title",
-          "header": "Title",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "type",
-          "header": "Type",
-          "displayType": "select",
-          "options": [
-            "Video",
-            "PDF",
-            "Text",
-            "Quiz"
-          ],
-          "inList": true,
-          "inDetail": true
-        }
-      ]
-    },
-    {
-      "name": "Assignment",
-      "displayName": "Course Assignment",
-      "tableName": "assignments",
-      "labelAttributeName": "title",
-      "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "courseId",
-          "header": "Course ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "topicId",
-          "header": "Topic ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "title",
-          "header": "Title",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "dueDate",
-          "header": "Due Date",
+          "field": "startDate",
+          "header": "Start Date",
           "displayType": "date",
           "inList": true,
-          "inDetail": true
+          "inDetail": true,
+          "validation": "\\d{4}-\\d{2}-\\d{2}"
+        },
+        {
+          "field": "endDate",
+          "header": "End Date",
+          "displayType": "date",
+          "inList": true,
+          "inDetail": true,
+          "validation": "\\d{4}-\\d{2}-\\d{2}"
+        },
+        {
+          "field": "category",
+          "header": "Category",
+          "displayType": "dropdown",
+          "inList": true,
+          "inDetail": true,
+          "options": "Programming,Art,Science,Business,Technology"
+        }
+      ]
+    },
+    {
+      "name": "Module",
+      "tableName": "modules",
+      "attributes": [
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true,
+          "validation": "^[a-zA-Z0-9\\s]{3,}$"
+        },
+        {
+          "field": "description",
+          "header": "Description",
+          "displayType": "textarea",
+          "inList": false,
+          "inDetail": true,
+          "validation": "^.{10,}"
+        }
+      ]
+    },
+    {
+      "name": "Lecture",
+      "tableName": "lectures",
+      "attributes": [
+        {
+          "field": "title",
+          "header": "Title",
+          "displayType": "text",
+          "inList": true,
+          "inDetail": true,
+          "validation": "^[a-zA-Z0-9\\s]{3,}$"
+        },
+        {
+          "field": "content",
+          "header": "Content",
+          "displayType": "html",
+          "inList": false,
+          "inDetail": true,
+          "validation": "<[^>]*>"
+        },
+        {
+          "field": "lectureNumber",
+          "header": "Lecture Number",
+          "displayType": "number",
+          "inList": true,
+          "inDetail": true,
+          "validation": "\\d+"
         }
       ]
     },
     {
       "name": "Quiz",
-      "displayName": "Course Quiz",
       "tableName": "quizzes",
-      "labelAttributeName": "title",
       "attributes": [
-        {
-          "field": "id",
-          "header": "ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true
-        },
-        {
-          "field": "courseId",
-          "header": "Course ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
-        {
-          "field": "topicId",
-          "header": "Topic ID",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": false
-        },
         {
           "field": "title",
           "header": "Title",
           "displayType": "text",
           "inList": true,
-          "inDetail": true
+          "inDetail": true,
+          "validation": "^[a-zA-Z0-9\\s]{3,}$"
+        },
+        {
+          "field": "description",
+          "header": "Description",
+          "displayType": "textarea",
+          "inList": false,
+          "inDetail": true,
+          "validation": "^.{10,}"
+        },
+        {
+          "field": "startTime",
+          "header": "Start Time",
+          "displayType": "time",
+          "inList": true,
+          "inDetail": true,
+          "validation": "\\d{2}:\\d{2}"
+        },
+        {
+          "field": "endTime",
+          "header": "End Time",
+          "displayType": "time",
+          "inList": true,
+          "inDetail": true,
+          "validation": "\\d{2}:\\d{2}"
+        }
+      ]
+    },
+    {
+      "name": "Question",
+      "tableName": "questions",
+      "attributes": [
+        {
+          "field": "content",
+          "header": "Content",
+          "displayType": "text",
+          "inList": false,
+          "inDetail": true,
+          "validation": "^.{3,}"
+        },
+        {
+          "field": "correctOption",
+          "header": "Correct Option",
+          "displayType": "text",
+          "inList": false,
+          "inDetail": true,
+          "validation": "\\d"
         }
       ]
     }
@@ -307,73 +162,31 @@
   "relationships": [
     {
       "sourceEntity": "Course",
-      "targetEntity": "User",
-      "fieldName": "creatorId",
-      "label": "Creator",
-      "cardinality": "one-to-many"
+      "targetEntity": "Module",
+      "fieldName": "modules",
+      "sourceCardinality": "many",
+      "targetCardinality": "many"
     },
     {
-      "sourceEntity": "Course",
-      "targetEntity": "Topic",
-      "fieldName": "courseId",
-      "label": "Topics",
-      "cardinality": "one-to-many"
-    },
-    {
-      "sourceEntity": "Course",
-      "targetEntity": "Resource",
-      "fieldName": "courseId",
-      "label": "Resources",
-      "cardinality": "one-to-many"
-    },
-    {
-      "sourceEntity": "Course",
-      "targetEntity": "Assignment",
-      "fieldName": "courseId",
-      "label": "Assignments",
-      "cardinality": "one-to-many"
+      "sourceEntity": "Module",
+      "targetEntity": "Lecture",
+      "fieldName": "lectures",
+      "sourceCardinality": "one",
+      "targetCardinality": "many"
     },
     {
       "sourceEntity": "Course",
       "targetEntity": "Quiz",
-      "fieldName": "courseId",
-      "label": "Quizzes",
-      "cardinality": "one-to-many"
-    },
-    {
-      "sourceEntity": "User",
-      "targetEntity": "Enrollment",
-      "fieldName": "userId",
-      "label": "Courses Enrolled In",
-      "cardinality": "many-to-one"
-    },
-    {
-      "sourceEntity": "Enrollment",
-      "targetEntity": "Course",
-      "fieldName": "courseId",
-      "label": "Courses",
-      "cardinality": "one-to-many"
-    },
-    {
-      "sourceEntity": "Topic",
-      "targetEntity": "Resource",
-      "fieldName": "topicId",
-      "label": "Resources",
-      "cardinality": "many-to-one"
-    },
-    {
-      "sourceEntity": "Assignment",
-      "targetEntity": "Course",
-      "fieldName": "courseId",
-      "label": "Course",
-      "cardinality": "many-to-one"
+      "fieldName": "quizzes",
+      "sourceCardinality": "one",
+      "targetCardinality": "one"
     },
     {
       "sourceEntity": "Quiz",
-      "targetEntity": "Course",
-      "fieldName": "courseId",
-      "label": "Course",
-      "cardinality": "many-to-one"
+      "targetEntity": "Question",
+      "fieldName": "questions",
+      "sourceCardinality": "many",
+      "targetCardinality": "many"
     }
   ]
 }

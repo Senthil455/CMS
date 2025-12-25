@@ -9,10 +9,14 @@ import { Link } from 'react-router-dom';
 
 export default function ChatPage() {
     const [input, setInput] = useState('');
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const topSentinelRef = useRef<HTMLDivElement>(null);
+    const mainRef = useRef<HTMLElement>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
-    const { history, isLoading } = useChatHistory();
+    const { history, isLoading, loadMore } = useChatHistory();
     const { sendMessage, onNewMessage, onMessageSaved } = useSocket();
     const scrollRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -30,8 +34,65 @@ export default function ChatPage() {
     }, []);
 
     useEffect(() => {
-        if (history) setLocalMessages(history);
+        if (history) {
+            setLocalMessages(history);
+            if (history.length < 10) setHasMore(false);
+            // On initial load, scroll to bottom
+            setTimeout(() => {
+                scrollRef.current?.scrollIntoView({ behavior: 'auto' });
+            }, 100);
+        }
     }, [history]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !isFetchingMore && !isLoading && localMessages.length > 0) {
+                    handleLoadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (topSentinelRef.current) {
+            observer.observe(topSentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, isFetchingMore, isLoading, localMessages]);
+
+    const handleLoadMore = async () => {
+        if (!hasMore || isFetchingMore || localMessages.length === 0) return;
+
+        setIsFetchingMore(true);
+        const firstMessageId = localMessages[0].id;
+
+        // Save current scroll height to maintain position
+        const scrollContainer = mainRef.current;
+        const previousScrollHeight = scrollContainer?.scrollHeight || 0;
+
+        try {
+            const moreMessages = await loadMore(Number(firstMessageId));
+            if (moreMessages.length < 10) {
+                setHasMore(false);
+            }
+
+            if (moreMessages.length > 0) {
+                setLocalMessages(prev => [...moreMessages, ...prev]);
+
+                // Maintain scroll position after state update
+                requestAnimationFrame(() => {
+                    if (scrollContainer) {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight - previousScrollHeight;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load more messages:', error);
+        } finally {
+            setIsFetchingMore(false);
+        }
+    };
 
     useEffect(() => {
         const unsubNew = onNewMessage((msg: ChatMessage) => {
@@ -39,6 +100,10 @@ export default function ChatPage() {
                 if (prev.find((m) => m.id === msg.id)) return prev;
                 return [...prev, msg];
             });
+            // Scroll to bottom only if it's a new message
+            setTimeout(() => {
+                scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         });
 
         const unsubSaved = onMessageSaved((data) => {
@@ -54,9 +119,7 @@ export default function ChatPage() {
         };
     }, [onNewMessage, onMessageSaved]);
 
-    useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [localMessages]);
+    /* Old scroll effect removed to avoid jumping during pagination */
 
     const handleSend = () => {
         if (!input.trim()) return;
@@ -153,7 +216,7 @@ export default function ChatPage() {
             </header>
 
             {/* Main Chat Area */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-2">
+            <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-2">
                 {isLoading ? (
                     <div className="h-full flex flex-col items-center justify-center text-primary-muted gap-3">
                         <Loader2 className="w-8 h-8 animate-spin" />
@@ -161,6 +224,9 @@ export default function ChatPage() {
                     </div>
                 ) : (
                     <div className="max-w-3xl mx-auto">
+                        <div ref={topSentinelRef} className="h-4 flex items-center justify-center mb-4">
+                            {isFetchingMore && <Loader2 className="w-4 h-4 animate-spin text-primary-muted" />}
+                        </div>
                         {localMessages.map((msg) => (
                             <MessageBubble key={msg.id} message={msg} />
                         ))}

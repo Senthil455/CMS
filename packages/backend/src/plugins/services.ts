@@ -20,8 +20,8 @@ import path from 'path';
 import { config } from '../config';
 
 const servicesPlugin: FastifyPluginAsync = async (fastify) => {
+    fastify.log.info('Starting services plugin...');
     const prisma = new PrismaClient();
-    await prisma.$connect();
 
     const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
@@ -34,6 +34,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const assetsDir = path.join(__dirname, '../../assets');
 
+    const supportedAgents = ['stub', 'openai', 'glm', 'qwen'];
     let agent: AIAgent;
     if (config.AI_AGENT === 'stub') {
         agent = new StubAgent();
@@ -50,13 +51,17 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
             config.GLM_MODEL,
             infraLogger
         );
-    } else {
+    } else if (config.AI_AGENT === 'qwen') {
         agent = new QwenAgent(
             config.QWEN_API_KEY || '',
             config.QWEN_API_URL,
             config.QWEN_MODEL,
             infraLogger
         );
+    } else {
+        const errorMsg = `❌ Unsupported AI_AGENT: ${config.AI_AGENT}. Valid options are: ${supportedAgents.join(', ')}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
     }
 
     const aiConfig = {
@@ -84,15 +89,14 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const systemDesigner = new SystemDesigner(agent, systemDesignerPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
     const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
 
-    const orchestratorMap: Record<string, ChatOrchestrator> = {
-        list: modelExplorer,
-        add: systemDesigner,
-        edit: systemDesigner,
-        delete: systemDesigner,
-        design: systemDesigner
-    };
-
-    const orchestratorResolver = new OrchestratorResolver(agent, orchestratorResolverPrompt, orchestratorMap);
+    const orchestratorResolver = new OrchestratorResolver(
+        agent,
+        orchestratorResolverPrompt,
+        {
+            'design': systemDesigner,
+            'list': modelExplorer,
+        }
+    );
     const chatService = new ChatService(
         repository,
         cmsClient,
@@ -103,7 +107,6 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
 
     fastify.decorate('chatService', chatService);
     fastify.decorate('authService', authService);
-
 
     fastify.addHook('onClose', async () => {
         await prisma.$disconnect();

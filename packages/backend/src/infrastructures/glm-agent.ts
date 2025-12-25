@@ -44,6 +44,9 @@ export class GLMAgent implements AIAgent {
             if (data.message?.content) {
                 content = data.message.content;
             }
+            console.log("-------------------------");
+            console.log({ messages, content });
+            console.log("-------------------------");
 
             // Try parsing JSON first
             try {

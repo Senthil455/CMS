@@ -14,8 +14,8 @@ export class ChatService {
         private readonly logger: ServiceLogger
     ) { }
 
-    async getHistory(userId: string): Promise<ChatMessage[]> {
-        return this.repository.findAll(userId);
+    async getHistory(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
+        return this.repository.findAll(userId, limit, beforeId);
     }
 
     async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {

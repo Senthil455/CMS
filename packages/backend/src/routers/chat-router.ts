@@ -6,7 +6,12 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const history = await fastify.chatService.getHistory(request.user!.id.toString());
+            const { limit, beforeId } = request.query as { limit?: string; beforeId?: string };
+            const history = await fastify.chatService.getHistory(
+                request.user!.id.toString(),
+                limit ? parseInt(limit) : 10,
+                beforeId ? parseInt(beforeId) : undefined
+            );
             return { success: true, data: history };
         } catch (error) {
             fastify.log.error(error);
