@@ -56,37 +56,30 @@ export class SystemDesigner implements ChatHandler {
             // normalize attributes using model behavior
             const normalizedEntities = entities.map((entity: any) => new EntityModel(entity).normalize());
 
-            // Compare with CMS to categorize entities
+            // Compare with CMS to categorize entities and create summary
             const existingSchemas = await this.cmsClient.getAllEntities(context.externalCookie);
 
-            const proposedEntities = normalizedEntities.map(ne => {
+            const summaryEntities = normalizedEntities.map(ne => {
                 const existing = existingSchemas.find(es => es.name === ne.name);
                 return {
-                    entity: ne,
-                    status: existing ? 'overwrite' : 'new' as 'new' | 'overwrite',
+                    ...ne,
                     schemaId: existing?.schemaId || null
                 };
             });
 
-            const summary = proposedEntities.map(pe => `- ${pe.entity.name} (${pe.status}${pe.status === 'overwrite' ? ` - existing sid: ${pe.schemaId}` : ''})`).join('\n');
+            const summaryText = summaryEntities.map(se =>
+                `- ${se.name} (${se.schemaId ? 'update' : 'new'}${se.schemaId ? ` - existing sid: ${se.schemaId}` : ''})`
+            ).join('\n');
 
-            // Emit structured event for UI confirmation
-            const summaryEntities = proposedEntities.map(pe => ({
-                ...pe.entity,
-                op: (pe.status === 'new' ? 'add' : 'update') as 'add' | 'update',
-                schemaId: pe.schemaId
-            }));
+            const summary = `Proposed Schema Changes:\n${summaryText}`;
+
             this.logger.info({ summaryEntities }, 'Summary entities');
 
             await context.onConfirmSchemaSummary({
                 summary,
                 entities: summaryEntities
-
             });
 
-            await context.saveAssistantMessage(
-                "I have analyzed your requirements. Please confirm the proposed schema changes in the UI."
-            );
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in SystemDesigner handle');
             await context.saveAssistantMessage("I'm sorry, I encountered an error while generating your entities.");

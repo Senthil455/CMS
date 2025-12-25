@@ -1,11 +1,11 @@
 import { useRef, useEffect, useState } from 'react';
-import { X, Check, FileJson, MinusCircle, PlusCircle, AlertCircle } from 'lucide-react';
-import type { SchemaSummary, SchemaSummaryResponse } from '@cms/shared';
+import { X, Check, FileJson, PlusCircle, AlertCircle } from 'lucide-react';
+import type { SchemaSummary } from '@cms/shared';
 
 interface SchemaConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (response: SchemaSummaryResponse) => void;
+    onConfirm: (response: SchemaSummary) => void;
     schemaSummary: SchemaSummary;
 }
 
@@ -23,12 +23,9 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
     };
 
     const handleConfirm = () => {
-        const response: SchemaSummaryResponse = {
-            proceed: true,
-            entities: schemaSummary.entities.map((ent, idx) => ({
-                ...ent,
-                op: skippedIndices.has(idx) ? 'skip' : ent.op
-            }))
+        const response: SchemaSummary = {
+            summary: schemaSummary.summary,
+            entities: schemaSummary.entities.filter((_, idx) => !skippedIndices.has(idx))
         };
         onConfirm(response);
     };
@@ -55,7 +52,7 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div
                 ref={modalRef}
-                className="bg-app-surface w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl border border-border flex flex-col animate-in zoom-in-95 duration-200"
+                className="bg-app-surface w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl border border-border flex flex-col animate-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -80,7 +77,7 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
                     <div className="space-y-4">
                         {schemaSummary.entities.map((item, index) => {
                             const isSkipped = skippedIndices.has(index);
-                            const isNew = item.op === 'add';
+                            const isNew = !item.schemaId;
 
                             return (
                                 <div
@@ -89,19 +86,15 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
                                         ? 'bg-app-muted/20 border-border opacity-60'
                                         : isNew
                                             ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                                            : item.op === 'update'
-                                                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'
-                                                : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
+                                            : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             {isNew ? (
                                                 <PlusCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                            ) : item.op === 'update' ? (
-                                                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                                             ) : (
-                                                <MinusCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                                             )}
                                             <h3 className="font-bold text-base flex items-center gap-2">
                                                 {item.name}
@@ -109,11 +102,9 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
                                                     ? 'bg-app-muted text-primary-muted'
                                                     : isNew
                                                         ? 'bg-green-200 dark:bg-green-900/40 text-green-700 dark:text-green-400'
-                                                        : item.op === 'update'
-                                                            ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
-                                                            : 'bg-red-200 dark:bg-red-900/40 text-red-700 dark:text-red-400'
+                                                        : 'bg-amber-200 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
                                                     }`}>
-                                                    {isSkipped ? 'skip' : item.op}
+                                                    {isSkipped ? 'skip' : (isNew ? 'add' : 'update')}
                                                 </span>
                                             </h3>
                                         </div>

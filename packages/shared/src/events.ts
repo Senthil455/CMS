@@ -1,5 +1,5 @@
 import type { ChatMessage } from './contracts.js';
-import { SchemaSummary, SchemaSummaryResponse } from './dtos.js';
+import { SchemaSummary } from './dtos.js';
 
 export const SOCKET_EVENTS = {
     CHAT: {
@@ -17,7 +17,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
     [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string }) => void;
-    [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummaryResponse) => void;
+    [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummary) => void;
 }
 
 export interface InterServerEvents {
@@ -33,3 +33,4 @@ export interface SocketData {
     externalCookie: string;
 }
 
+export type OnServerToClientEvent = <K extends keyof ServerToClientEvents>(event: K, ...args: Parameters<ServerToClientEvents[K]>) => void;

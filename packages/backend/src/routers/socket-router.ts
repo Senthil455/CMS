@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { type Socket } from 'socket.io';
-import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type ChatMessage, type SchemaSummaryResponse } from '@cms/shared';
+import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent } from '@cms/shared';
 
 const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.ready((err) => {
@@ -10,19 +10,21 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             const user = socket.data.user;
             const userId = user.id.toString();
 
+            const onEvent: OnServerToClientEvent = (event: any, ...args: any[]) => {
+                socket.emit(event, ...args);
+            };
+
             socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string }) => {
                 try {
-                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, <K extends keyof ServerToClientEvents>(event: K, ...args: Parameters<ServerToClientEvents[K]>) => {
-                        socket.emit(event, ...args);
-                    });
+                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', error);
                 }
             });
 
-            socket.on(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, async (data: SchemaSummaryResponse) => {
+            socket.on(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, async (data: SchemaSummary) => {
                 try {
-                    await fastify.chatService.handleSchemaSummaryResponse(userId, data, socket.data.externalCookie);
+                    await fastify.chatService.handleSchemaSummaryResponse(userId, data, socket.data.externalCookie, onEvent);
                 } catch (error) {
                     console.error('Error handling schema summary response:', error);
                 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
-import { type ChatMessage, type SchemaSummary, type SchemaSummaryResponse } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary } from '@cms/shared';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
@@ -52,7 +52,7 @@ export default function ChatPage() {
         sendMessage(content);
     };
 
-    const handleConfirmSchema = (response: SchemaSummaryResponse) => {
+    const handleConfirmSchema = (response: SchemaSummary) => {
         sendSchemaResponse(response);
         setShowConfirmation(false);
         setConfirmationData(null);

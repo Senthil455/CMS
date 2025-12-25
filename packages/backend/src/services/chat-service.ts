@@ -1,10 +1,17 @@
-import type { ChatMessage, ServerToClientEvents, SchemaSummary, SchemaSummaryResponse } from '@cms/shared';
-import { SOCKET_EVENTS } from '@cms/shared';
+import {
+    SOCKET_EVENTS,
+    type ChatMessage,
+    type ServerToClientEvents,
+    type SchemaSummary,
+    type OnServerToClientEvent,
+    type EntityDto,
+    type AttributeDto,
+    type SaveEntityPayload
+} from '@cms/shared';
 import type { ChatContext } from '../models/handlers/chat-handler';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
-import { type EntityDto, type AttributeDto, type SaveEntityPayload } from '@cms/shared';
 import type { AgentMessage } from '../infrastructures/agent.interface';
 import { HandlerResolver } from '../models/handlers/handler-resolver';
 
@@ -32,11 +39,25 @@ export class ChatService {
         return this.repository.findAllAiResponseLogs();
     }
 
+    // Helper method to save and emit assistant messages
+    private async saveAndEmitAssistantMessage(
+        userId: string,
+        content: string,
+        onEvent: OnServerToClientEvent,
+        payload?: any
+    ): Promise<ChatMessage> {
+        const message = await this.saveAssistantMessage(userId, content, payload);
+        onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, message);
+        return message;
+    }
+
     async handleUserMessage(userId: string, content: string, externalCookie: string,
-        onEvent: <K extends keyof ServerToClientEvents>(event: K, ...args: Parameters<ServerToClientEvents[K]>) => void): Promise<void> {
+        onEvent: OnServerToClientEvent): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, userMessage);
+
+
 
         // 2. Handler Resolver
         const handler = await this.handlerResolver.resolve(content);
@@ -47,9 +68,7 @@ export class ChatService {
                 userId,
                 externalCookie,
                 saveAssistantMessage: async (content: string, payload?: any) => {
-                    const message = await this.saveAssistantMessage(userId, content, payload);
-                    onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, message); // Emit the full ChatMessage to socket
-                    return message;
+                    return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
                 },
                 saveAiResponseLog: async (handlerName: string, response: string) => {
                     await this.repository.saveAiResponseLog(handlerName, response);
@@ -68,12 +87,7 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, aiMessage);
     }
 
-    async handleSchemaSummaryResponse(userId: string, response: SchemaSummaryResponse, externalCookie: string): Promise<void> {
-        if (!response.proceed) {
-            await this.saveAssistantMessage(userId, 'Schema changes cancelled.');
-            return;
-        }
-
+    async handleSchemaSummaryResponse(userId: string, response: SchemaSummary, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         if (response.entities.length === 0) {
             await this.saveAssistantMessage(userId, 'No entities provided to commit.');
             return;
@@ -83,13 +97,9 @@ export class ChatService {
 
         for (const item of response.entities) {
 
-            if (item.op === 'skip') {
-                continue;
-            }
-
             try {
                 const payload: SaveEntityPayload = {
-                    schemaId: (item as any).schemaId || null,
+                    schemaId: item.schemaId || null,
                     type: 'entity',
                     settings: {
                         entity: item
@@ -103,6 +113,6 @@ export class ChatService {
             }
         }
 
-        await this.saveAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?');
+        await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
     }
 }

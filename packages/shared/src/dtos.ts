@@ -47,10 +47,5 @@ export interface SaveEntityPayload {
 
 export interface SchemaSummary {
     summary: string;
-    entities: (EntityDto & { schemaId?: string | null; op: 'add' | 'remove' | 'update'; })[];
-}
-
-export interface SchemaSummaryResponse {
-    proceed: boolean;
-    entities: (EntityDto & { schemaId?: string | null; op: 'add' | 'remove' | 'update' | 'skip' })[];
+    entities: (EntityDto & { schemaId?: string | null; })[];
 }
