@@ -1,4 +1,4 @@
-import { type AttributeDto } from './dtos';
+import { type AttributeDto } from '@cms/shared';
 
 // Mapping from displayType to dataType
 const displayTypeToDataType: Record<string, string> = {
@@ -19,6 +19,8 @@ const displayTypeToDataType: Record<string, string> = {
     'gallery': 'text',
     'textarea': 'text',
     'editor': 'text',
+    'html': 'text',
+    'time': 'string',
 };
 
 export class AttributeModel {
@@ -28,13 +30,23 @@ export class AttributeModel {
         const normalized = { ...this.attribute, isDefault: false };
 
         // Calculate dataType from displayType using the mapping
-        const mappedDataType = displayTypeToDataType[normalized.displayType];
-        if (mappedDataType) {
-            normalized.dataType = mappedDataType;
-        } else {
-            normalized.displayType = 'text';
-            normalized.dataType = 'text';
+        let mappedDataType = displayTypeToDataType[normalized.displayType];
+
+        if (!mappedDataType) {
+            // Fallbacks for common variations
+            if (normalized.displayType === 'html') {
+                normalized.displayType = 'editor';
+                mappedDataType = 'text';
+            } else if (normalized.displayType === 'time') {
+                normalized.displayType = 'text';
+                mappedDataType = 'string';
+            } else {
+                normalized.displayType = 'text';
+                mappedDataType = 'string';
+            }
         }
+
+        normalized.dataType = mappedDataType;
         return normalized;
     }
 }

@@ -10,10 +10,11 @@ import { StubAgent } from '../infrastructures/stub-agent';
 import { OpenAIAgent } from '../infrastructures/openai-agent';
 import { CmsClient } from '../infrastructures/cms-client';
 import { GLMAgent } from '../infrastructures/glm-agent';
-import { OrchestratorResolver } from '../models/orchestrators/orchestrator-resolver';
-import { SystemDesigner } from '../models/orchestrators/system-designer';
-import { ModelExplorer } from '../models/orchestrators/model-explorer';
-import type { ChatOrchestrator } from '../models/orchestrators/chat-orchestrator';
+import { HandlerResolver } from '../models/handlers/handler-resolver';
+import { SystemDesigner } from '../models/handlers/system-designer';
+import { ModelExplorer } from '../models/handlers/model-explorer';
+
+import type { ChatHandler } from '../models/handlers/chat-handler';
 import type { AIAgent } from '../infrastructures/agent.interface';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -77,7 +78,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
 
     // Load assets for ChatService and AgentResolver
     const promptSubDir = config.AI_AGENT === 'openai' ? 'openai' : config.AI_AGENT === 'glm' ? 'glm' : config.AI_AGENT === 'stub' ? 'stub' : 'qwen';
-    const [systemDesignerPrompt, orchestratorResolverPrompt,
+    const [systemDesignerPrompt, handlerResolverPrompt,
         entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
             fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/system-designer.txt`), 'utf-8'),
             fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/agent-resolver.txt`), 'utf-8'),
@@ -89,18 +90,19 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const systemDesigner = new SystemDesigner(agent, systemDesignerPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
     const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
 
-    const orchestratorResolver = new OrchestratorResolver(
+
+    const handlerResolver = new HandlerResolver(
         agent,
-        orchestratorResolverPrompt,
+        handlerResolverPrompt,
         {
-            'design': systemDesigner,
-            'list': modelExplorer,
+            design: systemDesigner,
+            list: modelExplorer,
         }
     );
     const chatService = new ChatService(
         repository,
         cmsClient,
-        orchestratorResolver,
+        handlerResolver,
         serviceLogger
     );
     const authService = new AuthService(cmsClient, serviceLogger);

@@ -1,22 +1,28 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
-import { type ChatOrchestrator } from './chat-orchestrator';
+import { type ChatHandler, type HandlerType } from './chat-handler';
 
-export class OrchestratorResolver {
+export class HandlerResolver {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
-        private readonly orchestratorMap: Record<string, ChatOrchestrator>
+        private readonly handlerMap: Record<HandlerType, ChatHandler>
     ) { }
 
-    async resolve(userInput: string): Promise<ChatOrchestrator | null> {
+
+
+    async resolve(userInput: string): Promise<ChatHandler | null> {
         try {
+
+
             const response = await this.aiAgent.generate(this.systemPrompt, '', userInput);
 
             if (response && typeof response === 'object') {
                 const { type } = response;
-                const orchestrator = this.orchestratorMap[type];
-                if (orchestrator) {
-                    return orchestrator;
+                if (type === 'design' || type === 'list') {
+                    const handler = this.handlerMap[type as HandlerType];
+                    if (handler) {
+                        return handler;
+                    }
                 }
             }
 

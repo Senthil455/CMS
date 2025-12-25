@@ -11,7 +11,7 @@ const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(
 
 interface AiLog {
     id: number;
-    orchestrator: string;
+    handler: string;
     response: string;
     timestamp: string;
 }
@@ -119,7 +119,7 @@ export default function AiLogsPage() {
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <Cpu className={`w-4 h-4 shrink-0 ${selectedLogId === log.id ? 'text-primary' : 'text-primary-muted'}`} />
                                             <span className={`font-bold text-sm truncate ${selectedLogId === log.id ? 'text-primary' : ''}`}>
-                                                {log.orchestrator}
+                                                {log.handler}
                                             </span>
                                         </div>
                                         <span className="text-[10px] font-mono text-primary-muted/50 whitespace-nowrap">#{log.id}</span>
@@ -151,8 +151,8 @@ export default function AiLogsPage() {
                                             <Cpu className="w-5 h-5 text-primary" />
                                         </div>
                                         <div className="overflow-hidden">
-                                            <p className="text-[10px] font-bold text-primary-muted uppercase tracking-widest mb-0.5">Orchestrator</p>
-                                            <p className="font-bold text-base truncate">{selectedLog.orchestrator}</p>
+                                            <p className="text-[10px] font-bold text-primary-muted uppercase tracking-widest mb-0.5">Handler</p>
+                                            <p className="font-bold text-base truncate">{selectedLog.handler}</p>
                                         </div>
                                     </div>
                                     <div className="bg-app-surface p-5 rounded-2xl border border-border shadow-sm flex items-start gap-4">

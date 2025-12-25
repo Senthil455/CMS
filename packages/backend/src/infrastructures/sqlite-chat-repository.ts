@@ -11,12 +11,14 @@ export class SqliteChatRepository implements IChatRepository {
                 userId: message.userId,
                 content: message.content,
                 role: message.role,
+                payload: message.payload ? JSON.stringify(message.payload) : null,
             },
         });
         return {
             ...saved,
             role: saved.role as 'user' | 'assistant',
             createdAt: saved.createdAt.toISOString(),
+            payload: saved.payload ? JSON.parse(saved.payload) : undefined,
         };
     }
 
@@ -35,13 +37,14 @@ export class SqliteChatRepository implements IChatRepository {
             ...m,
             role: m.role as 'user' | 'assistant',
             createdAt: m.createdAt.toISOString(),
+            payload: m.payload ? JSON.parse(m.payload) : undefined,
         }));
     }
 
-    async saveAiResponseLog(orchestrator: string, response: string): Promise<void> {
+    async saveAiResponseLog(handler: string, response: string): Promise<void> {
         await this.prisma.aiResponseLog.create({
             data: {
-                orchestrator,
+                handler,
                 response,
             },
         });

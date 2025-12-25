@@ -12,12 +12,13 @@ model ChatMessage {
   userId    String
   content   String
   role      String   // 'user' or 'assistant'
+  payload   String?  // JSON stringified metadata
   createdAt DateTime @default(now())
 }
 
 model AiResponseLog {
-  id           Int      @id @default(autoincrement())
-  orchestrator String
-  response     String
-  timestamp    DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  handler   String
+  response  String
+  timestamp DateTime @default(now())
 }

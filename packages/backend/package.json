@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "debug": "tsx watch --inspect src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fastify/autoload": "^5.8.2",
@@ -31,8 +32,10 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/cookie": "^0.6.0",
     "@types/node": "^22.10.1",
+    "@vitest/ui": "^4.0.16",
     "prisma": "6.2.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.16"
   }
 }

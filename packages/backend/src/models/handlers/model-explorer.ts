@@ -1,8 +1,8 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type ChatOrchestrator, type ChatContext } from './chat-orchestrator';
+import { type ChatHandler, type ChatContext } from './chat-handler';
 
-export class ModelExplorer implements ChatOrchestrator {
+export class ModelExplorer implements ChatHandler {
     constructor(
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,

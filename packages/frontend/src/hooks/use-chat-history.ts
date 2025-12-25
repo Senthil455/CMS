@@ -1,26 +1,48 @@
-import useSWR from 'swr';
+import { useMemo } from 'react';
+import useSWRInfinite from 'swr/infinite';
 import { type ChatMessage, ENDPOINTS, type ApiResponse } from '@cms/shared';
 import { config } from '../config';
 
 const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(r => r.json());
 
 export function useChatHistory() {
-    const { data, error, mutate } = useSWR<ApiResponse<ChatMessage[]>>(
-        `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=10`,
-        fetcher
-    );
+    const getKey = (pageIndex: number, previousPageData: ApiResponse<ChatMessage[]>) => {
+        // reached the end
+        if (previousPageData && (previousPageData.data === undefined || previousPageData.data.length === 0)) return null;
 
-    const loadMore = async (beforeId: number, limit: number = 10): Promise<ChatMessage[]> => {
-        const url = `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=${limit}&beforeId=${beforeId}`;
-        const res: ApiResponse<ChatMessage[]> = await fetcher(url);
-        return res.data || [];
+        // first page, we don't have `beforeId`
+        if (pageIndex === 0) return `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=10`;
+
+        // add `beforeId` to the query, using the last id of the previous page
+        const lastMessage = previousPageData.data![previousPageData.data!.length - 1];
+        return `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=10&beforeId=${lastMessage.id}`;
     };
 
+    const { data, error, size, setSize, mutate, isValidating } = useSWRInfinite<ApiResponse<ChatMessage[]>>(
+        getKey,
+        fetcher,
+        {
+            revalidateFirstPage: false,
+            persistSize: true,
+        }
+    );
+
+    // usage of useMemo is necessary to prevent infinite loops in useEffect dependencies
+    const history = useMemo(() => {
+        return data ? data.flatMap(page => page.data || []).reverse() : [];
+    }, [data]);
+    const isLoading = !error && !data;
+    const isEmpty = data?.[0]?.data?.length === 0;
+    const isReachingEnd = isEmpty || (data && (data[data.length - 1]?.data?.length || 0) < 10);
+
     return {
-        history: data?.data,
-        isLoading: !error && !data,
-        isError: error || (data && !data.success),
+        history,
+        isLoading,
+        isFetchingMore: isValidating && size > 1,
+        isError: error,
         mutate,
-        loadMore,
+        size,
+        setSize,
+        isReachingEnd,
     };
 }

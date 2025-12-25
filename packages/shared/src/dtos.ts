@@ -38,8 +38,19 @@ export interface SchemaDto {
 }
 
 export interface SaveEntityPayload {
+    schemaId: string | null;
     type: 'entity';
     settings: {
         entity: EntityDto;
     };
+}
+
+export interface SchemaSummary {
+    summary: string;
+    entities: (EntityDto & { schemaId?: string | null; op: 'add' | 'remove' | 'update'; })[];
+}
+
+export interface SchemaSummaryResponse {
+    proceed: boolean;
+    entities: (EntityDto & { schemaId?: string | null; op: 'add' | 'remove' | 'update' | 'skip' })[];
 }

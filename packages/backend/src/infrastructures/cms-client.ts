@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { User } from '@cms/shared';
 
-import type { SchemaDto, SaveEntityPayload } from '../models/cms/dtos';
+import type { SchemaDto, SaveEntityPayload } from '@cms/shared';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }

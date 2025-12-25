@@ -1,8 +1,8 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type ChatOrchestrator, type ChatContext } from './chat-orchestrator';
-import { type EntityDto } from '../cms/dtos';
+import { type ChatHandler, type ChatContext } from './chat-handler';
+import { type EntityDto, type SaveEntityPayload, type SchemaDto } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 
 export interface SystemDesignerResponse {
@@ -10,7 +10,7 @@ export interface SystemDesignerResponse {
     relationships: any[];
 }
 
-export class SystemDesigner implements ChatOrchestrator {
+export class SystemDesigner implements ChatHandler {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
@@ -56,43 +56,37 @@ export class SystemDesigner implements ChatOrchestrator {
             // normalize attributes using model behavior
             const normalizedEntities = entities.map((entity: any) => new EntityModel(entity).normalize());
 
-            let responseContent = `I am system designer, I have analyzed your requirements. Based on your requirements, I've generated the following entities:\n\n`;
-            normalizedEntities.forEach((entity, index) => {
-                responseContent += `### ${index + 1}. ${entity.name}\n`;
-                responseContent += `**Table Name:** \`${entity.tableName}\`\n\n`;
+            // Compare with CMS to categorize entities
+            const existingSchemas = await this.cmsClient.getAllEntities(context.externalCookie);
 
-                responseContent += `| Attribute | Header | Data Type | Display Type | In List |\n`;
-                responseContent += `| :--- | :--- | :--- | :--- | :--- |\n`;
-
-                entity.attributes.forEach((attr: any) => {
-                    responseContent += `| ${attr.field} | ${attr.header} | ${attr.dataType} | ${attr.displayType} | ${attr.inList ? '✅' : '❌'} |\n`;
-                });
-
-                responseContent += `\n---\n\n`;
+            const proposedEntities = normalizedEntities.map(ne => {
+                const existing = existingSchemas.find(es => es.name === ne.name);
+                return {
+                    entity: ne,
+                    status: existing ? 'overwrite' : 'new' as 'new' | 'overwrite',
+                    schemaId: existing?.schemaId || null
+                };
             });
 
-            await context.saveAssistantMessage(responseContent);
+            const summary = proposedEntities.map(pe => `- ${pe.entity.name} (${pe.status}${pe.status === 'overwrite' ? ` - existing sid: ${pe.schemaId}` : ''})`).join('\n');
 
-            // 3. Save to CMS
+            // Emit structured event for UI confirmation
+            const summaryEntities = proposedEntities.map(pe => ({
+                ...pe.entity,
+                op: (pe.status === 'new' ? 'add' : 'update') as 'add' | 'update',
+                schemaId: pe.schemaId
+            }));
+            this.logger.info({ summaryEntities }, 'Summary entities');
 
-            // Save normal entities first
-            for (const entity of normalizedEntities) {
-                try {
-                    await this.cmsClient.saveEntity(context.externalCookie, {
-                        type: 'entity',
-                        settings: {
-                            entity
-                        }
-                    });
-                    this.logger.info({ entityName: entity.name }, 'Successfully saved entity to CMS');
-                } catch (saveError) {
-                    this.logger.error({ error: saveError, entityName: entity.name }, 'Failed to save entity to CMS');
-                }
-            }
+            await context.onConfirmSchemaSummary({
+                summary,
+                entities: summaryEntities
 
-            responseContent += `\nI have saved these definitions for you. How else can I help?`;
+            });
 
-            await context.saveAssistantMessage(responseContent);
+            await context.saveAssistantMessage(
+                "I have analyzed your requirements. Please confirm the proposed schema changes in the UI."
+            );
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in SystemDesigner handle');
             await context.saveAssistantMessage("I'm sorry, I encountered an error while generating your entities.");
