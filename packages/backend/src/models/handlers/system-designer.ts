@@ -2,12 +2,13 @@ import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext } from './chat-handler';
-import { type EntityDto, type SaveEntityPayload, type SchemaDto } from '@cms/shared';
+import { type EntityDto, type RelationshipDto, type SaveEntityPayload, type SchemaDto } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
+import { RelationshipModel } from '../cms/relationship-model';
 
 export interface SystemDesignerResponse {
     entities: EntityDto[];
-    relationships: any[];
+    relationships: RelationshipDto[];
 }
 
 export class SystemDesigner implements ChatHandler {
@@ -75,9 +76,12 @@ export class SystemDesigner implements ChatHandler {
 
             this.logger.info({ summaryEntities }, 'Summary entities');
 
+            const normalizedRelationships = (resp.relationships || []).map(r => new RelationshipModel(r).normalize());
+
             await context.onConfirmSchemaSummary({
                 summary,
-                entities: summaryEntities
+                entities: summaryEntities,
+                relationships: normalizedRelationships
             });
 
         } catch (error: any) {

@@ -14,6 +14,7 @@ import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { AgentMessage } from '../infrastructures/agent.interface';
 import { HandlerResolver } from '../models/handlers/handler-resolver';
+import { SchemaModel } from '../models/cms/schema-model';
 
 export class ChatService {
     constructor(
@@ -95,24 +96,13 @@ export class ChatService {
 
         await this.saveAssistantMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
-        for (const item of response.entities) {
-
-            try {
-                const payload: SaveEntityPayload = {
-                    schemaId: item.schemaId || null,
-                    type: 'entity',
-                    settings: {
-                        entity: item
-                    }
-                };
-
-                await this.cmsClient.saveEntity(externalCookie, payload);
-                this.logger.info({ entityName: item.name }, 'Successfully committed entity');
-            } catch (saveError) {
-                this.logger.error({ error: saveError, entityName: item.name }, 'Failed to commit entity');
-            }
+        try {
+            const schemaModel = new SchemaModel(this.cmsClient, this.logger, externalCookie);
+            await schemaModel.commit(response);
+            await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
+        } catch (error) {
+            this.logger.error({ error }, 'Failed to commit schema changes');
+            await this.saveAndEmitAssistantMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
         }
-
-        await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
     }
 }

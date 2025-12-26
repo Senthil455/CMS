@@ -55,8 +55,10 @@ export class GLMAgent implements AIAgent {
                 if (jsonMatch) {
                     jsonString = jsonMatch[1] ?? '';
                 }
-                // Strip single-line comments (// ...)
-                jsonString = jsonString.replace(/\/\/.*/g, '');
+                // Strip single-line comments (// ...) but preserve those inside strings (like URLs)
+                jsonString = jsonString.replace(/("(?:[^"\\]|\\.)*")|\/\/.*$/gm, (match, group1) => {
+                    return group1 ? group1 : "";
+                });
                 const json = JSON.parse(jsonString.trim());
                 return json;
             } catch {

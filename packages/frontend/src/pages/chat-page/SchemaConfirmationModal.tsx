@@ -11,6 +11,7 @@ interface SchemaConfirmationModalProps {
 
 export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSummary }: SchemaConfirmationModalProps) {
     const [skippedIndices, setSkippedIndices] = useState<Set<number>>(new Set());
+    const [skippedRelationshipIndices, setSkippedRelationshipIndices] = useState<Set<number>>(new Set());
     const modalRef = useRef<HTMLDivElement>(null);
 
     const toggleSkip = (index: number) => {
@@ -22,10 +23,20 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
         });
     };
 
+    const toggleRelationshipSkip = (index: number) => {
+        setSkippedRelationshipIndices((prev) => {
+            const next = new Set(prev);
+            if (next.has(index)) next.delete(index);
+            else next.add(index);
+            return next;
+        });
+    };
+
     const handleConfirm = () => {
         const response: SchemaSummary = {
             summary: schemaSummary.summary,
-            entities: schemaSummary.entities.filter((_, idx) => !skippedIndices.has(idx))
+            entities: schemaSummary.entities.filter((_, idx) => !skippedIndices.has(idx)),
+            relationships: (schemaSummary.relationships || []).filter((_, idx) => !skippedRelationshipIndices.has(idx))
         };
         onConfirm(response);
     };
@@ -191,6 +202,67 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
                             );
                         })}
                     </div>
+
+                    {schemaSummary.relationships && schemaSummary.relationships.length > 0 && (
+                        <div className="space-y-4 pt-4 border-t border-border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <FileJson className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-primary-muted opacity-80">Proposed Relationships</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {schemaSummary.relationships.map((rel, index) => {
+                                    const isSkipped = skippedRelationshipIndices.has(index);
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`p-4 rounded-xl border transition-all duration-200 ${isSkipped
+                                                ? 'bg-app-muted/20 border-border opacity-60'
+                                                : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
+                                                }`}
+                                        >
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold text-primary">{rel.sourceEntity}</span>
+                                                        <span className="text-xs text-primary-muted opacity-50">→</span>
+                                                        <span className="text-sm font-bold text-primary">{rel.targetEntity}</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-primary-muted font-mono mt-1">Field: {rel.fieldName}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => toggleRelationshipSkip(index)}
+                                                    className={`text-[10px] px-2 py-1 rounded-md font-semibold transition-colors ${isSkipped
+                                                        ? 'bg-primary text-app hover:opacity-90'
+                                                        : 'bg-app-muted text-primary-muted hover:bg-app-surface border border-border'
+                                                        }`}
+                                                >
+                                                    {isSkipped ? 'Include' : 'Skip'}
+                                                </button>
+                                            </div>
+                                            {!isSkipped && (
+                                                <div className="flex items-center gap-4 text-[10px]">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-primary-muted uppercase font-bold opacity-50">Source</span>
+                                                        <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{rel.sourceCardinality}</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-primary-muted uppercase font-bold opacity-50">Target</span>
+                                                        <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{rel.targetCardinality}</span>
+                                                    </div>
+                                                    {rel.label && (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-primary-muted uppercase font-bold opacity-50">Label</span>
+                                                            <span className="font-medium">{rel.label}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}

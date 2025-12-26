@@ -23,6 +23,15 @@ export interface EntityDto {
     attributes: AttributeDto[];
 }
 
+export interface RelationshipDto {
+    sourceEntity: string;
+    fieldName: string;
+    label?: string;
+    targetEntity: string;
+    sourceCardinality: 'one' | 'many';
+    targetCardinality: 'one' | 'many';
+}
+
 export interface SchemaDto {
     id: number;
     schemaId: string;
@@ -48,4 +57,5 @@ export interface SaveEntityPayload {
 export interface SchemaSummary {
     summary: string;
     entities: (EntityDto & { schemaId?: string | null; })[];
+    relationships: RelationshipDto[];
 }

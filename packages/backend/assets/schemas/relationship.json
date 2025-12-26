@@ -5,9 +5,9 @@
     "required": [
         "sourceEntity",
         "fieldName",
-        "label",
         "targetEntity",
-        "cardinality"
+        "sourceCardinality",
+        "targetCardinality"
     ],
     "properties": {
         "sourceEntity": {
@@ -26,14 +26,21 @@
             "type": "string",
             "description": "The entity that this relationship points to (camelCase)"
         },
-        "cardinality": {
+        "sourceCardinality": {
             "type": "string",
             "enum": [
-                "one-to-many",
-                "many-to-one",
-                "many-to-many"
+                "one",
+                "many"
             ],
-            "description": "Type of relationship: one-to-many, many-to-one, or many-to-many"
+            "description": "Type of relationship: one or many"
+        },
+        "targetCardinality": {
+            "type": "string",
+            "enum": [
+                "one",
+                "many"
+            ],
+            "description": "Type of relationship: one or many"
         }
     },
     "additionalProperties": false
