@@ -14,7 +14,7 @@ import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { AgentMessage } from '../infrastructures/agent.interface';
 import { HandlerResolver } from '../models/handlers/handler-resolver';
-import { SchemaModel } from '../models/cms/schema-model';
+import { SchemaManager } from '../models/cms/schema-manager';
 
 export class ChatService {
     constructor(
@@ -97,8 +97,8 @@ export class ChatService {
         await this.saveAssistantMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
         try {
-            const schemaModel = new SchemaModel(this.cmsClient, this.logger, externalCookie);
-            await schemaModel.commit(response);
+            const schemaManager = new SchemaManager(this.cmsClient, this.logger, externalCookie);
+            await schemaManager.commit(response);
             await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
         } catch (error) {
             this.logger.error({ error }, 'Failed to commit schema changes');

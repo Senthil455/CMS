@@ -48,7 +48,7 @@
           "displayType": "text",
           "inList": true,
           "inDetail": true,
-          "validation": "^\\S+(?:\\\\s+\\S+)*$"
+          "validation": "^\\S+(?:\\s+\\S+)*$"
         },
         {
           "field": "categoryDescription",

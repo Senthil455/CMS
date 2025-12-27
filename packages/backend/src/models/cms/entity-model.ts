@@ -1,5 +1,6 @@
 import { type EntityDto } from '@cms/shared';
 import { normalizeAttribute } from './attribute-model';
+import { camelize } from './utils';
 
 export class EntityModel {
     constructor(public readonly entity: EntityDto) { }
@@ -13,7 +14,7 @@ export class EntityModel {
 
         // Convert name to camelCase (e.g., Course -> course, CourseModule -> courseModule)
         if (entity.name) {
-            entity.name = entity.name.charAt(0).toLowerCase() + entity.name.slice(1);
+            entity.name = camelize(entity.name);
         }
 
         const attributes = (entity.attributes || []).map(normalizeAttribute);

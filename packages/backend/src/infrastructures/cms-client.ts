@@ -40,11 +40,18 @@ export class CmsClient {
     }
 
     async saveEntity(externalCookie: string, payload: SaveEntityPayload) {
-        return axios.post(`${this.baseUrl}/api/schemas/entity/define`, payload, {
-            headers: {
-                Cookie: externalCookie
+        try {
+            return await axios.post(`${this.baseUrl}/api/schemas/entity/define`, payload, {
+                headers: {
+                    Cookie: externalCookie
+                }
+            });
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw error.response.data;
             }
-        });
+            throw error;
+        }
     }
 
     async logout(externalCookie: string) {
