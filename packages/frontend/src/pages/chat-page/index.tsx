@@ -6,7 +6,7 @@ import { type ChatMessage, type SchemaSummary } from '@cms/shared';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
-import { SchemaConfirmationModal } from './SchemaConfirmationModal';
+import { SchemaConfirmationModal } from '../schema-confirmation-modal';
 
 export default function ChatPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);

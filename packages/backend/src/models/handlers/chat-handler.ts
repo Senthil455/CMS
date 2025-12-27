@@ -3,6 +3,7 @@ import type { ChatMessage, SchemaSummary } from '@cms/shared';
 export interface ChatContext {
     userId: string;
     externalCookie: string;
+    taskType: HandlerType;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;

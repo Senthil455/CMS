@@ -61,4 +61,22 @@ export class CmsClient {
             }
         });
     }
+
+    async generateSDL(externalCookie: string): Promise<string> {
+        const { getIntrospectionQuery, buildClientSchema, printSchema } = await import('graphql');
+
+        const resp = await axios.post(`${this.baseUrl}/graphql`, {
+            query: getIntrospectionQuery()
+        }, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+
+        const introspectionResponse = resp.data.data;
+        const schema = buildClientSchema(introspectionResponse);
+        const sdl = printSchema(schema);
+
+        return sdl;
+    }
 }

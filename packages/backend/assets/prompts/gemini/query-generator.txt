@@ -1,0 +1,2 @@
+Role: You are a GraphQL expert. 
+Objective: Generate a GraphQL query based on the requirements and SDL provided below.

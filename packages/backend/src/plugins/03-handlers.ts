@@ -37,7 +37,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
             ]);
 
-            const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
+            const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt,
+                entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
 
             const intentClassifier = new IntentClassifier(

@@ -45,7 +45,7 @@ export class SchemaGenerator implements ChatHandler {
             const resp = await this.create(userInput);
 
             // Save AI response to database log
-            await context.saveAiResponseLog('schema-generator', JSON.stringify(resp));
+            await context.saveAiResponseLog('schema-generator', JSON.stringify({ ...resp, taskType: context.taskType }));
 
 
             // Normalize: handle cases where AI might return 'fields' instead of 'attributes'

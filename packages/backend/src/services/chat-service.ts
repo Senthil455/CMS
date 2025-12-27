@@ -60,11 +60,13 @@ export class ChatService {
 
 
         // 2. Intent Classifier
-        const handler = await this.intentClassifier[agentName]!.resolve(content);
-        if (handler) {
+        const intentClassifierResponse = await this.intentClassifier[agentName]!.resolve(content);
+        if (intentClassifierResponse) {
+            const { handler, taskType } = intentClassifierResponse;
             this.logger.info('Executing resolved handler');
 
             const context: ChatContext = {
+                taskType,
                 userId,
                 externalCookie,
                 saveAssistantMessage: async (content: string, payload?: any) => {

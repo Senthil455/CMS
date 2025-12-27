@@ -41,6 +41,14 @@ export class SchemaManager {
             await this.applyAndSave(resls, allEntities, (model, entities) => model.applyLookupAndJunctionToEntities(entities));
             await this.applyAndSave(resls, allEntities, (model, entities) => model.applyCollectionToEntities(entities));
         }
+
+        // 3. Refresh SDL
+        try {
+            await this.cmsClient.generateSDL(this.externalCookie);
+            this.logger.info('Successfully refreshed GraphQL SDL');
+        } catch (sdlError) {
+            this.logger.error({ error: sdlError }, 'Failed to refresh GraphQL SDL');
+        }
     }
 
     private async applyAndSave(
