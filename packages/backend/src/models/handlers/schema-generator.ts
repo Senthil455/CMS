@@ -6,12 +6,12 @@ import { type EntityDto, type RelationshipDto, type SaveEntityPayload, type Sche
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
 
-export interface SystemDesignerResponse {
+export interface SchemaGeneratorResponse {
     entities: EntityDto[];
     relationships: RelationshipDto[];
 }
 
-export class SystemDesigner implements ChatHandler {
+export class SchemaGenerator implements ChatHandler {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
@@ -22,7 +22,7 @@ export class SystemDesigner implements ChatHandler {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async create(userInput: string): Promise<SystemDesignerResponse> {
+    async create(userInput: string): Promise<SchemaGeneratorResponse> {
         const schemasText = [
             { name: 'entity', content: this.entitySchema },
             { name: 'attribute', content: this.attributeSchema },
@@ -40,12 +40,12 @@ export class SystemDesigner implements ChatHandler {
 
     async handle(userInput: string, _entityName: string, context: ChatContext): Promise<void> {
         try {
-            await context.saveAssistantMessage('I am system designer, I am analyzing your requirements...');
+            await context.saveAssistantMessage('I am schema generator, I am analyzing your requirements...');
 
             const resp = await this.create(userInput);
 
             // Save AI response to database log
-            await context.saveAiResponseLog('system-designer', JSON.stringify(resp));
+            await context.saveAiResponseLog('schema-generator', JSON.stringify(resp));
 
 
             // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
@@ -85,7 +85,7 @@ export class SystemDesigner implements ChatHandler {
             });
 
         } catch (error: any) {
-            this.logger.error({ error, stack: error?.stack }, 'Error in SystemDesigner handle');
+            this.logger.error({ error, stack: error?.stack }, 'Error in SchemaGenerator handle');
             await context.saveAssistantMessage("I'm sorry, I encountered an error while generating your entities.");
         }
     }

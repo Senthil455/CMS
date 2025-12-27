@@ -1,7 +1,7 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
 import { type ChatHandler, type HandlerType } from './chat-handler';
 
-export class HandlerResolver {
+export class IntentClassifier {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,

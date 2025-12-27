@@ -13,14 +13,14 @@ import type { IChatRepository } from '../infrastructures/chat-repository.interfa
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { AgentMessage } from '../infrastructures/agent.interface';
-import { HandlerResolver } from '../models/handlers/handler-resolver';
+import { IntentClassifier } from '../models/handlers/intent-classifier';
 import { SchemaManager } from '../models/cms/schema-manager';
 
 export class ChatService {
     constructor(
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
-        private readonly handlerResolver: HandlerResolver,
+        private readonly intentClassifier: IntentClassifier,
         private readonly logger: ServiceLogger
     ) { }
 
@@ -60,8 +60,8 @@ export class ChatService {
 
 
 
-        // 2. Handler Resolver
-        const handler = await this.handlerResolver.resolve(content);
+        // 2. Intent Classifier
+        const handler = await this.intentClassifier.resolve(content);
         if (handler) {
             this.logger.info('Executing resolved handler');
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { SystemDesigner } from '../system-designer.js';
+import { SchemaGenerator } from '../schema-generator.js';
 import { StubAgent } from '../../../infrastructures/stub-agent.js';
 import type { ChatContext } from '../chat-handler.js';
 import { CmsClient } from '../../../infrastructures/cms-client.js';
@@ -13,10 +13,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Helper to load stub content
-const stubPath = path.join(__dirname, '../../../../assets/prompts/stub/system-designer.txt');
+const stubPath = path.join(__dirname, '../../../../assets/prompts/stub/schema-generator.txt');
 const stubContent = fs.readFileSync(stubPath, 'utf8');
 
-describe('SystemDesigner', () => {
+describe('SchemaGenerator', () => {
     // Enhanced Mock Logger to show Axios error details
     const mockLogger: ServiceLogger = {
         info: vi.fn(),
@@ -35,8 +35,9 @@ describe('SystemDesigner', () => {
     const mockChatContext: ChatContext = {
         saveAssistantMessage: vi.fn().mockResolvedValue({ id: 1 }),
         saveAiResponseLog: vi.fn().mockResolvedValue(undefined),
+        onConfirmSchemaSummary: vi.fn().mockResolvedValue(undefined),
         externalCookie: 'test-cookie',
-        userId: '123',
+        userId: '123'
     } as any;
 
     beforeEach(() => {
@@ -49,7 +50,7 @@ describe('SystemDesigner', () => {
             { name: 'course', schemaId: 'sid-123' }
         ] as any);
 
-        const systemDesigner = new SystemDesigner(
+        const schemaGenerator = new SchemaGenerator(
             new StubAgent(),
             stubContent,
             'ENTITY_SCHEMA_STUB',
@@ -59,18 +60,15 @@ describe('SystemDesigner', () => {
             mockLogger
         );
 
-        await systemDesigner.handle('test input', 'none', mockChatContext);
+        await schemaGenerator.handle('test input', 'none', mockChatContext);
 
-        // Verification: Check if saveAssistantMessage was called with PROPOSED_SCHEMA payload
-        expect(mockChatContext.saveAssistantMessage).toHaveBeenCalledWith(
-            expect.stringContaining('analyzed your requirements and proposed the following schema changes'),
+        // Verification: Check if onConfirmSchemaSummary was called
+        expect(mockChatContext.onConfirmSchemaSummary).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: 'PROPOSED_SCHEMA',
                 entities: expect.arrayContaining([
                     expect.objectContaining({
-                        status: 'overwrite',
-                        schemaId: 'sid-123',
-                        entity: expect.objectContaining({ name: 'course' })
+                        name: 'course',
+                        schemaId: 'sid-123'
                     })
                 ])
             })

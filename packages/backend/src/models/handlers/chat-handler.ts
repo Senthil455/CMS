@@ -12,4 +12,4 @@ export interface ChatHandler {
     handle(userInput: string, entityName: string, context: ChatContext): Promise<void>;
 }
 
-export type HandlerType = 'list' | 'design';
+export type HandlerType = 'define_structure' | 'generate_query' | 'design_page' | 'edit_entity' | 'delete_entity' | 'edit_query' | 'delete_query' | 'edit_page' | 'delete_page' | 'list_entities' | 'list_pages';

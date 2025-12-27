@@ -10,8 +10,8 @@ import { StubAgent } from '../infrastructures/stub-agent';
 import { OpenAIAgent } from '../infrastructures/openai-agent';
 import { CmsClient } from '../infrastructures/cms-client';
 import { GLMAgent } from '../infrastructures/glm-agent';
-import { HandlerResolver } from '../models/handlers/handler-resolver';
-import { SystemDesigner } from '../models/handlers/system-designer';
+import { IntentClassifier } from '../models/handlers/intent-classifier';
+import { SchemaGenerator } from '../models/handlers/schema-generator';
 import { ModelExplorer } from '../models/handlers/model-explorer';
 
 import type { ChatHandler } from '../models/handlers/chat-handler';
@@ -78,31 +78,40 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
 
     // Load assets for ChatService and AgentResolver
     const promptSubDir = config.AI_AGENT === 'openai' ? 'openai' : config.AI_AGENT === 'glm' ? 'glm' : config.AI_AGENT === 'stub' ? 'stub' : 'qwen';
-    const [systemDesignerPrompt, handlerResolverPrompt,
+    const [schemaGeneratorPrompt, intentClassifierPrompt,
         entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
-            fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/system-designer.txt`), 'utf-8'),
-            fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/agent-resolver.txt`), 'utf-8'),
+            fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/schema-generator.txt`), 'utf-8'),
+            fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
             fs.readFile(path.join(assetsDir, 'schemas/entity.json'), 'utf-8'),
             fs.readFile(path.join(assetsDir, 'schemas/attribute.json'), 'utf-8'),
             fs.readFile(path.join(assetsDir, 'schemas/relationship.json'), 'utf-8'),
         ]);
 
-    const systemDesigner = new SystemDesigner(agent, systemDesignerPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
+    const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt, entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
     const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
 
 
-    const handlerResolver = new HandlerResolver(
+    const intentClassifier = new IntentClassifier(
         agent,
-        handlerResolverPrompt,
+        intentClassifierPrompt,
         {
-            design: systemDesigner,
-            list: modelExplorer,
+            define_structure: schemaGenerator,
+            generate_query: modelExplorer,
+            design_page: modelExplorer,
+            edit_entity: modelExplorer,
+            delete_entity: modelExplorer,
+            edit_query: modelExplorer,
+            delete_query: modelExplorer,
+            edit_page: modelExplorer,
+            delete_page: modelExplorer,
+            list_entities: modelExplorer,
+            list_pages: modelExplorer,
         }
     );
     const chatService = new ChatService(
         repository,
         cmsClient,
-        handlerResolver,
+        intentClassifier,
         serviceLogger
     );
     const authService = new AuthService(cmsClient, serviceLogger);
