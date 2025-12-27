@@ -58,3 +58,7 @@ export interface SchemaSummary {
     entities: (EntityDto & { schemaId?: string | null; })[];
     relationships: RelationshipDto[];
 }
+
+export interface QueryResponse {
+    query: Record<string, string>;
+}

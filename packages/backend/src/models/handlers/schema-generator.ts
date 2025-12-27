@@ -2,7 +2,7 @@ import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext } from './chat-handler';
-import { type EntityDto, type RelationshipDto, type SaveEntityPayload, type SchemaDto } from '@cms/shared';
+import { type EntityDto, type RelationshipDto } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
 

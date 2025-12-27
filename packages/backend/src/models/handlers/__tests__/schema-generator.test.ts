@@ -47,7 +47,7 @@ describe('SchemaGenerator', () => {
     it('should propose schemas and categorize them', async () => {
         // Mock getAllEntities to return an existing entity
         vi.spyOn(realCmsClient, 'getAllEntities').mockResolvedValue([
-            { name: 'course', schemaId: 'sid-123' }
+            { name: 'post', schemaId: 'sid-123' }
         ] as any);
 
         const schemaGenerator = new SchemaGenerator(
@@ -60,14 +60,14 @@ describe('SchemaGenerator', () => {
             mockLogger
         );
 
-        await schemaGenerator.handle('test input', 'none', mockChatContext);
+        await schemaGenerator.handle('test input', mockChatContext);
 
         // Verification: Check if onConfirmSchemaSummary was called
         expect(mockChatContext.onConfirmSchemaSummary).toHaveBeenCalledWith(
             expect.objectContaining({
                 entities: expect.arrayContaining([
                     expect.objectContaining({
-                        name: 'course',
+                        name: 'post',
                         schemaId: 'sid-123'
                     })
                 ])

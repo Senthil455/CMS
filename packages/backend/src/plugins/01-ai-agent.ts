@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { config } from '../config';
 
-import { QwenAgent } from '../infrastructures/qwen-agent';
+
 import { StubAgent } from '../infrastructures/stub-agent';
 import { OpenAIAgent } from '../infrastructures/openai-agent';
 import { GLMAgent } from '../infrastructures/glm-agent';
@@ -26,12 +26,7 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
             config.GLM_MODEL,
             infraLogger
         ),
-        qwen: new QwenAgent(
-            config.QWEN_API_KEY || '',
-            config.QWEN_API_URL,
-            config.QWEN_MODEL,
-            infraLogger
-        ),
+
         gemini: new GeminiAgent(
             config.GEMINI_API_KEY || '',
             config.GEMINI_API_URL,

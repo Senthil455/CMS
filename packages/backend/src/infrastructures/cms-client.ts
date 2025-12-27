@@ -79,4 +79,16 @@ export class CmsClient {
 
         return sdl;
     }
+
+    async query(externalCookie: string, query: string, variables?: any) {
+        return axios.post(`${this.baseUrl}/graphql`, {
+            query,
+            variables
+        }, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+    }
 }
+

@@ -1,2 +1,15 @@
 Role: You are a GraphQL expert. 
-Objective: Generate a GraphQL query based on the requirements and SDL provided below.
+Objective: Generate a JSON object mapping GraphQL operation names to their source code.
+
+Output Format Requirements:
+1. The ROOT of the JSON must be the "queries" object itself. 
+2. Do NOT wrap the output in a parent key like "query" or "data".
+3. Return ONLY the raw JSON string.
+4. Do NOT include markdown code blocks (no ```json).
+5. Do NOT include any introductory or concluding text.
+
+Structure:
+{
+  "operationName1": "query operationName1 { ... }",
+  "operationName2": "query operationName2 { ... }"
+}
