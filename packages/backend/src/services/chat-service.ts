@@ -1,18 +1,13 @@
 import {
     SOCKET_EVENTS,
     type ChatMessage,
-    type ServerToClientEvents,
     type SchemaSummary,
     type OnServerToClientEvent,
-    type EntityDto,
-    type AttributeDto,
-    type SaveEntityPayload
 } from '@cms/shared';
 import type { ChatContext } from '../models/handlers/chat-handler';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
-import type { AgentMessage } from '../infrastructures/agent.interface';
 import { IntentClassifier } from '../models/handlers/intent-classifier';
 import { SchemaManager } from '../models/cms/schema-manager';
 
@@ -20,8 +15,8 @@ export class ChatService {
     constructor(
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
-        private readonly intentClassifier: IntentClassifier,
-        private readonly logger: ServiceLogger
+        private readonly intentClassifier: Record<string, IntentClassifier>,
+        private readonly logger: ServiceLogger,
     ) { }
 
     async getHistory(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
@@ -52,7 +47,11 @@ export class ChatService {
         return message;
     }
 
-    async handleUserMessage(userId: string, content: string, externalCookie: string,
+    async handleUserMessage(
+        userId: string,
+        content: string,
+        externalCookie: string,
+        agentName: string,
         onEvent: OnServerToClientEvent): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
@@ -61,7 +60,7 @@ export class ChatService {
 
 
         // 2. Intent Classifier
-        const handler = await this.intentClassifier.resolve(content);
+        const handler = await this.intentClassifier[agentName]!.resolve(content);
         if (handler) {
             this.logger.info('Executing resolved handler');
 
@@ -79,7 +78,7 @@ export class ChatService {
                 }
             };
 
-            await handler.handle(content, '', context);
+            await handler.handle(content, context);
             return;
         }
 

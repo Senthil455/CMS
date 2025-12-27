@@ -1,3 +1,4 @@
 {
-    "type": "design"
+    "taskType": "define_structure",
+    "targetEntity": "null"
 }

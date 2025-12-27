@@ -38,7 +38,7 @@ export class SchemaGenerator implements ChatHandler {
         return response;
     }
 
-    async handle(userInput: string, _entityName: string, context: ChatContext): Promise<void> {
+    async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
             await context.saveAssistantMessage('I am schema generator, I am analyzing your requirements...');
 

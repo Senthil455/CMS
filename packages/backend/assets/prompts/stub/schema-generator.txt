@@ -1,160 +1,125 @@
 {
   "entities": [
     {
-      "name": "Course",
-      "tableName": "courses",
+      "name": "post",
+      "displayName": "Post",
+      "tableName": "posts",
+      "labelAttributeName": "title",
       "attributes": [
         {
-          "field": "courseName",
-          "header": "Course Name",
-          "displayType": "text",
+          "field": "title",
+          "header": "Title",
           "inList": true,
           "inDetail": true,
-          "validation": "^\\S+(?:\\\\s+\\S+)*$"
+          "displayType": "text",
+          "validation": "^.{1,255}$",
+          "options": ""
         },
         {
-          "field": "courseDescription",
-          "header": "Description",
-          "displayType": "textarea",
+          "field": "slug",
+          "header": "Slug (URL Path)",
+          "inList": true,
+          "inDetail": true,
+          "displayType": "text",
+          "validation": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "options": ""
+        },
+        {
+          "field": "excerpt",
+          "header": "Excerpt",
           "inList": false,
           "inDetail": true,
-          "validation": ".*"
+          "displayType": "textarea",
+          "validation": "^.{0,500}$",
+          "options": ""
         },
         {
-          "field": "difficultyLevel",
-          "header": "Difficulty Level",
-          "displayType": "select",
-          "inList": true,
+          "field": "content",
+          "header": "Content",
+          "inList": false,
           "inDetail": true,
-          "options": "Easy,Medium,Hard"
+          "displayType": "editor",
+          "validation": "^.{10,}$",
+          "options": ""
         },
         {
-          "field": "price",
-          "header": "Price ($)",
-          "displayType": "number",
+          "field": "publishedAt",
+          "header": "Published At",
           "inList": true,
           "inDetail": true,
-          "validation": "^[0-9]+(\\.[0-9]{2})?$"
+          "displayType": "localDatetime",
+          "validation": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+          "options": ""
+        },
+        {
+          "field": "status",
+          "header": "Status",
+          "inList": true,
+          "inDetail": true,
+          "displayType": "dropdown",
+          "validation": "^(Draft|Published|Archived)$",
+          "options": "Draft,Published,Archived"
         }
       ]
     },
     {
-      "name": "Category",
+      "name": "category",
+      "displayName": "Category",
       "tableName": "categories",
+      "labelAttributeName": "name",
       "attributes": [
         {
-          "field": "categoryName",
-          "header": "Category Name",
-          "displayType": "text",
+          "field": "name",
+          "header": "Name",
           "inList": true,
           "inDetail": true,
-          "validation": "^\\S+(?:\\s+\\S+)*$"
+          "displayType": "text",
+          "validation": "^.{1,100}$",
+          "options": ""
         },
         {
-          "field": "categoryDescription",
-          "header": "Category Description",
-          "displayType": "textarea",
+          "field": "description",
+          "header": "Description",
           "inList": false,
           "inDetail": true,
-          "validation": ".*"
+          "displayType": "textarea",
+          "validation": ".*",
+          "options": ""
         }
       ]
     },
     {
-      "name": "Instructor",
-      "tableName": "instructors",
+      "name": "tag",
+      "displayName": "Tag",
+      "tableName": "tags",
+      "labelAttributeName": "name",
       "attributes": [
         {
-          "field": "instructorName",
-          "header": "Instructor Name",
-          "displayType": "text",
+          "field": "name",
+          "header": "Name",
           "inList": true,
           "inDetail": true,
-          "validation": "^\\S+(?:\\\\s+\\S+)*$"
-        },
-        {
-          "field": "biography",
-          "header": "Biography",
-          "displayType": "textarea",
-          "inList": false,
-          "inDetail": true,
-          "validation": ".*"
-        }
-      ]
-    },
-    {
-      "name": "Module",
-      "tableName": "modules",
-      "attributes": [
-        {
-          "field": "moduleName",
-          "header": "Module Name",
           "displayType": "text",
-          "inList": true,
-          "inDetail": true,
-          "validation": "^\\S+(?:\\\\s+\\S+)*$"
-        },
-        {
-          "field": "moduleDescription",
-          "header": "Module Description",
-          "displayType": "textarea",
-          "inList": false,
-          "inDetail": true,
-          "validation": ".*"
-        }
-      ]
-    },
-    {
-      "name": "Resource",
-      "tableName": "resources",
-      "attributes": [
-        {
-          "field": "resourceName",
-          "header": "Resource Name",
-          "displayType": "text",
-          "inList": true,
-          "inDetail": true,
-          "validation": "^\\S+(?:\\\\s+\\S+)*$"
-        },
-        {
-          "field": "resourceDescription",
-          "header": "Resource Description",
-          "displayType": "textarea",
-          "inList": false,
-          "inDetail": true,
-          "validation": ".*"
+          "validation": "^.{1,50}$",
+          "options": ""
         }
       ]
     }
   ],
   "relationships": [
     {
-      "sourceEntity": "Course",
-      "targetEntity": "Category",
+      "sourceEntity": "post",
       "fieldName": "category",
-      "sourceCardinality": "one",
-      "targetCardinality": "many"
+      "label": "Category",
+      "targetEntity": "category",
+      "cardinality": "manyToOne"
     },
     {
-      "sourceEntity": "Course",
-      "targetEntity": "Instructor",
-      "fieldName": "instructor",
-      "sourceCardinality": "one",
-      "targetCardinality": "many"
-    },
-    {
-      "sourceEntity": "Course",
-      "targetEntity": "Module",
-      "fieldName": "module",
-      "sourceCardinality": "many",
-      "targetCardinality": "one"
-    },
-    {
-      "sourceEntity": "Course",
-      "targetEntity": "Resource",
-      "fieldName": "resource",
-      "sourceCardinality": "many",
-      "targetCardinality": "one"
+      "sourceEntity": "post",
+      "fieldName": "tags",
+      "label": "Tags",
+      "targetEntity": "tag",
+      "cardinality": "manyToMany"
     }
   ]
 }

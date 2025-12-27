@@ -28,8 +28,7 @@ export interface RelationshipDto {
     fieldName: string;
     label?: string;
     targetEntity: string;
-    sourceCardinality: 'one' | 'many';
-    targetCardinality: 'one' | 'many';
+    cardinality: 'oneToMany' | 'manyToOne' | 'manyToMany';
 }
 
 export interface SchemaDto {

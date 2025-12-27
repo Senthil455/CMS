@@ -8,7 +8,7 @@ export class ModelExplorer implements ChatHandler {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async handle(userInput: string, _entityName: string, context: ChatContext): Promise<void> {
+    async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
             await context.saveAssistantMessage('Let me fetch the current entities from CMS...');
 

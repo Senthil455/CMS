@@ -16,7 +16,7 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-    [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string }) => void;
+    [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string, agentName?: string }) => void;
     [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummary) => void;
 }
 

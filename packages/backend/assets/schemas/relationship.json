@@ -6,13 +6,12 @@
         "sourceEntity",
         "fieldName",
         "targetEntity",
-        "sourceCardinality",
-        "targetCardinality"
+        "cardinality"
     ],
     "properties": {
         "sourceEntity": {
             "type": "string",
-            "description": "The entity where this relationship starts (camelCase)"
+            "description": "The entity where this relationship is defined (camelCase)"
         },
         "fieldName": {
             "type": "string",
@@ -24,23 +23,16 @@
         },
         "targetEntity": {
             "type": "string",
-            "description": "The entity that this relationship points to (camelCase)"
+            "description": "The related entity (camelCase)"
         },
-        "sourceCardinality": {
+        "cardinality": {
             "type": "string",
             "enum": [
-                "one",
-                "many"
+                "oneToMany",
+                "manyToOne",
+                "manyToMany"
             ],
-            "description": "Type of relationship: one or many"
-        },
-        "targetCardinality": {
-            "type": "string",
-            "enum": [
-                "one",
-                "many"
-            ],
-            "description": "Type of relationship: one or many"
+            "description": "Overall relationship cardinality from sourceEntity to targetEntity"
         }
     },
     "additionalProperties": false

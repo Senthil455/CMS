@@ -2,6 +2,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import { type Socket } from 'socket.io';
 import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent } from '@cms/shared';
 
+import { config } from '../config';
+
 const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.ready((err) => {
         if (err) throw err;
@@ -14,9 +16,10 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 socket.emit(event, ...args);
             };
 
-            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string }) => {
+            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, agentName?: string }) => {
                 try {
-                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, onEvent);
+                    const agentName = data.agentName || config.AI_AGENT;
+                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, agentName, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', error);
                 }

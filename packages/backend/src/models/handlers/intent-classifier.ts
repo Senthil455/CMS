@@ -17,12 +17,9 @@ export class IntentClassifier {
             const response = await this.aiAgent.generate(this.systemPrompt, '', userInput);
 
             if (response && typeof response === 'object') {
-                const { type } = response;
-                if (type === 'design' || type === 'list') {
-                    const handler = this.handlerMap[type as HandlerType];
-                    if (handler) {
-                        return handler;
-                    }
+                const { taskType } = response;
+                if (this.handlerMap[taskType as HandlerType]) {
+                    return this.handlerMap[taskType as HandlerType];
                 }
             }
 

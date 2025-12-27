@@ -19,14 +19,10 @@ export class RelationshipModel {
         const item = this.relationship;
 
         const sourceEntity = allEntities.find(e => e.name === item.sourceEntity);
-        const targetEntity = allEntities.find(e => e.name === item.targetEntity);
+        if (!sourceEntity) return modifiedEntities;
 
-        if (!sourceEntity || !targetEntity) {
-            throw new Error(`Source entity "${item.sourceEntity}" or target entity "${item.targetEntity}" not found`);
-        }
-
-        // One-to-Many: Add collection attribute to source entity
-        if (item.sourceCardinality === 'one' && item.targetCardinality === 'many') {
+        // oneToMany: Source entity has a collection of target entities
+        if (item.cardinality === 'oneToMany') {
             this.addAttributeIfMissing(sourceEntity, {
                 field: item.fieldName,
                 dataType: 'collection',
@@ -49,12 +45,10 @@ export class RelationshipModel {
         const sourceEntity = allEntities.find(e => e.name === item.sourceEntity);
         const targetEntity = allEntities.find(e => e.name === item.targetEntity);
 
-        if (!sourceEntity || !targetEntity) {
-            throw new Error(`Source entity "${item.sourceEntity}" or target entity "${item.targetEntity}" not found`);
-        }
+        if (!sourceEntity || !targetEntity) return modifiedEntities;
 
-        // Many-to-One: Add lookup attribute to source entity
-        if (item.sourceCardinality === 'one' && item.targetCardinality === 'many') {
+        // manyToOne: Source entity has a lookup to target entity
+        if (item.cardinality === 'manyToOne') {
             this.addAttributeIfMissing(sourceEntity, {
                 field: item.fieldName,
                 dataType: 'lookup',
@@ -68,8 +62,8 @@ export class RelationshipModel {
             }, modifiedEntities);
         }
 
-        // Many-to-Many: Add junction attribute to source entity
-        if (item.sourceCardinality === 'many' && item.targetCardinality === 'many') {
+        // manyToMany: Source entity has a junction to target entity
+        if (item.cardinality === 'manyToMany') {
             this.addAttributeIfMissing(sourceEntity, {
                 field: item.fieldName,
                 dataType: 'junction',
@@ -83,10 +77,10 @@ export class RelationshipModel {
             }, modifiedEntities);
         }
 
-        // One-to-Many: Add collection attribute to source entity
-        if (item.sourceCardinality === 'many' && item.targetCardinality === 'one') {
+        // oneToMany: Target entity needs a lookup back to source entity
+        if (item.cardinality === 'oneToMany') {
             this.addAttributeIfMissing(targetEntity, {
-                field: sourceEntity.name,
+                field: item.sourceEntity,
                 dataType: 'lookup',
                 header: sourceEntity.name,
                 displayType: 'lookup',

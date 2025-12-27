@@ -48,8 +48,8 @@ export default function ChatPage() {
         };
     }, [onNewMessage, onSchemaSummaryToConfirm]);
 
-    const handleSend = (content: string) => {
-        sendMessage(content);
+    const handleSend = (content: string, agentName: string) => {
+        sendMessage(content, agentName);
     };
 
     const handleConfirmSchema = (response: SchemaSummary) => {
@@ -86,7 +86,7 @@ export default function ChatPage() {
                 isOpen={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
                 onConfirm={handleConfirmSchema}
-                schemaSummary={confirmationData || { summary: '', entities: [] }}
+                schemaSummary={confirmationData || { summary: '', entities: [], relationships: [] }}
             />
         </div>
     );
