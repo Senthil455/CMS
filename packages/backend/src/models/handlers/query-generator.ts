@@ -24,14 +24,17 @@ export class QueryGenerator implements ChatHandler {
             // Developer message is set as SDL
             const queryResponse: QueryResponse = await this.aiAgent.generate(
                 this.systemPrompt,
-                `GRAPHQL SDL:\n${sdl}`,
+                `\nGRAPHQL SDL:\n${sdl}`,
                 userInput
             );
 
-            // Save AI response to database log
-            await context.saveAiResponseLog('query-generator', JSON.stringify({ query: queryResponse, taskType: context.taskType }));
 
-            for (const source of Object.values(queryResponse.query)) {
+            // Save AI response to database log
+            await context.saveAiResponseLog('query-generator',
+                JSON.stringify({ ...queryResponse, taskType: context.taskType })
+            );
+
+            for (const source of Object.values(queryResponse.queries)) {
 
                 await context.saveAssistantMessage(`Executing generated query:\n${source}`);
 
@@ -40,8 +43,6 @@ export class QueryGenerator implements ChatHandler {
 
                 await context.saveAssistantMessage('Query executed successfully.');
             }
-
-
 
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in QueryGenerator handle');

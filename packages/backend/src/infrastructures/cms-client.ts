@@ -76,7 +76,6 @@ export class CmsClient {
         const introspectionResponse = resp.data.data;
         const schema = buildClientSchema(introspectionResponse);
         const sdl = printSchema(schema);
-
         return sdl;
     }
 

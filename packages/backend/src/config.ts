@@ -13,7 +13,7 @@ const envSchema = z.object({
     AI_AGENT: z.enum(['stub', 'openai', 'glm', 'gemini']).default('gemini'),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_API_URL: z.string().url().default('https://generativelanguage.googleapis.com'),
-    GEMINI_MODEL: z.string().default('gemini-2.5-flash-lite'),
+    GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
     GEMINI_USE_CACHING: z.string().transform(v => v === 'true').default('false'),
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_API_URL: z.string().url().default('https://api.openai.com/v1/chat/completions'),
@@ -26,6 +26,7 @@ const envSchema = z.object({
     LOG_LEVEL_MODEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     LOG_LEVEL_INFRASTRUCTURE: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
+
 
 const _env = envSchema.safeParse(process.env);
 
