@@ -15,25 +15,24 @@ export class HtmlGenerator implements ChatHandler {
         try {
             await context.saveAssistantMessage('I am HTML generator, I am fetching the latest schema and generating your page...');
 
-            // 1. Fetch SDL and Queries to provide context to the AI
-            const [sdl, queries] = await Promise.all([
-                this.cmsClient.generateSDL(context.externalCookie),
-                this.cmsClient.getAllQueries(context.externalCookie)
-            ]);
+            // 1. Fetch Queries and their sample data to provide context to the AI
+            const queries = await this.cmsClient.getAllQueries(context.externalCookie);
 
-            const queryText = queries
-                .filter(q => q.settings?.query)
-                .map(q => `endpoint: /api/quries/${q.settings.query!.name} graphQL source ${q.settings.query!.source}`)
-                .join('\n');
-
-            const developerMessage = `
-                AVAILABLE QUERY ENDPOINTS:\n${queryText}
-            `.trim();
+            const queryDetails = await Promise.all(queries.filter(q => q.settings?.query).map(async (q) => {
+                const queryName = q.settings.query!.name;
+                try {
+                    const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
+                    return `ENDPOINTS: /api/quries/${queryName} 
+                        REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
+                } catch (e) {
+                    return `ENDPOINTS: /api/quries/${queryName}`;
+                }
+            }))
 
             // 2. Call AI Agent to generate HTML
             const htmlContent: string = await this.aiAgent.generate(
                 this.systemPrompt,
-                developerMessage,
+                queryDetails.join('\n'),
                 userInput
             );
 
