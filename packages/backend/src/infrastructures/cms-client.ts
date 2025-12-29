@@ -39,6 +39,15 @@ export class CmsClient {
         return resp.data;
     }
 
+    async getAllQueries(externalCookie: string): Promise<SchemaDto[]> {
+        const resp = await axios.get(`${this.baseUrl}/api/schemas?type=query`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
+    }
+
     async saveEntity(externalCookie: string, payload: SaveEntityPayload) {
         try {
             return await axios.post(`${this.baseUrl}/api/schemas/entity/define`, payload, {

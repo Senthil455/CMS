@@ -96,6 +96,7 @@ export class RelationshipModel {
     }
 
     private addAttributeIfMissing(entity: SchemaDto, attribute: AttributeDto, modifiedEntities: SchemaDto[]) {
+        if (!entity.settings.entity) return;
         const attributes = entity.settings.entity.attributes || [];
         const existingAttr = attributes.find(a => a.field === attribute.field);
 

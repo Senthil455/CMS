@@ -31,6 +31,21 @@ export interface RelationshipDto {
     cardinality: 'oneToMany' | 'manyToOne' | 'manyToMany';
 }
 
+export interface QueryDto {
+    name: string;
+    entityName: string;
+    source: string;
+    filters: any[];
+    sorts: { field: string; order: string; }[];
+    reqVariables: any[];
+    distinct: boolean;
+    ideUrl: string;
+    pagination: {
+        offset: string;
+        limit: string;
+    };
+}
+
 export interface SchemaDto {
     id: number;
     schemaId: string;
@@ -41,7 +56,8 @@ export interface SchemaDto {
     createdAt: string;
     createdBy: string;
     settings: {
-        entity: EntityDto;
+        entity?: EntityDto | null;
+        query?: QueryDto | null;
     };
 }
 
@@ -60,5 +76,5 @@ export interface SchemaSummary {
 }
 
 export interface QueryResponse {
-    query: Record<string, string>;
+    queries: Record<string, string>;
 }

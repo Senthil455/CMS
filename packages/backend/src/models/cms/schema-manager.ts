@@ -74,7 +74,9 @@ export class SchemaManager {
             const payload: SaveEntityPayload = {
                 schemaId: entity.schemaId!,
                 type: 'entity',
-                settings: entity.settings
+                settings: {
+                    entity: entity.settings.entity!
+                }
             };
             try {
                 await this.cmsClient.saveEntity(this.externalCookie, payload);

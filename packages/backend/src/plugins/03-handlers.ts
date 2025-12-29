@@ -9,6 +9,7 @@ import { IntentClassifier } from '../models/handlers/intent-classifier';
 import { SchemaGenerator } from '../models/handlers/schema-generator';
 import { ModelExplorer } from '../models/handlers/model-explorer';
 import { QueryGenerator } from '../models/handlers/query-generator';
+import { HtmlGenerator } from '../models/handlers/html-generator';
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const agents = fastify.aiAgent;
@@ -33,16 +34,18 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         const promptSubDir = agentName;
 
         try {
-            const [schemaGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt] = await Promise.all([
+            const [schemaGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, htmlGeneratorPrompt] = await Promise.all([
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/schema-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/query-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/html-generator.txt`), 'utf-8'),
             ]);
 
             const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
+            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, cmsClient, modelLogger);
 
             const intentClassifier = new IntentClassifier(
                 agent,
@@ -59,6 +62,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                     delete_page: modelExplorer,
                     list_entities: modelExplorer,
                     list_pages: modelExplorer,
+                    generate_html: htmlGenerator,
                 }
             );
 
