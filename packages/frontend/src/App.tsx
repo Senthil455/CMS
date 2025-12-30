@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import ChatPage from './pages/chat-page';
+import StudioPage from './pages/studio-page';
 import AiLogsPage from './pages/ai-logs-page';
 import LoginPage from './pages/login-page';
 import { useAuth } from './hooks/use-auth';
@@ -32,10 +32,12 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <ChatPage />
+              <StudioPage />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path=":type/:id" element={<StudioPage />} />
+        </Route>
         <Route
           path="/ai-logs"
           element={

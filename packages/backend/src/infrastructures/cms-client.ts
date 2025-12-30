@@ -48,6 +48,24 @@ export class CmsClient {
         return resp.data;
     }
 
+    async getAllPages(externalCookie: string): Promise<SchemaDto[]> {
+        const resp = await axios.get(`${this.baseUrl}/api/schemas?type=page`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
+    }
+
+    async getAllSchemas(externalCookie: string): Promise<SchemaDto[]> {
+        const resp = await axios.get(`${this.baseUrl}/api/schemas?type=`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
+    }
+
     async requestQuery(externalCookie: string, queryName: string) {
         const resp = await axios.get(`${this.baseUrl}/api/queries/${queryName}?limit=5`, {
             headers: {

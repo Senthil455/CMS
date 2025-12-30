@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Save, Sun, Moon, LogOut, Settings, User as UserIcon, ChevronDown, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-interface ChatHeaderProps {
+interface StudioHeaderProps {
     user: any;
     logout: () => void;
     isDark: boolean;
     toggleTheme: () => void;
 }
 
-export function ChatHeader({ user, logout, isDark, toggleTheme }: ChatHeaderProps) {
+export function StudioHeader({ user, logout, isDark, toggleTheme }: StudioHeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 

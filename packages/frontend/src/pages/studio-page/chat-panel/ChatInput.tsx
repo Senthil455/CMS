@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Send, Cpu, ChevronDown } from 'lucide-react';
-import { useAIAgents } from '../../hooks/use-ai-agents';
+import { useAIAgents } from '../../../hooks/use-ai-agents';
 
 interface ChatInputProps {
     onSend: (message: string, agentName: string) => void;

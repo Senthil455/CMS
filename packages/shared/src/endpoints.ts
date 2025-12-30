@@ -9,5 +9,9 @@ export const ENDPOINTS = {
     },
     AI: {
         AGENTS: '/api/ai/agents',
+    },
+    SCHEMA: {
+        ALL: '/api/schemas',
+        SAVE: '/api/schemas/save',
     }
 } as const;

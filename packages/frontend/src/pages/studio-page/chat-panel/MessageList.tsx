@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
-import { MessageBubble } from '../../components/message-bubble';
+import { MessageBubble } from './message-bubble';
 import { type ChatMessage } from '@cms/shared';
 
 interface MessageListProps {
