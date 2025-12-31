@@ -47,8 +47,14 @@ const server = Fastify({
 async function start() {
     try {
         // Register CORS
+        const allowedOrigins = [
+            config.FRONTEND_URL,
+            config.FRONTEND_URL.replace('localhost', '127.0.0.1'),
+            config.FRONTEND_URL.replace('127.0.0.1', 'localhost'),
+        ];
+
         await server.register(cors, {
-            origin: config.FRONTEND_URL,
+            origin: allowedOrigins,
             credentials: true,
         });
 
@@ -75,7 +81,7 @@ async function start() {
         // Register Socket.io
         await server.register(fastifyIO, {
             cors: {
-                origin: config.FRONTEND_URL,
+                origin: allowedOrigins,
                 credentials: true,
             },
         });

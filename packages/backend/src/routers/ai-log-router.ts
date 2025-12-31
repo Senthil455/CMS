@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { ENDPOINTS } from '@cms/shared';
 
 const aiLogRouter: FastifyPluginAsync = async (fastify) => {
-    fastify.get('/api/ai-logs', {
+    fastify.get(ENDPOINTS.AI.LOGS, {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         const { chatService } = fastify as any;

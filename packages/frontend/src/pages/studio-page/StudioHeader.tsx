@@ -34,7 +34,7 @@ export function StudioHeader({ user, logout, isDark, toggleTheme }: StudioHeader
 
             <div className="flex items-center gap-4">
                 <Link
-                    to="/ai-logs"
+                    to="/app/ai-logs"
                     className="p-2 hover:bg-app-muted rounded-full transition-colors border border-border text-primary flex items-center gap-2 px-3 shadow-sm hover:border-primary/50"
                     title="View AI Logs"
                 >

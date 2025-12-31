@@ -37,9 +37,9 @@ export default function StudioPage() {
 
     const handleSelectItem = (item: SchemaDto | null) => {
         if (item) {
-            navigate(`/${item.type}/${item.schemaId}`);
+            navigate(`/app/${item.type}/${item.schemaId}`);
         } else {
-            navigate('/');
+            navigate('/app');
         }
     };
 

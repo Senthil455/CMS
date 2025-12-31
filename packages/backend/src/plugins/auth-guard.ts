@@ -4,9 +4,9 @@ import fp from 'fastify-plugin';
 const authGuard: FastifyPluginAsync = async (fastify) => {
     // Populate request.user if session exists
     fastify.addHook('preHandler', async (request: FastifyRequest) => {
-        const externalCookie = request.session.externalCookie;
-        if (externalCookie) {
-            const user = await fastify.authService.getUserProfile(externalCookie);
+        const cookieHeader = request.headers.cookie;
+        if (cookieHeader) {
+            const user = await fastify.authService.getUserProfile(cookieHeader);
             if (user) {
                 request.user = user;
             }

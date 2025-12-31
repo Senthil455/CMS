@@ -6,7 +6,7 @@ const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(r =
 
 export function useAuth() {
     const { data, error, mutate } = useSWR<ApiResponse<User>>(
-        `${config.API_BASE_URL}${ENDPOINTS.AUTH.ME}`,
+        `${config.CMS_BASE_URL}${ENDPOINTS.AUTH.ME}`,
         fetcher,
         {
             shouldRetryOnError: false,
@@ -15,7 +15,7 @@ export function useAuth() {
     );
 
     const login = async (usernameOrEmail: string, password: string) => {
-        const response = await fetch(`${config.API_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`, {
+        const response = await fetch(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ usernameOrEmail, password } as LoginRequest),
@@ -30,7 +30,7 @@ export function useAuth() {
     };
 
     const logout = async () => {
-        await fetch(`${config.API_BASE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {
+        await fetch(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {
             method: 'POST',
             credentials: 'include',
         });
@@ -38,7 +38,7 @@ export function useAuth() {
     };
 
     return {
-        user: data?.data,
+        user: data,
         isLoading: !error && !data,
         isError: !!error || (data && !data.success),
         login,

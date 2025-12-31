@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Database, Calendar, Cpu, Clock, Copy, Check } from 'lucide-react';
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
+import { ENDPOINTS } from '@cms/shared';
 import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
@@ -18,7 +19,7 @@ interface AiLog {
 
 export default function AiLogsPage() {
     const navigate = useNavigate();
-    const { data, error, isLoading } = useSWR(`${config.API_BASE_URL}/api/ai-logs`, fetcher);
+    const { data, error, isLoading } = useSWR(`${config.API_BASE_URL}${ENDPOINTS.AI.LOGS}`, fetcher);
     const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
     const [copied, setCopied] = useState(false);
 
@@ -75,7 +76,7 @@ export default function AiLogsPage() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/app')}
                             className="p-2 hover:bg-app-muted rounded-full transition-colors border border-border"
                         >
                             <ArrowLeft className="w-5 h-5" />

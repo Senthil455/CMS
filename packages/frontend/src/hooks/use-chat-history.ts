@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 import useSWRInfinite from 'swr/infinite';
+import axios from 'axios';
 import { type ChatMessage, ENDPOINTS, type ApiResponse } from '@cms/shared';
 import { config } from '../config';
 
-const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(r => r.json());
+const fetcher = (url: string) =>
+    axios.get(url, { withCredentials: true })
+        .then(res => res.data)
+        .catch(err => {
+            console.error('Fetch error:', err.response?.data || err.message);
+            throw err;
+        });
 
 export function useChatHistory() {
     const getKey = (pageIndex: number, previousPageData: ApiResponse<ChatMessage[]>) => {
@@ -24,6 +31,8 @@ export function useChatHistory() {
         {
             revalidateFirstPage: false,
             persistSize: true,
+            shouldRetryOnError: false,
+            revalidateOnFocus: false,
         }
     );
 

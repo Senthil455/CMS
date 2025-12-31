@@ -23,7 +23,7 @@ export default function LoginPage() {
             if (!result.success) {
                 setError(result.error || 'Login failed');
             } else {
-                navigate('/');
+                navigate('/app');
             }
         } catch (err) {
             setError('An unexpected error occurred');

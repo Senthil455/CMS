@@ -1,8 +1,9 @@
 import useSWR from 'swr';
+import axios from 'axios';
 import { ENDPOINTS, type ApiResponse } from '@cms/shared';
 import { config } from '../config';
 
-const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(r => r.json());
+const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
 export function useAIAgents() {
     const { data, error, isLoading } = useSWR<ApiResponse<string[]>>(
