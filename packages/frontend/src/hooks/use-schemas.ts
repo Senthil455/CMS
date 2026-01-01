@@ -26,6 +26,17 @@ export function useSchemas() {
         }
     };
 
+    const deleteSchema = async (id: number) => {
+        // Replace :id parameter manually since it's simple
+        const endpoint = ENDPOINTS.SCHEMA.DELETE.replace(':id', id.toString());
+        const url = `${config.CMS_BASE_URL}${endpoint}`;
+
+        await axios.delete(url, {
+            withCredentials: true
+        });
+        await mutate();
+    };
+
     return {
         entities: data?.filter(s => s.type === 'entity') || [],
         queries: data?.filter(s => s.type === 'query') || [],
@@ -33,6 +44,7 @@ export function useSchemas() {
         isLoading,
         error,
         saveEntity,
+        deleteSchema,
         mutate
     };
 }

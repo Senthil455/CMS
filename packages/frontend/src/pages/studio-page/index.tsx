@@ -10,6 +10,7 @@ import { Explorer } from './Explorer';
 import { DetailView } from './detail-panel/DetailView';
 import { EntityEdit } from './detail-panel/EntityEdit';
 import { QueryEdit } from './detail-panel/QueryEdit';
+import { PageEdit } from './detail-panel/PageEdit';
 import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 
@@ -23,6 +24,9 @@ export default function StudioPage() {
     const { sendMessage, sendSchemaResponse, onNewMessage, onSchemaSummaryToConfirm } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showExplorer, setShowExplorer] = useState(true);
+    const [showChat, setShowChat] = useState(true);
+    const [editTab, setEditTab] = useState<'settings' | 'code'>('settings');
 
     const selectedItem = useMemo(() => {
         if (!type || !id) return null;
@@ -47,6 +51,22 @@ export default function StudioPage() {
     const handleSaveEntity = async (payload: SaveSchemaPayload) => {
         await saveEntity(payload);
         setIsEditing(false);
+    };
+
+    const { deleteSchema } = useSchemas();
+
+    const handleDelete = async () => {
+        if (!selectedItem) return;
+
+        if (window.confirm(`Are you sure you want to delete ${selectedItem.name}? This action cannot be undone.`)) {
+            try {
+                await deleteSchema(selectedItem.id);
+                navigate('/app');
+            } catch (error) {
+                console.error('Failed to delete:', error);
+                alert('Failed to delete item');
+            }
+        }
     };
 
     // Schema Confirmation State
@@ -104,13 +124,19 @@ export default function StudioPage() {
                 logout={logout}
                 isDark={isDark}
                 toggleTheme={toggleTheme}
+                showExplorer={showExplorer}
+                onToggleExplorer={() => setShowExplorer(!showExplorer)}
+                showChat={showChat}
+                onToggleChat={() => setShowChat(!showChat)}
             />
 
             <div className="flex flex-1 overflow-hidden">
-                <Explorer
-                    onSelectItem={handleSelectItem}
-                    selectedItem={selectedItem}
-                />
+                {showExplorer && (
+                    <Explorer
+                        onSelectItem={handleSelectItem}
+                        selectedItem={selectedItem}
+                    />
+                )}
 
                 {isEditing && selectedItem ? (
                     <>
@@ -128,24 +154,40 @@ export default function StudioPage() {
                                 onCancel={() => setIsEditing(false)}
                             />
                         )}
+                        {selectedItem.type === 'page' && (
+                            <PageEdit
+                                item={selectedItem}
+                                initialTab={editTab}
+                                onSave={handleSaveEntity}
+                                onCancel={() => setIsEditing(false)}
+                            />
+                        )}
                     </>
                 ) : (
                     <DetailView
                         item={selectedItem}
                         schemas={[...entities, ...queries, ...pages]}
-                        onEdit={() => setIsEditing(true)}
+                        onEdit={(tab) => {
+                            if (tab) setEditTab(tab);
+                            setIsEditing(true);
+                        }}
+                        onDelete={handleDelete}
                         onSelect={handleSelectItem}
                     />
                 )}
 
-                <ChatPanel
-                    messages={localMessages}
-                    isLoading={chatLoading}
-                    isReachingEnd={!!isReachingEnd}
-                    isFetchingMore={!!isFetchingMore}
-                    onLoadMore={async () => { await setSize(size + 1); }}
-                    onSend={handleSend}
-                />
+
+
+                {showChat && (
+                    <ChatPanel
+                        messages={localMessages}
+                        isLoading={chatLoading}
+                        isReachingEnd={!!isReachingEnd}
+                        isFetchingMore={!!isFetchingMore}
+                        onLoadMore={async () => { await setSize(size + 1); }}
+                        onSend={handleSend}
+                    />
+                )}
             </div>
 
             <SchemaConfirmationModal

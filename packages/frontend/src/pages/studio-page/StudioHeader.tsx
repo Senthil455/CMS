@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, Sun, Moon, LogOut, Settings, User as UserIcon, ChevronDown, Database } from 'lucide-react';
+import { Save, Sun, Moon, LogOut, Settings, User as UserIcon, ChevronDown, Database, PanelLeft, PanelRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface StudioHeaderProps {
@@ -7,9 +7,13 @@ interface StudioHeaderProps {
     logout: () => void;
     isDark: boolean;
     toggleTheme: () => void;
+    showExplorer: boolean;
+    onToggleExplorer: () => void;
+    showChat: boolean;
+    onToggleChat: () => void;
 }
 
-export function StudioHeader({ user, logout, isDark, toggleTheme }: StudioHeaderProps) {
+export function StudioHeader({ user, logout, isDark, toggleTheme, showExplorer, onToggleExplorer, showChat, onToggleChat }: StudioHeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -25,14 +29,30 @@ export function StudioHeader({ user, logout, isDark, toggleTheme }: StudioHeader
 
     return (
         <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-app-surface/80 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-                    <Save className="text-white dark:text-black w-5 h-5" />
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={onToggleExplorer}
+                    className={`p-2 hover:bg-app-muted rounded-lg transition-colors border border-transparent hover:border-border ${!showExplorer ? 'bg-app-muted border-border' : ''}`}
+                    title={showExplorer ? "Hide Explorer" : "Show Explorer"}
+                >
+                    <PanelLeft className="w-5 h-5 text-primary-muted hover:text-primary transition-colors" />
+                </button>
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center">
+                        <Save className="text-white dark:text-black w-5 h-5" />
+                    </div>
+                    <h1 className="text-xl font-bold tracking-tight">Cms SchemaGen AI</h1>
                 </div>
-                <h1 className="text-xl font-bold tracking-tight">Cms SchemaGen AI</h1>
             </div>
 
             <div className="flex items-center gap-4">
+                <button
+                    onClick={onToggleChat}
+                    className={`p-2 hover:bg-app-muted rounded-full transition-colors border border-transparent hover:border-border ${!showChat ? 'bg-app-muted border-border' : ''}`}
+                    title={showChat ? "Hide Chat" : "Show Chat"}
+                >
+                    <PanelRight className="w-5 h-5 text-primary-muted hover:text-primary transition-colors" />
+                </button>
                 <Link
                     to="/app/ai-logs"
                     className="p-2 hover:bg-app-muted rounded-full transition-colors border border-border text-primary flex items-center gap-2 px-3 shadow-sm hover:border-primary/50"

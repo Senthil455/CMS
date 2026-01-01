@@ -14,5 +14,6 @@ export const ENDPOINTS = {
     SCHEMA: {
         ALL: '/api/schemas?type=',
         SAVE: '/api/schemas/save',
+        DELETE: '/api/schemas/:id',
     }
 } as const;

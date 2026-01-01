@@ -55,4 +55,5 @@ IMPORTANT:
 - NONE of the JSON below may appear in the output
 - Do NOT transform, summarize, or reprint the JSON
 - Use the JSON ONLY to understand field names and nesting
+- CRITICAL: When fetching data, use the EXACT endpoint URLs provided in the context, including the protocol and domain. Do NOT use relative paths.
 

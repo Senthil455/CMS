@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { type SchemaDto } from '@cms/shared';
-import { FileCode, Info, Edit2, Layout, Code2 } from 'lucide-react';
+import { FileCode, Edit2, Layout, Code2, Trash2 } from 'lucide-react';
 
 import { SchemaGraph } from './SchemaGraph';
 import { EntityDetail } from './EntityDetail';
 import { QueryDetail } from './QueryDetail';
+import { PageDetail } from './PageDetail';
 
 interface DetailViewProps {
     item: SchemaDto | null;
     schemas: SchemaDto[];
-    onEdit: () => void;
+    onEdit: (tab?: 'settings' | 'code') => void;
+    onDelete: () => void;
     onSelect: (item: SchemaDto) => void;
 }
 
-export function DetailView({ item, schemas, onEdit, onSelect }: DetailViewProps) {
+export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: DetailViewProps) {
+
     const [viewMode, setViewMode] = useState<'preview' | 'json'>('preview');
 
     if (!item) {
@@ -74,13 +77,47 @@ export function DetailView({ item, schemas, onEdit, onSelect }: DetailViewProps)
                     </div>
 
                     {item.type === 'entity' && (
-                        <button
-                            onClick={onEdit}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
-                        >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            Edit Entity
-                        </button>
+                        <>
+                            <button
+                                onClick={onDelete}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
+                                title="Delete Entity"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={onEdit}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
+                            >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                Edit Entity
+                            </button>
+                        </>
+                    )}
+                    {item.type === 'page' && (
+                        <>
+                            <button
+                                onClick={onDelete}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
+                                title="Delete Page"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={() => onEdit('settings')}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
+                            >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                Settings
+                            </button>
+                            <button
+                                onClick={() => onEdit('code')}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
+                            >
+                                <Code2 className="w-3.5 h-3.5" />
+                                Edit Source
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -102,7 +139,11 @@ export function DetailView({ item, schemas, onEdit, onSelect }: DetailViewProps)
                             <QueryDetail query={item.settings.query} />
                         )}
 
-                        {item.type !== 'entity' && item.type !== 'query' && (
+                        {item.type === 'page' && item.settings.page && (
+                            <PageDetail page={item.settings.page} />
+                        )}
+
+                        {item.type !== 'entity' && item.type !== 'query' && item.type !== 'page' && (
                             <div className="bg-app-surface/50 border border-border rounded-xl p-10 flex flex-col items-center justify-center text-primary-muted">
                                 <Layout className="w-10 h-10 mb-4 opacity-20" />
                                 <p className="font-medium">Preview not yet available for {item.type}s</p>

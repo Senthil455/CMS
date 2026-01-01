@@ -11,7 +11,8 @@ interface ExplorerProps {
 
 export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
     const navigate = useNavigate();
-    const { entities, queries, pages, isLoading } = useSchemas();
+    const { entities, queries, pages: allPages, isLoading } = useSchemas();
+    const pages = allPages.filter(p => !p.settings.page?.components);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
         queries: true,

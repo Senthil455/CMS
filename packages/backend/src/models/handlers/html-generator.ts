@@ -10,6 +10,7 @@ export class HtmlGenerator implements ChatHandler {
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
+        private readonly baseUrl: string,
     ) { }
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
@@ -23,10 +24,10 @@ export class HtmlGenerator implements ChatHandler {
                 const queryName = q.settings.query!.name;
                 try {
                     const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
-                    return `ENDPOINTS: /api/queries/${queryName} 
+                    return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
                         REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
                 } catch (e) {
-                    return `ENDPOINTS: /api/queries/${queryName}`;
+                    return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
                 }
             }))
 
