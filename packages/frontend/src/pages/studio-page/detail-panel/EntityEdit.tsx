@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { type SchemaDto, type SaveEntityPayload, type EntityDto, type AttributeDto } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type EntityDto, type AttributeDto } from '@cms/shared';
 import { FileCode, Info, Save, X, Loader2, Plus, Trash2 } from 'lucide-react';
 
-interface DetailEditProps {
+interface EntityEditProps {
     item: SchemaDto;
-    onSave: (payload: SaveEntityPayload) => Promise<void>;
+    onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
 }
 
-export function DetailEdit({ item, onSave, onCancel }: DetailEditProps) {
+export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [entityForm, setEntityForm] = useState<EntityDto>(() => {
@@ -30,7 +30,7 @@ export function DetailEdit({ item, onSave, onCancel }: DetailEditProps) {
             setIsSaving(true);
             setError(null);
 
-            const payload: SaveEntityPayload = {
+            const payload: SaveSchemaPayload = {
                 schemaId: item.schemaId,
                 type: 'entity',
                 settings: {

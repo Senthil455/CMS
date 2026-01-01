@@ -4,11 +4,12 @@ import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
-import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveEntityPayload } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './Explorer';
 import { DetailView } from './detail-panel/DetailView';
-import { DetailEdit } from './detail-panel/DetailEdit';
+import { EntityEdit } from './detail-panel/EntityEdit';
+import { QueryEdit } from './detail-panel/QueryEdit';
 import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 
@@ -43,7 +44,7 @@ export default function StudioPage() {
         }
     };
 
-    const handleSaveEntity = async (payload: SaveEntityPayload) => {
+    const handleSaveEntity = async (payload: SaveSchemaPayload) => {
         await saveEntity(payload);
         setIsEditing(false);
     };
@@ -112,11 +113,22 @@ export default function StudioPage() {
                 />
 
                 {isEditing && selectedItem ? (
-                    <DetailEdit
-                        item={selectedItem}
-                        onSave={handleSaveEntity}
-                        onCancel={() => setIsEditing(false)}
-                    />
+                    <>
+                        {selectedItem.type === 'entity' && (
+                            <EntityEdit
+                                item={selectedItem}
+                                onSave={handleSaveEntity}
+                                onCancel={() => setIsEditing(false)}
+                            />
+                        )}
+                        {selectedItem.type === 'query' && (
+                            <QueryEdit
+                                item={selectedItem}
+                                onSave={handleSaveEntity}
+                                onCancel={() => setIsEditing(false)}
+                            />
+                        )}
+                    </>
                 ) : (
                     <DetailView
                         item={selectedItem}

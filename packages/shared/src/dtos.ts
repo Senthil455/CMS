@@ -61,13 +61,19 @@ export interface SchemaDto {
     };
 }
 
-export interface SaveEntityPayload {
+export type SaveSchemaPayload = {
     schemaId: string | null;
     type: 'entity';
     settings: {
         entity: EntityDto;
     };
-}
+} | {
+    schemaId: string | null;
+    type: 'query';
+    settings: {
+        query: QueryDto;
+    };
+};
 
 export interface SchemaSummary {
     summary: string;

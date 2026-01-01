@@ -1,4 +1,10 @@
-import { type SchemaSummary, type SaveEntityPayload, type SchemaDto } from '@cms/shared';
+import {
+    type EntityDto,
+    type RelationshipDto,
+    type SchemaSummary,
+    type SaveSchemaPayload,
+    type SchemaDto
+} from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { RelationshipModel } from './relationship-model';

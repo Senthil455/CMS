@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import axios from 'axios';
-import { ENDPOINTS, type SchemaDto, type SaveEntityPayload } from '@cms/shared';
+import { ENDPOINTS, type SchemaDto, type SaveSchemaPayload } from '@cms/shared';
 import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
@@ -15,7 +15,7 @@ export function useSchemas() {
         }
     );
 
-    const saveEntity = async (payload: SaveEntityPayload) => {
+    const saveEntity = async (payload: SaveSchemaPayload) => {
         const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
             withCredentials: true
         });
