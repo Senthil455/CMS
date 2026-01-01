@@ -9,6 +9,7 @@ export function useSocket() {
 
     useEffect(() => {
         socketRef.current = io(config.API_BASE_URL, {
+            path: '/cmsapi/socket.io',
             withCredentials: true,
         });
 

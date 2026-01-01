@@ -47,9 +47,8 @@ COPY --from=builder /app /app
 
 # Copy Built CMS App
 COPY --from=dotnet-builder /app/publish ./cms
-
-# Copy specific appsettings.json
 COPY CMS/server/CMS.Course/appsettings.json ./cms/
+
 
 # Set Permissions
 RUN chmod +x /app/entrypoint.sh

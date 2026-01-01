@@ -20,8 +20,8 @@ export default function LoginPage() {
 
         try {
             const result = await login(usernameOrEmail, password);
-            if (!result.success) {
-                setError(result.error || 'Login failed');
+            if (!result) {
+                setError('Login failed');
             } else {
                 navigate('/app');
             }

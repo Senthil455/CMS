@@ -1,11 +1,12 @@
 import useSWR from 'swr';
+import axios from 'axios';
 import { type User, ENDPOINTS, type ApiResponse, type LoginRequest } from '@cms/shared';
 import { config } from '../config';
 
-const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(r => r.json());
+const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
 export function useAuth() {
-    const { data, error, mutate } = useSWR<ApiResponse<User>>(
+    const { data, error, mutate } = useSWR<User>(
         `${config.CMS_BASE_URL}${ENDPOINTS.AUTH.ME}`,
         fetcher,
         {
@@ -15,32 +16,34 @@ export function useAuth() {
     );
 
     const login = async (usernameOrEmail: string, password: string) => {
-        const response = await fetch(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usernameOrEmail, password } as LoginRequest),
-            credentials: 'include',
-        });
+        try {
+            await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`,
+                { usernameOrEmail, password } as LoginRequest,
+                { withCredentials: true }
+            );
 
-        const result: ApiResponse<User> = await response.json();
-        if (result.success) {
-            mutate(result);
+            return await mutate();
+        } catch (error: any) {
+            return error.response?.data || { success: false, error: 'Login failed' };
         }
-        return result;
     };
 
     const logout = async () => {
-        await fetch(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        mutate({ success: false }, false);
+        try {
+            await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {}, {
+                withCredentials: true
+            });
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+        mutate();
+        window.location.href = '/app/login';
     };
 
     return {
         user: data,
         isLoading: !error && !data,
-        isError: !!error || (data && !data.success),
+        isError: !!error,
         login,
         logout,
     };

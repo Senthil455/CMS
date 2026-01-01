@@ -2,20 +2,33 @@ import { useState } from 'react';
 import { type SchemaDto } from '@cms/shared';
 import { FileCode, Info, Edit2, Layout, Code2, Database, Table } from 'lucide-react';
 
+import { SchemaGraph } from './SchemaGraph';
+
 interface DetailViewProps {
     item: SchemaDto | null;
+    schemas: SchemaDto[];
     onEdit: () => void;
+    onSelect: (item: SchemaDto) => void;
 }
 
-export function DetailView({ item, onEdit }: DetailViewProps) {
+export function DetailView({ item, schemas, onEdit, onSelect }: DetailViewProps) {
     const [viewMode, setViewMode] = useState<'preview' | 'json'>('preview');
 
     if (!item) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-primary-muted bg-app/50">
-                <Info className="w-12 h-12 mb-4 opacity-20" />
-                <p className="text-lg font-medium">Select an item from the explorer to view details</p>
-                <p className="text-sm opacity-60 mt-1">You can explore entities, queries, and pages defined in CMS</p>
+            <div className="flex-1 flex flex-col h-full bg-app">
+                <div className="flex-none p-4 border-b border-border bg-app-surface text-center">
+                    <h2 className="text-sm font-bold text-primary-muted uppercase tracking-wider">System Overview</h2>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    <SchemaGraph
+                        schemas={schemas}
+                        onNodeClick={(schemaId) => {
+                            const found = schemas.find(s => s.schemaId === schemaId);
+                            if (found) onSelect(found);
+                        }}
+                    />
+                </div>
             </div>
         );
     }

@@ -120,7 +120,9 @@ export default function StudioPage() {
                 ) : (
                     <DetailView
                         item={selectedItem}
+                        schemas={[...entities, ...queries, ...pages]}
                         onEdit={() => setIsEditing(true)}
+                        onSelect={handleSelectItem}
                     />
                 )}
 

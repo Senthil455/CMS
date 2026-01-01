@@ -6,6 +6,7 @@ import SqliteStore from 'fastify-session-better-sqlite3-store';
 import Database from 'better-sqlite3';
 import fastifyIO from 'fastify-socket.io';
 import autoload from '@fastify/autoload';
+import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config';
@@ -80,6 +81,7 @@ async function start() {
 
         // Register Socket.io
         await server.register(fastifyIO, {
+            path: '/cmsapi/socket.io',
             cors: {
                 origin: allowedOrigins,
                 credentials: true,
@@ -89,6 +91,22 @@ async function start() {
         // Register Plugins (DI, etc.)
         await server.register(autoload, {
             dir: join(__dirname, 'plugins'),
+        });
+
+        // Register Static Files
+        const frontendDistPath = join(__dirname, '../../frontend/dist');
+        await server.register(fastifyStatic, {
+            root: frontendDistPath,
+            prefix: '/app/',
+            wildcard: false,
+        });
+
+        console.log("8. Setting Not Found Handler...");
+        server.setNotFoundHandler((request, reply) => {
+            if (request.url.startsWith('/app')) {
+                return (reply as any).sendFile('index.html');
+            }
+            reply.status(404).send({ error: 'Not Found' });
         });
 
         // Register Routers

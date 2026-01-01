@@ -23,4 +23,9 @@ sleep 2
 # Start Cms Backend (Port 3001)
 echo "[ENTRYPOINT] Starting Cms Backend in foreground (tsx)..."
 cd /app/packages/backend
+
+# Run Prisma Migrations
+echo "[ENTRYPOINT] Running Prisma Migrations..."
+npx prisma db push --accept-data-loss
+
 /app/node_modules/.bin/tsx src/index.ts
