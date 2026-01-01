@@ -4,25 +4,23 @@ YOUR TASK:
 Generate a complete, production-ready HTML5 page.
 
 CRITICAL FORMAT CONSTRAINT:
-- Output ONLY raw HTML
-- The output MUST start with "<!DOCTYPE html>"
-- The output MUST end with "</html>"
-- Do NOT output JSON
-- Do NOT output explanations
+- Output MUST be a valid JSON object
+- The JSON structure MUST be:
+  {
+    "name": "kebab-case-page-name",
+    "title": "Human Readable Page Title",
+    "html": "<!DOCTYPE html>...</html>"
+  }
 - Do NOT output Markdown
 - Do NOT use code fences
-- Do NOT include any text before or after the HTML
-- The output MUST be a single valid HTML document
+- The "html" field must contain the complete valid HTML document
+- The "name" field will be used as the page slug/ID
 
 TECH STACK:
 - Tailwind CSS loaded via CDN
 - Alpine.js loaded via CDN
 - No other CSS or JS frameworks
 - No build tools
-
-PAGE TITLE:
-- Generate a meaningful page title based on the content
-- Use it in both <title> and visible page heading
 
 ALPINE.JS REQUIREMENTS:
 - Use x-data for state
@@ -41,15 +39,10 @@ UI RULES:
 - Clean, modern, card-based layout
 
 HTML STRUCTURE REQUIREMENT:
-- Use standard HTML5 structure:
-  <!DOCTYPE html>
-  <html>
-    <head>...</head>
-    <body>...</body>
-  </html>
+- Use standard HTML5 structure inside the "html" field
 
 FINAL OUTPUT:
-Return ONE complete HTML document and NOTHING else.
+Return ONE valid JSON object and NOTHING else.
 
 AVAILABLE QUERY ENDPOINTS (READ-ONLY):
 

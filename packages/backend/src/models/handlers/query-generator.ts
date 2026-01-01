@@ -28,7 +28,6 @@ export class QueryGenerator implements ChatHandler {
                 userInput
             );
 
-
             // Save AI response to database log
             await context.saveAiResponseLog('query-generator',
                 JSON.stringify({ ...queryResponse, taskType: context.taskType })

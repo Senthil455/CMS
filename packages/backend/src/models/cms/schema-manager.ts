@@ -1,9 +1,7 @@
 import {
-    type EntityDto,
-    type RelationshipDto,
     type SchemaSummary,
-    type SaveSchemaPayload,
-    type SchemaDto
+    type SchemaDto,
+    type SaveSchemaPayload
 } from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
@@ -20,7 +18,7 @@ export class SchemaManager {
         // 1. Commit regular entities
         if (summary.entities.length > 0) {
             for (const item of summary.entities) {
-                const payload: SaveEntityPayload = {
+                const payload: SaveSchemaPayload = {
                     schemaId: item.schemaId || null,
                     type: 'entity',
                     settings: {
@@ -77,7 +75,7 @@ export class SchemaManager {
         }
 
         for (const entity of modifiedEntitiesMap.values()) {
-            const payload: SaveEntityPayload = {
+            const payload: SaveSchemaPayload = {
                 schemaId: entity.schemaId!,
                 type: 'entity',
                 settings: {

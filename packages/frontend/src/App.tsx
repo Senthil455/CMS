@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import StudioPage from './pages/studio-page';
 import AiLogsPage from './pages/ai-logs-page';
+
 import LoginPage from './pages/login-page';
 import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
@@ -37,9 +38,23 @@ function App() {
                 <StudioPage />
               </ProtectedRoute>
             }
-          >
-            <Route path=":type/:id" element={<StudioPage />} />
-          </Route>
+          />
+          <Route
+            path="overview"
+            element={
+              <ProtectedRoute>
+                <StudioPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path=":type/:id"
+            element={
+              <ProtectedRoute>
+                <StudioPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="ai-logs"
             element={

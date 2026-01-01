@@ -1,5 +1,6 @@
-import { ChevronRight, ChevronDown, Database, Search, FileText, Layout } from 'lucide-react';
+import { ChevronRight, ChevronDown, Database, Search, FileText, Layout, Activity } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSchemas } from '../../hooks/use-schemas';
 import { type SchemaDto } from '@cms/shared';
 
@@ -9,6 +10,7 @@ interface ExplorerProps {
 }
 
 export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
+    const navigate = useNavigate();
     const { entities, queries, pages, isLoading } = useSchemas();
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
@@ -50,6 +52,14 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
             </div>
 
             <div className="flex-1 py-4 flex flex-col gap-2 px-2">
+                {/* Overview */}
+                <button
+                    onClick={() => navigate('/app/overview')}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition-colors rounded-lg hover:bg-app-muted text-primary-muted hover:text-primary mb-2"
+                >
+                    <Activity className="w-4 h-4" />
+                    <span className="font-medium">Overview</span>
+                </button>
                 {/* Entities */}
                 <div>
                     <button

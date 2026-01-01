@@ -2,6 +2,7 @@ import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext } from './chat-handler';
+import { type SaveSchemaPayload } from '@cms/shared';
 
 export class HtmlGenerator implements ChatHandler {
     constructor(
@@ -22,15 +23,15 @@ export class HtmlGenerator implements ChatHandler {
                 const queryName = q.settings.query!.name;
                 try {
                     const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
-                    return `ENDPOINTS: /api/quries/${queryName} 
+                    return `ENDPOINTS: /api/queries/${queryName} 
                         REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
                 } catch (e) {
-                    return `ENDPOINTS: /api/quries/${queryName}`;
+                    return `ENDPOINTS: /api/queries/${queryName}`;
                 }
             }))
 
             // 2. Call AI Agent to generate HTML
-            const htmlContent: string = await this.aiAgent.generate(
+            const aiResponse = await this.aiAgent.generate(
                 this.systemPrompt,
                 queryDetails.join('\n'),
                 userInput
@@ -38,12 +39,39 @@ export class HtmlGenerator implements ChatHandler {
 
             // Save AI response to database log
             await context.saveAiResponseLog('html-generator',
-                JSON.stringify({ content: htmlContent, taskType: context.taskType })
+                JSON.stringify({ ...aiResponse, taskType: context.taskType })
             );
 
+            let { html, name, title } = aiResponse;
+            name = name || `generated-page-${Date.now()}`;
+            title = title || 'Generated Page';
+
+            // Save the generated page to CMS
+            try {
+                const payload: SaveSchemaPayload = {
+                    schemaId: null,
+                    type: 'page',
+                    settings: {
+                        page: {
+                            name,
+                            title,
+                            html,
+                            css: '',
+                            components: '',
+                            styles: '',
+                            query: ''
+                        }
+                    }
+                };
+                await this.cmsClient.savePage(context.externalCookie, payload);
+                this.logger.info({ name }, 'Successfully saved generated page to CMS');
+            } catch (saveError) {
+                this.logger.error({ error: saveError }, 'Failed to save generated page to CMS');
+            }
+
+
             // 3. Send the generated HTML as a message
-            // Since the system prompt says "Output ONLY raw HTML", we can just send it.
-            await context.saveAssistantMessage(htmlContent);
+            await context.saveAssistantMessage("I have generated your HTML page, you can find it in CMS.");
 
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in HtmlGenerator handle');

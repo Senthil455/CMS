@@ -46,6 +46,16 @@ export interface QueryDto {
     };
 }
 
+export interface PageDto {
+    name: string;
+    title: string;
+    query: string;
+    html: string;
+    css: string;
+    components: string;
+    styles: string;
+}
+
 export interface SchemaDto {
     id: number;
     schemaId: string;
@@ -58,6 +68,7 @@ export interface SchemaDto {
     settings: {
         entity?: EntityDto | null;
         query?: QueryDto | null;
+        page?: PageDto | null;
     };
 }
 
@@ -72,6 +83,12 @@ export type SaveSchemaPayload = {
     type: 'query';
     settings: {
         query: QueryDto;
+    };
+} | {
+    schemaId: string | null;
+    type: 'page';
+    settings: {
+        page: PageDto;
     };
 };
 

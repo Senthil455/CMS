@@ -7,7 +7,7 @@ import { config } from '../config';
 
 import { IntentClassifier } from '../models/handlers/intent-classifier';
 import { SchemaGenerator } from '../models/handlers/schema-generator';
-import { ModelExplorer } from '../models/handlers/model-explorer';
+
 import { QueryGenerator } from '../models/handlers/query-generator';
 import { HtmlGenerator } from '../models/handlers/html-generator';
 
@@ -43,7 +43,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
-            const modelExplorer = new ModelExplorer(cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
             const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, cmsClient, modelLogger);
 
@@ -53,15 +52,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 {
                     define_structure: schemaGenerator,
                     generate_query: queryGenerator,
-                    design_page: modelExplorer,
-                    edit_entity: modelExplorer,
-                    delete_entity: modelExplorer,
-                    edit_query: modelExplorer,
-                    delete_query: modelExplorer,
-                    edit_page: modelExplorer,
-                    delete_page: modelExplorer,
-                    list_entities: modelExplorer,
-                    list_pages: modelExplorer,
                     generate_html: htmlGenerator,
                 }
             );
