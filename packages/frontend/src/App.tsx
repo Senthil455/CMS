@@ -56,6 +56,14 @@ function App() {
             }
           />
           <Route
+            path=":type/:id/edit"
+            element={
+              <ProtectedRoute>
+                <StudioPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="ai-logs"
             element={
               <ProtectedRoute>
@@ -63,6 +71,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
         </Route>
         <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="*" element={<Navigate to="/app" replace />} />

@@ -15,7 +15,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 import { type SchemaDto } from '@cms/shared';
-import { Database, FileCode } from 'lucide-react';
+import { Database, FileCode, Layout } from 'lucide-react';
 
 const nodeWidth = 180;
 const nodeHeight = 50;
@@ -88,9 +88,28 @@ const QueryNode = ({ data }: { data: { label: string; type: string } }) => {
     );
 };
 
+const PageNode = ({ data }: { data: { label: string; type: string } }) => {
+    return (
+        <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-emerald-400 min-w-[150px]">
+            <div className="flex items-center">
+                <div className="rounded-full w-8 h-8 flex justify-center items-center bg-emerald-50 mr-2">
+                    <Layout className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                    <div className="text-xs font-bold text-gray-700">{data.label}</div>
+                    <div className="text-[10px] text-gray-500">Page</div>
+                </div>
+            </div>
+            <Handle type="target" position={Position.Left} className="w-16 !bg-emerald-500" />
+            <Handle type="source" position={Position.Right} className="w-16 !bg-emerald-500" />
+        </div>
+    );
+};
+
 const nodeTypes = {
     entityNode: EntityNode,
     queryNode: QueryNode,
+    pageNode: PageNode,
 };
 
 interface SchemaGraphProps {
@@ -103,6 +122,7 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
         const nodes: Node[] = [];
         const edges: Edge[] = [];
         const nodeMap = new Set<string>();
+        const queryMap = new Map<string, string>(); // Name -> ID map for queries
 
         // 1. Create Nodes
         schemas.forEach((schema) => {
@@ -119,6 +139,15 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
                     id: schema.name,
                     type: 'queryNode',
                     data: { label: schema.name, type: 'Query', schemaId: schema.schemaId },
+                    position: { x: 0, y: 0 },
+                });
+                nodeMap.add(schema.name);
+                queryMap.set(schema.name, schema.name); // Using name as ID for tracking
+            } else if (schema.type === 'page' && schema.settings.page) {
+                nodes.push({
+                    id: schema.name,
+                    type: 'pageNode',
+                    data: { label: schema.name, type: 'Page', schemaId: schema.schemaId },
                     position: { x: 0, y: 0 },
                 });
                 nodeMap.add(schema.name);
@@ -178,6 +207,26 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
                         },
                     });
                 }
+            } else if (schema.type === 'page' && schema.settings.page) {
+                const htmlContent = schema.settings.page.html || '';
+                // Check if page fetches any queries
+                queryMap.forEach((queryName) => {
+                    if (htmlContent.includes(`/api/queries/${queryName}`)) {
+                        edges.push({
+                            id: `${schema.name}-${queryName}`,
+                            source: schema.name,
+                            target: queryName,
+                            label: 'fetches',
+                            type: 'default',
+                            animated: true,
+                            style: { stroke: '#10b981' }, // Emerald color
+                            markerEnd: {
+                                type: MarkerType.ArrowClosed,
+                                color: '#10b981',
+                            },
+                        });
+                    }
+                });
             }
         });
 

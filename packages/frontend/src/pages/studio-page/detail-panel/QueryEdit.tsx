@@ -1,26 +1,45 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
 import { type SchemaDto, type SaveSchemaPayload, type QueryDto } from '@cms/shared';
-import { FileCode, Info, Save, X, Loader2, Database } from 'lucide-react';
+import { FileCode, Save, X, Loader2, Database, Code } from 'lucide-react';
+import { GraphiQL } from 'graphiql';
+import 'graphiql/graphiql.css';
+import { config } from '../../../config';
 
 interface QueryEditProps {
     item: SchemaDto;
+    initialTab?: 'settings' | 'code';
+    onTabChange?: (tab: 'settings' | 'code') => void;
     onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
 }
 
-export function QueryEdit({ item, onSave, onCancel }: QueryEditProps) {
+export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: QueryEditProps) {
+    const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
+
+    const handleTabChange = (tab: 'settings' | 'code') => {
+        setActiveTab(tab);
+        onTabChange?.(tab);
+    };
+
     const [error, setError] = useState<string | null>(null);
     const [queryForm, setQueryForm] = useState<QueryDto>(() => {
         return JSON.parse(JSON.stringify(item.settings.query || {
             name: item.name,
             entityName: '',
             source: 'model',
+            text: '',
             filters: [],
             sorts: [],
             reqVariables: [],
             distinct: false,
-            ideUrl: '',
             pagination: { offset: '0', limit: '10' }
         }));
     });
@@ -34,7 +53,10 @@ export function QueryEdit({ item, onSave, onCancel }: QueryEditProps) {
                 schemaId: item.schemaId,
                 type: 'query',
                 settings: {
-                    query: queryForm
+                    query: {
+                        ...queryForm,
+                        // Ensure text is explicitly included if it was missing before, though state handles it
+                    }
                 }
             };
 
@@ -51,6 +73,17 @@ export function QueryEdit({ item, onSave, onCancel }: QueryEditProps) {
         setQueryForm({ ...queryForm, [field]: value });
     };
 
+    const fetcher = useMemo(() => async (graphQLParams: any) => {
+        const response = await fetch(`${config.CMS_BASE_URL}/graphql`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(graphQLParams),
+        });
+        return response.json();
+    }, []);
+
     return (
         <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
             <div className="p-4 border-b border-border flex items-center justify-between bg-app-surface shadow-sm">
@@ -61,10 +94,26 @@ export function QueryEdit({ item, onSave, onCancel }: QueryEditProps) {
                     <div>
                         <h2 className="text-lg font-bold">Editing {item.name}</h2>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 bg-app-muted rounded-full text-primary-muted font-medium uppercase tracking-wider">
-                                {item.type}
-                            </span>
-                            <span className="text-xs text-primary-muted font-mono">{item.schemaId}</span>
+                            <div className="flex p-0.5 bg-app-muted rounded-lg">
+                                <button
+                                    onClick={() => handleTabChange('settings')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'settings'
+                                        ? 'bg-app-surface text-primary shadow-sm'
+                                        : 'text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    Settings
+                                </button>
+                                <button
+                                    onClick={() => handleTabChange('code')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'code'
+                                        ? 'bg-app-surface text-primary shadow-sm'
+                                        : 'text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    Source Code
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -100,54 +149,68 @@ export function QueryEdit({ item, onSave, onCancel }: QueryEditProps) {
                     </div>
                 )}
 
-                <div className="space-y-8 max-w-4xl">
-                    <section className="space-y-4">
-                        <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
-                            <Database className="w-4 h-4" />
-                            Query Configuration
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField label="Entity Name">
-                                <input
-                                    type="text"
-                                    value={queryForm.entityName}
-                                    onChange={(e) => updateField('entityName', e.target.value)}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Source">
-                                <select
-                                    value={queryForm.source}
-                                    onChange={(e) => updateField('source', e.target.value)}
-                                    className="app-input"
-                                >
-                                    <option value="model">Model</option>
-                                    <option value="sql">SQL (Raw)</option>
-                                    <option value="api">API</option>
-                                </select>
-                            </FormField>
-                            <div className="md:col-span-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div className="space-y-8 h-full flex flex-col">
+                    {activeTab === 'settings' && (
+                        <section className="space-y-4 shrink-0">
+                            <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
+                                <Database className="w-4 h-4" />
+                                Query Configuration
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField label="Name">
                                     <input
-                                        type="checkbox"
-                                        checked={queryForm.distinct}
-                                        onChange={(e) => updateField('distinct', e.target.checked)}
-                                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                                        type="text"
+                                        value={queryForm.name}
+                                        onChange={(e) => updateField('name', e.target.value)}
+                                        className="app-input"
                                     />
-                                    <span className="text-sm font-medium text-primary">Distinct Results</span>
-                                </label>
+                                </FormField>
                             </div>
-                            <FormField label="IDE URL (Optional)">
-                                <input
-                                    type="text"
-                                    value={queryForm.ideUrl || ''}
-                                    onChange={(e) => updateField('ideUrl', e.target.value)}
-                                    className="app-input"
-                                    placeholder="https://..."
-                                />
-                            </FormField>
-                        </div>
-                    </section>
+                        </section>
+                    )}
+
+                    {activeTab === 'code' && (
+                        <section className="flex-1 flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="flex items-center justify-between border-b border-border pb-2 mb-4">
+                                <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
+                                    <Code className="w-4 h-4" />
+                                    Query Source
+                                </h3>
+                            </div>
+
+                            <div className="flex-1 h-full border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e] relative">
+                                {queryForm.source === 'sql' ? (
+                                    <Editor
+                                        height="100%"
+                                        defaultLanguage="sql"
+                                        // @ts-ignore
+                                        value={queryForm.text || ''}
+                                        // @ts-ignore
+                                        onChange={(value) => updateField('text', value || '')}
+                                        theme="vs-dark"
+                                        options={{
+                                            minimap: { enabled: false },
+                                            fontSize: 14,
+                                            padding: { top: 16 },
+                                            scrollBeyondLastLine: false,
+                                            wordWrap: 'on',
+                                            automaticLayout: true,
+                                            tabSize: 2,
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="h-full w-full graphiql-container">
+                                        {/* @ts-ignore */}
+                                        <GraphiQL
+                                            fetcher={fetcher}
+                                            defaultQuery={queryForm.source}
+                                            onEditQuery={(query: string) => updateField('source', query)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
                 </div>
             </div>
         </div>

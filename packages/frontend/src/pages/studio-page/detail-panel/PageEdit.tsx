@@ -1,16 +1,29 @@
 import { useState } from 'react';
+import Editor from '@monaco-editor/react';
 import { type SchemaDto, type SaveSchemaPayload, type PageDto } from '@cms/shared';
-import { Layout, Save, X, Loader2, Info, FileText, Globe, Code } from 'lucide-react';
+import { Layout, Save, X, Loader2, Info, FileText, Globe, Code, Maximize2, Minimize2 } from 'lucide-react';
 
 interface PageEditProps {
     item: SchemaDto;
     initialTab?: 'settings' | 'code';
+    onTabChange?: (tab: 'settings' | 'code') => void;
     onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
 }
 
-export function PageEdit({ item, initialTab = 'settings', onSave, onCancel }: PageEditProps) {
+export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: PageEditProps) {
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
+    // Sync internal state if prop changes (e.g. via URL)
+    if (initialTab !== activeTab) {
+        setActiveTab(initialTab);
+    }
+
+    const handleTabChange = (tab: 'settings' | 'code') => {
+        setActiveTab(tab);
+        onTabChange?.(tab);
+    };
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pageForm, setPageForm] = useState<PageDto>(() => {
@@ -73,13 +86,13 @@ export function PageEdit({ item, initialTab = 'settings', onSave, onCancel }: Pa
 
                 <div className="flex items-center bg-app-muted rounded-lg p-1">
                     <button
-                        onClick={() => setActiveTab('settings')}
+                        onClick={() => handleTabChange('settings')}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
                     >
                         Settings
                     </button>
                     <button
-                        onClick={() => setActiveTab('code')}
+                        onClick={() => handleTabChange('code')}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'code' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
                     >
                         Source Code
@@ -156,18 +169,61 @@ export function PageEdit({ item, initialTab = 'settings', onSave, onCancel }: Pa
 
                     {activeTab === 'code' && (
                         /* Content */
-                        <section className="space-y-4 flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
-                                <Code className="w-4 h-4" />
-                                HTML Content
-                            </h3>
-                            <div className="flex-1">
-                                <textarea
-                                    value={pageForm.html}
-                                    onChange={(e) => updateField('html', e.target.value)}
-                                    className="w-full h-full min-h-[500px] bg-app-surface border border-border rounded-xl p-4 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-y"
-                                    placeholder="<!DOCTYPE html>..."
-                                />
+                        <section className={`${isFullScreen ? 'fixed inset-0 z-50 bg-app p-4' : 'flex-1'} flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                            <div className="flex items-center justify-between border-b border-border pb-2 mb-4 shrink-0">
+                                <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
+                                    <Code className="w-4 h-4" />
+                                    HTML Content
+                                </h3>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-xs text-primary-muted font-medium">
+                                        Live Preview
+                                    </div>
+                                    <button
+                                        onClick={() => setIsFullScreen(!isFullScreen)}
+                                        className="p-1.5 hover:bg-app-muted rounded-md text-primary-muted hover:text-primary transition-colors"
+                                        title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+                                    >
+                                        {isFullScreen ? (
+                                            <Minimize2 className="w-4 h-4" />
+                                        ) : (
+                                            <Maximize2 className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-row gap-4 h-full min-h-0">
+                                {/* Editor Pane */}
+                                <div className="flex-1 h-full border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e]">
+                                    <Editor
+                                        height="100%"
+                                        defaultLanguage="html"
+                                        value={pageForm.html}
+                                        onChange={(value) => updateField('html', value || '')}
+                                        theme="vs-dark"
+                                        options={{
+                                            minimap: { enabled: false },
+                                            fontSize: 14,
+                                            padding: { top: 16 },
+                                            scrollBeyondLastLine: false,
+                                            wordWrap: 'on',
+                                            automaticLayout: true,
+                                            tabSize: 2,
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Preview Pane */}
+                                <div className="flex-1 h-full border border-border rounded-xl overflow-hidden shadow-sm bg-white relative">
+                                    <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                                    <iframe
+                                        title="Live Preview"
+                                        srcDoc={pageForm.html}
+                                        className="w-full h-full border-none bg-white"
+                                        sandbox="allow-scripts allow-same-origin"
+                                    />
+                                </div>
                             </div>
                         </section>
                     )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
@@ -17,16 +17,20 @@ import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 export default function StudioPage() {
     const { type, id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
+
     const { entities, queries, pages, saveEntity } = useSchemas();
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
     const { sendMessage, sendSchemaResponse, onNewMessage, onSchemaSummaryToConfirm } = useSocket();
     const [isDark, setIsDark] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
-    const [editTab, setEditTab] = useState<'settings' | 'code'>('settings');
+
+    const isEditing = location.pathname.endsWith('/edit');
+    const editTab = (searchParams.get('tab') as 'settings' | 'code') || 'settings';
 
     const selectedItem = useMemo(() => {
         if (!type || !id) return null;
@@ -35,10 +39,6 @@ export default function StudioPage() {
         if (type === 'page') return pages.find(p => p.schemaId === id) || null;
         return null;
     }, [type, id, entities, queries, pages]);
-
-    useEffect(() => {
-        setIsEditing(false);
-    }, [id, type]);
 
     const handleSelectItem = (item: SchemaDto | null) => {
         if (item) {
@@ -50,7 +50,7 @@ export default function StudioPage() {
 
     const handleSaveEntity = async (payload: SaveSchemaPayload) => {
         await saveEntity(payload);
-        setIsEditing(false);
+        navigate(`/app/${payload.type}/${payload.schemaId || id}`);
     };
 
     const { deleteSchema } = useSchemas();
@@ -144,22 +144,25 @@ export default function StudioPage() {
                             <EntityEdit
                                 item={selectedItem}
                                 onSave={handleSaveEntity}
-                                onCancel={() => setIsEditing(false)}
+                                onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
                             />
                         )}
                         {selectedItem.type === 'query' && (
                             <QueryEdit
                                 item={selectedItem}
+                                initialTab={editTab}
+                                onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
-                                onCancel={() => setIsEditing(false)}
+                                onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
                             />
                         )}
                         {selectedItem.type === 'page' && (
                             <PageEdit
                                 item={selectedItem}
                                 initialTab={editTab}
+                                onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
-                                onCancel={() => setIsEditing(false)}
+                                onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
                             />
                         )}
                     </>
@@ -168,8 +171,7 @@ export default function StudioPage() {
                         item={selectedItem}
                         schemas={[...entities, ...queries, ...pages]}
                         onEdit={(tab) => {
-                            if (tab) setEditTab(tab);
-                            setIsEditing(true);
+                            navigate(`/app/${selectedItem?.type}/${selectedItem?.schemaId}/edit${tab ? `?tab=${tab}` : ''}`);
                         }}
                         onDelete={handleDelete}
                         onSelect={handleSelectItem}

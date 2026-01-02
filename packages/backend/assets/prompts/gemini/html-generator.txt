@@ -4,56 +4,85 @@ YOUR TASK:
 Generate a complete, production-ready HTML5 page.
 
 CRITICAL FORMAT CONSTRAINT:
-- Output MUST be a valid JSON object
-- The JSON structure MUST be:
+
+* Output MUST be a valid JSON object
+* The JSON structure MUST be:
   {
-    "name": "kebab-case-page-name",
-    "title": "Human Readable Page Title",
-    "html": "<!DOCTYPE html>...</html>"
+  "name": "kebab-case-page-name",
+  "title": "Human Readable Page Title",
+  "html": "<!DOCTYPE html>...</html>"
   }
-- Do NOT output Markdown
-- Do NOT use code fences
-- The "html" field must contain the complete valid HTML document
-- The "name" field will be used as the page slug/ID
+* Do NOT output Markdown
+* Do NOT use code fences
+* The "html" field MUST contain a COMPLETE and VALID HTML document
+* The "name" field will be used as the page slug/ID
 
 TECH STACK:
-- Tailwind CSS loaded via CDN
-- Alpine.js loaded via CDN
-- No other CSS or JS frameworks
-- No build tools
 
-ALPINE.JS REQUIREMENTS:
-- Use x-data for state
-- State must include: items, loading, error
-- Fetch data inside x-init
-- Show loading state while fetching
-- Show error message if the request fails
-- Render posts using x-for
-- Access nested fields correctly (e.g. post.category.name)
+* Tailwind CSS loaded via CDN
+* Alpine.js loaded via CDN
+* No other CSS or JS frameworks
+* No build tools
+
+ALPINE.JS REQUIREMENTS (STRICT):
+
+* Use x-data for state
+* State MUST include: items, loading, error
+* Fetch data inside x-init using async/await
+* Handle HTTP errors explicitly
+* Render lists using x-for
+* Access nested fields correctly (e.g. post.category.name)
+
+CRITICAL ALPINE RULES (MUST FOLLOW):
+
+* x-if MUST ONLY be used on <template> elements
+* NEVER place x-if on <div>, <section>, <article>, or any non-template element
+* x-for MUST ONLY be used on <template> elements
+* x-show MAY be used on normal elements
+* All conditional rendering blocks MUST be wrapped in <template x-if="...">
+
+UI STATE REQUIREMENTS:
+
+* Show a loading indicator while loading === true
+* Show an error message when error !== null
+* Show an empty-state message when items.length === 0
+* Show main content ONLY when loading === false AND error === null
 
 UI RULES:
-- Responsive layout
-- Semantic HTML
-- Tailwind utility classes only
-- No inline styles
-- Clean, modern, card-based layout
+
+* Responsive layout
+* Semantic HTML5 elements
+* Tailwind utility classes only
+* No inline styles
+* Clean, modern, card-based layout
 
 HTML STRUCTURE REQUIREMENT:
-- Use standard HTML5 structure inside the "html" field
+
+* Use standard HTML5 structure:
+
+  <!DOCTYPE html>
+
+  <html>
+    <head>...</head>
+    <body>...</body>
+  </html>
 
 FINAL OUTPUT:
-Return ONE valid JSON object and NOTHING else.
+
+* Return EXACTLY ONE valid JSON object
+* Return NOTHING else
 
 AVAILABLE QUERY ENDPOINTS (READ-ONLY):
 
 You MAY fetch data from ONE or MORE of the following endpoints.
-You must choose the endpoint(s) that best match the page you are generating.
+Choose the endpoint(s) that best match the page.
 
 IMPORTANT:
-- These endpoints are FETCHED at runtime using Alpine.js
-- The JSON below is REFERENCE ONLY
-- NONE of the JSON below may appear in the output
-- Do NOT transform, summarize, or reprint the JSON
-- Use the JSON ONLY to understand field names and nesting
-- CRITICAL: When fetching data, use the EXACT endpoint URLs provided in the context, including the protocol and domain. Do NOT use relative paths.
 
+* Fetch data at runtime using Alpine.js
+* The JSON below is REFERENCE ONLY
+* NEVER output the reference JSON
+* Do NOT summarize or transform the reference JSON
+* Use it ONLY to understand field names and nesting
+* CRITICAL: Use the EXACT endpoint URLs provided (including protocol and domain)
+* Do NOT use relative URLs
