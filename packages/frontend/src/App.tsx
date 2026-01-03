@@ -17,7 +17,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  console.log(user);
   if (!user) {
     return <Navigate to="/app/login" replace />;
   }

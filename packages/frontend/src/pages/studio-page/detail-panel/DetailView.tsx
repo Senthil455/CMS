@@ -3,9 +3,9 @@ import { type SchemaDto } from '@cms/shared';
 import { FileCode, Edit2, Layout, Code2, Trash2 } from 'lucide-react';
 
 import { SchemaGraph } from './SchemaGraph';
-import { EntityDetail } from './EntityDetail';
-import { QueryDetail } from './QueryDetail';
-import { PageDetail } from './PageDetail';
+import { EntityDetail } from './entity/EntityDetail';
+import { QueryDetail } from './query/QueryDetail';
+import { PageDetail } from './page/PageDetail';
 
 interface DetailViewProps {
     item: SchemaDto | null;
@@ -147,7 +147,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-6">
+            <div className={`flex-1 overflow-auto p-6 ${item.type === 'query' ? 'flex flex-col' : ''}`}>
                 {viewMode === 'json' ? (
                     <div className="bg-app-surface/50 border border-border rounded-xl p-6 shadow-inner">
                         <pre className="font-mono text-sm text-primary/90 leading-relaxed whitespace-pre-wrap">
@@ -155,7 +155,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                         </pre>
                     </div>
                 ) : (
-                    <div className="space-y-8 max-w-5xl">
+                    <div className={`space-y-8 max-w-5xl ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
                         {item.type === 'entity' && entity && (
                             <EntityDetail entity={entity} />
                         )}

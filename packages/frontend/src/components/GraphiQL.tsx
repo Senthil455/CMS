@@ -12,29 +12,35 @@ const fetcher = async (params: any) => {
     return res.json()
 }
 
-const DEFAULT_QUERY = `
-query {
-    __schema {
-        queryType {
-            name
-        }
-    }
-}
-`;
 
-interface GraphiQLProps {
+interface CustomGraphiQLProps {
     defaultQuery?: string;
+    onEditQuery?: (query: string) => void;
+    className?: string;
+    style?: React.CSSProperties;
 }
+const memoryStorage = {
+    getItem() {
+        return null;
+    },
+    setItem() { },
+    removeItem() { },
+    clear() { },
+    key() { },
+    length: 0,
+};
 
-export default function GraphiQL({ defaultQuery = DEFAULT_QUERY }: GraphiQLProps) {
-
-
+export default function GraphiQL({ defaultQuery, onEditQuery, className, style }: CustomGraphiQLProps) {
+    console.log('defaultQuery', defaultQuery);
     return (
-        <div style={{ height: '100vh', width: '100vw' }}>
+        <div style={style || { height: '100vh', width: '100vw' }} className={className}>
             <GraphiQLReact
+                key={defaultQuery}
                 fetcher={fetcher}
                 defaultQuery={defaultQuery}
+                onEditQuery={onEditQuery}
                 defaultEditorToolsVisibility="variables"
+                storage={memoryStorage}
             />
         </div>
     );

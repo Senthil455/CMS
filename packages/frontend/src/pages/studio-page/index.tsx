@@ -8,9 +8,9 @@ import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPa
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './Explorer';
 import { DetailView } from './detail-panel/DetailView';
-import { EntityEdit } from './detail-panel/EntityEdit';
-import { QueryEdit } from './detail-panel/QueryEdit';
-import { PageEdit } from './detail-panel/PageEdit';
+import { EntityEdit } from './detail-panel/entity/EntityEdit';
+import { QueryEdit } from './detail-panel/query/QueryEdit';
+import { PageEdit } from './detail-panel/page/PageEdit';
 import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 
