@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import axios from 'axios';
-import { type User, ENDPOINTS, type ApiResponse, type LoginRequest } from '@cms/shared';
+import { type User, ENDPOINTS, type LoginRequest } from '@cms/shared';
 import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);

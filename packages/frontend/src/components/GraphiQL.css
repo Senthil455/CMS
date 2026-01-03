@@ -1,0 +1,11 @@
+/* Fix for GraphiQL editor collapse */
+/* source: packages/graphql-client/src/App.css */
+.graphiql-editor {
+    flex: 1 1 auto !important;
+    width: 100%;
+}
+
+.graphiql-query-editor {
+    display: flex !important;
+    flex: 1 1 auto !important;
+}

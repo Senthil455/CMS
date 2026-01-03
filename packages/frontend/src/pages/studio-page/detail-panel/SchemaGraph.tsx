@@ -2,13 +2,13 @@ import { useCallback, useMemo } from 'react';
 import ReactFlow, {
     useNodesState,
     useEdgesState,
-    addEdge,
+
     Background,
     Controls,
     Handle,
     Position,
     MarkerType,
-    type Connection,
+
     type Edge,
     type Node,
 } from 'reactflow';

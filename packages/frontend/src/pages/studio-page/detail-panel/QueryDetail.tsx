@@ -1,62 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect } from 'react';
 import { type QueryDto } from '@cms/shared';
-import { Database, Code, Play, Loader2, AlertCircle } from 'lucide-react'; // Added Play, Loader2, AlertCircle
-import Editor from '@monaco-editor/react';
-import JsonView from 'react18-json-view';
-import 'react18-json-view/src/style.css';
-import { config } from '../../../config';
-import "graphiql/graphiql.css";
-import { GraphiQL } from 'graphiql';
+import { Database } from 'lucide-react'; // Added Play, Loader2, AlertCircle
+
+import GraphiQL from '../../../components/GraphiQL';
 
 interface QueryDetailProps {
     query: QueryDto;
 }
-const fetcher = async (graphQLParams: any) => {
-    const response = await fetch(`${config.CMS_BASE_URL}/graphql`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(graphQLParams),
-    });
-    return response.json();
-};
+
 export function QueryDetail({ query }: QueryDetailProps) {
-    const [queryText, setQueryText] = useState(query.source);
-    const [result, setResult] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Reset query text when the selected query changes
     useEffect(() => {
-        setQueryText(query.source);
-        setResult(null);
-        setError(null);
     }, [query.source]);
-
-    const handleRunQuery = async () => {
-        setIsLoading(true);
-        setError(null);
-        setResult(null);
-
-        try {
-            const response = await fetch(`${config.CMS_BASE_URL}/graphql`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query: queryText }),
-            });
-
-            const data = await response.json();
-            setResult(data);
-        } catch (err: any) {
-            console.error(err);
-            setError(err.message || 'Failed to execute query');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="space-y-8 max-w-5xl h-full flex flex-col">
@@ -69,7 +23,7 @@ export function QueryDetail({ query }: QueryDetailProps) {
                     <DetailItem label="Entity Name" value={query.entityName} />
                 </div>
             </section>
-            <GraphiQL fetcher={fetcher} />
+            <GraphiQL defaultQuery={query.source} />
         </div>
     )
 
