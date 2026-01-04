@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Database, Search, FileText, Layout, Activity } from 'lucide-react';
+import { ChevronRight, ChevronDown, Database, Search, FileText, Layout, Activity, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchemas } from '../../hooks/use-schemas';
@@ -11,7 +11,7 @@ interface ExplorerProps {
 
 export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
     const navigate = useNavigate();
-    const { entities, queries, pages: allPages, isLoading } = useSchemas();
+    const { entities, queries, pages: allPages, isLoading, saveEntity } = useSchemas();
     const pages = allPages.filter(p => !p.settings.page?.components);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
@@ -21,6 +21,103 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
 
     const toggleGroup = (group: string) => {
         setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+    };
+
+    const handleAddEntity = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const result: any = await saveEntity({
+                schemaId: null,
+                type: 'entity',
+                settings: {
+                    entity: {
+                        name: 'New Entity',
+                        displayName: 'New Entity',
+                        tableName: 'new_entity',
+                        primaryKey: 'id',
+                        labelAttributeName: 'id',
+                        defaultPageSize: 10,
+                        defaultPublicationStatus: 'published',
+                        pageUrl: '',
+                        attributes: []
+                    }
+                }
+            });
+
+            if (result && result.success && result.data) {
+                navigate(`/app/entity/${result.data.schemaId}`);
+                if (!expandedGroups.entities) {
+                    setExpandedGroups(prev => ({ ...prev, entities: true }));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to create entity:', err);
+        }
+    };
+
+    const handleAddPage = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const result: any = await saveEntity({
+                schemaId: null,
+                type: 'page',
+                settings: {
+                    page: {
+                        name: 'New Page',
+                        title: 'New Page',
+                        query: '',
+                        html: '<div>New Page</div>',
+                        css: '',
+                        components: '[]',
+                        styles: ''
+                    }
+                }
+            });
+
+            if (result && result.success && result.data) {
+                navigate(`/app/page/${result.data.schemaId}`);
+                if (!expandedGroups.pages) {
+                    setExpandedGroups(prev => ({ ...prev, pages: true }));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to create page:', err);
+        }
+    };
+
+    const handleAddQuery = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const result: any = await saveEntity({
+                schemaId: null,
+                type: 'query',
+                settings: {
+                    query: {
+                        name: 'New Query',
+                        entityName: '',
+                        source: '',
+                        filters: [],
+                        sorts: [],
+                        reqVariables: [],
+                        distinct: false,
+                        ideUrl: '',
+                        pagination: { offset: '0', limit: '10' }
+                    }
+                }
+            });
+
+            if (result && result.success && result.data) {
+                navigate(`/app/query/${result.data.schemaId}`);
+                if (!expandedGroups.queries) {
+                    setExpandedGroups(prev => ({ ...prev, queries: true }));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to create query:', err);
+        }
     };
 
     const renderItem = (item: SchemaDto, icon: any) => {
@@ -70,7 +167,18 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
                         {expandedGroups.entities ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         <Database className="w-4 h-4" />
                         <span>Entities</span>
-                        <span className="ml-auto text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{entities.length}</span>
+
+                        <div className="ml-auto flex items-center gap-1">
+                            <div
+                                role="button"
+                                onClick={handleAddEntity}
+                                className="p-1 rounded bg-primary/5 hover:bg-primary/20 text-primary transition-colors"
+                                title="Create Entity"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{entities.length}</span>
+                        </div>
                     </button>
                     {expandedGroups.entities && (
                         <div className="mt-1 flex flex-col gap-0.5 ml-4">
@@ -84,12 +192,23 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
                 <div>
                     <button
                         onClick={() => toggleGroup('queries')}
-                        className="w-full flex items-center gap-1 px-2 py-1 hover:bg-app-muted rounded-lg text-sm font-semibold text-primary/80"
+                        className="w-full flex items-center gap-1 px-2 py-1 hover:bg-app-muted rounded-lg text-sm font-semibold text-primary/80 group"
                     >
                         {expandedGroups.queries ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         <Search className="w-4 h-4" />
                         <span>Queries</span>
-                        <span className="ml-auto text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{queries.length}</span>
+
+                        <div className="ml-auto flex items-center gap-1">
+                            <div
+                                role="button"
+                                onClick={handleAddQuery}
+                                className="p-1 rounded bg-primary/5 hover:bg-primary/20 text-primary transition-colors"
+                                title="Create Query"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{queries.length}</span>
+                        </div>
                     </button>
                     {expandedGroups.queries && (
                         <div className="mt-1 flex flex-col gap-0.5 ml-4">
@@ -108,7 +227,18 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
                         {expandedGroups.pages ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         <Layout className="w-4 h-4" />
                         <span>Pages</span>
-                        <span className="ml-auto text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{pages.length}</span>
+
+                        <div className="ml-auto flex items-center gap-1">
+                            <div
+                                role="button"
+                                onClick={handleAddPage}
+                                className="p-1 rounded bg-primary/5 hover:bg-primary/20 text-primary transition-colors"
+                                title="Create Page"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-[10px] bg-app-muted px-1.5 py-0.5 rounded-full">{pages.length}</span>
+                        </div>
                     </button>
                     {expandedGroups.pages && (
                         <div className="mt-1 flex flex-col gap-0.5 ml-4">

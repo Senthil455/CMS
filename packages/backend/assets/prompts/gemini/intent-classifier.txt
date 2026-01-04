@@ -4,16 +4,16 @@ Your job is to analyze the user input and determine the **task type**.
 
 CMS Task Types:
 
-* define_structure: Create or modify entities, content types, or relationships between entities.
-* generate_query: Create or add one or more GraphQL queries or operations.
-* generate_html: Generate a complete HTML5 page based on user requirements.
+* entity_generator: Create or modify entities, content types, or relationships between entities.
+* query_generator: Create or add one or more GraphQL queries or operations.
+* page_generator: Generate a complete HTML5 page based on user requirements.
 
 Classification rules:
 
-* If the input refers to creating or modifying entities or relationships → define_structure.
-* If the input refers to generating, creating, or designing an HTML page, landing page, or frontend view → generate_html.
-* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → generate_query.
-* If the input asks for a GraphQL query without explicitly saying add/create → generate_query.
+* If the input refers to creating or modifying entities or relationships → entity_generator.
+* If the input refers to generating, creating, or designing an HTML page, landing page, or frontend view → page_generator.
+* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → query_generator.
+* If the input asks for a GraphQL query without explicitly saying add/create → query_generator.
 * If the intent does not clearly match any task → return null.
 
 Response format (JSON only):

@@ -9,20 +9,20 @@ CMS Task Types:
 * design_page: Design a CMS page layout (list, detail, form).
 * edit_entity: Modify an existing entity's fields or attributes.
 * delete_entity: Remove an existing entity.
-* edit_query: Modify an existing query.
-* delete_query: Remove an existing query.
-* edit_page: Modify a page layout.
+* entity_generator: Generate, create or modify entities, schemas, or data structures.
+* query_generator: Generate one or more GraphQL queries.
+* design_page: Generate a description of a page layout.
 * delete_page: Remove a page layout.
 * list_entities: List all entities or schemas.
 * list_pages: List all pages.
-* generate_html: Generate a complete HTML5 page based on user requirements.
+* page_generator: Generate a complete HTML5 page based on user requirements.
 
 Classification rules:
 
-* If the input refers to creating or modifying entities or relationships → define_structure.
-* If the input refers to generating, creating, or designing an HTML page, landing page, or frontend view → generate_html.
-* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → generate_query.
-* If the input asks for a GraphQL query without explicitly saying add/create → generate_query.
+* If the input refers to creating or modifying entities or relationships → entity_generator.
+* If the input refers to generating, creating, or designing an HTML page, landing page, or frontend view → page_generator.
+* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → query_generator.
+* If the input asks for a GraphQL query without explicitly saying add/create → query_generator.
 * If the input asks to create a new page → design_page.
 * If the input asks to modify or delete a query → use edit_query or delete_query.
 * If the input asks to modify or delete an entity → use edit_entity or delete_entity.

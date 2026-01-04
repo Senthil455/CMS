@@ -6,10 +6,10 @@ import { fileURLToPath } from 'url';
 import { config } from '../config';
 
 import { IntentClassifier } from '../models/handlers/intent-classifier';
-import { SchemaGenerator } from '../models/handlers/schema-generator';
+import { EntityGenerator } from '../models/handlers/entity-generator';
 
 import { QueryGenerator } from '../models/handlers/query-generator';
-import { HtmlGenerator } from '../models/handlers/html-generator';
+import { PageGenerator } from '../models/handlers/page-generator';
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const agents = fastify.aiAgent;
@@ -34,25 +34,25 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         const promptSubDir = agentName;
 
         try {
-            const [schemaGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, htmlGeneratorPrompt] = await Promise.all([
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/schema-generator.txt`), 'utf-8'),
+            const [entityGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, pageGeneratorPrompt] = await Promise.all([
+                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/entity-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/query-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/html-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/page-generator.txt`), 'utf-8'),
             ]);
 
-            const schemaGenerator = new SchemaGenerator(agent, schemaGeneratorPrompt,
+            const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
-            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL);
+            const pageGenerator = new PageGenerator(agent, pageGeneratorPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL);
 
             const intentClassifier = new IntentClassifier(
                 agent,
                 intentClassifierPrompt,
                 {
-                    define_structure: schemaGenerator,
-                    generate_query: queryGenerator,
-                    generate_html: htmlGenerator,
+                    entity_generator: entityGenerator,
+                    query_generator: queryGenerator,
+                    page_generator: pageGenerator,
                 }
             );
 

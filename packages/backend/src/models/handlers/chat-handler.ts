@@ -13,4 +13,4 @@ export interface ChatHandler {
     handle(userInput: string, context: ChatContext): Promise<void>;
 }
 
-export type HandlerType = 'define_structure' | 'generate_query' | 'generate_html';
+export type HandlerType = 'entity_generator' | 'query_generator' | 'page_generator';

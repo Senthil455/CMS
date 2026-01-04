@@ -4,7 +4,7 @@ import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext } from './chat-handler';
 import { type SaveSchemaPayload } from '@cms/shared';
 
-export class HtmlGenerator implements ChatHandler {
+export class PageGenerator implements ChatHandler {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
@@ -15,7 +15,7 @@ export class HtmlGenerator implements ChatHandler {
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
-            await context.saveAssistantMessage('I am HTML generator, I am fetching the latest schema and generating your page...');
+            await context.saveAssistantMessage('I am Page generator, I am fetching the latest schema and generating your page...');
 
             // 1. Fetch Queries and their sample data to provide context to the AI
             const queries = await this.cmsClient.getAllQueries(context.externalCookie);
@@ -39,7 +39,7 @@ export class HtmlGenerator implements ChatHandler {
             );
 
             // Save AI response to database log
-            await context.saveAiResponseLog('html-generator',
+            await context.saveAiResponseLog('page-generator',
                 JSON.stringify({ ...aiResponse, taskType: context.taskType })
             );
 
@@ -75,7 +75,7 @@ export class HtmlGenerator implements ChatHandler {
             await context.saveAssistantMessage("I have generated your HTML page, you can find it in CMS.");
 
         } catch (error: any) {
-            this.logger.error({ error, stack: error?.stack }, 'Error in HtmlGenerator handle');
+            this.logger.error({ error, stack: error?.stack }, 'Error in PageGenerator handle');
             const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
             await context.saveAssistantMessage(`I'm sorry, I encountered an error while generating your HTML page:\n${errorMessage}`);
         }

@@ -21,6 +21,7 @@ export function useSchemas() {
         });
         if (resp.data.success) {
             await mutate();
+            return resp.data;
         } else {
             throw new Error(resp.data.error || 'Failed to save entity');
         }

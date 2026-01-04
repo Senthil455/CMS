@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { SchemaGenerator } from '../schema-generator.js';
+import { EntityGenerator } from '../entity-generator.js';
 import { StubAgent } from '../../../infrastructures/stub-agent.js';
 import type { ChatContext } from '../chat-handler.js';
 import { CmsClient } from '../../../infrastructures/cms-client.js';
@@ -13,10 +13,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Helper to load stub content
-const stubPath = path.join(__dirname, '../../../../assets/prompts/stub/schema-generator.txt');
+const stubPath = path.join(__dirname, '../../../../assets/prompts/stub/entity-generator.txt');
 const stubContent = fs.readFileSync(stubPath, 'utf8');
 
-describe('SchemaGenerator', () => {
+describe('EntityGenerator', () => {
     // Enhanced Mock Logger to show Axios error details
     const mockLogger: ServiceLogger = {
         info: vi.fn(),
@@ -50,7 +50,7 @@ describe('SchemaGenerator', () => {
             { name: 'post', schemaId: 'sid-123' }
         ] as any);
 
-        const schemaGenerator = new SchemaGenerator(
+        let generator: EntityGenerator = new EntityGenerator(
             new StubAgent(),
             stubContent,
             'ENTITY_SCHEMA_STUB',
@@ -60,7 +60,7 @@ describe('SchemaGenerator', () => {
             mockLogger
         );
 
-        await schemaGenerator.handle('test input', mockChatContext);
+        await generator.handle('test input', mockChatContext);
 
         // Verification: Check if onConfirmSchemaSummary was called
         expect(mockChatContext.onConfirmSchemaSummary).toHaveBeenCalledWith(
