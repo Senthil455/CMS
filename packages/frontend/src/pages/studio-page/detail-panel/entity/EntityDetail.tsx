@@ -1,5 +1,6 @@
 import { type EntityDto } from '@cms/shared';
-import { Database, Table, Lock } from 'lucide-react';
+import { Database, Table, Lock, Terminal } from 'lucide-react';
+import { config } from '../../../../config';
 
 interface EntityDetailProps {
     entity: EntityDto;
@@ -19,6 +20,67 @@ const SYSTEM_FIELDS = new Set([
 export function EntityDetail({ entity, description }: EntityDetailProps) {
     return (
         <>
+            <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 mb-6">
+                <h4 className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
+                    <Table className="w-4 h-4" />
+                    UI Management
+                </h4>
+                <div className="text-xs">
+                    <span className="text-primary-muted mr-2">Manage via CMS Admin:</span>
+                    <a
+                        href={`${config.CMS_BASE_URL}/_content/CMS/admin/entities/${entity.name}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline hover:text-primary/80 break-all"
+                    >
+                        {`${config.CMS_BASE_URL}/_content/CMS/admin/entities/${entity.name}`}
+                    </a>
+                </div>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 mb-6">
+                <h4 className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
+                    <Terminal className="w-4 h-4" />
+                    API Usage
+                </h4>
+                <p className="text-xs text-primary-muted mb-2">
+                    Use the following endpoints to manage your entity records. Authenticate with the <code>X-Cms-Adm-Api-Key</code> header.
+                </p>
+                <div className="space-y-2 text-xs font-mono bg-app-muted p-3 rounded border border-border/50">
+                    <div className="space-y-1">
+                        <div className="text-[10px] uppercase font-bold text-primary-muted/70">Read</div>
+                        <div className="flex gap-2">
+                            <span className="text-green-600 font-bold select-none w-10">GET</span>
+                            <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}`}</span>
+                            <span className="text-primary-muted text-[10px] ml-auto whitespace-nowrap hidden sm:inline">List all</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="text-green-600 font-bold select-none w-10">GET</span>
+                            <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/<id>`}</span>
+                            <span className="text-primary-muted text-[10px] ml-auto whitespace-nowrap hidden sm:inline">Get one</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1 pt-2 border-t border-border/50">
+                        <div className="text-[10px] uppercase font-bold text-primary-muted/70">Write</div>
+                        <div className="flex gap-2">
+                            <span className="text-blue-600 font-bold select-none w-10">POST</span>
+                            <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/insert`}</span>
+                            <span className="text-primary-muted text-[10px] ml-auto whitespace-nowrap hidden sm:inline">Create</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="text-blue-600 font-bold select-none w-10">POST</span>
+                            <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/update`}</span>
+                            <span className="text-primary-muted text-[10px] ml-auto whitespace-nowrap hidden sm:inline">Update</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="text-blue-600 font-bold select-none w-10">POST</span>
+                            <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/delete`}</span>
+                            <span className="text-primary-muted text-[10px] ml-auto whitespace-nowrap hidden sm:inline">Delete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <section className="space-y-4">
                 <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
                     <Database className="w-4 h-4" />
@@ -72,8 +134,8 @@ export function EntityDetail({ entity, description }: EntityDetailProps) {
                                         <td className="px-4 py-3 text-xs text-primary-muted">{attr.header}</td>
                                         <td className="px-4 py-3">
                                             <span className={`px-1.5 py-0.5 border rounded text-[10px] uppercase font-bold ${isSystem
-                                                    ? 'bg-app-muted text-primary-muted border-border'
-                                                    : 'bg-primary/5 text-primary-muted border-primary/10'
+                                                ? 'bg-app-muted text-primary-muted border-border'
+                                                : 'bg-primary/5 text-primary-muted border-primary/10'
                                                 }`}>
                                                 {attr.dataType}
                                             </span>

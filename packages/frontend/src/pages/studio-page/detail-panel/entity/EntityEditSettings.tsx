@@ -11,6 +11,7 @@ interface EntityEditSettingsProps {
 export function EntityEditSettings({ entityForm, description, updateEntityField, updateDescription }: EntityEditSettingsProps) {
     return (
         <section className="space-y-4">
+
             <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 General Settings

@@ -6,7 +6,7 @@ import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
 import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
-import { Explorer } from './Explorer';
+import { Explorer } from './explorer-panel/Explorer';
 import { DetailView } from './detail-panel/DetailView';
 import { EntityEdit } from './detail-panel/entity/EntityEdit';
 import { QueryEdit } from './detail-panel/query/QueryEdit';
