@@ -104,7 +104,7 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
         const newAttr: AttributeDto = {
             field: 'new_field',
             header: 'New Field',
-            dataType: 'varchar',
+            dataType: 'string',
             displayType: 'text',
             inList: true,
             inDetail: true,
