@@ -1,13 +1,13 @@
 import axios from 'axios';
 import type { User } from '@cms/shared';
 
-import type { SchemaDto, SaveSchemaPayload } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, ENDPOINTS } from '@cms/shared';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }
 
     async getMe(externalCookie: string) {
-        const resp = await axios.get(`${this.baseUrl}/api/me`, {
+        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.AUTH.ME}`, {
             headers: {
                 Cookie: externalCookie
             }
@@ -22,7 +22,7 @@ export class CmsClient {
     }
 
     async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
-        const resp = await axios.get(`${this.baseUrl}/api/schemas?type=entity`, {
+        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}entity`, {
             headers: {
                 Cookie: externalCookie
             }
@@ -31,7 +31,7 @@ export class CmsClient {
     }
 
     async getAllQueries(externalCookie: string): Promise<SchemaDto[]> {
-        const resp = await axios.get(`${this.baseUrl}/api/schemas?type=query`, {
+        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}query`, {
             headers: {
                 Cookie: externalCookie
             }
@@ -40,7 +40,8 @@ export class CmsClient {
     }
 
     async requestQuery(externalCookie: string, queryName: string) {
-        const resp = await axios.get(`${this.baseUrl}/api/queries/${queryName}?limit=5`, {
+        const url = ENDPOINTS.QUERY.GET_DATA.replace(':id', queryName);
+        const resp = await axios.get(`${this.baseUrl}${url}?limit=5`, {
             headers: {
                 Cookie: externalCookie
             }
@@ -50,7 +51,7 @@ export class CmsClient {
 
     async saveEntity(externalCookie: string, payload: SaveSchemaPayload) {
         try {
-            return await axios.post(`${this.baseUrl}/api/schemas/entity/define`, payload, {
+            return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
                 headers: {
                     Cookie: externalCookie
                 }
@@ -65,7 +66,7 @@ export class CmsClient {
 
     async savePage(externalCookie: string, payload: SaveSchemaPayload) {
         try {
-            return await axios.post(`${this.baseUrl}/api/schemas`, payload, {
+            return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
                 headers: {
                     Cookie: externalCookie
                 }
@@ -81,7 +82,7 @@ export class CmsClient {
     async generateSDL(externalCookie: string): Promise<string> {
         const { getIntrospectionQuery, buildClientSchema, printSchema } = await import('graphql');
 
-        const resp = await axios.post(`${this.baseUrl}/graphql`, {
+        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
             query: getIntrospectionQuery()
         }, {
             headers: {
@@ -96,7 +97,7 @@ export class CmsClient {
     }
 
     async query(externalCookie: string, query: string, variables?: any) {
-        return axios.post(`${this.baseUrl}/graphql`, {
+        return axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
             query,
             variables
         }, {

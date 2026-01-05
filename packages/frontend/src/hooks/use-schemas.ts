@@ -19,11 +19,27 @@ export function useSchemas() {
         const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
             withCredentials: true
         });
-        if (resp.data.success) {
+        if (resp.status === 200) {
             await mutate();
             return resp.data;
         } else {
             throw new Error(resp.data.error || 'Failed to save entity');
+        }
+    };
+
+    const defineEntity = async (payload: any) => {
+        // payload is expected to be SaveSchemaPayload but the endpoint might just need { entity: entityDto }
+        // Ideally we follow the payload structure. The user said "save entity define expect schemaDto". 
+        // SaveSchemaPayload essentially wraps EntityDto.
+        // Let's pass the payload directly as the user requested.
+        const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
+            withCredentials: true
+        });
+        if (resp.status === 200 || resp.status === 201) {
+            await mutate();
+            return resp.data;
+        } else {
+            throw new Error(resp.data.error || 'Failed to define entity');
         }
     };
 
@@ -45,6 +61,7 @@ export function useSchemas() {
         isLoading,
         error,
         saveEntity,
+        defineEntity,
         deleteSchema,
         mutate
     };

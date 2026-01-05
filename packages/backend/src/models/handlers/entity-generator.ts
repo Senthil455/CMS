@@ -65,6 +65,7 @@ export class EntityGenerator implements ChatHandler {
                 return {
                     ...ne,
                     schemaId: existing?.schemaId || null
+
                 };
             });
 
@@ -79,6 +80,7 @@ export class EntityGenerator implements ChatHandler {
             const normalizedRelationships = (resp.relationships || []).map(r => new RelationshipModel(r).normalize());
 
             await context.onConfirmSchemaSummary({
+                userInput,
                 summary,
                 entities: summaryEntities,
                 relationships: normalizedRelationships

@@ -4,7 +4,7 @@ import {
     type SchemaSummary,
     type OnServerToClientEvent,
 } from '@cms/shared';
-import type { ChatContext } from '../models/handlers/chat-handler';
+import type { ChatContext, ChatHandler, HandlerType } from '../models/handlers/chat-handler';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -16,6 +16,7 @@ export class ChatService {
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
+        private readonly chatHandlers: Record<string, Partial<Record<HandlerType, ChatHandler>>>,
         private readonly logger: ServiceLogger,
     ) { }
 
@@ -60,33 +61,41 @@ export class ChatService {
 
 
         // 2. Intent Classifier
-        const intentClassifierResponse = await this.intentClassifier[agentName]!.resolve(content);
-        if (intentClassifierResponse) {
-            const { handler, taskType } = intentClassifierResponse;
-            this.logger.info('Executing resolved handler');
+        let taskType: HandlerType | null = null;
 
-            const context: ChatContext = {
-                taskType,
-                userId,
-                externalCookie,
-                saveAssistantMessage: async (content: string, payload?: any) => {
-                    return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
-                },
-                saveAiResponseLog: async (handlerName: string, response: string) => {
-                    await this.repository.saveAiResponseLog(handlerName, response);
-                },
-                onConfirmSchemaSummary: async (summary: SchemaSummary) => {
-                    onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-                }
-            };
-
-            await handler.handle(content, context);
-            return;
+        if (content.includes('@entity_generator')) {
+            taskType = 'entity_generator';
+        } else {
+            taskType = await this.intentClassifier[agentName]!.resolve(content);
         }
+        if (taskType) {
+            const handler = this.chatHandlers[agentName]?.[taskType];
+            if (handler) {
+                this.logger.info('Executing resolved handler');
 
-        // Fallback or default behavior if no command resolved
-        const aiMessage = await this.saveAssistantMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
-        onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, aiMessage);
+                const context: ChatContext = {
+                    taskType,
+                    userId,
+                    externalCookie,
+                    saveAssistantMessage: async (content: string, payload?: any) => {
+                        return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
+                    },
+                    saveAiResponseLog: async (handlerName: string, response: string) => {
+                        await this.repository.saveAiResponseLog(handlerName, response);
+                    },
+                    onConfirmSchemaSummary: async (summary: SchemaSummary) => {
+                        onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+                    }
+                };
+
+                await handler.handle(content, context);
+                return;
+            }
+
+            // Fallback or default behavior if no command resolved
+            const aiMessage = await this.saveAssistantMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
+            onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, aiMessage);
+        }
     }
 
     async handleSchemaSummaryResponse(userId: string, response: SchemaSummary, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {

@@ -48,15 +48,27 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const intentClassifier = new IntentClassifier(
                 agent,
-                intentClassifierPrompt,
-                {
-                    entity_generator: entityGenerator,
-                    query_generator: queryGenerator,
-                    page_generator: pageGenerator,
-                }
+                intentClassifierPrompt
             );
 
             intentClassifiers[agentName] = intentClassifier;
+
+            // @ts-ignore
+            if (!fastify.chatHandlers) {
+                fastify.decorate('chatHandlers', {});
+            }
+            // @ts-ignore
+            if (!fastify.chatHandlers[agentName]) {
+                // @ts-ignore
+                fastify.chatHandlers[agentName] = {};
+            }
+
+            // @ts-ignore
+            fastify.chatHandlers[agentName] = {
+                entity_generator: entityGenerator,
+                query_generator: queryGenerator,
+                page_generator: pageGenerator,
+            };
         } catch (error) {
             fastify.log.warn(`Failed to load prompts for agent "${agentName}": ${(error as Error).message}`);
         }

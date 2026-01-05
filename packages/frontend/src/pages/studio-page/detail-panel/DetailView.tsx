@@ -111,11 +111,18 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                                 <Trash2 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                                onClick={() => onEdit()}
+                                onClick={() => onEdit('settings')}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
+                            >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                Settings
+                            </button>
+                            <button
+                                onClick={() => onEdit('code')}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
                             >
                                 <Edit2 className="w-3.5 h-3.5" />
-                                Edit Entity
+                                Edit Attributes
                             </button>
                         </>
                     )}
@@ -157,7 +164,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 ) : (
                     <div className={`space-y-8 max-w-5xl ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
                         {item.type === 'entity' && entity && (
-                            <EntityDetail entity={entity} />
+                            <EntityDetail entity={entity} description={item.description} />
                         )}
 
                         {item.type === 'query' && item.settings.query && (

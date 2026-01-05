@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { type QueryDto } from '@cms/shared';
 import { Database } from 'lucide-react';
 

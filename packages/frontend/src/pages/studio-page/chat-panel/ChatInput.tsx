@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, Cpu, ChevronDown } from 'lucide-react';
 import { useAIAgents } from '../../../hooks/use-ai-agents';
 
 interface ChatInputProps {
     onSend: (message: string, agentName: string) => void;
     disabled?: boolean;
+    draft?: string | null;
 }
 
 const STORAGE_KEY = 'cms_selected_agent';
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, draft }: ChatInputProps) {
     const [input, setInput] = useState('');
     const { agents } = useAIAgents();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [selectedAgent, setSelectedAgent] = useState<string>(() => {
         return localStorage.getItem(STORAGE_KEY) || 'gemini';
     });
@@ -20,6 +22,17 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, selectedAgent);
     }, [selectedAgent]);
+
+    useEffect(() => {
+        if (draft) {
+            setInput(draft);
+            // Focus and move cursor to end
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+                textareaRef.current.setSelectionRange(draft.length, draft.length);
+            }
+        }
+    }, [draft]);
 
     // Update selected agent if it's no longer available, but only after agents have loaded
     useEffect(() => {
@@ -70,6 +83,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
                 <div className="relative group">
                     <textarea
+                        ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {

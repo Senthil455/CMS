@@ -1,16 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { type SchemaDto, type SaveSchemaPayload, type EntityDto, type AttributeDto } from '@cms/shared';
-import { FileCode, Info, Save, X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { FileCode, Save, X, Loader2 } from 'lucide-react';
+import { EntityEditSettings } from './EntityEditSettings';
+import { EntityEditAttributes } from './EntityEditAttributes';
+import { useSchemas } from '../../../../hooks/use-schemas';
 
 interface EntityEditProps {
     item: SchemaDto;
+    initialTab?: 'settings' | 'attributes';
+    onTabChange?: (tab: 'settings' | 'attributes') => void;
     onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
 }
 
-export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
+export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSave, onCancel }: EntityEditProps) {
+    const { defineEntity } = useSchemas();
+    const [activeTab, setActiveTab] = useState<'settings' | 'attributes'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
+
+    const handleTabChange = (tab: 'settings' | 'attributes') => {
+        setActiveTab(tab);
+        onTabChange?.(tab);
+    };
+
     const [entityForm, setEntityForm] = useState<EntityDto>(() => {
         return JSON.parse(JSON.stringify(item.settings.entity || {
             name: item.name,
@@ -25,6 +44,8 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
         }));
     });
 
+    const [description, setDescription] = useState<string>(item.description || '');
+
     const handleSave = async () => {
         try {
             setIsSaving(true);
@@ -33,12 +54,32 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
             const payload: SaveSchemaPayload = {
                 schemaId: item.schemaId,
                 type: 'entity',
-                settings: {
-                    entity: entityForm
-                }
+                description: description,
+                settings: { entity: entityForm }
             };
 
-            await onSave(payload);
+            if (activeTab === 'attributes') {
+                const fullPayload = {
+                    ...item,
+                    description,
+                    settings: {
+                        ...item.settings,
+                        entity: entityForm
+                    }
+                };
+
+                // Use new endpoint for attributes changes via hook
+                await defineEntity(fullPayload);
+
+                // Refresh parent data/settings if needed by calling onSave 
+                // Since defineEntity does mutate(), this might be redundant for data refresh 
+                // but required if onSave does props-level management
+                await onSave(payload);
+            } else {
+                // Settings tab save
+                await onSave(payload);
+            }
+
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');
@@ -51,10 +92,12 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
         setEntityForm({ ...entityForm, [field]: value });
     };
 
-    const updateAttribute = (index: number, field: keyof AttributeDto, value: any) => {
-        const newAttributes = [...entityForm.attributes];
-        newAttributes[index] = { ...newAttributes[index], [field]: value };
-        setEntityForm({ ...entityForm, attributes: newAttributes });
+    const updateAttribute = (index: number, changes: Partial<AttributeDto>) => {
+        setEntityForm(prev => {
+            const newAttributes = [...prev.attributes];
+            newAttributes[index] = { ...newAttributes[index], ...changes };
+            return { ...prev, attributes: newAttributes };
+        });
     };
 
     const addAttribute = () => {
@@ -69,7 +112,19 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
             options: '',
             validation: ''
         };
-        setEntityForm({ ...entityForm, attributes: [...entityForm.attributes, newAttr] });
+
+        const attributes = [...entityForm.attributes];
+        // Find the First "footer" system field to insert before
+        const footerSystemFields = ['createdBy', 'createdAt', 'updatedAt', 'publishedAt', 'publicationStatus'];
+        const insertIndex = attributes.findIndex(a => footerSystemFields.includes(a.field));
+
+        if (insertIndex !== -1) {
+            attributes.splice(insertIndex, 0, newAttr);
+        } else {
+            attributes.push(newAttr);
+        }
+
+        setEntityForm({ ...entityForm, attributes });
     };
 
     const removeAttribute = (index: number) => {
@@ -87,10 +142,26 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
                     <div>
                         <h2 className="text-lg font-bold">Editing {item.name}</h2>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 bg-app-muted rounded-full text-primary-muted font-medium uppercase tracking-wider">
-                                {item.type}
-                            </span>
-                            <span className="text-xs text-primary-muted font-mono">{item.schemaId}</span>
+                            <div className="flex p-0.5 bg-app-muted rounded-lg">
+                                <button
+                                    onClick={() => handleTabChange('settings')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'settings'
+                                        ? 'bg-app-surface text-primary shadow-sm'
+                                        : 'text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    Settings
+                                </button>
+                                <button
+                                    onClick={() => handleTabChange('attributes')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'attributes'
+                                        ? 'bg-app-surface text-primary shadow-sm'
+                                        : 'text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    Attributes
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -127,180 +198,25 @@ export function EntityEdit({ item, onSave, onCancel }: EntityEditProps) {
                 )}
 
                 <div className="space-y-8 max-w-4xl">
-                    {/* General Settings */}
-                    <section className="space-y-4">
-                        <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
-                            <Info className="w-4 h-4" />
-                            General Settings
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField label="Display Name">
-                                <input
-                                    type="text"
-                                    value={entityForm.displayName}
-                                    onChange={(e) => updateEntityField('displayName', e.target.value)}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Table Name">
-                                <input
-                                    type="text"
-                                    value={entityForm.tableName}
-                                    onChange={(e) => updateEntityField('tableName', e.target.value)}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Primary Key">
-                                <input
-                                    type="text"
-                                    value={entityForm.primaryKey}
-                                    onChange={(e) => updateEntityField('primaryKey', e.target.value)}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Label Attribute">
-                                <input
-                                    type="text"
-                                    value={entityForm.labelAttributeName}
-                                    onChange={(e) => updateEntityField('labelAttributeName', e.target.value)}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Default Page Size">
-                                <input
-                                    type="number"
-                                    value={entityForm.defaultPageSize}
-                                    onChange={(e) => updateEntityField('defaultPageSize', parseInt(e.target.value))}
-                                    className="app-input"
-                                />
-                            </FormField>
-                            <FormField label="Publication Status">
-                                <select
-                                    value={entityForm.defaultPublicationStatus}
-                                    onChange={(e) => updateEntityField('defaultPublicationStatus', e.target.value)}
-                                    className="app-input"
-                                >
-                                    <option value="draft">Draft</option>
-                                    <option value="published">Published</option>
-                                </select>
-                            </FormField>
-                        </div>
-                    </section>
+                    {activeTab === 'settings' && (
+                        <EntityEditSettings
+                            entityForm={entityForm}
+                            description={description}
+                            updateEntityField={updateEntityField}
+                            updateDescription={setDescription}
+                        />
+                    )}
 
-                    {/* Attributes */}
-                    <section className="space-y-4">
-                        <div className="flex items-center justify-between border-b border-border pb-2">
-                            <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
-                                <FileCode className="w-4 h-4" />
-                                Attributes
-                            </h3>
-                            <button
-                                onClick={addAttribute}
-                                className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                                Add Field
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {entityForm.attributes.map((attr, idx) => (
-                                <div key={idx} className="bg-app-surface border border-border rounded-xl shadow-sm group">
-                                    <div className="flex items-center justify-between px-4 py-2 bg-app-muted/50 border-b border-border rounded-t-xl">
-                                        <span className="text-xs font-bold text-primary/70 font-mono">{attr.field || 'unnamed_field'}</span>
-                                        <button
-                                            onClick={() => removeAttribute(idx)}
-                                            className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                    <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField label="Field Key" small>
-                                            <input
-                                                type="text"
-                                                value={attr.field}
-                                                onChange={(e) => updateAttribute(idx, 'field', e.target.value)}
-                                                className="app-input-sm"
-                                            />
-                                        </FormField>
-                                        <FormField label="Header / Label" small>
-                                            <input
-                                                type="text"
-                                                value={attr.header}
-                                                onChange={(e) => updateAttribute(idx, 'header', e.target.value)}
-                                                className="app-input-sm"
-                                            />
-                                        </FormField>
-                                        <FormField label="Data Type" small>
-                                            <select
-                                                value={attr.dataType}
-                                                onChange={(e) => updateAttribute(idx, 'dataType', e.target.value)}
-                                                className="app-input-sm"
-                                            >
-                                                <option value="varchar">Varchar (String)</option>
-                                                <option value="text">Text (Long String)</option>
-                                                <option value="int">Integer</option>
-                                                <option value="decimal">Decimal</option>
-                                                <option value="datetime">Datetime</option>
-                                                <option value="boolean">Boolean</option>
-                                                <option value="json">JSON</option>
-                                            </select>
-                                        </FormField>
-                                        <FormField label="Display Type" small>
-                                            <select
-                                                value={attr.displayType}
-                                                onChange={(e) => updateAttribute(idx, 'displayType', e.target.value)}
-                                                className="app-input-sm"
-                                            >
-                                                <option value="text">Text Input</option>
-                                                <option value="textarea">Textarea</option>
-                                                <option value="richText">Rich Text</option>
-                                                <option value="select">Select</option>
-                                                <option value="checkbox">Checkbox</option>
-                                                <option value="datepicker">Date Picker</option>
-                                                <option value="image">Image</option>
-                                                <option value="file">File</option>
-                                            </select>
-                                        </FormField>
-                                        <div className="flex items-center gap-6 md:col-span-2 pt-2">
-                                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={attr.inList}
-                                                    onChange={(e) => updateAttribute(idx, 'inList', e.target.checked)}
-                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
-                                                />
-                                                <span className="text-xs font-medium text-primary/70">Show in List</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={attr.inDetail}
-                                                    onChange={(e) => updateAttribute(idx, 'inDetail', e.target.checked)}
-                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
-                                                />
-                                                <span className="text-xs font-medium text-primary/70">Show in Detail</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                    {activeTab === 'attributes' && (
+                        <EntityEditAttributes
+                            entityForm={entityForm}
+                            updateAttribute={updateAttribute}
+                            addAttribute={addAttribute}
+                            removeAttribute={removeAttribute}
+                        />
+                    )}
                 </div>
             </div>
-        </div>
-    );
-}
-
-function FormField({ label, children, small = false }: { label: string; children: React.ReactNode; small?: boolean }) {
-    return (
-        <div className="flex flex-col gap-1.5">
-            <label className={`font-bold text-primary-muted uppercase tracking-tight ${small ? 'text-[10px]' : 'text-xs'}`}>
-                {label}
-            </label>
-            {children}
         </div>
     );
 }

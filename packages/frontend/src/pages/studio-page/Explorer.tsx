@@ -7,9 +7,10 @@ import { type SchemaDto } from '@cms/shared';
 interface ExplorerProps {
     onSelectItem: (item: SchemaDto) => void;
     selectedItem: SchemaDto | null;
+    onChatAction: (action: string) => void;
 }
 
-export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
+export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerProps) {
     const navigate = useNavigate();
     const { entities, queries, pages: allPages, isLoading, saveEntity } = useSchemas();
     const pages = allPages.filter(p => !p.settings.page?.components);
@@ -26,34 +27,7 @@ export function Explorer({ onSelectItem, selectedItem }: ExplorerProps) {
     const handleAddEntity = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        try {
-            const result: any = await saveEntity({
-                schemaId: null,
-                type: 'entity',
-                settings: {
-                    entity: {
-                        name: 'New Entity',
-                        displayName: 'New Entity',
-                        tableName: 'new_entity',
-                        primaryKey: 'id',
-                        labelAttributeName: 'id',
-                        defaultPageSize: 10,
-                        defaultPublicationStatus: 'published',
-                        pageUrl: '',
-                        attributes: []
-                    }
-                }
-            });
-
-            if (result && result.success && result.data) {
-                navigate(`/app/entity/${result.data.schemaId}`);
-                if (!expandedGroups.entities) {
-                    setExpandedGroups(prev => ({ ...prev, entities: true }));
-                }
-            }
-        } catch (err) {
-            console.error('Failed to create entity:', err);
-        }
+        onChatAction('@entity_generator ');
     };
 
     const handleAddPage = async (e: React.MouseEvent) => {

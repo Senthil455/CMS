@@ -112,6 +112,13 @@ export default function StudioPage() {
         setConfirmationData(null);
     };
 
+    const [chatDraft, setChatDraft] = useState<string | null>(null);
+
+    const handleChatAction = (action: string) => {
+        setChatDraft(action);
+        setShowChat(true);
+    }
+
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle('dark');
@@ -135,6 +142,7 @@ export default function StudioPage() {
                     <Explorer
                         onSelectItem={handleSelectItem}
                         selectedItem={selectedItem}
+                        onChatAction={handleChatAction}
                     />
                 )}
 
@@ -143,6 +151,8 @@ export default function StudioPage() {
                         {selectedItem.type === 'entity' && (
                             <EntityEdit
                                 item={selectedItem}
+                                initialTab={editTab === 'settings' ? 'settings' : 'attributes'}
+                                onTabChange={(tab) => setSearchParams({ tab: tab === 'attributes' ? 'code' : 'settings' })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
                             />
@@ -188,6 +198,7 @@ export default function StudioPage() {
                         isFetchingMore={!!isFetchingMore}
                         onLoadMore={async () => { await setSize(size + 1); }}
                         onSend={handleSend}
+                        chatDraft={chatDraft}
                     />
                 )}
             </div>
@@ -196,7 +207,7 @@ export default function StudioPage() {
                 isOpen={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
                 onConfirm={handleConfirmSchema}
-                schemaSummary={confirmationData || { summary: '', entities: [], relationships: [] }}
+                schemaSummary={confirmationData || { userInput: '', summary: '', entities: [], relationships: [] }}
             />
         </div>
     );

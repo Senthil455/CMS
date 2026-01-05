@@ -21,6 +21,8 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         repository,
         cmsClient,
         intentClassifier,
+        // @ts-ignore
+        fastify.chatHandlers,
         serviceLogger
     );
     const authService = new AuthService(cmsClient, serviceLogger);

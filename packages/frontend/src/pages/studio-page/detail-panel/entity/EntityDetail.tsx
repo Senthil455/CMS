@@ -1,11 +1,22 @@
 import { type EntityDto } from '@cms/shared';
-import { Database, Table } from 'lucide-react';
+import { Database, Table, Lock } from 'lucide-react';
 
 interface EntityDetailProps {
     entity: EntityDto;
+    description?: string;
 }
 
-export function EntityDetail({ entity }: EntityDetailProps) {
+const SYSTEM_FIELDS = new Set([
+    'id',
+    'createdAt',
+    'updatedAt',
+    'updateAt',
+    'createdBy',
+    'publishedAt',
+    'publicationStatus'
+]);
+
+export function EntityDetail({ entity, description }: EntityDetailProps) {
     return (
         <>
             <section className="space-y-4">
@@ -20,6 +31,11 @@ export function EntityDetail({ entity }: EntityDetailProps) {
                     <DetailItem label="Label Attribute" value={entity.labelAttributeName} />
                     <DetailItem label="Page Size" value={entity.defaultPageSize.toString()} />
                     <DetailItem label="Publication" value={entity.defaultPublicationStatus} />
+                    {description && (
+                        <div className="md:col-span-3">
+                            <DetailItem label="Description" value={description} multiline />
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -40,24 +56,38 @@ export function EntityDetail({ entity }: EntityDetailProps) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border bg-app-surface">
-                            {entity.attributes.map((attr, idx) => (
-                                <tr key={idx} className="hover:bg-app-muted/20 transition-colors">
-                                    <td className="px-4 py-3 text-xs font-mono font-medium text-primary">{attr.field}</td>
-                                    <td className="px-4 py-3 text-xs text-primary-muted">{attr.header}</td>
-                                    <td className="px-4 py-3">
-                                        <span className="px-1.5 py-0.5 bg-primary/5 text-primary-muted border border-primary/10 rounded text-[10px] uppercase font-bold">
-                                            {attr.dataType}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-xs text-primary-muted">{attr.displayType}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex gap-2">
-                                            {attr.inList && <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded border border-green-500/20 font-bold uppercase">List</span>}
-                                            {attr.inDetail && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold uppercase">Detail</span>}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {entity.attributes.map((attr, idx) => {
+                                const isSystem = SYSTEM_FIELDS.has(attr.field);
+                                return (
+                                    <tr
+                                        key={idx}
+                                        className={`transition-colors ${isSystem ? 'bg-app-muted/30 hover:bg-app-muted/50' : 'hover:bg-app-muted/20'}`}
+                                    >
+                                        <td className="px-4 py-3 text-xs font-mono font-medium text-primary">
+                                            <div className="flex items-center gap-2">
+                                                {attr.field}
+                                                {isSystem && <Lock className="w-3 h-3 text-primary-muted" />}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-primary-muted">{attr.header}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-1.5 py-0.5 border rounded text-[10px] uppercase font-bold ${isSystem
+                                                    ? 'bg-app-muted text-primary-muted border-border'
+                                                    : 'bg-primary/5 text-primary-muted border-primary/10'
+                                                }`}>
+                                                {attr.dataType}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-primary-muted">{attr.displayType}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex gap-2">
+                                                {attr.inList && <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded border border-green-500/20 font-bold uppercase">List</span>}
+                                                {attr.inDetail && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold uppercase">Detail</span>}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -66,11 +96,11 @@ export function EntityDetail({ entity }: EntityDetailProps) {
     );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+function DetailItem({ label, value, multiline = false }: { label: string; value: string; multiline?: boolean }) {
     return (
         <div className="space-y-1">
             <span className="text-[10px] font-bold text-primary-muted uppercase tracking-wider">{label}</span>
-            <div className="text-sm font-medium text-primary px-3 py-1.5 bg-app-surface border border-border rounded-lg shadow-sm">
+            <div className={`text-sm font-medium text-primary px-3 py-1.5 bg-app-surface border border-border rounded-lg shadow-sm ${multiline ? 'whitespace-pre-wrap min-h-[60px]' : ''}`}>
                 {value}
             </div>
         </div>

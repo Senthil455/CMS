@@ -61,6 +61,7 @@ export interface SchemaDto {
     schemaId: string;
     name: string;
     type: string;
+    description?: string;
     publicationStatus: string;
     isLatest: boolean;
     createdAt: string;
@@ -75,24 +76,28 @@ export interface SchemaDto {
 export type SaveSchemaPayload = {
     schemaId: string | null;
     type: 'entity';
+    description?: string;
     settings: {
         entity: EntityDto;
     };
 } | {
     schemaId: string | null;
     type: 'query';
+    description?: string;
     settings: {
         query: QueryDto;
     };
 } | {
     schemaId: string | null;
     type: 'page';
+    description?: string;
     settings: {
         page: PageDto;
     };
 };
 
 export interface SchemaSummary {
+    userInput: string;
     summary: string;
     entities: (EntityDto & { schemaId?: string | null; })[];
     relationships: RelationshipDto[];
