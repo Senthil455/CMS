@@ -3,10 +3,20 @@ import 'graphiql/style.css';
 import './GraphiQL.css';
 
 interface CustomGraphiQLProps {
+    key: string;
     defaultQuery?: string;
     onEditQuery?: (query: string) => void;
     className?: string;
     style?: React.CSSProperties;
+}
+
+const fetcher = async (params: any) => {
+    const res = await fetch('/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    })
+    return res.json()
 }
 const memoryStorage = {
     getItem() {
@@ -19,26 +29,16 @@ const memoryStorage = {
     length: 0,
 };
 
-export default function GraphiQL({ defaultQuery, onEditQuery, className, style }: CustomGraphiQLProps) {
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-test': '1',
-    }
-    const fetcher = async (params: any) => {
-        const res = await fetch('/graphql', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(params),
-        })
-        return res.json()
-    }
+export default function GraphiQL({ key, defaultQuery, onEditQuery, className, style }: CustomGraphiQLProps) {
     return (
         <div style={style || { height: '100vh', width: '100vw' }} className={className}>
             <GraphiQLReact
-                key={defaultQuery}
+                key={key}
+                onEditQuery={(query: string) => {
+                    onEditQuery?.(query);
+                }}
                 fetcher={fetcher}
                 defaultQuery={defaultQuery}
-                onEditQuery={onEditQuery}
                 defaultEditorToolsVisibility="variables"
                 storage={memoryStorage}
             />

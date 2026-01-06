@@ -21,7 +21,9 @@ export function QueryEditSource({ queryForm, updateField }: QueryEditSourceProps
                 <GraphiQL
                     key={queryForm.name}
                     defaultQuery={queryForm.source}
-                    onEditQuery={(query: string) => updateField('source', query)}
+                    onEditQuery={(query: string) => {
+                        updateField('source', query);
+                    }}
                     className="h-full w-full graphiql-container"
                     style={{ height: '100%', width: '100%' }}
                 />

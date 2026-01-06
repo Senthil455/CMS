@@ -28,19 +28,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
     };
 
     const [error, setError] = useState<string | null>(null);
-    const [queryForm, setQueryForm] = useState<QueryDto>(() => {
-        return JSON.parse(JSON.stringify(item.settings.query || {
-            name: item.name,
-            entityName: '',
-            source: 'model',
-            text: '',
-            filters: [],
-            sorts: [],
-            reqVariables: [],
-            distinct: false,
-            pagination: { offset: '0', limit: '10' }
-        }));
-    });
+    const [queryForm, setQueryForm] = useState<QueryDto>(item.settings.query!);
 
     const handleSave = async () => {
         try {
@@ -68,6 +56,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
     };
 
     const updateField = (field: keyof QueryDto, value: any) => {
+        console.log(field, value);
         setQueryForm({ ...queryForm, [field]: value });
     };
 
