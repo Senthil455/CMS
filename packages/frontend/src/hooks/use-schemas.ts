@@ -5,6 +5,23 @@ import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
+export function useSchemaHistory(schemaId: string | null) {
+    const { data, error, isLoading } = useSWR<SchemaDto[]>(
+        schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.HISTORY.replace(':schemaId', schemaId)}` : null,
+        fetcher,
+        {
+            shouldRetryOnError: false,
+            revalidateOnFocus: false,
+        }
+    );
+
+    return {
+        history: data || [],
+        isLoading,
+        error
+    };
+}
+
 export function useSchemas() {
     const { data, error, isLoading, mutate } = useSWR<SchemaDto[]>(
         `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.ALL}`,

@@ -1,23 +1,27 @@
-import { FileCode, Trash2, Edit2 } from 'lucide-react';
+import { Trash2, Edit2, Database } from 'lucide-react';
 import type { EntityDto } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
 interface EntityHeaderProps {
     entity: EntityDto;
-    schemaId: string;
+    schemaId: string | null;
+    publicationStatus?: string;
+    isLatest?: boolean;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
 }
 
-export function EntityHeader({ entity, schemaId, viewMode, onViewModeChange, onDelete, onEdit }: EntityHeaderProps) {
+export function EntityHeader({ entity, schemaId, publicationStatus, isLatest, viewMode, onViewModeChange, onDelete, onEdit }: EntityHeaderProps) {
     return (
         <HeaderLayout
             title={entity.name}
             type="entity"
             schemaId={schemaId}
-            icon={<FileCode className="w-5 h-5" />}
+            publicationStatus={publicationStatus}
+            isLatest={isLatest}
+            icon={<Database className="w-5 h-5" />}
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}
         >

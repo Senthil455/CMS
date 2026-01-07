@@ -1,23 +1,27 @@
-import { FileCode, Trash2, Edit2, Code2 } from 'lucide-react';
+import { Trash2, Edit2, Code2, Layout } from 'lucide-react';
 import type { PageDto } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
 interface PageHeaderProps {
     page: PageDto;
-    schemaId: string;
+    schemaId: string | null;
+    publicationStatus?: string;
+    isLatest?: boolean;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
 }
 
-export function PageHeader({ page, schemaId, viewMode, onViewModeChange, onDelete, onEdit }: PageHeaderProps) {
+export function PageHeader({ page, schemaId, publicationStatus, isLatest, viewMode, onViewModeChange, onDelete, onEdit }: PageHeaderProps) {
     return (
         <HeaderLayout
             title={page.name}
             type="page"
             schemaId={schemaId}
-            icon={<FileCode className="w-5 h-5" />}
+            publicationStatus={publicationStatus}
+            isLatest={isLatest}
+            icon={<Layout className="w-5 h-5" />}
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}
         >

@@ -49,6 +49,8 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 <EntityHeader
                     entity={entity}
                     schemaId={item.schemaId}
+                    publicationStatus={item.publicationStatus}
+                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
@@ -60,6 +62,8 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 <QueryHeader
                     query={item.settings.query}
                     schemaId={item.schemaId}
+                    publicationStatus={item.publicationStatus}
+                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
@@ -71,6 +75,8 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 <PageHeader
                     page={item.settings.page}
                     schemaId={item.schemaId}
+                    publicationStatus={item.publicationStatus}
+                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
