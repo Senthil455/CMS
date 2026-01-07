@@ -3,6 +3,8 @@ import { type SchemaDto, type SaveSchemaPayload, type QueryDto } from '@cms/shar
 import { FileCode, Save, X, Loader2 } from 'lucide-react';
 import { QueryEditSetting } from './QueryEditSetting';
 import { QueryEditSource } from './QueryEditSource';
+import { useSchemas } from '../../../../hooks/use-schemas';
+import { PublishConfirmDialog } from './PublishConfirmDialog';
 
 interface QueryEditProps {
     item: SchemaDto;
@@ -13,8 +15,11 @@ interface QueryEditProps {
 }
 
 export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: QueryEditProps) {
+    const { saveQuery, publishSchema } = useSchemas();
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
 
     useEffect(() => {
         if (initialTab) {
@@ -41,17 +46,39 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                 settings: {
                     query: {
                         ...queryForm,
-                        // Ensure text is explicitly included if it was missing before, though state handles it
                     }
                 }
             };
 
             await onSave(payload);
+
+            // If source code has changed, we need to trigger the backend to re-process/register the graphql source
+            if (activeTab === 'code' || queryForm.source !== item.settings.query?.source) {
+                await saveQuery(queryForm.entityName, item.schemaId!);
+            }
+
+            // Open publish dialog
+            setIsPublishDialogOpen(true);
+
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleConfirmPublish = async () => {
+        try {
+            setIsPublishing(true);
+            await publishSchema(item.id, item.schemaId!);
+            setIsPublishDialogOpen(false);
+        } catch (err: any) {
+            console.error(err);
+            // Maybe show error in dialog or main toast? For now just log it.
+            alert('Failed to publish: ' + (err.message || 'Unknown error'));
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -135,6 +162,13 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                     )}
                 </div>
             </div>
+
+            <PublishConfirmDialog
+                isOpen={isPublishDialogOpen}
+                onClose={() => setIsPublishDialogOpen(false)}
+                onConfirm={handleConfirmPublish}
+                isPublishing={isPublishing}
+            />
         </div>
     );
 }

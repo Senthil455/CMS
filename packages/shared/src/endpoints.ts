@@ -16,6 +16,7 @@ export const ENDPOINTS = {
         SAVE: '/api/schemas',
         DEFINE: '/api/schemas/entity/define',
         DELETE: '/api/schemas/:id',
+        PUBLISH: '/api/schemas/publish',
     },
     QUERY: {
         GET_DATA: '/api/queries/:id',

@@ -20,7 +20,7 @@ export default function StudioPage() {
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const { entities, queries, pages, saveEntity } = useSchemas();
+    const { entities, queries, pages, saveSchema } = useSchemas();
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
@@ -49,7 +49,7 @@ export default function StudioPage() {
     };
 
     const handleSaveEntity = async (payload: SaveSchemaPayload) => {
-        await saveEntity(payload);
+        await saveSchema(payload);
         navigate(`/app/${payload.type}/${payload.schemaId || id}`);
     };
 

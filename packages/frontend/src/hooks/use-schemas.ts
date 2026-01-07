@@ -15,7 +15,7 @@ export function useSchemas() {
         }
     );
 
-    const saveEntity = async (payload: SaveSchemaPayload) => {
+    const saveSchema = async (payload: SaveSchemaPayload) => {
         const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
             withCredentials: true
         });
@@ -54,15 +54,46 @@ export function useSchemas() {
         await mutate();
     };
 
+    const saveQuery = async (entityName: string, schemaId: string) => {
+        const url = `${config.CMS_BASE_URL}${ENDPOINTS.GRAPHQL}`;
+        const resp = await axios.post(url, {}, {
+            withCredentials: true,
+            headers: {
+                'x-name': entityName,
+                'x-schema-id': schemaId
+            }
+        });
+        if (resp.status === 200) {
+            return resp.data;
+        } else {
+            throw new Error('Failed to save query');
+        }
+    };
+
+    const publishSchema = async (id: number, schemaId: string) => {
+        const url = `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.PUBLISH}`;
+        const resp = await axios.post(url, { id: id.toString(), schemaId }, {
+            withCredentials: true
+        });
+        if (resp.status === 200) {
+            await mutate();
+            return resp.data;
+        } else {
+            throw new Error(resp.data.error || 'Failed to publish schema');
+        }
+    };
+
     return {
         entities: data?.filter(s => s.type === 'entity') || [],
         queries: data?.filter(s => s.type === 'query') || [],
         pages: data?.filter(s => s.type === 'page') || [],
         isLoading,
         error,
-        saveEntity,
+        saveSchema,
         defineEntity,
         deleteSchema,
+        saveQuery,
+        publishSchema,
         mutate
     };
 }

@@ -15,7 +15,7 @@ interface ExplorerProps {
 
 export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerProps) {
     const navigate = useNavigate();
-    const { entities, queries, pages: allPages, isLoading, saveEntity, defineEntity } = useSchemas();
+    const { entities, queries, pages: allPages, isLoading, saveSchema, defineEntity } = useSchemas();
     const pages = allPages.filter(p => !p.settings.page?.components);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
@@ -76,7 +76,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
         e.preventDefault();
         e.stopPropagation();
         try {
-            const result: any = await saveEntity({
+            const result: any = await saveSchema({
                 schemaId: null,
                 type: 'page',
                 settings: {
@@ -117,7 +117,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
     const handleManualCreateQuery = async (name: string) => {
         setIsAddQueryDialogOpen(false);
         try {
-            const result: any = await saveEntity({
+            const result: any = await saveSchema({
                 schemaId: null,
                 type: 'query',
                 settings: {

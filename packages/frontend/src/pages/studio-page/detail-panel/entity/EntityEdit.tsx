@@ -70,11 +70,6 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
 
                 // Use new endpoint for attributes changes via hook
                 await defineEntity(fullPayload);
-
-                // Refresh parent data/settings if needed by calling onSave 
-                // Since defineEntity does mutate(), this might be redundant for data refresh 
-                // but required if onSave does props-level management
-                await onSave(payload);
             } else {
                 // Settings tab save
                 await onSave(payload);

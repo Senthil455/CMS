@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { type SchemaDto } from '@cms/shared';
-import { FileCode, Edit2, Layout, Code2, Trash2 } from 'lucide-react';
+import { Layout } from 'lucide-react';
 
 import { SchemaGraph } from './SchemaGraph';
 import { EntityDetail } from './entity/EntityDetail';
 import { QueryDetail } from './query/QueryDetail';
 import { PageDetail } from './page/PageDetail';
+import { EntityHeader } from './headers/EntityHeader';
+import { QueryHeader } from './headers/QueryHeader';
+import { PageHeader } from './headers/PageHeader';
 
 interface DetailViewProps {
     item: SchemaDto | null;
@@ -42,117 +45,38 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
 
     return (
         <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
-            <div className="p-4 border-b border-border flex items-center justify-between bg-app-surface shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                        <FileCode className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold">{item.name}</h2>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 bg-app-muted rounded-full text-primary-muted font-medium uppercase tracking-wider">
-                                {item.type}
-                            </span>
-                            <span className="text-xs text-primary-muted font-mono">{item.schemaId}</span>
-                        </div>
-                    </div>
-                </div>
+            {item.type === 'entity' && entity && (
+                <EntityHeader
+                    entity={entity}
+                    schemaId={item.schemaId}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                />
+            )}
 
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-app-muted p-1 rounded-lg">
-                        <button
-                            onClick={() => setViewMode('preview')}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'preview' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
-                        >
-                            <Layout className="w-3.5 h-3.5" />
-                            Preview
-                        </button>
-                        <button
-                            onClick={() => setViewMode('json')}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'json' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
-                        >
-                            <Code2 className="w-3.5 h-3.5" />
-                            JSON
-                        </button>
-                    </div>
+            {item.type === 'query' && item.settings.query && (
+                <QueryHeader
+                    query={item.settings.query}
+                    schemaId={item.schemaId}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                />
+            )}
 
-                    {item.type === 'query' && (
-                        <>
-                            <button
-                                onClick={onDelete}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
-                                title="Delete Query"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                onClick={() => onEdit('settings')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
-                            >
-                                <Edit2 className="w-3.5 h-3.5" />
-                                Settings
-                            </button>
-                            <button
-                                onClick={() => onEdit('code')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
-                            >
-                                <Code2 className="w-3.5 h-3.5" />
-                                Edit Source
-                            </button>
-                        </>
-                    )}
-                    {item.type === 'entity' && (
-                        <>
-                            <button
-                                onClick={onDelete}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
-                                title="Delete Entity"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                onClick={() => onEdit('settings')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
-                            >
-                                <Edit2 className="w-3.5 h-3.5" />
-                                Settings
-                            </button>
-                            <button
-                                onClick={() => onEdit('code')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
-                            >
-                                <Edit2 className="w-3.5 h-3.5" />
-                                Edit Attributes
-                            </button>
-                        </>
-                    )}
-                    {item.type === 'page' && (
-                        <>
-                            <button
-                                onClick={onDelete}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
-                                title="Delete Page"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                onClick={() => onEdit('settings')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
-                            >
-                                <Edit2 className="w-3.5 h-3.5" />
-                                Settings
-                            </button>
-                            <button
-                                onClick={() => onEdit('code')}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
-                            >
-                                <Code2 className="w-3.5 h-3.5" />
-                                Edit Source
-                            </button>
-                        </>
-                    )}
-                </div>
-            </div>
+            {item.type === 'page' && item.settings.page && (
+                <PageHeader
+                    page={item.settings.page}
+                    schemaId={item.schemaId}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                />
+            )}
 
             <div className={`flex-1 overflow-auto p-6 ${item.type === 'query' ? 'flex flex-col' : ''}`}>
                 {viewMode === 'json' ? (
