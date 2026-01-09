@@ -1,17 +1,94 @@
-import { type QueryDto } from '@cms/shared';
-import { Info } from 'lucide-react';
+import { type SchemaDto } from '@cms/shared';
+import { Info, UploadCloud } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { config } from '../../../../config';
+import { useSchemas } from '../../../../hooks/use-schemas';
+import { PublishConfirmDialog } from './PublishConfirmDialog';
 
 interface QueryDetailProps {
-    query: QueryDto;
+    schema: SchemaDto;
 }
 
-export function QueryDetail({ query }: QueryDetailProps) {
+function EndpointPreview({ url }: { url: string }) {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(url);
+                const json = await res.json();
+                setData(json);
+                setError(null);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to fetch');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [url]);
+
+    if (loading) return <div className="mt-2 text-xs text-muted-foreground">Loading response...</div>;
+    if (error) return <div className="mt-2 text-xs text-red-500">Error: {error}</div>;
+    if (!data) return null;
+
+    return (
+        <div className="mt-2">
+            <div className="text-xs font-medium mb-1.5 text-muted-foreground">Response Preview</div>
+            <pre className="bg-slate-950 text-slate-50 p-3 rounded-lg text-xs font-mono overflow-auto max-h-60 border border-slate-800">
+                {JSON.stringify(data, null, 2)}
+            </pre>
+        </div>
+    );
+}
+
+export function QueryDetail({ schema }: QueryDetailProps) {
+    const query = schema.settings.query!;
     const listUrl = `${config.CMS_BASE_URL}/api/queries/${query.name}`;
     const singleUrl = `${config.CMS_BASE_URL}/api/queries/${query.name}/single`;
 
+    const { publishSchema } = useSchemas();
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
+
+    const handleConfirmPublish = async () => {
+        try {
+            setIsPublishing(true);
+            await publishSchema(schema.id, schema.schemaId!);
+            setIsPublishDialogOpen(false);
+        } catch (err: any) {
+            console.error(err);
+            alert('Failed to publish: ' + (err.message || 'Unknown error'));
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     return (
         <div className="h-full flex flex-col p-6 space-y-8 overflow-y-auto">
+            {/* Publish Section */}
+            {schema.publicationStatus !== 'published' && (
+                <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 shadow-sm flex items-center justify-between">
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-orange-600">Query Not Published</h4>
+                        <p className="text-xs text-orange-600/80">
+                            This query has unsaved changes or hasn't been published yet.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setIsPublishDialogOpen(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-bold hover:bg-orange-700 transition-colors shadow-sm"
+                    >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        Publish Now
+                    </button>
+                </div>
+            )}
+
             {/* Explanation Section */}
             <div className="bg-blue-50/5 p-4 rounded-lg border border-blue-500/20 shadow-sm">
                 <div className="flex items-start gap-3">
@@ -43,6 +120,7 @@ export function QueryDetail({ query }: QueryDetailProps) {
                                     {listUrl}
                                 </div>
                             </div>
+                            <EndpointPreview url={listUrl} />
                         </div>
 
                         <div className="space-y-2">
@@ -57,11 +135,18 @@ export function QueryDetail({ query }: QueryDetailProps) {
                                     {singleUrl}
                                 </div>
                             </div>
+                            <EndpointPreview url={singleUrl} />
                         </div>
                     </div>
                 </div>
             </div>
+
+            <PublishConfirmDialog
+                isOpen={isPublishDialogOpen}
+                onClose={() => setIsPublishDialogOpen(false)}
+                onConfirm={handleConfirmPublish}
+                isPublishing={isPublishing}
+            />
         </div>
     )
 }
-

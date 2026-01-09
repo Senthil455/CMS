@@ -13,6 +13,7 @@ import { QueryEdit } from './detail-panel/query/QueryEdit';
 import { PageEdit } from './detail-panel/page/PageEdit';
 import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 export default function StudioPage() {
     const { type, id } = useParams();
@@ -55,17 +56,28 @@ export default function StudioPage() {
 
     const { deleteSchema } = useSchemas();
 
+    // Delete Logic
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleDelete = async () => {
         if (!selectedItem) return;
+        setShowDeleteConfirm(true);
+    };
 
-        if (window.confirm(`Are you sure you want to delete ${selectedItem.name}? This action cannot be undone.`)) {
-            try {
-                await deleteSchema(selectedItem.id);
-                navigate('/app');
-            } catch (error) {
-                console.error('Failed to delete:', error);
-                alert('Failed to delete item');
-            }
+    const confirmDelete = async () => {
+        if (!selectedItem) return;
+
+        try {
+            setIsDeleting(true);
+            await deleteSchema(selectedItem.id);
+            setShowDeleteConfirm(false);
+            navigate('/app');
+        } catch (error) {
+            console.error('Failed to delete:', error);
+            alert('Failed to delete item');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -209,7 +221,14 @@ export default function StudioPage() {
                 onConfirm={handleConfirmSchema}
                 schemaSummary={confirmationData || { userInput: '', summary: '', entities: [], relationships: [] }}
             />
+
+            <DeleteConfirmDialog
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                item={selectedItem}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }
-

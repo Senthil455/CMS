@@ -98,7 +98,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                         )}
 
                         {item.type === 'query' && item.settings.query && (
-                            <QueryDetail query={item.settings.query} />
+                            <QueryDetail schema={item} />
                         )}
 
                         {item.type === 'page' && item.settings.page && (

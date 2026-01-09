@@ -42,6 +42,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
 
             const payload: SaveSchemaPayload = {
                 schemaId: item.schemaId,
+
                 type: 'query',
                 settings: {
                     query: {
@@ -54,7 +55,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
 
             // If source code has changed, we need to trigger the backend to re-process/register the graphql source
             if (activeTab === 'code' || queryForm.source !== item.settings.query?.source) {
-                await saveQuery(queryForm.entityName, item.schemaId!);
+                await saveQuery(queryForm.name, item.schemaId!, queryForm.source);
             }
 
             // Open publish dialog
@@ -158,7 +159,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                     )}
 
                     {activeTab === 'code' && (
-                        <QueryEditSource queryForm={queryForm} updateField={updateField} />
+                        <QueryEditSource item={item} queryForm={queryForm} updateField={updateField} />
                     )}
                 </div>
             </div>

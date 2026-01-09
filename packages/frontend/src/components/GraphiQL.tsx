@@ -12,7 +12,6 @@ interface CustomGraphiQLProps {
 }
 
 const fetcher = async (params: any) => {
-
     const res = await fetch(config.CMS_BASE_URL + '/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

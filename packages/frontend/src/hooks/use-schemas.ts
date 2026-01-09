@@ -71,13 +71,14 @@ export function useSchemas() {
         await mutate();
     };
 
-    const saveQuery = async (entityName: string, schemaId: string) => {
+    const saveQuery = async (entityName: string, schemaId: string, query: string) => {
         const url = `${config.CMS_BASE_URL}${ENDPOINTS.GRAPHQL}`;
-        const resp = await axios.post(url, {}, {
+        const resp = await axios.post(url, { query }, {
             withCredentials: true,
             headers: {
                 'x-name': entityName,
-                'x-schema-id': schemaId
+                'x-schema-id': schemaId,
+                'Content-Type': 'application/json'
             }
         });
         if (resp.status === 200) {
