@@ -47,7 +47,7 @@ export class QueryGenerator implements ChatHandler {
             }
 
             if (schemaIds.length > 0) {
-                await context.onSendSystemMessage({
+                await context.onSchemasSync({
                     task_type: 'query_generator',
                     schemasId: schemaIds
                 });

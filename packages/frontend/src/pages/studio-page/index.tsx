@@ -25,7 +25,7 @@ export default function StudioPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, onNewMessage, onSchemaSummaryToConfirm, onSendSystemMessage } = useSocket();
+    const { sendMessage, sendSchemaResponse, onMessageReceived, onSchemaSummaryToConfirm, onSchemasSync } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
@@ -94,7 +94,7 @@ export default function StudioPage() {
     }, [history]);
 
     useEffect(() => {
-        const unsubNew = onNewMessage((msg: ChatMessage) => {
+        const unsubReceived = onMessageReceived((msg: ChatMessage) => {
             setLocalMessages((prev) => {
                 // Ensure we don't add duplicates (checking both number and string equality just in case)
                 if (prev.some((m) => m.id == msg.id)) return prev;
@@ -108,19 +108,19 @@ export default function StudioPage() {
             setShowConfirmation(true);
         });
 
-        const unsubSystem = onSendSystemMessage((data) => {
-            console.log('System message received:', data);
-            if (data.task_type === 'query_generator') {
+        const unsubSync = onSchemasSync((data) => {
+            console.log('Schema sync received:', data);
+            if (data.task_type === 'query_generator' || data.task_type === 'entity_generator') {
                 mutate();
             }
         });
 
         return () => {
-            unsubNew();
+            unsubReceived();
             unsubConfirm();
-            unsubSystem();
+            unsubSync();
         };
-    }, [onNewMessage, onSchemaSummaryToConfirm, onSendSystemMessage, mutate]);
+    }, [onMessageReceived, onSchemaSummaryToConfirm, onSchemasSync, mutate]);
 
     const handleSend = (content: string, agentName: string) => {
         sendMessage(content, agentName);

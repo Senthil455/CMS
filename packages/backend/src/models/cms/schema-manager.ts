@@ -14,7 +14,8 @@ export class SchemaManager {
         private readonly externalCookie: string
     ) { }
 
-    async commit(summary: SchemaSummary): Promise<void> {
+    async commit(summary: SchemaSummary): Promise<string[]> {
+        const schemaIds = new Set<string>();
         // 1. Commit regular entities
         if (summary.entities.length > 0) {
             for (const item of summary.entities) {
@@ -28,7 +29,10 @@ export class SchemaManager {
                 };
 
                 try {
-                    await this.cmsClient.saveEntityDefine(this.externalCookie, payload);
+                    const resp = await this.cmsClient.saveEntityDefine(this.externalCookie, payload);
+                    if (resp.data?.schemaId) {
+                        schemaIds.add(resp.data.schemaId);
+                    }
                     this.logger.info({ entityName: item.name }, 'Successfully committed entity');
                 } catch (saveError: any) {
                     this.logger.error({ error: saveError, entityName: item.name, payload }, 'Failed to commit entity');
@@ -43,16 +47,21 @@ export class SchemaManager {
             this.logger.info('Processing relationships...');
             const allEntities = await this.cmsClient.getAllEntities(this.externalCookie);
 
-            await this.applyAndSave(resls, allEntities, (model, entities) => model.applyLookupAndJunctionToEntities(entities));
-            await this.applyAndSave(resls, allEntities, (model, entities) => model.applyCollectionToEntities(entities));
+            const modifiedIds1 = await this.applyAndSave(resls, allEntities, (model, entities) => model.applyLookupAndJunctionToEntities(entities));
+            modifiedIds1.forEach(id => schemaIds.add(id));
+
+            const modifiedIds2 = await this.applyAndSave(resls, allEntities, (model, entities) => model.applyCollectionToEntities(entities));
+            modifiedIds2.forEach(id => schemaIds.add(id));
         }
+
+        return Array.from(schemaIds);
     }
 
     private async applyAndSave(
         relationships: any[],
         allEntities: SchemaDto[],
         applyFn: (relModel: RelationshipModel, allEntities: SchemaDto[]) => SchemaDto[]
-    ) {
+    ): Promise<string[]> {
         const modifiedEntitiesMap = new Map<string, SchemaDto>();
 
         for (const rel of relationships) {
@@ -82,5 +91,7 @@ export class SchemaManager {
                 this.logger.error({ error: saveError, entityName: entity.name, payload }, 'Failed to update entity for relationship');
             }
         }
+
+        return Array.from(modifiedEntitiesMap.keys());
     }
 }

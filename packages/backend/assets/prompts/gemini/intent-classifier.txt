@@ -12,7 +12,7 @@ Classification rules:
 
 * If the input refers to creating or modifying entities or relationships → entity_generator.
 * If the input refers to generating, creating, or designing an HTML page, landing page, or frontend view → page_generator.
-* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → query_generator.
+* If the input refers to generating example data, mock data, or items for an entity → data_generator.* If the input includes creating, adding, or generating a query (e.g., "add query", "create query", "getAll*", "get*ById", or mentions GraphQL operations) → query_generator.
 * If the input asks for a GraphQL query without explicitly saying add/create → query_generator.
 * If the intent does not clearly match any task → return null.
 

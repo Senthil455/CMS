@@ -7,11 +7,11 @@ export interface ChatContext {
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
-    onSendSystemMessage: (payload: SystemMessagePayload) => Promise<void>;
+    onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
 }
 
 export interface ChatHandler {
     handle(userInput: string, context: ChatContext): Promise<void>;
 }
 
-export type HandlerType = 'entity_generator' | 'query_generator' | 'page_generator';
+export type HandlerType = 'entity_generator' | 'query_generator' | 'page_generator' | 'data_generator';

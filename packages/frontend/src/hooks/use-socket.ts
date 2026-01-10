@@ -26,10 +26,10 @@ export function useSocket() {
         socketRef.current?.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, { content, agentName });
     }, []);
 
-    const onNewMessage = useCallback((callback: (message: ChatMessage) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.NEW_MESSAGE, callback);
+    const onMessageReceived = useCallback((callback: (message: ChatMessage) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.NEW_MESSAGE, callback);
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
         };
     }, []);
 
@@ -40,10 +40,10 @@ export function useSocket() {
         };
     }, []);
 
-    const onSendSystemMessage = useCallback((callback: (data: SystemMessagePayload) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, callback);
+    const onSchemasSync = useCallback((callback: (data: SystemMessagePayload) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, callback);
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
         };
     }, []);
 
@@ -55,8 +55,8 @@ export function useSocket() {
         isConnected,
         sendMessage,
         sendSchemaResponse,
-        onNewMessage,
+        onMessageReceived,
         onSchemaSummaryToConfirm,
-        onSendSystemMessage,
+        onSchemasSync,
     };
 }

@@ -10,6 +10,7 @@ import { EntityGenerator } from '../models/handlers/entity-generator';
 
 import { QueryGenerator } from '../models/handlers/query-generator';
 import { PageGenerator } from '../models/handlers/page-generator';
+import { DataGenerator } from '../models/handlers/data-generator';
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const agents = fastify.aiAgent;
@@ -34,17 +35,19 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         const promptSubDir = agentName;
 
         try {
-            const [entityGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, pageGeneratorPrompt] = await Promise.all([
+            const [entityGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, pageGeneratorPrompt, dataGeneratorPrompt] = await Promise.all([
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/entity-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/query-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/page-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/data-generator.txt`), 'utf-8'),
             ]);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
             const pageGenerator = new PageGenerator(agent, pageGeneratorPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL);
+            const dataGenerator = new DataGenerator(agent, dataGeneratorPrompt, cmsClient, modelLogger);
 
             const intentClassifier = new IntentClassifier(
                 agent,
@@ -68,6 +71,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 entity_generator: entityGenerator,
                 query_generator: queryGenerator,
                 page_generator: pageGenerator,
+                data_generator: dataGenerator,
             };
         } catch (error) {
             fastify.log.warn(`Failed to load prompts for agent "${agentName}": ${(error as Error).message}`);

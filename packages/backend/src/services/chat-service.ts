@@ -44,7 +44,7 @@ export class ChatService {
         payload?: any
     ): Promise<ChatMessage> {
         const message = await this.saveAssistantMessage(userId, content, payload);
-        onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, message);
+        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
     }
 
@@ -56,7 +56,7 @@ export class ChatService {
         onEvent: OnServerToClientEvent): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
-        onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, userMessage);
+        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
 
 
@@ -86,8 +86,8 @@ export class ChatService {
                     onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                         onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
                     },
-                    onSendSystemMessage: async (payload: any) => {
-                        onEvent(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, payload);
+                    onSchemasSync: async (payload: any) => {
+                        onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
                     }
                 };
 
@@ -97,7 +97,7 @@ export class ChatService {
 
             // Fallback or default behavior if no command resolved
             const aiMessage = await this.saveAssistantMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
-            onEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, aiMessage);
+            onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
         }
     }
 
@@ -111,7 +111,11 @@ export class ChatService {
 
         try {
             const schemaManager = new SchemaManager(this.cmsClient, this.logger, externalCookie);
-            await schemaManager.commit(response);
+            const schemaIds = await schemaManager.commit(response);
+            onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
+                task_type: 'entity_generator',
+                schemasId: schemaIds
+            });
             await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
         } catch (error) {
             this.logger.error({ error }, 'Failed to commit schema changes');

@@ -128,7 +128,23 @@ export class CmsClient {
                 'x-schema-id': schemaId
             }
         });
-        return schemaId
+        return schemaId;
+    }
+
+    async insertData(externalCookie: string, entityName: string, data: any) {
+        const url = `/api/entities/${entityName}/insert`;
+        try {
+            return await axios.post(`${this.baseUrl}${url}`, data, {
+                headers: {
+                    Cookie: externalCookie
+                }
+            });
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw error.response.data;
+            }
+            throw error;
+        }
     }
 }
 

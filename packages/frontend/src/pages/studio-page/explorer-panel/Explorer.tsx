@@ -17,7 +17,7 @@ interface ExplorerProps {
 export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerProps) {
     const navigate = useNavigate();
     const { entities, queries, pages: allPages, isLoading, saveSchema, defineEntity } = useSchemas();
-    const pages = allPages.filter(p => !p.settings.page?.components);
+    const pages = allPages.filter(p => (p.settings.page?.components?.length || 0) < 1);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
         queries: true,
@@ -98,7 +98,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
                         query: '',
                         html: '<div>' + name + '</div>',
                         css: '',
-                        components: '[]',
+                        components: '',
                         styles: ''
                     }
                 }
