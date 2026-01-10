@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Layout, Code2, Clock, CheckCircle2 } from 'lucide-react';
+import { Layout, Code2, Clock } from 'lucide-react';
 import { SchemaHistoryDialog } from '../history/SchemaHistoryDialog';
 
 interface HeaderLayoutProps {
@@ -7,7 +7,6 @@ interface HeaderLayoutProps {
     type: 'entity' | 'query' | 'page';
     schemaId: string | null;
     publicationStatus?: string;
-    isLatest?: boolean;
     icon: ReactNode;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
@@ -19,7 +18,6 @@ export function HeaderLayout({
     type,
     schemaId,
     publicationStatus,
-    isLatest,
     icon,
     viewMode,
     onViewModeChange,

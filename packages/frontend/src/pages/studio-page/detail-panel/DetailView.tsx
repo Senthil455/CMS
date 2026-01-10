@@ -50,7 +50,6 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                     entity={entity}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
@@ -63,7 +62,6 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                     query={item.settings.query}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
@@ -76,7 +74,6 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                     page={item.settings.page}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    isLatest={item.isLatest}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onDelete={onDelete}
@@ -94,7 +91,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 ) : (
                     <div className={`space-y-8 max-w-5xl ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
                         {item.type === 'entity' && entity && (
-                            <EntityDetail entity={entity} description={item.description} />
+                            <EntityDetail schema={item} allSchemas={schemas} onSelect={onSelect} />
                         )}
 
                         {item.type === 'query' && item.settings.query && (
@@ -102,7 +99,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                         )}
 
                         {item.type === 'page' && item.settings.page && (
-                            <PageDetail page={item.settings.page} />
+                            <PageDetail schema={item} />
                         )}
 
                         {item.type !== 'entity' && item.type !== 'query' && item.type !== 'page' && (

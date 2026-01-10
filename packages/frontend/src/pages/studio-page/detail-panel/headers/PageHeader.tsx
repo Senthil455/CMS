@@ -6,21 +6,19 @@ interface PageHeaderProps {
     page: PageDto;
     schemaId: string | null;
     publicationStatus?: string;
-    isLatest?: boolean;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
 }
 
-export function PageHeader({ page, schemaId, publicationStatus, isLatest, viewMode, onViewModeChange, onDelete, onEdit }: PageHeaderProps) {
+export function PageHeader({ page, schemaId, publicationStatus, viewMode, onViewModeChange, onDelete, onEdit }: PageHeaderProps) {
     return (
         <HeaderLayout
             title={page.name}
             type="page"
             schemaId={schemaId}
             publicationStatus={publicationStatus}
-            isLatest={isLatest}
             icon={<Layout className="w-5 h-5" />}
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}

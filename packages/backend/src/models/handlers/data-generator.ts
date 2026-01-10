@@ -20,13 +20,13 @@ export class DataGenerator implements ChatHandler {
         try {
             await context.saveAssistantMessage('I am data generator, I am fetching the latest schema and generating your data...');
 
-            // 1. Fetch SDL
-            const sdl = await this.cmsClient.generateSDL(context.externalCookie);
+            // 1. Fetch Schema
+            const entities = await this.cmsClient.getAllXEntity(context.externalCookie);
 
             // 2. Call AI Agent to generate data
             const response: DataGeneratorResponse = await this.aiAgent.generate(
                 this.systemPrompt,
-                `\nGRAPHQL SDL:\n${sdl}`,
+                `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`,
                 userInput
             );
 

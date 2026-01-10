@@ -71,23 +71,6 @@ export function useSchemas() {
         await mutate();
     };
 
-    const saveQuery = async (entityName: string, schemaId: string, query: string) => {
-        const url = `${config.CMS_BASE_URL}${ENDPOINTS.GRAPHQL}`;
-        const resp = await axios.post(url, { query }, {
-            withCredentials: true,
-            headers: {
-                'x-name': entityName,
-                'x-schema-id': schemaId,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (resp.status === 200) {
-            return resp.data;
-        } else {
-            throw new Error('Failed to save query');
-        }
-    };
-
     const publishSchema = async (id: number, schemaId: string) => {
         const url = `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.PUBLISH}`;
         const resp = await axios.post(url, { id: id.toString(), schemaId }, {
@@ -110,7 +93,6 @@ export function useSchemas() {
         saveSchema,
         defineEntity,
         deleteSchema,
-        saveQuery,
         publishSchema,
         mutate
     };

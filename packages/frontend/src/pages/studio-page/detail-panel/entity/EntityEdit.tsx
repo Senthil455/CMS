@@ -11,9 +11,10 @@ interface EntityEditProps {
     onTabChange?: (tab: 'settings' | 'attributes') => void;
     onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
+    availableEntities: SchemaDto[];
 }
 
-export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSave, onCancel }: EntityEditProps) {
+export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSave, onCancel, availableEntities }: EntityEditProps) {
     const { defineEntity } = useSchemas();
     const [activeTab, setActiveTab] = useState<'settings' | 'attributes'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
@@ -208,6 +209,7 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
                             updateAttribute={updateAttribute}
                             addAttribute={addAttribute}
                             removeAttribute={removeAttribute}
+                            availableEntities={availableEntities}
                         />
                     )}
                 </div>

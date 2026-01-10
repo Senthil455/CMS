@@ -106,3 +106,26 @@ export interface SchemaSummary {
 export interface QueryResponse {
     queries: Record<string, string>;
 }
+
+export interface XAttributeDto {
+    field: string;
+    header: string;
+    displayType: string;
+    inList: boolean;
+    inDetail: boolean;
+    isDefault: boolean;
+    options: string;
+    junction: XEntityDto | null;
+    lookup: XEntityDto | null;
+    collection: XEntityDto | null;
+}
+
+export interface XEntityDto {
+    attributes: XAttributeDto[];
+    name: string;
+    displayName: string;
+    primaryKey: string;
+    labelAttributeName: string;
+    defaultPageSize: number;
+    previewUrl: string;
+}

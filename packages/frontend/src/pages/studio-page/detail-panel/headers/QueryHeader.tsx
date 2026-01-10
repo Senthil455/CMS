@@ -6,21 +6,19 @@ interface QueryHeaderProps {
     query: QueryDto;
     schemaId: string | null;
     publicationStatus?: string;
-    isLatest?: boolean;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
 }
 
-export function QueryHeader({ query, schemaId, publicationStatus, isLatest, viewMode, onViewModeChange, onDelete, onEdit }: QueryHeaderProps) {
+export function QueryHeader({ query, schemaId, publicationStatus, viewMode, onViewModeChange, onDelete, onEdit }: QueryHeaderProps) {
     return (
         <HeaderLayout
             title={query.name}
             type="query"
             schemaId={schemaId}
             publicationStatus={publicationStatus}
-            isLatest={isLatest}
             icon={<FileCode className="w-5 h-5" />}
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}

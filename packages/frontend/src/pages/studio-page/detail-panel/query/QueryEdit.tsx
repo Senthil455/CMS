@@ -4,7 +4,7 @@ import { FileCode, Save, X, Loader2 } from 'lucide-react';
 import { QueryEditSetting } from './QueryEditSetting';
 import { QueryEditSource } from './QueryEditSource';
 import { useSchemas } from '../../../../hooks/use-schemas';
-import { PublishConfirmDialog } from './PublishConfirmDialog';
+import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 
 interface QueryEditProps {
     item: SchemaDto;
@@ -15,7 +15,7 @@ interface QueryEditProps {
 }
 
 export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: QueryEditProps) {
-    const { saveQuery, publishSchema } = useSchemas();
+    const { publishSchema } = useSchemas();
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
@@ -52,11 +52,6 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
             };
 
             await onSave(payload);
-
-            // If source code has changed, we need to trigger the backend to re-process/register the graphql source
-            if (activeTab === 'code' || queryForm.source !== item.settings.query?.source) {
-                await saveQuery(queryForm.name, item.schemaId!, queryForm.source);
-            }
 
             // Open publish dialog
             setIsPublishDialogOpen(true);
@@ -169,6 +164,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                 onClose={() => setIsPublishDialogOpen(false)}
                 onConfirm={handleConfirmPublish}
                 isPublishing={isPublishing}
+                type="query"
             />
         </div>
     );

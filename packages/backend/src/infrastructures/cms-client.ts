@@ -1,7 +1,9 @@
 import axios from 'axios';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { User } from '@cms/shared';
 
-import { type SchemaDto, type SaveSchemaPayload, ENDPOINTS } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, ENDPOINTS } from '@cms/shared';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }
@@ -37,6 +39,22 @@ export class CmsClient {
             }
         });
         return resp.data;
+    }
+
+    async getXEntity(externalCookie: string, entityName: string): Promise<XEntityDto> {
+        const url = `/api/schemas/entity/${entityName}`;
+        const resp = await axios.get(`${this.baseUrl}${url}`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
+    }
+
+    async getAllXEntity(externalCookie: string): Promise<XEntityDto[]> {
+        const entities = await this.getAllEntities(externalCookie);
+        const promises = entities.map(e => this.getXEntity(externalCookie, e.name));
+        return Promise.all(promises);
     }
 
     async requestQuery(externalCookie: string, queryName: string) {
@@ -98,13 +116,13 @@ export class CmsClient {
 
     async saveQuery(externalCookie: string, queryName: string, query: string, variables?: any) {
         const payload: SaveSchemaPayload = {
-            schemaId: null,
+            schemaId: '',
             type: 'query',
             settings: {
                 query: {
                     name: queryName,
                     entityName: '',
-                    source: '',
+                    source: query,
                     filters: [],
                     sorts: [],
                     reqVariables: [],
@@ -118,16 +136,6 @@ export class CmsClient {
         const saveResp = await this.saveSchema(externalCookie, payload);
         const schemaId = saveResp.data.schemaId;
 
-        await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
-            query,
-            variables
-        }, {
-            headers: {
-                Cookie: externalCookie,
-                'x-name': queryName,
-                'x-schema-id': schemaId
-            }
-        });
         return schemaId;
     }
 
@@ -144,6 +152,50 @@ export class CmsClient {
                 throw error.response.data;
             }
             throw error;
+        }
+    }
+
+    async populateExamplePics(externalCookie: string) {
+        try {
+            const assetsResp = await axios.get(`${this.baseUrl}/api/assets?linkCount=true&offset=0&limit=48&sort[id]=-1`, {
+                headers: {
+                    Cookie: externalCookie
+                }
+            });
+
+            if (assetsResp.data.totalRecords !== 0) {
+                return;
+            }
+
+            const examplePicsPath = path.resolve(process.cwd(), 'assets', 'example_pics');
+            if (!fs.existsSync(examplePicsPath)) {
+                return;
+            }
+
+            const categories = fs.readdirSync(examplePicsPath);
+            for (const category of categories) {
+                const categoryPath = path.join(examplePicsPath, category);
+                if (!fs.statSync(categoryPath).isDirectory()) continue;
+
+                const files = fs.readdirSync(categoryPath);
+                for (const file of files) {
+                    const filePath = path.join(categoryPath, file);
+                    if (!fs.statSync(filePath).isFile()) continue;
+
+                    const formData = new FormData();
+                    const fileBuffer = fs.readFileSync(filePath);
+                    const blob = new Blob([fileBuffer]);
+                    formData.append('Files', blob, file);
+
+                    await axios.post(`${this.baseUrl}/api/assets`, formData, {
+                        headers: {
+                            Cookie: externalCookie,
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to populate example pics:', error);
         }
     }
 }

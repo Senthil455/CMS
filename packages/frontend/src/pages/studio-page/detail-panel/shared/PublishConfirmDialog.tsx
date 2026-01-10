@@ -5,10 +5,13 @@ interface PublishConfirmDialogProps {
     onClose: () => void;
     onConfirm: () => void;
     isPublishing: boolean;
+    type: 'entity' | 'query' | 'page';
 }
 
-export function PublishConfirmDialog({ isOpen, onClose, onConfirm, isPublishing }: PublishConfirmDialogProps) {
+export function PublishConfirmDialog({ isOpen, onClose, onConfirm, isPublishing, type }: PublishConfirmDialogProps) {
     if (!isOpen) return null;
+
+    const title = type === 'entity' ? 'Entity' : type === 'query' ? 'Query' : 'Page';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -31,10 +34,10 @@ export function PublishConfirmDialog({ isOpen, onClose, onConfirm, isPublishing 
                 {/* Content */}
                 <div className="p-6">
                     <p className="text-primary text-sm leading-relaxed mb-4">
-                        Do you want to publish this query?
+                        Do you want to publish this {type}?
                     </p>
                     <p className="text-primary-muted text-xs leading-relaxed bg-app-muted p-3 rounded-lg border border-border">
-                        Publishing might affect pages using this query and will expose data via the API.
+                        Publishing might affect components using this {type} and will expose data via the API where applicable.
                         Once published, this version will be live.
                     </p>
 
@@ -56,7 +59,7 @@ export function PublishConfirmDialog({ isOpen, onClose, onConfirm, isPublishing 
                             ) : (
                                 <>
                                     <UploadCloud className="w-4 h-4" />
-                                    Publish Query
+                                    Publish {title}
                                 </>
                             )}
                         </button>

@@ -6,21 +6,19 @@ interface EntityHeaderProps {
     entity: EntityDto;
     schemaId: string | null;
     publicationStatus?: string;
-    isLatest?: boolean;
     viewMode: 'preview' | 'json';
     onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
 }
 
-export function EntityHeader({ entity, schemaId, publicationStatus, isLatest, viewMode, onViewModeChange, onDelete, onEdit }: EntityHeaderProps) {
+export function EntityHeader({ entity, schemaId, publicationStatus, viewMode, onViewModeChange, onDelete, onEdit }: EntityHeaderProps) {
     return (
         <HeaderLayout
             title={entity.name}
             type="entity"
             schemaId={schemaId}
             publicationStatus={publicationStatus}
-            isLatest={isLatest}
             icon={<Database className="w-5 h-5" />}
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}

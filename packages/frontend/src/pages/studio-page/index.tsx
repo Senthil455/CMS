@@ -175,6 +175,7 @@ export default function StudioPage() {
                                 onTabChange={(tab) => setSearchParams({ tab: tab === 'attributes' ? 'code' : 'settings' })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
+                                availableEntities={entities}
                             />
                         )}
                         {selectedItem.type === 'query' && (

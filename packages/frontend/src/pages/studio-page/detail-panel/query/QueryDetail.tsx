@@ -3,7 +3,7 @@ import { Info, UploadCloud } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { config } from '../../../../config';
 import { useSchemas } from '../../../../hooks/use-schemas';
-import { PublishConfirmDialog } from './PublishConfirmDialog';
+import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 
 interface QueryDetailProps {
     schema: SchemaDto;
@@ -146,6 +146,7 @@ export function QueryDetail({ schema }: QueryDetailProps) {
                 onClose={() => setIsPublishDialogOpen(false)}
                 onConfirm={handleConfirmPublish}
                 isPublishing={isPublishing}
+                type="query"
             />
         </div>
     )

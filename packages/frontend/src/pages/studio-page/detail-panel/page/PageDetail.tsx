@@ -1,14 +1,55 @@
-import { type PageDto } from '@cms/shared';
-import { Layout, FileText, Globe, ExternalLink } from 'lucide-react';
+import { type SchemaDto } from '@cms/shared';
+import { Layout, FileText, Globe, ExternalLink, UploadCloud } from 'lucide-react';
+import { useState } from 'react';
 import { config } from '../../../../config';
+import { useSchemas } from '../../../../hooks/use-schemas';
+import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 
 interface PageDetailProps {
-    page: PageDto;
+    schema: SchemaDto;
 }
 
-export function PageDetail({ page }: PageDetailProps) {
+export function PageDetail({ schema }: PageDetailProps) {
+    const page = schema.settings.page!;
+
+    const { publishSchema } = useSchemas();
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
+
+    const handleConfirmPublish = async () => {
+        try {
+            setIsPublishing(true);
+            await publishSchema(schema.id, schema.schemaId!);
+            setIsPublishDialogOpen(false);
+        } catch (err: any) {
+            console.error(err);
+            alert('Failed to publish: ' + (err.message || 'Unknown error'));
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
+            {/* Publish Section */}
+            {schema.publicationStatus !== 'published' && (
+                <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 shadow-sm flex items-center justify-between">
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-orange-600">Page Not Published</h4>
+                        <p className="text-xs text-orange-600/80">
+                            This page has unsaved changes or hasn't been published yet.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setIsPublishDialogOpen(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-bold hover:bg-orange-700 transition-colors shadow-sm"
+                    >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        Publish Now
+                    </button>
+                </div>
+            )}
+
             <section className="space-y-4">
                 <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
                     <Layout className="w-4 h-4" />
@@ -42,6 +83,14 @@ export function PageDetail({ page }: PageDetailProps) {
                     />
                 </div>
             </section>
+
+            <PublishConfirmDialog
+                isOpen={isPublishDialogOpen}
+                onClose={() => setIsPublishDialogOpen(false)}
+                onConfirm={handleConfirmPublish}
+                isPublishing={isPublishing}
+                type="page"
+            />
         </div>
     );
 }
