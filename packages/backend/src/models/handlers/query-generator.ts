@@ -33,15 +33,26 @@ export class QueryGenerator implements ChatHandler {
                 JSON.stringify({ ...queryResponse, taskType: context.taskType })
             );
 
-            for (const source of Object.values(queryResponse.queries)) {
+            const schemaIds: string[] = [];
 
-                await context.saveAssistantMessage(`Executing generated query:\n${source}`);
+            for (const [name, source] of Object.entries(queryResponse.queries)) {
+
+                await context.saveAssistantMessage(`Executing generated query "${name}":\n${source}`);
 
                 // 3. Execute query against CMS
-                const resp = await this.cmsClient.query(context.externalCookie, source);
+                const schemaId = await this.cmsClient.saveQuery(context.externalCookie, name, source);
+                schemaIds.push(schemaId);
 
-                await context.saveAssistantMessage('Query executed successfully.');
+                await context.saveAssistantMessage(`Query "${name}" executed successfully.`);
             }
+
+            if (schemaIds.length > 0) {
+                await context.onSendSystemMessage({
+                    task_type: 'query_generator',
+                    schemasId: schemaIds
+                });
+            }
+
 
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in QueryGenerator handle');

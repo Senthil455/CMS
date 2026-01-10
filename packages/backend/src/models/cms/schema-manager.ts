@@ -28,7 +28,7 @@ export class SchemaManager {
                 };
 
                 try {
-                    await this.cmsClient.saveEntity(this.externalCookie, payload);
+                    await this.cmsClient.saveEntityDefine(this.externalCookie, payload);
                     this.logger.info({ entityName: item.name }, 'Successfully committed entity');
                 } catch (saveError: any) {
                     this.logger.error({ error: saveError, entityName: item.name, payload }, 'Failed to commit entity');
@@ -76,7 +76,7 @@ export class SchemaManager {
                 }
             };
             try {
-                await this.cmsClient.saveEntity(this.externalCookie, payload);
+                await this.cmsClient.saveEntityDefine(this.externalCookie, payload);
                 this.logger.info({ entityName: entity.name }, 'Successfully updated entity for relationship');
             } catch (saveError) {
                 this.logger.error({ error: saveError, entityName: entity.name, payload }, 'Failed to update entity for relationship');

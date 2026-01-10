@@ -85,6 +85,9 @@ export class ChatService {
                     },
                     onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                         onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+                    },
+                    onSendSystemMessage: async (payload: any) => {
+                        onEvent(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, payload);
                     }
                 };
 

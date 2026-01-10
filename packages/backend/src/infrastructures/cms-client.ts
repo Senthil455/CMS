@@ -49,7 +49,7 @@ export class CmsClient {
         return resp.data;
     }
 
-    async saveEntity(externalCookie: string, payload: SaveSchemaPayload) {
+    async saveEntityDefine(externalCookie: string, payload: SaveSchemaPayload) {
         try {
             return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
                 headers: {
@@ -64,7 +64,7 @@ export class CmsClient {
         }
     }
 
-    async savePage(externalCookie: string, payload: SaveSchemaPayload) {
+    async saveSchema(externalCookie: string, payload: SaveSchemaPayload) {
         try {
             return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
                 headers: {
@@ -96,15 +96,39 @@ export class CmsClient {
         return sdl;
     }
 
-    async query(externalCookie: string, query: string, variables?: any) {
-        return axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
+    async saveQuery(externalCookie: string, queryName: string, query: string, variables?: any) {
+        const payload: SaveSchemaPayload = {
+            schemaId: null,
+            type: 'query',
+            settings: {
+                query: {
+                    name: queryName,
+                    entityName: '',
+                    source: '',
+                    filters: [],
+                    sorts: [],
+                    reqVariables: [],
+                    distinct: false,
+                    ideUrl: '',
+                    pagination: { offset: '0', limit: '10' }
+                }
+            }
+        };
+
+        const saveResp = await this.saveSchema(externalCookie, payload);
+        const schemaId = saveResp.data.schemaId;
+
+        await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
             query,
             variables
         }, {
             headers: {
-                Cookie: externalCookie
+                Cookie: externalCookie,
+                'x-name': queryName,
+                'x-schema-id': schemaId
             }
         });
+        return schemaId
     }
 }
 

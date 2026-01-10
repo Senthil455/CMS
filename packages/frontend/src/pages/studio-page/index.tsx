@@ -21,11 +21,11 @@ export default function StudioPage() {
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const { entities, queries, pages, saveSchema } = useSchemas();
+    const { entities, queries, pages, saveSchema, mutate } = useSchemas();
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, onNewMessage, onSchemaSummaryToConfirm } = useSocket();
+    const { sendMessage, sendSchemaResponse, onNewMessage, onSchemaSummaryToConfirm, onSendSystemMessage } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
@@ -108,11 +108,19 @@ export default function StudioPage() {
             setShowConfirmation(true);
         });
 
+        const unsubSystem = onSendSystemMessage((data) => {
+            console.log('System message received:', data);
+            if (data.task_type === 'query_generator') {
+                mutate();
+            }
+        });
+
         return () => {
             unsubNew();
             unsubConfirm();
+            unsubSystem();
         };
-    }, [onNewMessage, onSchemaSummaryToConfirm]);
+    }, [onNewMessage, onSchemaSummaryToConfirm, onSendSystemMessage, mutate]);
 
     const handleSend = (content: string, agentName: string) => {
         sendMessage(content, agentName);

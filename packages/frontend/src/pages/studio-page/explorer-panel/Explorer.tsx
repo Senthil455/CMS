@@ -5,6 +5,7 @@ import { useSchemas } from '../../../hooks/use-schemas';
 import { type SchemaDto } from '@cms/shared';
 import { AddEntityDialog } from './AddEntityDialog';
 import { AddQueryDialog } from './AddQueryDialog';
+import { AddPageDialog } from './AddPageDialog';
 import { ExplorerGroup } from './ExplorerGroup';
 
 interface ExplorerProps {
@@ -24,6 +25,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
     });
     const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
     const [isAddQueryDialogOpen, setIsAddQueryDialogOpen] = useState(false);
+    const [isAddPageDialogOpen, setIsAddPageDialogOpen] = useState(false);
 
     const toggleGroup = (group: string) => {
         setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
@@ -72,19 +74,29 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
         }
     };
 
-    const handleAddPage = async (e: React.MouseEvent) => {
+    const handleAddPageClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        setIsAddPageDialogOpen(true);
+    };
+
+    const handleUseAIPage = () => {
+        setIsAddPageDialogOpen(false);
+        onChatAction('@page_generator ');
+    };
+
+    const handleManualCreatePage = async (name: string) => {
+        setIsAddPageDialogOpen(false);
         try {
             const result: any = await saveSchema({
                 schemaId: null,
                 type: 'page',
                 settings: {
                     page: {
-                        name: 'New Page',
-                        title: 'New Page',
+                        name: name,
+                        title: name,
                         query: '',
-                        html: '<div>New Page</div>',
+                        html: '<div>' + name + '</div>',
                         css: '',
                         components: '[]',
                         styles: ''
@@ -203,7 +215,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
                         items={pages}
                         isExpanded={expandedGroups.pages}
                         onToggle={() => toggleGroup('pages')}
-                        onAdd={handleAddPage}
+                        onAdd={handleAddPageClick}
                         onSelect={onSelectItem}
                         selectedItem={selectedItem}
                         isLoading={isLoading}
@@ -228,6 +240,12 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
                 onClose={() => setIsAddQueryDialogOpen(false)}
                 onUseAI={handleUseAIQuery}
                 onManualCreate={handleManualCreateQuery}
+            />
+            <AddPageDialog
+                isOpen={isAddPageDialogOpen}
+                onClose={() => setIsAddPageDialogOpen(false)}
+                onUseAI={handleUseAIPage}
+                onManualCreate={handleManualCreatePage}
             />
         </>
     );

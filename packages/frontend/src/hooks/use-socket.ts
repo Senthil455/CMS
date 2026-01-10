@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { SOCKET_EVENTS, type ChatMessage, type ServerToClientEvents, type ClientToServerEvents, type SchemaSummary } from '@cms/shared';
+import { SOCKET_EVENTS, type ChatMessage, type ServerToClientEvents, type ClientToServerEvents, type SchemaSummary, type SystemMessagePayload } from '@cms/shared';
 import { config } from '../config';
 
 export function useSocket() {
@@ -40,6 +40,13 @@ export function useSocket() {
         };
     }, []);
 
+    const onSendSystemMessage = useCallback((callback: (data: SystemMessagePayload) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, callback);
+        return () => {
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.SEND_SYSTEM_MESSAGE, callback);
+        };
+    }, []);
+
     const sendSchemaResponse = useCallback((data: SchemaSummary) => {
         socketRef.current?.emit(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, data);
     }, []);
@@ -50,5 +57,6 @@ export function useSocket() {
         sendSchemaResponse,
         onNewMessage,
         onSchemaSummaryToConfirm,
+        onSendSystemMessage,
     };
 }
