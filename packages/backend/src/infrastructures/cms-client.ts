@@ -1,9 +1,10 @@
 import axios from 'axios';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { User } from '@cms/shared';
 
-import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, ENDPOINTS } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS } from '@cms/shared';
 
 export class CmsClient {
     constructor(private readonly baseUrl: string) { }
@@ -14,6 +15,7 @@ export class CmsClient {
                 Cookie: externalCookie
             }
         });
+
 
         const externalUser = resp.data;
         return {
@@ -139,8 +141,13 @@ export class CmsClient {
         return schemaId;
     }
 
-    async insertData(externalCookie: string, entityName: string, data: any) {
-        const url = `/api/entities/${entityName}/insert`;
+    async insertSingleData(externalCookie: string, entity: XEntityDto, data: any) {
+        delete data[entity.primaryKey];
+        delete data['createdAt'];
+        delete data['updatedAt'];
+        delete data['createdBy'];
+
+        const url = `/api/entities/${entity.name}/insert`;
         try {
             return await axios.post(`${this.baseUrl}${url}`, data, {
                 headers: {
@@ -155,19 +162,57 @@ export class CmsClient {
         }
     }
 
+    async insertData(externalCookie: string, entity: XEntityDto, data: any, idMaps: Record<string, Record<string, any>> = {}) {
+        await this.populateExamplePics(externalCookie);
+        for (const attr of entity.attributes) {
+            const field = attr.field;
+            if (attr.lookup && data[field]) {
+                const target = attr.lookup;
+                const item = data[field];
+                const originalId = item[target.primaryKey];
+
+                if (!idMaps[field]) idMaps[field] = {};
+
+                if (originalId && idMaps[field][originalId]) {
+                    data[field][attr.lookup!.primaryKey] = idMaps[field][originalId];
+                } else {
+                    const resp = await this.insertSingleData(externalCookie, attr.lookup!, item);
+                    const newId = resp.data[target.primaryKey];
+                    if (originalId) idMaps[field][originalId] = newId;
+                    item[target.primaryKey] = newId;
+                }
+            } else if (attr.junction && Array.isArray(data[field])) {
+                const target = attr.junction
+                if (!idMaps[field]) idMaps[field] = {};
+                for (const item of data[field]) {
+                    const originalId = item[target.primaryKey];
+                    if (originalId && idMaps[field][originalId]) {
+                        item[target.primaryKey] = idMaps[field][originalId];
+                    } else {
+                        const resp = await this.insertSingleData(externalCookie, target, item);
+                        const newId = resp.data[target.primaryKey];
+                        if (originalId) idMaps[field][originalId] = newId;
+                        item[target.primaryKey] = newId;
+                    }
+                }
+            } else if (attr.displayType == 'image') {
+
+            }
+        }
+        await this.insertSingleData(externalCookie, entity, data);
+    }
+
     async populateExamplePics(externalCookie: string) {
         try {
-            const assetsResp = await axios.get(`${this.baseUrl}/api/assets?linkCount=true&offset=0&limit=48&sort[id]=-1`, {
-                headers: {
-                    Cookie: externalCookie
-                }
-            });
+            const assetsResp = await this.getAllAsset(externalCookie);
 
-            if (assetsResp.data.totalRecords !== 0) {
+            if (assetsResp.totalRecords !== 0) {
                 return;
             }
 
-            const examplePicsPath = path.resolve(process.cwd(), 'assets', 'example_pics');
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = path.dirname(__filename);
+            const examplePicsPath = path.resolve(__dirname, '../../assets', 'example_pics');
             if (!fs.existsSync(examplePicsPath)) {
                 return;
             }
@@ -197,6 +242,16 @@ export class CmsClient {
         } catch (error) {
             console.error('Failed to populate example pics:', error);
         }
+    }
+
+    async getAllAsset(externalCookie: string): Promise<AssetListResponse> {
+        const url = `${ENDPOINTS.ASSETS}`;
+        const resp = await axios.get(`${this.baseUrl}${url}`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
     }
 }
 

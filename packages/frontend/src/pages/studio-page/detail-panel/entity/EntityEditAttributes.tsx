@@ -163,6 +163,15 @@ export function EntityEditAttributes({ entityForm, updateAttribute, addAttribute
                                             ))}
                                         </select>
                                     </FormField>
+                                    <FormField label="Validation" small>
+                                        <input
+                                            type="text"
+                                            value={attr.validation || ''}
+                                            onChange={(e) => updateAttribute(originalIdx, { validation: e.target.value })}
+                                            className="app-input-sm"
+                                            placeholder="e.json logic or simple rules"
+                                        />
+                                    </FormField>
                                     {attr.dataType === 'lookup' && (
                                         <FormField label="Lookup Entity" small>
                                             <select

@@ -129,3 +129,22 @@ export interface XEntityDto {
     defaultPageSize: number;
     previewUrl: string;
 }
+
+export interface AssetDto {
+    path: string;
+    id: number;
+    name: string;
+    title: string;
+    size: number;
+    type: string;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    progress: any;
+    linkCount: number;
+}
+
+export interface AssetListResponse {
+    items: AssetDto[];
+    totalRecords: number;
+}

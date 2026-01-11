@@ -211,6 +211,7 @@ export function EntityDetail({ schema, allSchemas, onSelect }: EntityDetailProps
                                 <th className="px-4 py-3 border-b border-border">Header</th>
                                 <th className="px-4 py-3 border-b border-border">Data Type</th>
                                 <th className="px-4 py-3 border-b border-border">Display Type</th>
+                                <th className="px-4 py-3 border-b border-border">Validation</th>
                                 <th className="px-4 py-3 border-b border-border">Visibility</th>
                             </tr>
                         </thead>
@@ -248,6 +249,9 @@ export function EntityDetail({ schema, allSchemas, onSelect }: EntityDetailProps
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-xs text-primary-muted">{attr.displayType}</td>
+                                            <td className="px-4 py-3 text-xs text-primary-muted font-mono truncate max-w-[120px]" title={attr.validation}>
+                                                {attr.validation || '-'}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex gap-2">
                                                     {attr.inList && <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded border border-green-500/20 font-bold uppercase">List</span>}

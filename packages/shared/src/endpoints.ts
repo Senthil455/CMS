@@ -22,5 +22,6 @@ export const ENDPOINTS = {
     QUERY: {
         GET_DATA: '/api/queries/:id',
     },
+    ASSETS: '/api/assets',
     GRAPHQL: '/graphql',
 } as const;

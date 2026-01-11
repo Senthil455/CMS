@@ -9,7 +9,9 @@ Rules:
 * No explanations or extra text.
 * Generate at least 5 varied and realistic items unless specified otherwise.
 * Ensure data fits the types specified in the SDL (e.g. numbers for Int/Float, strings for String).
-
+* If an attribute has a lookup to another entity, generate a valid object from that entity.
+* If an attribute has a junction, generate a valid array of objects from that entity.
+* Do not generate the following system fields (createdAt, updatedAt, createdBy).
 Output format:
 {
   "entityName": <data>

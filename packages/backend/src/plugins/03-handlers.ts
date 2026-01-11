@@ -17,15 +17,16 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const cmsClient = fastify.cms;
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
 
-    // Resolve assets directory
+    // Resolve directories
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const assetsDir = path.join(__dirname, '../../assets');
+    const promptsDir = path.join(__dirname, '../prompts');
+    const schemasDir = path.join(__dirname, '../schemas');
 
     // Load common schemas
     const [entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
-        fs.readFile(path.join(assetsDir, 'schemas/entity.json'), 'utf-8'),
-        fs.readFile(path.join(assetsDir, 'schemas/attribute.json'), 'utf-8'),
-        fs.readFile(path.join(assetsDir, 'schemas/relationship.json'), 'utf-8'),
+        fs.readFile(path.join(schemasDir, 'entity.json'), 'utf-8'),
+        fs.readFile(path.join(schemasDir, 'attribute.json'), 'utf-8'),
+        fs.readFile(path.join(schemasDir, 'relationship.json'), 'utf-8'),
     ]);
 
     const intentClassifiers: Record<string, IntentClassifier> = {};
@@ -36,11 +37,11 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
         try {
             const [entityGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, pageGeneratorPrompt, dataGeneratorPrompt] = await Promise.all([
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/entity-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/intent-classifier.txt`), 'utf-8'),
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/query-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/page-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(assetsDir, `prompts/${promptSubDir}/data-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.txt`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/page-generator.txt`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.txt`), 'utf-8'),
             ]);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
