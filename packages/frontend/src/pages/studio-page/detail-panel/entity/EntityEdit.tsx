@@ -4,6 +4,7 @@ import { FileCode, Save, X, Loader2 } from 'lucide-react';
 import { EntityEditSettings } from './EntityEditSettings';
 import { EntityEditAttributes } from './EntityEditAttributes';
 import { useSchemas } from '../../../../hooks/use-schemas';
+import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 
 interface EntityEditProps {
     item: SchemaDto;
@@ -47,6 +48,9 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
 
     const [description, setDescription] = useState<string>(item.description || '');
 
+    const [showPublishPrompt, setShowPublishPrompt] = useState(false);
+    const { publishSchema } = useSchemas();
+
     const handleSave = async () => {
         try {
             setIsSaving(true);
@@ -76,9 +80,29 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
                 await onSave(payload);
             }
 
+            // After successful save, check if we should prompt for publish
+            if (item.publicationStatus !== 'published') {
+                setShowPublishPrompt(true);
+            } else {
+                onCancel();
+            }
+
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleConfirmPublish = async () => {
+        try {
+            setIsSaving(true);
+            await publishSchema(item.id, item.schemaId);
+            setShowPublishPrompt(false);
+            onCancel();
+        } catch (err: any) {
+            setError(err.message || 'Failed to publish entity.');
         } finally {
             setIsSaving(false);
         }
@@ -214,6 +238,14 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
                     )}
                 </div>
             </div>
+
+            <PublishConfirmDialog
+                isOpen={showPublishPrompt}
+                onClose={onCancel}
+                onConfirm={handleConfirmPublish}
+                isPublishing={isSaving}
+                type="entity"
+            />
         </div>
     );
 }

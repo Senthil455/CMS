@@ -44,6 +44,16 @@ export class CmsClient {
         return resp.data;
     }
 
+    async getSchemaByName(externalCookie: string, name: string, type: string): Promise<SchemaDto> {
+        const url = `/api/schemas/name/${name}?type=${type}`;
+        const resp = await axios.get(`${this.baseUrl}${url}`, {
+            headers: {
+                Cookie: externalCookie
+            }
+        });
+        return resp.data;
+    }
+
     async getXEntity(externalCookie: string, entityName: string): Promise<XEntityDto> {
         const url = `/api/schemas/entity/${entityName}`;
         const resp = await axios.get(`${this.baseUrl}${url}`, {

@@ -22,12 +22,16 @@ export class EntityGenerator implements ChatHandler {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async create(userInput: string): Promise<EntityGeneratorResponse> {
-        const schemasText = [
+    async create(userInput: string, existingContext?: string): Promise<EntityGeneratorResponse> {
+        let schemasText = [
             { name: 'entity', content: this.entitySchema },
             { name: 'attribute', content: this.attributeSchema },
             { name: 'relationship', content: this.relationshipSchema }
         ].map(s => `${s.name.toUpperCase()} SCHEMA:\n${s.content}`).join('\n\n');
+
+        if (existingContext) {
+            schemasText += `\n\n${existingContext}`;
+        }
 
         const response = await this.aiAgent.generate(
             this.systemPrompt,
@@ -40,13 +44,34 @@ export class EntityGenerator implements ChatHandler {
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
-            await context.saveAssistantMessage('I am entity generator, I am analyzing your requirements...');
+            let existingContext = '';
+            const entityNameMatch = userInput.match(/#([a-zA-Z0-9-_]+)/);
 
-            const resp = await this.create(userInput);
+            if (entityNameMatch) {
+                const entityName = entityNameMatch[1] as string;
+                try {
+                    const existingSchema = await this.cmsClient.getSchemaByName(context.externalCookie, entityName, 'entity');
+                    if (existingSchema && existingSchema.settings.entity) {
+                        const ent = existingSchema.settings.entity;
+                        existingContext = `EXISTING ENTITY SCHEMA FOR "${entityName}":\n${JSON.stringify({
+                            name: ent.name,
+                            tableName: ent.tableName,
+                            attributes: ent.attributes
+                        }, null, 2)}`;
+                        await context.saveAssistantMessage(`I found the existing entity "${entityName}". I'll fetch its schema and help you modify it...`);
+                    }
+                } catch (e) {
+                    this.logger.warn({ entityName }, 'Existing entity not found for modification');
+                    await context.saveAssistantMessage(`I couldn't find an existing entity named "${entityName}". I'll proceed with generating what you need...`);
+                }
+            } else {
+                await context.saveAssistantMessage('I am entity generator, I am analyzing your requirements and generating the schema...');
+            }
+
+            const resp = await this.create(userInput, existingContext);
 
             // Save AI response to database log
             await context.saveAiResponseLog('entity-generator', JSON.stringify({ ...resp, taskType: context.taskType }));
-
 
             // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
             const entities = (resp.entities || []).map((e: any) => ({
@@ -65,7 +90,6 @@ export class EntityGenerator implements ChatHandler {
                 return {
                     ...ne,
                     schemaId: existing?.schemaId || null
-
                 };
             });
 

@@ -130,7 +130,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                     </div>
                 )}
 
-                <div className="space-y-8 max-w-5xl h-full flex flex-col">
+                <div className="space-y-8 w-full h-full flex flex-col">
                     {activeTab === 'settings' && (
                         /* General Settings */
                         <section className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">

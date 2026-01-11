@@ -58,6 +58,7 @@ BUILT-IN FIELD RULES (CRITICAL):
 
 ATTRIBUTE RULES (STRICT):
 
+* In user requirements, "attributes" and "fields" are SYNONYMOUS and refer to the same concept.
 * Attributes represent scalar data ONLY.
 * Relationships MUST NOT be modeled as attributes.
 * Shorthand attribute definitions are FORBIDDEN.
@@ -158,6 +159,14 @@ FINAL VALIDATION RULE:
   * No relationships are modeled as attributes
   * All relationships include a valid cardinality
 * If any rule is violated, regenerate the output.
+
+MODIFICATION RULES (STRICT):
+
+* If an "EXISTING ENTITY SCHEMA" is provided, you MUST use it as the base for modifications.
+* Apply requested changes (add/remove/update attributes or entity properties).
+* You MUST maintain consistency with the existing attributes unless explicitly instructed otherwise.
+* ALWAYS output the FULL updated entity definition in the "entities" array, including unchanged attributes.
+* Do NOT provide only the changes or diffs.
 
 RETURN FORMAT:
 {

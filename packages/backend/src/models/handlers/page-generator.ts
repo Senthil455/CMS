@@ -2,7 +2,7 @@ import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext } from './chat-handler';
-import { type SaveSchemaPayload } from '@cms/shared';
+import { type SaveSchemaPayload, type SchemaDto } from '@cms/shared';
 
 export class PageGenerator implements ChatHandler {
     constructor(
@@ -15,7 +15,24 @@ export class PageGenerator implements ChatHandler {
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
-            await context.saveAssistantMessage('I am Page generator, I am fetching the latest schema and generating your page...');
+            let existingPageSchema: SchemaDto | null = null;
+            let schemaId = '';
+
+            // Check if user input contains #pageName
+            const pageNameMatch = userInput.match(/#([a-zA-Z0-9-_]+)/);
+            if (pageNameMatch) {
+                const pageName = pageNameMatch[1] as string;
+                try {
+                    existingPageSchema = await this.cmsClient.getSchemaByName(context.externalCookie, pageName, 'page');
+                    schemaId = existingPageSchema.schemaId;
+                    await context.saveAssistantMessage(`I am Page generator, I found the existing page "${pageName}". I will fetch the latest schema and help you modify it...`);
+                } catch (e) {
+                    this.logger.warn({ pageName }, 'Existing page not found for modification');
+                    await context.saveAssistantMessage(`I am Page generator, I couldn't find the existing page "${pageName}". I will fetch the latest schema and generate a new page for you...`);
+                }
+            } else {
+                await context.saveAssistantMessage('I am Page generator, I am fetching the latest schema and generating your page...');
+            }
 
             // 1. Fetch Queries and their sample data to provide context to the AI
             const queries = await this.cmsClient.getAllQueries(context.externalCookie);
@@ -31,10 +48,20 @@ export class PageGenerator implements ChatHandler {
                 }
             }))
 
+            let developerMessage = queryDetails.join('\n');
+            if (existingPageSchema && existingPageSchema.settings.page) {
+                const p = existingPageSchema.settings.page;
+                developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
+                    name: p.name,
+                    title: p.title,
+                    html: p.html
+                }, null, 2)}`;
+            }
+
             // 2. Call AI Agent to generate HTML
             const aiResponse = await this.aiAgent.generate(
                 this.systemPrompt,
-                queryDetails.join('\n'),
+                developerMessage,
                 userInput
             );
 
@@ -44,13 +71,13 @@ export class PageGenerator implements ChatHandler {
             );
 
             let { html, name, title } = aiResponse;
-            name = name || `generated-page-${Date.now()}`;
-            title = title || 'Generated Page';
+            name = name || (existingPageSchema?.name) || `generated-page-${Date.now()}`;
+            title = title || (existingPageSchema?.settings.page?.title) || 'Generated Page';
 
             // Save the generated page to CMS
             try {
                 const payload: SaveSchemaPayload = {
-                    schemaId: null,
+                    schemaId,
                     type: 'page',
                     settings: {
                         page: {
@@ -65,14 +92,14 @@ export class PageGenerator implements ChatHandler {
                     }
                 };
                 const saveResp = await this.cmsClient.saveSchema(context.externalCookie, payload);
-                const schemaId = saveResp.data.schemaId;
+                const newSchemaId = saveResp.data.schemaId;
 
-                this.logger.info({ name, schemaId }, 'Successfully saved generated page to CMS');
+                this.logger.info({ name, schemaId: newSchemaId }, 'Successfully saved generated page to CMS');
 
-                if (schemaId) {
+                if (newSchemaId) {
                     await context.onSchemasSync({
                         task_type: 'page_generator',
-                        schemasId: [schemaId]
+                        schemasId: [newSchemaId]
                     });
                 }
 
@@ -83,7 +110,10 @@ export class PageGenerator implements ChatHandler {
 
 
             // 3. Send the generated HTML as a message
-            await context.saveAssistantMessage("I have generated your HTML page, you can find it in CMS.");
+            const finalMessage = existingPageSchema
+                ? `I have updated the page "${name}", you can view it in CMS.`
+                : "I have generated your HTML page, you can find it in CMS.";
+            await context.saveAssistantMessage(finalMessage);
 
         } catch (error: any) {
             this.logger.error({ error, stack: error?.stack }, 'Error in PageGenerator handle');

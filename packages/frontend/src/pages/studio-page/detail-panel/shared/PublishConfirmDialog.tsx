@@ -37,6 +37,11 @@ export function PublishConfirmDialog({ isOpen, onClose, onConfirm, isPublishing,
                         Do you want to publish this {type}?
                     </p>
                     <p className="text-primary-muted text-xs leading-relaxed bg-app-muted p-3 rounded-lg border border-border">
+                        {type === 'entity' && (
+                            <span className="block mb-2 text-orange-600 font-bold">
+                                Warning: Queries only use published entities. Updating this entity might affect existing queries until it is published.
+                            </span>
+                        )}
                         Publishing might affect components using this {type} and will expose data via the API where applicable.
                         Once published, this version will be live.
                     </p>

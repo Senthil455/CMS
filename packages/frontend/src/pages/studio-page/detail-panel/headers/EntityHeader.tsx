@@ -1,4 +1,4 @@
-import { Trash2, Edit2, Database } from 'lucide-react';
+import { Trash2, Edit2, Database, Sparkles } from 'lucide-react';
 import type { EntityDto } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
@@ -6,13 +6,12 @@ interface EntityHeaderProps {
     entity: EntityDto;
     schemaId: string | null;
     publicationStatus?: string;
-    viewMode: 'preview' | 'json';
-    onViewModeChange: (mode: 'preview' | 'json') => void;
     onDelete: () => void;
     onEdit: (tab: 'settings' | 'code') => void;
+    onChatAction: (action: string) => void;
 }
 
-export function EntityHeader({ entity, schemaId, publicationStatus, viewMode, onViewModeChange, onDelete, onEdit }: EntityHeaderProps) {
+export function EntityHeader({ entity, schemaId, publicationStatus, onDelete, onEdit, onChatAction }: EntityHeaderProps) {
     return (
         <HeaderLayout
             title={entity.name}
@@ -20,30 +19,39 @@ export function EntityHeader({ entity, schemaId, publicationStatus, viewMode, on
             schemaId={schemaId}
             publicationStatus={publicationStatus}
             icon={<Database className="w-5 h-5" />}
-            viewMode={viewMode}
-            onViewModeChange={onViewModeChange}
+            menuItems={
+                <button
+                    onClick={onDelete}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left"
+                >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Entity
+                </button>
+            }
         >
             <button
-                onClick={onDelete}
-                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-transparent hover:border-red-500/20"
-                title="Delete Entity"
+                onClick={() => onChatAction(`@entity_generator#${entity.name}:`)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                Ask AI to Modify
             </button>
-            <button
-                onClick={() => onEdit('settings')}
-                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border text-primary rounded-lg text-xs font-bold transition-all"
-            >
-                <Edit2 className="w-3.5 h-3.5" />
-                Settings
-            </button>
-            <button
-                onClick={() => onEdit('code')}
-                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all shadow-md"
-            >
-                <Edit2 className="w-3.5 h-3.5" />
-                Edit Attributes
-            </button>
+
+            <div className="flex bg-app-muted p-0.5 rounded-lg ml-1">
+                <button
+                    onClick={() => onEdit('settings')}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-app-surface border border-transparent hover:border-border text-primary rounded-md text-xs font-bold transition-all shadow-sm"
+                >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Settings
+                </button>
+                <button
+                    onClick={() => onEdit('code')}
+                    className="flex items-center gap-2 px-3 py-1.5 text-primary-muted hover:text-primary rounded-md text-xs font-bold transition-all"
+                >
+                    Edit Attributes
+                </button>
+            </div>
         </HeaderLayout>
     );
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { type SchemaDto } from '@cms/shared';
 import { Layout } from 'lucide-react';
 
@@ -20,8 +19,6 @@ interface DetailViewProps {
 }
 
 export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction }: DetailViewProps) {
-
-    const [viewMode, setViewMode] = useState<'preview' | 'json'>('preview');
 
     if (!item) {
         return (
@@ -51,10 +48,9 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     entity={entity}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
                     onDelete={onDelete}
                     onEdit={onEdit}
+                    onChatAction={onChatAction}
                 />
             )}
 
@@ -63,10 +59,9 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     query={item.settings.query}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
                     onDelete={onDelete}
                     onEdit={onEdit}
+                    onChatAction={onChatAction}
                 />
             )}
 
@@ -75,48 +70,33 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     page={item.settings.page}
                     schemaId={item.schemaId}
                     publicationStatus={item.publicationStatus}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
                     onDelete={onDelete}
                     onEdit={onEdit}
+                    onChatAction={onChatAction}
                 />
             )}
 
             <div className={`flex-1 overflow-auto p-6 ${item.type === 'query' ? 'flex flex-col' : ''}`}>
-                {viewMode === 'json' ? (
-                    <div className="bg-app-surface/50 border border-border rounded-xl p-6 shadow-inner">
-                        <pre className="font-mono text-sm text-primary/90 leading-relaxed whitespace-pre-wrap">
-                            {JSON.stringify(item.settings, null, 4)}
-                        </pre>
-                    </div>
-                ) : (
-                    <div className={`space-y-8 max-w-5xl ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
-                        {item.type === 'entity' && entity && (
-                            <EntityDetail schema={item} allSchemas={schemas} onChatAction={onChatAction} />
-                        )}
+                <div className={`space-y-8 ${item.type === 'page' ? 'w-full' : 'max-w-5xl'} ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
+                    {item.type === 'entity' && entity && (
+                        <EntityDetail schema={item} allSchemas={schemas} onChatAction={onChatAction} />
+                    )}
 
-                        {item.type === 'query' && item.settings.query && (
-                            <QueryDetail schema={item} />
-                        )}
+                    {item.type === 'query' && item.settings.query && (
+                        <QueryDetail schema={item} />
+                    )}
 
-                        {item.type === 'page' && item.settings.page && (
-                            <PageDetail schema={item} />
-                        )}
+                    {item.type === 'page' && item.settings.page && (
+                        <PageDetail schema={item} />
+                    )}
 
-                        {item.type !== 'entity' && item.type !== 'query' && item.type !== 'page' && (
-                            <div className="bg-app-surface/50 border border-border rounded-xl p-10 flex flex-col items-center justify-center text-primary-muted">
-                                <Layout className="w-10 h-10 mb-4 opacity-20" />
-                                <p className="font-medium">Preview not yet available for {item.type}s</p>
-                                <button
-                                    onClick={() => setViewMode('json')}
-                                    className="mt-4 text-xs font-bold text-primary hover:underline"
-                                >
-                                    Switch to JSON View
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
+                    {item.type !== 'entity' && item.type !== 'query' && item.type !== 'page' && (
+                        <div className="bg-app-surface/50 border border-border rounded-xl p-10 flex flex-col items-center justify-center text-primary-muted">
+                            <Layout className="w-10 h-10 mb-4 opacity-20" />
+                            <p className="font-medium">Preview not yet available for {item.type}s</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

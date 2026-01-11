@@ -1,5 +1,5 @@
-import { type ReactNode, useState } from 'react';
-import { Layout, Code2, Clock } from 'lucide-react';
+import { type ReactNode, useState, useRef, useEffect } from 'react';
+import { Clock, MoreVertical } from 'lucide-react';
 import { SchemaHistoryDialog } from '../history/SchemaHistoryDialog';
 
 interface HeaderLayoutProps {
@@ -8,9 +8,8 @@ interface HeaderLayoutProps {
     schemaId: string | null;
     publicationStatus?: string;
     icon: ReactNode;
-    viewMode: 'preview' | 'json';
-    onViewModeChange: (mode: 'preview' | 'json') => void;
     children?: ReactNode;
+    menuItems?: ReactNode;
 }
 
 export function HeaderLayout({
@@ -19,11 +18,22 @@ export function HeaderLayout({
     schemaId,
     publicationStatus,
     icon,
-    viewMode,
-    onViewModeChange,
-    children
+    children,
+    menuItems
 }: HeaderLayoutProps) {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
         <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-app-surface shrink-0">
@@ -57,46 +67,46 @@ export function HeaderLayout({
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
-                {schemaId && (
-                    <>
-                        <button
-                            onClick={() => setIsHistoryOpen(true)}
-                            className="p-1.5 text-primary-muted hover:text-primary hover:bg-app-muted rounded-lg transition-colors"
-                            title="History"
-                        >
-                            <Clock className="w-4 h-4" />
-                        </button>
-                        <SchemaHistoryDialog
-                            isOpen={isHistoryOpen}
-                            onClose={() => setIsHistoryOpen(false)}
-                            schemaId={schemaId}
-                        />
-                    </>
-                )}
-
-                <div className="h-4 w-px bg-border mx-1" />
-
-                {children}
-
-                <div className="h-4 w-px bg-border mx-1" />
-
-                <div className="flex bg-app-muted p-0.5 rounded-lg">
-                    <button
-                        onClick={() => onViewModeChange('preview')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'preview' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
-                        title="Preview"
-                    >
-                        <Layout className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={() => onViewModeChange('json')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'json' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
-                        title="JSON"
-                    >
-                        <Code2 className="w-3.5 h-3.5" />
-                    </button>
+            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-1">
+                    {children}
                 </div>
+
+                <div className="h-4 w-px bg-border mx-1" />
+
+                <div className="relative" ref={menuRef}>
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className={`p-1.5 text-primary-muted hover:text-primary hover:bg-app-muted rounded-lg transition-colors ${isMenuOpen ? 'bg-app-muted text-primary' : ''}`}
+                        title="More Actions"
+                    >
+                        <MoreVertical className="w-4 h-4" />
+                    </button>
+
+                    {isMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-app-surface border border-border rounded-xl shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {schemaId && (
+                                <button
+                                    onClick={() => {
+                                        setIsHistoryOpen(true);
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-primary hover:bg-app-muted transition-colors text-left"
+                                >
+                                    <Clock className="w-4 h-4 text-primary-muted" />
+                                    View History
+                                </button>
+                            )}
+                            {menuItems}
+                        </div>
+                    )}
+                </div>
+
+                <SchemaHistoryDialog
+                    isOpen={isHistoryOpen}
+                    onClose={() => setIsHistoryOpen(false)}
+                    schemaId={schemaId!}
+                />
             </div>
         </div>
     );

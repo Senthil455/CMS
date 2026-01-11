@@ -1,9 +1,9 @@
 import { type SchemaDto } from '@cms/shared';
 import { Layout, FileText, Globe, ExternalLink, UploadCloud } from 'lucide-react';
 import { useState } from 'react';
-import { config } from '../../../../config';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
+import { config } from '../../../../config';
 
 interface PageDetailProps {
     schema: SchemaDto;

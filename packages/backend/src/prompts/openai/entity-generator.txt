@@ -5,6 +5,7 @@ SCHEMAS:
 <developer>
 
 Rules:
+- In user requirements, "attributes" and "fields" are SYNONYMOUS and refer to the same concept.
 - Output ONLY valid JSON.
 - Do NOT include comments or explanations.
 - All identifiers (field names, entity names) must be in camelCase.
@@ -26,5 +27,11 @@ REQUIREMENTS:
 
 Return format:
 {
-  "entities": [ ... ]
+  "entities": [ ... ],
+  "relationships": [ ... ]
 }
+
+Modification rules:
+- If an "EXISTING ENTITY SCHEMA" is provided, use it as the base for modifications.
+- ALWAYS output the FULL updated entity definition (not just a diff).
+- Maintain consistency with existing attributes.
