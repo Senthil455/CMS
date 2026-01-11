@@ -7,6 +7,7 @@ import type { User } from '@cms/shared';
 import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS } from '@cms/shared';
 
 export class CmsClient {
+    private populatingPromise: Promise<void> | null = null;
     constructor(private readonly baseUrl: string) { }
 
     async getMe(externalCookie: string) {
@@ -196,52 +197,71 @@ export class CmsClient {
                     }
                 }
             } else if (attr.displayType == 'image') {
-
+                const assets = await this.getAllAsset(externalCookie);
+                if (assets.items.length > 0) {
+                    const randomAsset = assets.items[Math.floor(Math.random() * assets.items.length)];
+                    if (randomAsset) {
+                        data[field] = randomAsset.path;
+                    }
+                }
             }
         }
         await this.insertSingleData(externalCookie, entity, data);
     }
 
     async populateExamplePics(externalCookie: string) {
-        try {
-            const assetsResp = await this.getAllAsset(externalCookie);
-
-            if (assetsResp.totalRecords !== 0) {
-                return;
-            }
-
-            const __filename = fileURLToPath(import.meta.url);
-            const __dirname = path.dirname(__filename);
-            const examplePicsPath = path.resolve(__dirname, '../../assets', 'example_pics');
-            if (!fs.existsSync(examplePicsPath)) {
-                return;
-            }
-
-            const categories = fs.readdirSync(examplePicsPath);
-            for (const category of categories) {
-                const categoryPath = path.join(examplePicsPath, category);
-                if (!fs.statSync(categoryPath).isDirectory()) continue;
-
-                const files = fs.readdirSync(categoryPath);
-                for (const file of files) {
-                    const filePath = path.join(categoryPath, file);
-                    if (!fs.statSync(filePath).isFile()) continue;
-
-                    const formData = new FormData();
-                    const fileBuffer = fs.readFileSync(filePath);
-                    const blob = new Blob([fileBuffer]);
-                    formData.append('Files', blob, file);
-
-                    await axios.post(`${this.baseUrl}/api/assets`, formData, {
-                        headers: {
-                            Cookie: externalCookie,
-                        }
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Failed to populate example pics:', error);
+        if (this.populatingPromise) {
+            return this.populatingPromise;
         }
+
+        this.populatingPromise = (async () => {
+            try {
+                const assetsResp = await this.getAllAsset(externalCookie);
+
+                if (assetsResp.totalRecords !== 0) {
+                    return;
+                }
+
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = path.dirname(__filename);
+                const examplePicsPath = path.resolve(__dirname, '../../assets', 'example_pics');
+                if (!fs.existsSync(examplePicsPath)) {
+                    return;
+                }
+
+                const categories = fs.readdirSync(examplePicsPath);
+                for (const category of categories) {
+                    const categoryPath = path.join(examplePicsPath, category);
+                    if (!fs.statSync(categoryPath).isDirectory()) continue;
+
+                    const files = fs.readdirSync(categoryPath);
+                    for (const file of files) {
+                        const filePath = path.join(categoryPath, file);
+                        if (!fs.statSync(filePath).isFile()) continue;
+
+                        const formData = new FormData();
+                        const fileBuffer = fs.readFileSync(filePath);
+                        // Using explicit Blob for Node.js environment compatibility
+                        const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
+                        formData.append('Files', blob, file);
+
+                        await axios.post(`${this.baseUrl}/api/assets`, formData, {
+                            headers: {
+                                Cookie: externalCookie,
+                            },
+                            // Add some timeout and error handling for connection resets
+                            timeout: 30000,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to populate example pics:', error);
+            } finally {
+                this.populatingPromise = null;
+            }
+        })();
+
+        return this.populatingPromise;
     }
 
     async getAllAsset(externalCookie: string): Promise<AssetListResponse> {
