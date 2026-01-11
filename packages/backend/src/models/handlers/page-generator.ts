@@ -64,8 +64,19 @@ export class PageGenerator implements ChatHandler {
                         }
                     }
                 };
-                await this.cmsClient.saveSchema(context.externalCookie, payload);
-                this.logger.info({ name }, 'Successfully saved generated page to CMS');
+                const saveResp = await this.cmsClient.saveSchema(context.externalCookie, payload);
+                const schemaId = saveResp.data.schemaId;
+
+                this.logger.info({ name, schemaId }, 'Successfully saved generated page to CMS');
+
+                if (schemaId) {
+                    await context.onSchemasSync({
+                        task_type: 'page_generator',
+                        schemasId: [schemaId]
+                    });
+                }
+
+
             } catch (saveError) {
                 this.logger.error({ error: saveError }, 'Failed to save generated page to CMS');
             }

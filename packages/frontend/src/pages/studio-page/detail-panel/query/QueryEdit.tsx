@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { type SchemaDto, type SaveSchemaPayload, type QueryDto } from '@cms/shared';
 import { FileCode, Save, X, Loader2 } from 'lucide-react';
 import { QueryEditSetting } from './QueryEditSetting';
@@ -10,11 +11,12 @@ interface QueryEditProps {
     item: SchemaDto;
     initialTab?: 'settings' | 'code';
     onTabChange?: (tab: 'settings' | 'code') => void;
-    onSave: (payload: SaveSchemaPayload) => Promise<void>;
+    onSave: (payload: SaveSchemaPayload, skipNavigate?: boolean) => Promise<void>;
     onCancel: () => void;
 }
 
 export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: QueryEditProps) {
+    const navigate = useNavigate();
     const { publishSchema } = useSchemas();
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
     const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +53,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                 }
             };
 
-            await onSave(payload);
+            await onSave(payload, true);
 
             // Open publish dialog
             setIsPublishDialogOpen(true);
@@ -69,6 +71,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
             setIsPublishing(true);
             await publishSchema(item.id, item.schemaId!);
             setIsPublishDialogOpen(false);
+            navigate(`/app/${item.type}/${item.schemaId}`);
         } catch (err: any) {
             console.error(err);
             // Maybe show error in dialog or main toast? For now just log it.
@@ -161,7 +164,10 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
 
             <PublishConfirmDialog
                 isOpen={isPublishDialogOpen}
-                onClose={() => setIsPublishDialogOpen(false)}
+                onClose={() => {
+                    setIsPublishDialogOpen(false);
+                    navigate(`/app/${item.type}/${item.schemaId}`);
+                }}
                 onConfirm={handleConfirmPublish}
                 isPublishing={isPublishing}
                 type="query"

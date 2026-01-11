@@ -49,9 +49,11 @@ export default function StudioPage() {
         }
     };
 
-    const handleSaveEntity = async (payload: SaveSchemaPayload) => {
+    const handleSaveEntity = async (payload: SaveSchemaPayload, skipNavigate?: boolean) => {
         await saveSchema(payload);
-        navigate(`/app/${payload.type}/${payload.schemaId || id}`);
+        if (!skipNavigate) {
+            navigate(`/app/${payload.type}/${payload.schemaId || id}`);
+        }
     };
 
     const { deleteSchema } = useSchemas();
@@ -206,6 +208,7 @@ export default function StudioPage() {
                         }}
                         onDelete={handleDelete}
                         onSelect={handleSelectItem}
+                        onChatAction={handleChatAction}
                     />
                 )}
 

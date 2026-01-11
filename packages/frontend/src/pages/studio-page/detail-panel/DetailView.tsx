@@ -16,9 +16,10 @@ interface DetailViewProps {
     onEdit: (tab?: 'settings' | 'code') => void;
     onDelete: () => void;
     onSelect: (item: SchemaDto) => void;
+    onChatAction: (action: string) => void;
 }
 
-export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: DetailViewProps) {
+export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction }: DetailViewProps) {
 
     const [viewMode, setViewMode] = useState<'preview' | 'json'>('preview');
 
@@ -91,7 +92,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect }: Detail
                 ) : (
                     <div className={`space-y-8 max-w-5xl ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
                         {item.type === 'entity' && entity && (
-                            <EntityDetail schema={item} allSchemas={schemas} onSelect={onSelect} />
+                            <EntityDetail schema={item} allSchemas={schemas} onChatAction={onChatAction} />
                         )}
 
                         {item.type === 'query' && item.settings.query && (

@@ -3,6 +3,10 @@ Objective: Generate a raw JSON object mapping specific GraphQL operation names t
 
 Strict Rules:
 
+**PrimaryKey Rule**
+
+* If the entity has a primary key, use it as the primary key for the query.
+
 **Operation Naming**
 
 * **operationName MUST be camelCase**.

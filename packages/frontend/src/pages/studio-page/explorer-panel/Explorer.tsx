@@ -139,7 +139,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
                         source: '',
                         filters: [],
                         sorts: [],
-                        reqVariables: [],
+                        variables: [],
                         distinct: false,
                         ideUrl: '',
                         pagination: { offset: '0', limit: '10' }

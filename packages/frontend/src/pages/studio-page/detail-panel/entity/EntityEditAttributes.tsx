@@ -169,7 +169,7 @@ export function EntityEditAttributes({ entityForm, updateAttribute, addAttribute
                                             value={attr.validation || ''}
                                             onChange={(e) => updateAttribute(originalIdx, { validation: e.target.value })}
                                             className="app-input-sm"
-                                            placeholder="e.json logic or simple rules"
+                                            placeholder="regex pattern"
                                         />
                                     </FormField>
                                     {attr.dataType === 'lookup' && (

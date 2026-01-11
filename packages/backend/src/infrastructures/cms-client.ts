@@ -128,7 +128,7 @@ export class CmsClient {
                     source: query,
                     filters: [],
                     sorts: [],
-                    reqVariables: [],
+                    variables: [],
                     distinct: false,
                     ideUrl: '',
                     pagination: { offset: '0', limit: '10' }

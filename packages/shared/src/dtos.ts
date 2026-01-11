@@ -37,7 +37,10 @@ export interface QueryDto {
     source: string;
     filters: any[];
     sorts: { field: string; order: string; }[];
-    reqVariables: any[];
+    variables: {
+        name: string;
+        isRequired: boolean;
+    }[];
     distinct: boolean;
     ideUrl: string;
     pagination: {

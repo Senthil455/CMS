@@ -12,7 +12,7 @@ export const SOCKET_EVENTS = {
 } as const;
 
 export interface SystemMessagePayload {
-    task_type: 'query_generator' | 'entity_generator';
+    task_type: 'query_generator' | 'entity_generator' | 'page_generator' | 'data_generator';
     schemasId: string[];
 }
 
