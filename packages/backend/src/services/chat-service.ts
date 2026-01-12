@@ -65,6 +65,12 @@ export class ChatService {
 
         if (content.includes('@entity_generator')) {
             taskType = 'entity_generator';
+        } else if (content.includes('@page_generator')) {
+            taskType = 'page_generator';
+        } else if (content.includes('@query_generator')) {
+            taskType = 'query_generator';
+        } else if (content.includes('@data_generator')) {
+            taskType = 'data_generator';
         } else {
             taskType = await this.intentClassifier[agentName]!.resolve(content);
         }

@@ -8,6 +8,7 @@ export class AuthService {
         private readonly logger: ServiceLogger
     ) { }
 
+
     async getUserProfile(externalCookie: string): Promise<User | null> {
         try {
             return await this.client.getMe(externalCookie);

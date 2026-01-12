@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { type SchemaDto, type SaveSchemaPayload, type PageDto } from '@cms/shared';
-import { Layout, Save, X, Loader2, Info, FileText, Globe, Code, Maximize2, Minimize2 } from 'lucide-react';
+import { Layout, Save, X, Loader2, Info, FileText, Globe, Code, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 
 interface PageEditProps {
     item: SchemaDto;
@@ -9,9 +9,10 @@ interface PageEditProps {
     onTabChange?: (tab: 'settings' | 'code') => void;
     onSave: (payload: SaveSchemaPayload) => Promise<void>;
     onCancel: () => void;
+    onChatAction: (action: string) => void;
 }
 
-export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: PageEditProps) {
+export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel, onChatAction }: PageEditProps) {
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -175,10 +176,35 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                                     <Code className="w-4 h-4" />
                                     HTML Content
                                 </h3>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-xs text-primary-muted font-medium">
-                                        Live Preview
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={onCancel}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                                    >
+                                        <X className="w-3 h-3" />
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Save className="w-3 h-3" />
+                                        )}
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={() => onChatAction('@page_generator ')}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-accent text-white hover:opacity-90 rounded-lg text-[10px] font-bold transition-all shadow-sm"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Ask AI
+                                    </button>
+                                    <div className="w-px h-4 bg-border mx-1" />
                                     <button
                                         onClick={() => setIsFullScreen(!isFullScreen)}
                                         className="p-1.5 hover:bg-app-muted rounded-md text-primary-muted hover:text-primary transition-colors"

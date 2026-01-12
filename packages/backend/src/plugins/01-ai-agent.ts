@@ -5,7 +5,6 @@ import { config } from '../config';
 
 import { StubAgent } from '../infrastructures/stub-agent';
 import { OpenAIAgent } from '../infrastructures/openai-agent';
-import { GLMAgent } from '../infrastructures/glm-agent';
 import { GeminiAgent } from '../infrastructures/gemini-agent';
 
 import type { AIAgent } from '../infrastructures/agent.interface';
@@ -19,11 +18,6 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
             config.OPENAI_API_KEY || '',
             config.OPENAI_API_URL,
             config.OPENAI_MODEL,
-            infraLogger
-        ),
-        glm: new GLMAgent(
-            config.GLM_API_URL,
-            config.GLM_MODEL,
             infraLogger
         ),
 

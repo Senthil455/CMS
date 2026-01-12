@@ -6,11 +6,12 @@ interface ChatInputProps {
     onSend: (message: string, agentName: string) => void;
     disabled?: boolean;
     draft?: string | null;
+    onDraftConsumed?: () => void;
 }
 
 const STORAGE_KEY = 'cms_selected_agent';
 
-export function ChatInput({ onSend, disabled, draft }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, draft, onDraftConsumed }: ChatInputProps) {
     const [input, setInput] = useState('');
     const { agents } = useAIAgents();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,8 +32,9 @@ export function ChatInput({ onSend, disabled, draft }: ChatInputProps) {
                 textareaRef.current.focus();
                 textareaRef.current.setSelectionRange(draft.length, draft.length);
             }
+            onDraftConsumed?.();
         }
-    }, [draft]);
+    }, [draft, onDraftConsumed]);
 
     // Update selected agent if it's no longer available, but only after agents have loaded
     useEffect(() => {

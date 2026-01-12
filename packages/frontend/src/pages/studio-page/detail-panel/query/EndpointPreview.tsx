@@ -46,7 +46,7 @@ export function EndpointPreview({ baseUrl, params, trigger }: EndpointPreviewPro
                 <div className="flex-1 h-px bg-border"></div>
             </div>
             <div className="bg-muted/50 border border-border rounded-lg p-3 font-mono text-[10px] text-foreground break-all mb-4 select-all">
-                {fullUrl.toString()}
+                {fullUrl.toString().replace(fullUrl.origin + '/', '')}
             </div>
 
             <div className="text-xs font-bold text-primary-muted uppercase tracking-widest mb-2">Response Preview</div>

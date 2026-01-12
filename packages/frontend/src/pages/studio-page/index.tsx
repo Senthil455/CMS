@@ -196,6 +196,7 @@ export default function StudioPage() {
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
+                                onChatAction={handleChatAction}
                             />
                         )}
                     </>
@@ -223,6 +224,7 @@ export default function StudioPage() {
                         onLoadMore={async () => { await setSize(size + 1); }}
                         onSend={handleSend}
                         chatDraft={chatDraft}
+                        onDraftConsumed={() => setChatDraft(null)}
                     />
                 )}
             </div>

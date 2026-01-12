@@ -224,6 +224,7 @@ export function EntityDetail({ schema, allSchemas, onChatAction }: EntityDetailP
                                 <th className="px-4 py-3 border-b border-border">Header</th>
                                 <th className="px-4 py-3 border-b border-border">Data Type</th>
                                 <th className="px-4 py-3 border-b border-border">Display Type</th>
+                                <th className="px-4 py-3 border-b border-border">Options</th>
                                 <th className="px-4 py-3 border-b border-border">Validation</th>
                                 <th className="px-4 py-3 border-b border-border">Visibility</th>
                             </tr>
@@ -254,6 +255,23 @@ export function EntityDetail({ schema, allSchemas, onChatAction }: EntityDetailP
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-xs text-primary-muted">{attr.displayType}</td>
+                                            <td className="px-4 py-3">
+                                                {(attr.displayType === 'dropdown' || (attr.displayType === 'multiselect' && attr.dataType === 'string')) && attr.options ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {attr.options.split(',').map((opt: string, i: number) => (
+                                                            <span key={i} className="px-1.5 py-0.5 bg-app-muted text-[9px] font-medium text-primary-muted rounded border border-border">
+                                                                {opt.trim()}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (['lookup', 'junction', 'collection'].includes(attr.dataType) && attr.options) ? (
+                                                    <span className="text-[10px] font-bold text-primary hover:underline cursor-default">
+                                                        {attr.options.split('.')[0]}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-primary-muted/50">-</span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-3 text-xs text-primary-muted font-mono truncate max-w-[120px]" title={attr.validation}>
                                                 {attr.validation || '-'}
                                             </td>

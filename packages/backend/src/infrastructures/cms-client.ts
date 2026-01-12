@@ -127,9 +127,9 @@ export class CmsClient {
         return sdl;
     }
 
-    async saveQuery(externalCookie: string, queryName: string, query: string, variables?: any) {
+    async saveQuery(externalCookie: string, schemaId: string, queryName: string, query: string) {
         const payload: SaveSchemaPayload = {
-            schemaId: '',
+            schemaId: schemaId,
             type: 'query',
             settings: {
                 query: {
@@ -147,7 +147,7 @@ export class CmsClient {
         };
 
         const saveResp = await this.saveSchema(externalCookie, payload);
-        const schemaId = saveResp.data.schemaId;
+        schemaId = saveResp.data.schemaId;
 
         return schemaId;
     }

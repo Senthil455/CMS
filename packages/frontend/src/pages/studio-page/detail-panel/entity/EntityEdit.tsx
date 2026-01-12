@@ -233,6 +233,7 @@ export function EntityEdit({ item, initialTab = 'attributes', onTabChange, onSav
                             updateAttribute={updateAttribute}
                             addAttribute={addAttribute}
                             removeAttribute={removeAttribute}
+                            setAttributes={(newAttrs) => setEntityForm({ ...entityForm, attributes: newAttrs })}
                             availableEntities={availableEntities}
                         />
                     )}

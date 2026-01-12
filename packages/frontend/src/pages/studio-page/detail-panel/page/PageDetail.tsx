@@ -62,6 +62,7 @@ export function PageDetail({ schema }: PageDetailProps) {
                         <DetailItem
                             label="Page URL"
                             value={`${config.CMS_BASE_URL}/${page.name}`}
+                            href={`${config.CMS_BASE_URL}/${page.name}?version=${Date.now()}`}
                             icon={<ExternalLink className="w-3.5 h-3.5" />}
                             isLink
                         />
@@ -95,7 +96,7 @@ export function PageDetail({ schema }: PageDetailProps) {
     );
 }
 
-function DetailItem({ label, value, icon, isLink }: { label: string; value: string; icon?: React.ReactNode; isLink?: boolean }) {
+function DetailItem({ label, value, href, icon, isLink }: { label: string; value: string; href?: string; icon?: React.ReactNode; isLink?: boolean }) {
     return (
         <div className="space-y-1">
             <span className="text-[10px] font-bold text-primary-muted uppercase tracking-wider flex items-center gap-1.5">
@@ -105,7 +106,7 @@ function DetailItem({ label, value, icon, isLink }: { label: string; value: stri
             <div className="text-sm font-medium text-primary px-3 py-2 bg-app-surface border border-border rounded-lg shadow-sm group relative">
                 {isLink && value ? (
                     <a
-                        href={value}
+                        href={href || value}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:text-blue-600 hover:underline break-all"

@@ -1,7 +1,7 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type ChatHandler, type ChatContext } from './chat-handler';
+import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
 
 export interface DataGeneratorResponse {
     entityName: string;
@@ -65,9 +65,7 @@ export class DataGenerator implements ChatHandler {
             await context.saveAssistantMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
 
         } catch (error: any) {
-            this.logger.error({ error, stack: error?.stack }, 'Error in DataGenerator handle');
-            const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
-            await context.saveAssistantMessage(`I'm sorry, I encountered an error while generating or inserting your data:\n${errorMessage}`);
+            await handleChatError(error, context, this.logger, "generating or inserting your data");
         }
     }
 }

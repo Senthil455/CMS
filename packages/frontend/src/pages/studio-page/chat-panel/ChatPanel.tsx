@@ -11,6 +11,7 @@ interface ChatPanelProps {
     onLoadMore: () => Promise<void>;
     onSend: (content: string, agentName: string) => void;
     chatDraft?: string | null;
+    onDraftConsumed?: () => void;
 }
 
 export function ChatPanel({
@@ -20,7 +21,8 @@ export function ChatPanel({
     isFetchingMore,
     onLoadMore,
     onSend,
-    chatDraft
+    chatDraft,
+    onDraftConsumed
 }: ChatPanelProps) {
     return (
         <div className="w-96 shrink-0 flex flex-col h-full bg-app-surface border-l border-border relative">
@@ -40,7 +42,7 @@ export function ChatPanel({
             </div>
 
             <div className="p-4 border-t border-border bg-app-surface/50 backdrop-blur-sm">
-                <ChatInput onSend={onSend} draft={chatDraft} />
+                <ChatInput onSend={onSend} draft={chatDraft} onDraftConsumed={onDraftConsumed} />
             </div>
         </div>
     );

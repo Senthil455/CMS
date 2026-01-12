@@ -1,7 +1,7 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type ChatHandler, type ChatContext } from './chat-handler';
+import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
 import { type SaveSchemaPayload, type SchemaDto } from '@cms/shared';
 
 export class PageGenerator implements ChatHandler {
@@ -116,9 +116,7 @@ export class PageGenerator implements ChatHandler {
             await context.saveAssistantMessage(finalMessage);
 
         } catch (error: any) {
-            this.logger.error({ error, stack: error?.stack }, 'Error in PageGenerator handle');
-            const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
-            await context.saveAssistantMessage(`I'm sorry, I encountered an error while generating your HTML page:\n${errorMessage}`);
+            await handleChatError(error, context, this.logger, "generating your HTML page");
         }
     }
 }
