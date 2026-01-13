@@ -17,17 +17,17 @@ export class QueryGenerator implements ChatHandler {
             let existingQuerySchema: SchemaDto | null = null;
             let schemaId = '';
 
-            // Check if user input contains #queryName
-            const queryNameMatch = userInput.match(/#([a-zA-Z0-9-_]+)/);
-            if (queryNameMatch) {
-                const queryName = queryNameMatch[1] as string;
+            // Check if user input contains #schemaId:
+            const idMatch = userInput.match(/#([^:]+):/);
+            if (idMatch) {
+                schemaId = idMatch[1] as string;
                 try {
-                    existingQuerySchema = await this.cmsClient.getSchemaByName(context.externalCookie, queryName, 'query');
-                    schemaId = existingQuerySchema.schemaId;
+                    existingQuerySchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
+                    const queryName = existingQuerySchema.settings?.query?.name || existingQuerySchema.name;
                     await context.saveAssistantMessage(`I am Query generator, I found the existing query "${queryName}". I will fetch the latest schema and help you modify it...`);
                 } catch (e) {
-                    this.logger.warn({ queryName }, 'Existing query not found for modification');
-                    await context.saveAssistantMessage(`I am Query generator, I couldn't find the existing query "${queryName}". I will fetch the latest schema and generate a new query for you...`);
+                    this.logger.warn({ schemaId }, 'Existing query not found for modification');
+                    await context.saveAssistantMessage(`I am Query generator, I couldn't find the existing query with ID "${schemaId}". I will fetch the latest schema and generate a new query for you...`);
                 }
             } else {
                 await context.saveAssistantMessage('I am query generator, I am fetching the latest schema and generating your query...');
@@ -62,7 +62,7 @@ export class QueryGenerator implements ChatHandler {
 
                 // Determine schemaId to use if we are editing
                 let targetSchemaId = '';
-                if (existingQuerySchema && (existingQuerySchema.settings?.query?.name === name || queryNameMatch && queryNameMatch[1] === name)) {
+                if (existingQuerySchema && (existingQuerySchema.settings?.query?.name === name || existingQuerySchema.name === name)) {
                     targetSchemaId = schemaId;
                 }
 

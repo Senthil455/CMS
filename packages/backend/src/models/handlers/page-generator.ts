@@ -18,17 +18,17 @@ export class PageGenerator implements ChatHandler {
             let existingPageSchema: SchemaDto | null = null;
             let schemaId = '';
 
-            // Check if user input contains #pageName
-            const pageNameMatch = userInput.match(/#([a-zA-Z0-9-_]+)/);
-            if (pageNameMatch) {
-                const pageName = pageNameMatch[1] as string;
+            // Check if user input contains #schemaId:
+            const idMatch = userInput.match(/#([^:]+):/);
+            if (idMatch) {
+                schemaId = idMatch[1] as string;
                 try {
-                    existingPageSchema = await this.cmsClient.getSchemaByName(context.externalCookie, pageName, 'page');
-                    schemaId = existingPageSchema.schemaId;
+                    existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
+                    const pageName = existingPageSchema.settings?.page?.name || existingPageSchema.name;
                     await context.saveAssistantMessage(`I am Page generator, I found the existing page "${pageName}". I will fetch the latest schema and help you modify it...`);
                 } catch (e) {
-                    this.logger.warn({ pageName }, 'Existing page not found for modification');
-                    await context.saveAssistantMessage(`I am Page generator, I couldn't find the existing page "${pageName}". I will fetch the latest schema and generate a new page for you...`);
+                    this.logger.warn({ schemaId }, 'Existing page not found for modification');
+                    await context.saveAssistantMessage(`I am Page generator, I couldn't find the existing page with ID "${schemaId}". I will fetch the latest schema and generate a new page for you...`);
                 }
             } else {
                 await context.saveAssistantMessage('I am Page generator, I am fetching the latest schema and generating your page...');

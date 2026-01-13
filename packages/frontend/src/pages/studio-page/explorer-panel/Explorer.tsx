@@ -39,7 +39,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAI = () => {
         setIsAddEntityDialogOpen(false);
-        onChatAction('@entity_generator ');
+        onChatAction('@entity_generate ');
     };
 
     const handleManualCreateEntity = async (name: string) => {
@@ -82,7 +82,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAIPage = () => {
         setIsAddPageDialogOpen(false);
-        onChatAction('@page_generator ');
+        onChatAction('@page_generate ');
     };
 
     const handleManualCreatePage = async (name: string) => {

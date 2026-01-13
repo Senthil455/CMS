@@ -63,9 +63,9 @@ export class ChatService {
         // 2. Intent Classifier
         let taskType: HandlerType | null = null;
 
-        if (content.includes('@entity_generator')) {
+        if (content.includes('@entity_generator') || content.includes('@entity_generate')) {
             taskType = 'entity_generator';
-        } else if (content.includes('@page_generator')) {
+        } else if (content.includes('@page_generator') || content.includes('@page_generate')) {
             taskType = 'page_generator';
         } else if (content.includes('@query_generator')) {
             taskType = 'query_generator';

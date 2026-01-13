@@ -45,24 +45,24 @@ export class EntityGenerator implements ChatHandler {
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
             let existingContext = '';
-            const entityNameMatch = userInput.match(/#([a-zA-Z0-9-_]+)/);
+            const idMatch = userInput.match(/#([^:]+):/);
 
-            if (entityNameMatch) {
-                const entityName = entityNameMatch[1] as string;
+            if (idMatch) {
+                const schemaId = idMatch[1] as string;
                 try {
-                    const existingSchema = await this.cmsClient.getSchemaByName(context.externalCookie, entityName, 'entity');
+                    const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
                     if (existingSchema && existingSchema.settings.entity) {
                         const ent = existingSchema.settings.entity;
-                        existingContext = `EXISTING ENTITY SCHEMA FOR "${entityName}":\n${JSON.stringify({
+                        existingContext = `EXISTING ENTITY SCHEMA FOR "${ent.name}" (ID: ${schemaId}):\n${JSON.stringify({
                             name: ent.name,
                             tableName: ent.tableName,
                             attributes: ent.attributes
                         }, null, 2)}`;
-                        await context.saveAssistantMessage(`I found the existing entity "${entityName}". I'll fetch its schema and help you modify it...`);
+                        await context.saveAssistantMessage(`I found the existing entity "${ent.name}". I'll fetch its schema and help you modify it...`);
                     }
                 } catch (e) {
-                    this.logger.warn({ entityName }, 'Existing entity not found for modification');
-                    await context.saveAssistantMessage(`I couldn't find an existing entity named "${entityName}". I'll proceed with generating what you need...`);
+                    this.logger.warn({ schemaId }, 'Existing entity not found for modification');
+                    await context.saveAssistantMessage(`I couldn't find an existing entity with ID "${schemaId}". I'll proceed with generating what you need...`);
                 }
             } else {
                 await context.saveAssistantMessage('I am entity generator, I am analyzing your requirements and generating the schema...');

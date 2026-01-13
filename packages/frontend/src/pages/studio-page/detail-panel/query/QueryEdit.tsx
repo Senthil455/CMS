@@ -90,7 +90,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
         <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
             <div className="p-4 border-b border-border flex items-center justify-between bg-app-surface shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <div className="p-2 bg-orange-500/10 rounded-lg text-orange-600">
                         <FileCode className="w-5 h-5" />
                     </div>
                     <div>
@@ -132,7 +132,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-primary text-app hover:opacity-90 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-md"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-md"
                     >
                         {isSaving ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

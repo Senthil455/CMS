@@ -30,7 +30,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             }
         >
             <button
-                onClick={() => onChatAction(`@page_generator#${page.name}:`)}
+                onClick={() => onChatAction(`@page_generate#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />
