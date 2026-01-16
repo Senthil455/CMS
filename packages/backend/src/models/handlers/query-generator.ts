@@ -18,7 +18,7 @@ export class QueryGenerator implements ChatHandler {
             let schemaId = '';
 
             // Check if user input contains #schemaId:
-            const idMatch = userInput.match(/#([^:]+):/);
+            const idMatch = userInput.match(/@query_generator#([^:]+):/);
             if (idMatch) {
                 schemaId = idMatch[1] as string;
                 try {

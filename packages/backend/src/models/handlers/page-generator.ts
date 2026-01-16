@@ -1,16 +1,19 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
 import { type SaveSchemaPayload, type SchemaDto } from '@cms/shared';
+import { PageArchitect } from './page-architect';
+import { RouterDesigner } from './router-designer';
+import { HtmlGenerator } from './html-generator';
 
 export class PageGenerator implements ChatHandler {
     constructor(
-        private readonly aiAgent: AIAgent,
-        private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
         private readonly baseUrl: string,
+        private readonly pageArchitect: PageArchitect,
+        private readonly routerDesigner: RouterDesigner,
+        private readonly htmlGenerator: HtmlGenerator,
     ) { }
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
@@ -18,76 +21,91 @@ export class PageGenerator implements ChatHandler {
             let existingPageSchema: SchemaDto | null = null;
             let schemaId = '';
 
-            // Check if user input contains #schemaId:
-            const idMatch = userInput.match(/#([^:]+):/);
+            // 1. Identification: Check if user input contains #schemaId:
+            const idMatch = userInput.match(/@page_generator#([^:]+):/);
             if (idMatch) {
-                schemaId = idMatch[1] as string;
                 try {
-                    existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
+                    existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
+                    schemaId = idMatch[1] as string;
                     const pageName = existingPageSchema.settings?.page?.name || existingPageSchema.name;
                     await context.saveAssistantMessage(`I am Page generator, I found the existing page "${pageName}". I will fetch the latest schema and help you modify it...`);
                 } catch (e) {
                     this.logger.warn({ schemaId }, 'Existing page not found for modification');
                     await context.saveAssistantMessage(`I am Page generator, I couldn't find the existing page with ID "${schemaId}". I will fetch the latest schema and generate a new page for you...`);
                 }
-            } else {
-                await context.saveAssistantMessage('I am Page generator, I am fetching the latest schema and generating your page...');
             }
 
-            // 1. Fetch Queries and their sample data to provide context to the AI
-            const queries = await this.cmsClient.getAllQueries(context.externalCookie);
+            // 2. Planning: Call Router Designer then Page Architect
+            const metadataStr = existingPageSchema?.settings?.page?.metadata;
+            let existingRoutingPlan: any = undefined;
+            let existingArchitecture: any = undefined;
 
-            const queryDetails = await Promise.all(queries.filter(q => q.settings?.query).map(async (q) => {
-                const queryName = q.settings.query!.name;
+            if (metadataStr) {
                 try {
-                    const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
-                    return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
-                        REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
+                    const metadata = JSON.parse(metadataStr);
+                    existingRoutingPlan = metadata.routingPlan;
+                    existingArchitecture = metadata.architecturePlan;
                 } catch (e) {
-                    return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
+                    this.logger.warn({ metadataStr }, 'Failed to parse page metadata');
                 }
-            }))
-
-            let developerMessage = queryDetails.join('\n');
-            if (existingPageSchema && existingPageSchema.settings.page) {
-                const p = existingPageSchema.settings.page;
-                developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
-                    name: p.name,
-                    title: p.title,
-                    html: p.html
-                }, null, 2)}`;
             }
 
-            // 2. Call AI Agent to generate HTML
-            const aiResponse = await this.aiAgent.generate(
-                this.systemPrompt,
-                developerMessage,
-                userInput
+
+            const routingPlan = await this.routerDesigner.plan(userInput, context, existingRoutingPlan);
+            const queries = await this.cmsClient.getAllQueries(context.externalCookie);
+            const architecturePlan = await this.pageArchitect.plan(userInput, context, queries, routingPlan, existingArchitecture);
+
+            await context.saveAssistantMessage(`I've planned the routing for "${routingPlan.pageName}" and the UI structure for your "${architecturePlan.pageType}" page.`);
+
+            // 3. Context Gathering: Fetch selected Queries and their sample data
+            const selectedQueryNames = architecturePlan.selectedQueries.map(sq => sq.queryName);
+            const queryDetails = await Promise.all(queries
+                .filter(q => q.settings?.query && selectedQueryNames.includes(q.settings.query.name))
+                .map(async (q) => {
+                    const queryName = q.settings.query!.name;
+                    try {
+                        const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
+                        return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
+                        REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
+                    } catch (e) {
+                        return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
+                    }
+                })
+            );
+
+            // 4. Generation: Call Html Generator
+            const htmlResponse = await this.htmlGenerator.generate(
+                userInput,
+                routingPlan,
+                architecturePlan,
+                queryDetails,
+                existingPageSchema
             );
 
             // Save AI response to database log
             await context.saveAiResponseLog('page-generator',
-                JSON.stringify({ ...aiResponse, taskType: context.taskType })
+                JSON.stringify({ ...htmlResponse, ...routingPlan, ...architecturePlan, taskType: context.taskType })
             );
 
-            let { html, name, title } = aiResponse;
-            name = name || (existingPageSchema?.name) || `generated-page-${Date.now()}`;
+            let { title } = htmlResponse;
+            let name = routingPlan.pageName || (existingPageSchema?.name) || `generated-page-${Date.now()}`;
             title = title || (existingPageSchema?.settings.page?.title) || 'Generated Page';
 
-            // Save the generated page to CMS
+            // 5. Persistence: Save the generated page to CMS
             try {
                 const payload: SaveSchemaPayload = {
                     schemaId,
                     type: 'page',
                     settings: {
                         page: {
-                            name,
-                            title,
-                            html,
-                            css: '',
-                            components: '',
-                            styles: '',
-                            query: ''
+                            name: name,
+                            title: title,
+                            html: htmlResponse.html,
+                            source: 'ai',
+                            metadata: JSON.stringify({
+                                routingPlan,
+                                architecturePlan,
+                            }),
                         }
                     }
                 };
@@ -102,14 +120,11 @@ export class PageGenerator implements ChatHandler {
                         schemasId: [newSchemaId]
                     });
                 }
-
-
             } catch (saveError) {
                 this.logger.error({ error: saveError }, 'Failed to save generated page to CMS');
             }
 
-
-            // 3. Send the generated HTML as a message
+            // 6. Completion: Send the final message
             const finalMessage = existingPageSchema
                 ? `I have updated the page "${name}", you can view it in CMS.`
                 : "I have generated your HTML page, you can find it in CMS.";

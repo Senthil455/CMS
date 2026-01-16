@@ -52,11 +52,9 @@ export interface QueryDto {
 export interface PageDto {
     name: string;
     title: string;
-    query: string;
     html: string;
-    css: string;
-    components: string;
-    styles: string;
+    source: string;
+    metadata: string;
 }
 
 export interface SchemaDto {

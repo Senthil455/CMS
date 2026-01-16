@@ -45,7 +45,7 @@ export class EntityGenerator implements ChatHandler {
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
             let existingContext = '';
-            const idMatch = userInput.match(/#([^:]+):/);
+            const idMatch = userInput.match(/@entity_generator#([^:]+):/);
 
             if (idMatch) {
                 const schemaId = idMatch[1] as string;

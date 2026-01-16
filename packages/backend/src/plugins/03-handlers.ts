@@ -10,6 +10,9 @@ import { EntityGenerator } from '../models/handlers/entity-generator';
 
 import { QueryGenerator } from '../models/handlers/query-generator';
 import { PageGenerator } from '../models/handlers/page-generator';
+import { PageArchitect } from '../models/handlers/page-architect';
+import { RouterDesigner } from '../models/handlers/router-designer';
+import { HtmlGenerator } from '../models/handlers/html-generator';
 import { DataGenerator } from '../models/handlers/data-generator';
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
@@ -32,22 +35,43 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const intentClassifiers: Record<string, IntentClassifier> = {};
 
     for (const [agentName, agent] of Object.entries(agents)) {
-        // Load agent-specific prompts
         const promptSubDir = agentName;
-
         try {
-            const [entityGeneratorPrompt, intentClassifierPrompt, queryGeneratorPrompt, pageGeneratorPrompt, dataGeneratorPrompt] = await Promise.all([
+            const loadPrompt = async (fileName: string) => {
+                try {
+                    return await fs.readFile(path.join(promptsDir, `${promptSubDir}/${fileName}`), 'utf-8');
+                } catch (e) {
+                    fastify.log.warn(`Prompt ${fileName} not found for agent ${agentName}, using empty string`);
+                    return '';
+                }
+            };
+
+            const [
+                entityGeneratorPrompt,
+                intentClassifierPrompt,
+                queryGeneratorPrompt,
+                dataGeneratorPrompt,
+                pageArchitectPrompt,
+                routerDesignerPrompt,
+                htmlGeneratorPrompt
+            ] = await Promise.all([
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.txt`), 'utf-8'),
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/page-generator.txt`), 'utf-8'),
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.txt`), 'utf-8'),
+                loadPrompt('page-architect.txt'),
+                loadPrompt('router-designer.txt'),
+                loadPrompt('html-generator.txt'),
             ]);
+
+            const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt, cmsClient);
+            const pageArchitect = new PageArchitect(agent, pageArchitectPrompt, cmsClient);
+            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(agent, pageGeneratorPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL);
+            const pageGenerator = new PageGenerator(cmsClient, modelLogger, config.CMS_PUBLIC_URL, pageArchitect, routerDesigner, htmlGenerator);
             const dataGenerator = new DataGenerator(agent, dataGeneratorPrompt, cmsClient, modelLogger);
 
             const intentClassifier = new IntentClassifier(
