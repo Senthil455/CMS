@@ -196,7 +196,6 @@ export default function StudioPage() {
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
-                                onChatAction={handleChatAction}
                             />
                         )}
                     </>

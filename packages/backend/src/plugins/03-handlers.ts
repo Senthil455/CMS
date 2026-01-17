@@ -64,8 +64,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 loadPrompt('html-generator.txt'),
             ]);
 
-            const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt, cmsClient);
-            const pageArchitect = new PageArchitect(agent, pageArchitectPrompt, cmsClient);
+            const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt);
+            const pageArchitect = new PageArchitect(agent, pageArchitectPrompt);
             const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
