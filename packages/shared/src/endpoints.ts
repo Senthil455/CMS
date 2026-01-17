@@ -21,6 +21,7 @@ export const ENDPOINTS = {
     },
     QUERY: {
         GET_DATA: '/api/queries/:id',
+        PAGE_DATA: '/api/page-data',
     },
     ASSETS: '/api/assets',
     GRAPHQL: '/graphql',
