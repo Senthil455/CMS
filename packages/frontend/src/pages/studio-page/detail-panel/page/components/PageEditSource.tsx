@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Code, X, Save, Loader2, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
-import { type SchemaDto, type PageDto } from '@cms/shared';
+import { Code, X, Save, Loader2, Maximize2, Minimize2, Database } from 'lucide-react';
+import useSWR from 'swr';
+import axios from 'axios';
+import JsonView from 'react18-json-view';
+import 'react18-json-view/src/style.css';
+import { type SchemaDto, type PageDto, ENDPOINTS } from '@cms/shared';
 import { PagePreviewSection } from './PagePreviewSection';
+import { config } from '../../../../../config';
 
 interface PageEditSourceProps {
     item: SchemaDto;
@@ -10,7 +15,6 @@ interface PageEditSourceProps {
     onUpdateField: (field: keyof PageDto, value: any) => void;
     onSave: () => void;
     onCancel: () => void;
-    onChatAction: (action: string) => void;
     isSaving: boolean;
 }
 
@@ -20,10 +24,14 @@ export function PageEditSource({
     onUpdateField,
     onSave,
     onCancel,
-    onChatAction,
     isSaving
 }: PageEditSourceProps) {
     const [isFullScreen, setIsFullScreen] = useState(false);
+
+    const { data: pageData } = useSWR(
+        item.schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}?id=${item.schemaId}` : null,
+        url => axios.get(url, { withCredentials: true }).then(res => res.data)
+    );
 
     return (
         <section className={`${isFullScreen ? 'fixed inset-0 z-50 bg-app p-4' : 'flex-1'} flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
@@ -33,33 +41,30 @@ export function PageEditSource({
                     HTML Content
                 </h3>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={onCancel}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                    >
-                        <X className="w-3 h-3" />
-                        Cancel
-                    </button>
-                    <button
-                        onClick={onSave}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shadow-sm"
-                    >
-                        {isSaving ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                            <Save className="w-3 h-3" />
-                        )}
-                        Save
-                    </button>
-                    <button
-                        onClick={() => onChatAction(`@page_generate#${item.schemaId}: `)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white hover:bg-purple-700 rounded-lg text-[10px] font-bold transition-all shadow-sm"
-                    >
-                        <Sparkles className="w-3 h-3" />
-                        Ask AI
-                    </button>
+                    {isFullScreen && (
+                        <>
+                            <button
+                                onClick={onCancel}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                            >
+                                <X className="w-3 h-3" />
+                                Cancel
+                            </button>
+                            <button
+                                onClick={onSave}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shadow-sm"
+                            >
+                                {isSaving ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Save className="w-3 h-3" />
+                                )}
+                                Save
+                            </button>
+                        </>
+                    )}
                     <div className="w-px h-4 bg-border mx-1" />
                     <button
                         onClick={() => setIsFullScreen(!isFullScreen)}
@@ -77,23 +82,43 @@ export function PageEditSource({
 
             <div className="flex-1 flex flex-row gap-4 h-full min-h-0">
                 {/* Editor Pane */}
-                <div className="flex-1 h-full border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e]">
-                    <Editor
-                        height="100%"
-                        defaultLanguage="html"
-                        value={pageForm.html}
-                        onChange={(value) => onUpdateField('html', value || '')}
-                        theme="vs-dark"
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            padding: { top: 16 },
-                            scrollBeyondLastLine: false,
-                            wordWrap: 'on',
-                            automaticLayout: true,
-                            tabSize: 2,
-                        }}
-                    />
+                <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
+                    <div className="flex-1 border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e]">
+                        <Editor
+                            height="100%"
+                            defaultLanguage="html"
+                            value={pageForm.html}
+                            onChange={(value) => onUpdateField('html', value || '')}
+                            theme="vs-dark"
+                            options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                                padding: { top: 16 },
+                                scrollBeyondLastLine: false,
+                                wordWrap: 'on',
+                                automaticLayout: true,
+                                tabSize: 2,
+                            }}
+                        />
+                    </div>
+
+                    {isFullScreen && pageData && (
+                        <div className="h-1/3 flex flex-col border border-border rounded-xl overflow-hidden bg-white shadow-sm">
+                            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-app-surface shrink-0">
+                                <Database className="w-3 h-3 text-primary-muted" />
+                                <span className="text-[10px] font-bold text-primary-muted uppercase tracking-wider">Page Data (JSON)</span>
+                            </div>
+                            <div className="flex-1 overflow-auto p-4 bg-[#f8f9fa]">
+                                <JsonView
+                                    src={pageData}
+                                    theme="default"
+                                    displaySize={true}
+                                    enableClipboard={true}
+                                    collapsed={false}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Preview Pane */}

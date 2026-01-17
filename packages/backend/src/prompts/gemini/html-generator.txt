@@ -48,7 +48,7 @@ TECH STACK (FIXED)
 
 DATA BINDING RULES (MANDATORY)
 
-* Use Handlebars-style delimiters `{{ ... }}` for direct data interpolation in HTML.
+* Use Handlebars-style delimiters `{{ ... }}` for direct data interpolation in HTML. Use triple braces `{{{ ... }}}` if the value of the field contains HTML tags to avoid escaping.
 * For queries with `type: "single"`, use the `fieldName` defined in `architecturePlan.selectedQueries` as the root object.
 * Example: If `fieldName` is "post" and type is "single", use `<h1>{{post.title}}</h1>`.
 * Use these delimiters for any dynamic content that is NOT part of a repeat block.

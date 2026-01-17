@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { type SchemaDto, type SaveSchemaPayload, type PageDto } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
@@ -12,10 +13,9 @@ interface PageEditProps {
     onTabChange?: (tab: 'settings' | 'code') => void;
     onSave: (payload: SaveSchemaPayload, skipNavigate?: boolean) => Promise<void>;
     onCancel: () => void;
-    onChatAction: (action: string) => void;
 }
 
-export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel, onChatAction }: PageEditProps) {
+export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: PageEditProps) {
     const [activeTab, setActiveTab] = useState<'settings' | 'code'>(initialTab);
 
     // Sync internal state if prop changes (e.g. via URL)
@@ -58,7 +58,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             };
 
             await onSave(payload, true);
-            setShowPublishConfirm(true);
+            toast.success('Saved successfully');
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');
@@ -118,7 +118,6 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                             onUpdateField={updateField}
                             onSave={handleSave}
                             onCancel={onCancel}
-                            onChatAction={onChatAction}
                             isSaving={isSaving}
                         />
                     )}

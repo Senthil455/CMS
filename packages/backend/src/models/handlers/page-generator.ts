@@ -28,7 +28,11 @@ export class PageGenerator implements ChatHandler {
                     existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
                     schemaId = idMatch[1] as string;
                     const pageName = existingPageSchema.settings?.page?.name || existingPageSchema.name;
-                    await context.saveAssistantMessage(`I am Page generator, I found the existing page "${pageName}". I will fetch the latest schema and help you modify it...`);
+                    let message = `I am Page generator, I found the existing page "${pageName}". I will fetch the latest schema and help you modify it...`;
+                    if (existingPageSchema.publicationStatus === 'draft') {
+                        message += "\n\n**Note: This page is currently a DRAFT. You should publish it to see the changes live.**";
+                    }
+                    await context.saveAssistantMessage(message);
                 } catch (e) {
                     this.logger.warn({ schemaId }, 'Existing page not found for modification');
                     await context.saveAssistantMessage(`I am Page generator, I couldn't find the existing page with ID "${schemaId}". I will fetch the latest schema and generate a new page for you...`);

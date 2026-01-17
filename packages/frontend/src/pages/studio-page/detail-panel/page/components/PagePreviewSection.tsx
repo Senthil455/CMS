@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { Globe } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Globe, Database } from 'lucide-react';
 import useSWR from 'swr';
 import axios from 'axios';
 import Handlebars from 'handlebars';
+import JsonView from 'react18-json-view';
+import 'react18-json-view/src/style.css';
 import { type SchemaDto, ENDPOINTS } from '@cms/shared';
 import { config } from '../../../../../config';
 
@@ -14,6 +16,7 @@ interface PagePreviewSectionProps {
 
 export function PagePreviewSection({ schema, html, hideHeader }: PagePreviewSectionProps) {
     const page = schema.settings.page!;
+    const [showData, setShowData] = useState(false);
 
     const { data: pageData } = useSWR(
         schema.schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}?id=${schema.schemaId}` : null,
@@ -38,10 +41,24 @@ export function PagePreviewSection({ schema, html, hideHeader }: PagePreviewSect
         <section className={`space-y-4 ${hideHeader ? 'h-full flex flex-col' : ''}`}>
             {!hideHeader && (
                 <div className="flex items-center justify-between border-b border-border pb-2 shrink-0">
-                    <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        Preview
-                    </h3>
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
+                            <Globe className="w-4 h-4" />
+                            Preview
+                        </h3>
+                        {pageData && (
+                            <button
+                                onClick={() => setShowData(!showData)}
+                                className={`flex items-center gap-2 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${showData
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-app-muted text-primary-muted hover:bg-border'
+                                    }`}
+                            >
+                                <Database className="w-3 h-3" />
+                                {showData ? 'Show Preview' : 'Display Data'}
+                            </button>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold">
                         {pageData ? (
                             <span className="text-green-500">
@@ -58,12 +75,24 @@ export function PagePreviewSection({ schema, html, hideHeader }: PagePreviewSect
                 </div>
             )}
             <div className={`border border-border rounded-xl overflow-hidden bg-white shadow-sm w-full ${hideHeader ? 'flex-1' : 'h-[600px]'}`}>
-                <iframe
-                    title="Page Preview"
-                    srcDoc={renderedHtml}
-                    className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-same-origin"
-                />
+                {showData ? (
+                    <div className="h-full overflow-auto p-4 bg-[#f8f9fa]">
+                        <JsonView
+                            src={pageData}
+                            theme="default"
+                            displaySize={true}
+                            enableClipboard={true}
+                            collapsed={false}
+                        />
+                    </div>
+                ) : (
+                    <iframe
+                        title="Page Preview"
+                        srcDoc={renderedHtml}
+                        className="w-full h-full border-none"
+                        sandbox="allow-scripts allow-same-origin"
+                    />
+                )}
             </div>
         </section>
     );
