@@ -1,5 +1,4 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
-import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ChatContext } from './chat-handler';
 
 import type { RoutingPlan } from './router-designer';
@@ -12,8 +11,11 @@ export interface PageArchitecturePlan {
         hasFooter: boolean;
         structure: string;
     };
+
     selectedQueries: Array<{
         queryName: string;
+        fieldName: string;
+        type: 'single' | 'list';
         description: string;
         args: Record<string, 'fromPath' | 'fromQuery'>;
     }>;
@@ -29,11 +31,14 @@ export class PageArchitect {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
-        private readonly cmsClient: CmsClient,
     ) { }
 
-    async plan(userInput: string, context: ChatContext, availableQueries: any[], routingPlan: RoutingPlan, existingArchitecture?: Partial<PageArchitecturePlan>): Promise<PageArchitecturePlan> {
-        const queryListContext = availableQueries.map(q => `- ${q.name}: ${q.settings?.query?.description || 'No description'}`).join('\n');
+    async plan(userInput: string, context: ChatContext, availableQueries: any[],
+        routingPlan: RoutingPlan, existingArchitecture?: Partial<PageArchitecturePlan>): Promise<PageArchitecturePlan> {
+        const queryListContext = availableQueries.map(q =>
+            `- ${q.name}: ${q.settings?.query?.source}
+             arguments: ${JSON.stringify(q.settings?.query?.arguments)}
+            `).join('\n');
 
         let developerMessage = `
 ROUTING PLAN:
@@ -70,7 +75,7 @@ ${queryListContext}
                 pageType: 'custom',
                 layout: { hasHeader: true, hasSidebar: false, hasFooter: false, structure: 'Simple container' },
                 selectedQueries: [
-                    { queryName: 'fallback_query', description: 'Default query', args: {} }
+                    { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
                 ],
                 components: [],
                 architectureHints: 'Generate a basic layout'

@@ -58,20 +58,19 @@ export class PageGenerator implements ChatHandler {
             await context.saveAssistantMessage(`I've planned the routing for "${routingPlan.pageName}" and the UI structure for your "${architecturePlan.pageType}" page.`);
 
             // 3. Context Gathering: Fetch selected Queries and their sample data
-            const selectedQueryNames = architecturePlan.selectedQueries.map(sq => sq.queryName);
-            const queryDetails = await Promise.all(queries
-                .filter(q => q.settings?.query && selectedQueryNames.includes(q.settings.query.name))
-                .map(async (q) => {
-                    const queryName = q.settings.query!.name;
-                    try {
-                        const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
-                        return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
-                        REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
-                    } catch (e) {
-                        return `ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
-                    }
-                })
-            );
+            const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq) => {
+                const queryName = sq.queryName;
+                const fieldName = sq.fieldName;
+                try {
+                    const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
+                    return `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
+                    REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
+                } catch (e) {
+                    return `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
+                }
+            }));
 
             // 4. Generation: Call Html Generator
             const htmlResponse = await this.htmlGenerator.generate(

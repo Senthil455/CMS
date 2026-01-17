@@ -49,23 +49,23 @@ TECH STACK (FIXED)
 DATA BINDING RULES (MANDATORY)
 
 * Use Handlebars-style delimiters `{{ ... }}` for direct data interpolation in HTML.
-* Example: `<h1>{{post.title}}</h1>`, `<p>{{author.name}}</p>`.
+* For queries with `type: "single"`, use the `fieldName` defined in `architecturePlan.selectedQueries` as the root object.
+* Example: If `fieldName` is "post" and type is "single", use `<h1>{{post.title}}</h1>`.
 * Use these delimiters for any dynamic content that is NOT part of a repeat block.
 
 
 REPETITION RULES (MANDATORY)
 
-* For list rendering, use a `<template>` element with the `data-repeat` attribute.
-* Syntax: `<template data-repeat="items" data-empty="No items yet."> ... </template>`.
-* `data-repeat`: The path to the collection (e.g., "comments", "posts").
-* `data-empty`: (Optional) Text to display if the collection is empty.
-* Inside the template, use Handlebars-style delimiters `{{ ... }}` to access item fields.
+* For queries with `type: "list"`, use native Handlebars `{{#each}}` helper for rendering.
+* Syntax: `{{#each fieldName}} ... {{/each}}`.
+* `{{#each}}` MUST use the `fieldName` defined in `architecturePlan.selectedQueries`.
+* Inside the block, use standard Handlebars identifiers to access item fields.
 * Example:
-  <template data-repeat="comments" data-empty="No comments yet.">
+  {{#each comments}}
     <div class="comment">
       <p><strong>{{user}}</strong>: {{message}}</p>
     </div>
-  </template>
+  {{/each}}
 
 ---
 
@@ -92,5 +92,5 @@ SILENT SELF-VALIDATION CHECKLIST (MANDATORY)
 * Exactly one JSON object, keys: `"title"`, `"html"`.
 * html is a complete HTML5 document.
 * `{{variable}}` used for both direct and repeated data binding.
-* `<template data-repeat="...">` used for lists.
+* `{{#each fieldName}}` used for lists.
 * Tailwind utilities only, no custom CSS.

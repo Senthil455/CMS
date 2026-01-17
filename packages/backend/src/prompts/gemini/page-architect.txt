@@ -16,6 +16,8 @@ You must output ONLY a valid JSON object with the following structure:
   "selectedQueries": [
     {
       "queryName": "string",
+      "fieldName": "string", // concise, camelCase name for data binding (e.g., 'post', 'recentComments')
+      "type": "single" | "list", // whether the query returns a single object or a collection/array
       "description": "string", // Why this query is needed
       "args": { "argName": "fromPath" | "fromQuery" }
     }
