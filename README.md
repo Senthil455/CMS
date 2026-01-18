@@ -36,7 +36,7 @@ Go from prompt to page instantly:
 
 Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from scratch in under 3 minutes.
 
-[**▶️ Watch the Full Demo Video (with subtitles)**](./artifacts/demo_video_subtitled.mp4)
+[**▶️ Watch the Full Demo Video (with subtitles)**](./artifacts/demo_video.webp)
 
 ### Highlight Steps
 
