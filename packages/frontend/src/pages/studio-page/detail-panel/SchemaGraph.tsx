@@ -208,25 +208,36 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
                     });
                 }
             } else if (schema.type === 'page' && schema.settings.page) {
-                const htmlContent = schema.settings.page.html || '';
-                // Check if page fetches any queries
-                queryMap.forEach((queryName) => {
-                    if (htmlContent.includes(`/api/queries/${queryName}`)) {
-                        edges.push({
-                            id: `${schema.name}-${queryName}`,
-                            source: schema.name,
-                            target: queryName,
-                            label: 'fetches',
-                            type: 'default',
-                            animated: true,
-                            style: { stroke: '#10b981' }, // Emerald color
-                            markerEnd: {
-                                type: MarkerType.ArrowClosed,
-                                color: '#10b981',
-                            },
-                        });
+                try {
+                    const metadataStr = schema.settings.page.metadata;
+                    if (metadataStr) {
+                        const metadata = JSON.parse(metadataStr);
+                        const selectedQueries = metadata.architecturePlan?.selectedQueries;
+
+                        if (Array.isArray(selectedQueries)) {
+                            selectedQueries.forEach((sq: any) => {
+                                const queryName = sq.queryName;
+                                if (queryName && queryMap.has(queryName)) {
+                                    edges.push({
+                                        id: `${schema.name}-${queryName}`,
+                                        source: schema.name,
+                                        target: queryName,
+                                        label: 'fetches',
+                                        type: 'default',
+                                        animated: true,
+                                        style: { stroke: '#10b981' }, // Emerald color
+                                        markerEnd: {
+                                            type: MarkerType.ArrowClosed,
+                                            color: '#10b981',
+                                        },
+                                    });
+                                }
+                            });
+                        }
                     }
-                });
+                } catch (e) {
+                    console.warn("Failed to parse page metadata for graph", schema.name);
+                }
             }
         });
 

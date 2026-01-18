@@ -35,7 +35,7 @@ ARCHITECTURAL PLAN:
 - Page Type: ${architecturePlan.pageType}
 - Layout: ${architecturePlan.layout.structure}
 - Selected Queries & Argument Sources: 
-${architecturePlan.selectedQueries.map(sq => `  * ${sq.queryName}: ${JSON.stringify(sq.args)} (fromPath=Source from primary route param; fromQuery=Source from same-named URL query param)`).join('\n')}
+${architecturePlan.selectedQueries.map(sq => `  * ${sq.queryName} (Field: ${sq.fieldName}, Type: ${sq.type}): ${JSON.stringify(sq.args)} (fromPath=Source from primary route param; fromQuery=Source from same-named URL query param)`).join('\n')}
 - Hints: ${architecturePlan.architectureHints}
 
 DATA ENDPOINTS:
