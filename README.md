@@ -36,7 +36,37 @@ Go from prompt to page instantly:
 
 Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from scratch in under 60 seconds (sped up 10x).
 
-![CMS Demo](./artifacts/demo_video.webp)
+![CMS Demo](https://github.com/Senthil455/CMS/blob/main/artifacts/demo_video.webp?raw=true)
+
+---
+
+## 🚀 Quick Start
+
+Get the project running locally in 3 steps.
+
+### 1. Start Support Services (Docker)
+This command builds and starts the CMS backend and database in a container.
+```bash
+sh rebuild.sh
+```
+_Verify that `http://127.0.0.1:5000` is accessible._
+
+### 2. Configure Environment
+Copy the example environment file and add your Google Gemini API Key.
+```bash
+cp packages/backend/.env.example packages/backend/.env
+```
+Inside `.env`, set your key:
+```ini
+GEMINI_API_KEY=your_key_here
+```
+
+### 3. Start Development Server
+Run the frontend and backend agent locally.
+```bash
+npm run dev
+```
+Visit **http://localhost:5173/app** to start building!
 
 ---
 
@@ -68,6 +98,3 @@ A sleek, **React-based** administrative interface.
 
 ---
 
-## 🚀 Getting Started
-
-Visit our [Documentation](https://github.com/Senthil455/CMS/wiki) to get started.
