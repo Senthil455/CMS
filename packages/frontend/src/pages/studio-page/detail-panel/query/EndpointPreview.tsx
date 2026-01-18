@@ -12,7 +12,7 @@ export function EndpointPreview({ baseUrl, params, trigger }: EndpointPreviewPro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fullUrl = new URL(baseUrl);
+    const fullUrl = new URL(baseUrl, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
         if (value) fullUrl.searchParams.append(key, value);
     });

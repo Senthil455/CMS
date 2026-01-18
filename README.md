@@ -32,6 +32,32 @@ Go from prompt to page instantly:
 
 ---
 
+## 🎥 In Action
+
+Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from scratch in under 3 minutes.
+
+[**▶️ Watch the Full Demo Video (with subtitles)**](./artifacts/demo_video_subtitled.mp4)
+
+### Highlight Steps
+
+#### 1. Generate Entity
+**Prompt:** _"Create a Book entity with title, author, isbn, and publishedDate."_
+![Entity Generation](./artifacts/1_book_entity.png)
+
+#### 2. Generate Data
+**Prompt:** _"Generate 5 books."_
+![Data Seeding](./artifacts/2_book_data.png)
+
+#### 3. Generate Query
+**Prompt:** _"Create a query named 'getBooks' to list all books."_
+![Query Generation](./artifacts/3_book_query.png)
+
+#### 4. Generate Page
+**Prompt:** _"Create a page 'Library' to list books using getBooks query."_
+![Page Generation](./artifacts/4_book_page.png)
+
+---
+
 ## 🏗️ Architecture
 
 CMS is built on a modern, decoupled architecture designed for performance and flexibility.

@@ -23,11 +23,15 @@ Output ONLY valid JSON. No markdown, no conversational text.
     * **Required Properties:** `field`, `header`, `displayType`, `inList`, `inDetail`, `validation`, `options`.
     * **Validation Rules:**
         * Must be a STRING representing a valid RegEx.
-        * **CRITICAL:** Prioritize structural validation over strict logic. If you don't know the exact regex, use `.*`.
-        * Do not encode UI logic (readonly, hidden) here.
+        * **FORBIDDEN:** Do not use `(?=`, `(?!`, or any lookaround.
+        * **STRATEGY:** Use "Allowed Character" sets rather than "Exact Sequence" logic.
+        * **EXAMPLES:** - For ISBN: "^[0-9X-]*$"
+            - For Phone: "^[0-9+\\s-]*$"
+            - For SKU: "^[A-Z0-9-]*$"
+        * If a structural pattern cannot be achieved without lookarounds, fallback to `.*`.
     * **DisplayType Rules:**
         * Use `dropdown` or `multiselect` ONLY if `options` are provided.
-        * `options` must be a single comma-separated STRING (e.g., "A,B,C"), never an array.
+        * `options` must be a single comma-separated STRING (e.g., "A,B,C").
         * Forbidden value: `select`.
   </section>
 
