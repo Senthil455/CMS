@@ -40,33 +40,61 @@ Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from
 
 ---
 
+## 🟢 Live Demo
+
+Try the live demo at [example.com/app](https://example.com/app).
+
+**Credentials:**
+- **Username:** `admin@example.com`
+- **Password:** `Admin1!`
+
+---
+
 ## 🚀 Quick Start
 
-Get the project running locally in 3 steps.
+Get the project running locally in 4 steps.
 
-### 1. Start Support Services (Docker)
-This command builds and starts the CMS backend and database in a container.
+### 1. Clone Repositories
+You'll need both the core CMS and the AI agent.
 ```bash
-sh rebuild.sh
+git clone https://github.com/Senthil455/CMS
+git clone https://github.com/Senthil455/CMS
+```
+
+### 2. Start Backend (CMS)
+Run the core CMS with the SQLite demo.
+```bash
+cd cms/examples/SqliteDemo
+dotnet run
 ```
 _Verify that `http://127.0.0.1:5000` is accessible._
 
-### 2. Configure Environment
-Copy the example environment file and add your Google Gemini API Key.
+### 3. Configure Environment (CMS)
+Open a new terminal and set up the AI agent with your Gemini API key.
 ```bash
-cp packages/backend/.env.example packages/backend/.env
+cd cms/packages/backend
+cp .env.example .env
 ```
-Inside `.env`, set your key:
+Edit `.env` and add your key (you can get a free one [here](https://aistudio.google.com/app/apikey)):
 ```ini
 GEMINI_API_KEY=your_key_here
 ```
 
-### 3. Start Development Server
-Run the frontend and backend agent locally.
+### 4. Start Development Server
+Run the CMS agent.
 ```bash
+# From cms root
 npm run dev
 ```
-Visit **http://localhost:5173/app** to start building!
+Visit **http://127.0.0.1:5173** to start building!
+
+> **Note:** Please use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
+
+### 💡 Try it out
+Once running, try these prompts:
+- "Design entities for a library management system"
+- "Add sample data for the book entity"
+- "Create a query to display all available books"
 
 ---
 
