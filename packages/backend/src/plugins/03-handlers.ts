@@ -64,9 +64,25 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 loadPrompt('html-generator.txt'),
             ]);
 
+            const [
+                modernPrompt,
+                classicPrompt,
+                minimalPrompt
+            ] = await Promise.all([
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual.txt'), 'utf-8'),
+            ]);
+
+            const styleMap: Record<string, string> = {
+                'modern': modernPrompt,
+                'classic': classicPrompt,
+                'minimal': minimalPrompt
+            };
+
             const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt);
             const pageArchitect = new PageArchitect(agent, pageArchitectPrompt);
-            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt);
+            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, styleMap);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);

@@ -149,3 +149,22 @@ export interface AssetListResponse {
     items: AssetDto[];
     totalRecords: number;
 }
+
+export interface TemplateSelectionRequest {
+    userInput: string;
+    routingPlan: any;
+    architecturePlan: any;
+    queryDetails: string[];
+    existingPageSchema: SchemaDto | null;
+    schemaId: string;
+    templates: {
+        id: string;
+        name: string;
+        description: string;
+    }[];
+}
+
+export interface TemplateSelectionResponse {
+    selectedTemplate: string;
+    requestPayload: TemplateSelectionRequest;
+}

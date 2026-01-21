@@ -1,5 +1,4 @@
 import type { AIAgent } from '../../infrastructures/agent.interface';
-import type { ChatContext } from './chat-handler';
 import { type SchemaDto } from '@cms/shared';
 import { type RoutingPlan } from './router-designer';
 import { type PageArchitecturePlan } from './page-architect';
@@ -10,12 +9,11 @@ export interface HtmlGenerationResponse {
     html: string;
 }
 
-
-
 export class HtmlGenerator {
     constructor(
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
+        private readonly styleMap: Record<string, string>,
     ) { }
 
     async generate(
@@ -23,9 +21,15 @@ export class HtmlGenerator {
         routingPlan: RoutingPlan,
         architecturePlan: PageArchitecturePlan,
         queryDetails: string[],
-        existingPageSchema: SchemaDto | null
+        existingPageSchema: SchemaDto | null,
+        templateStyle: string = 'modern'
     ): Promise<HtmlGenerationResponse> {
+
+        const stylePrompt = this.styleMap[templateStyle] || this.styleMap['modern'] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
+
         let developerMessage = `
+${stylePrompt}
+
 ROUTING PLAN:
 - Path: ${routingPlan.pageName}
 - Parameters: ${routingPlan.primaryParameter || 'None'}

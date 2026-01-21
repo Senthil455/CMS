@@ -8,6 +8,7 @@ export interface ChatContext {
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
+    onTemplateSelectionToConfirm: (payload: any) => Promise<void>;
 }
 
 export interface ChatHandler {

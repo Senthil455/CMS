@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
-import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './explorer-panel/Explorer';
 import { DetailView } from './detail-panel/DetailView';
@@ -14,6 +14,7 @@ import { PageEdit } from './detail-panel/page/PageEdit';
 import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { TemplateSelectionDialog } from './TemplateSelectionDialog';
 
 export default function StudioPage() {
     const { type, id } = useParams();
@@ -25,7 +26,7 @@ export default function StudioPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, onMessageReceived, onSchemaSummaryToConfirm, onSchemasSync } = useSocket();
+    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionToConfirm, onSchemasSync } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
@@ -87,6 +88,10 @@ export default function StudioPage() {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [confirmationData, setConfirmationData] = useState<SchemaSummary | null>(null);
 
+    // Template Selection State
+    const [showTemplateSelection, setShowTemplateSelection] = useState(false);
+    const [templateSelectionData, setTemplateSelectionData] = useState<TemplateSelectionRequest | null>(null);
+
     useEffect(() => {
         if (history) {
             // Dedup history just in case
@@ -102,12 +107,19 @@ export default function StudioPage() {
                 if (prev.some((m) => m.id == msg.id)) return prev;
                 return [...prev, msg];
             });
+            setShowChat(true); // Auto-open chat on new message
         });
 
         const unsubConfirm = onSchemaSummaryToConfirm((data) => {
             console.log(data);
             setConfirmationData(data);
             setShowConfirmation(true);
+        });
+
+        const unsubTemplate = onTemplateSelectionToConfirm((data: TemplateSelectionRequest) => {
+            console.log('Template selection requested:', data);
+            setTemplateSelectionData(data);
+            setShowTemplateSelection(true);
         });
 
         const unsubSync = onSchemasSync((data) => {
@@ -120,18 +132,31 @@ export default function StudioPage() {
         return () => {
             unsubReceived();
             unsubConfirm();
+            unsubTemplate();
             unsubSync();
         };
-    }, [onMessageReceived, onSchemaSummaryToConfirm, onSchemasSync, mutate]);
+    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionToConfirm, onSchemasSync, mutate]);
 
     const handleSend = (content: string, agentName: string) => {
         sendMessage(content, agentName);
+        setShowChat(true);
     };
 
     const handleConfirmSchema = (response: SchemaSummary) => {
         sendSchemaResponse(response);
         setShowConfirmation(false);
         setConfirmationData(null);
+    };
+
+    const handleConfirmTemplate = (selectedTemplateId: string) => {
+        if (templateSelectionData) {
+            sendTemplateSelectionResponse({
+                selectedTemplate: selectedTemplateId,
+                requestPayload: templateSelectionData
+            });
+            setShowTemplateSelection(false);
+            setTemplateSelectionData(null);
+        }
     };
 
     const [chatDraft, setChatDraft] = useState<string | null>(null);
@@ -235,6 +260,13 @@ export default function StudioPage() {
                 schemaSummary={confirmationData || { userInput: '', summary: '', entities: [], relationships: [] }}
             />
 
+            <TemplateSelectionDialog
+                isOpen={showTemplateSelection}
+                onClose={() => setShowTemplateSelection(false)}
+                onConfirm={handleConfirmTemplate}
+                templates={templateSelectionData?.templates || []}
+            />
+
             <DeleteConfirmDialog
                 isOpen={showDeleteConfirm}
                 onClose={() => setShowDeleteConfirm(false)}
@@ -245,3 +277,4 @@ export default function StudioPage() {
         </div>
     );
 }
+

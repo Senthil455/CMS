@@ -33,6 +33,15 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 }
             });
 
+            socket.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, async (data: any) => {
+                try {
+                    const agentName = config.AI_AGENT;
+                    await fastify.chatService.handleTemplateSelectionResponse(userId, agentName, data, socket.data.externalCookie, onEvent);
+                } catch (error) {
+                    console.error('Error handling template selection response:', error);
+                }
+            });
+
             socket.on('disconnect', () => {
                 console.log('User disconnected:', socket.id);
             });

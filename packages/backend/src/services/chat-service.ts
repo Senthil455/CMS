@@ -3,8 +3,11 @@ import {
     type ChatMessage,
     type SchemaSummary,
     type OnServerToClientEvent,
+    type TemplateSelectionRequest,
+    type TemplateSelectionResponse
 } from '@cms/shared';
 import type { ChatContext, ChatHandler, HandlerType } from '../models/handlers/chat-handler';
+import { PageGenerator } from '../models/handlers/page-generator';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -94,6 +97,9 @@ export class ChatService {
                     },
                     onSchemasSync: async (payload: any) => {
                         onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
+                    },
+                    onTemplateSelectionToConfirm: async (payload: any) => {
+                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, payload);
                     }
                 };
 
@@ -126,6 +132,35 @@ export class ChatService {
         } catch (error) {
             this.logger.error({ error }, 'Failed to commit schema changes');
             await this.saveAndEmitAssistantMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
+        }
+    }
+
+    async handleTemplateSelectionResponse(userId: string, agentName: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+        const handler = this.chatHandlers[agentName]?.['page_generator'];
+        if (handler instanceof PageGenerator) {
+            const context: ChatContext = {
+                taskType: 'page_generator',
+                userId,
+                externalCookie,
+                saveAssistantMessage: async (content: string, payload?: any) => {
+                    return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
+                },
+                saveAiResponseLog: async (handlerName: string, response: string) => {
+                    await this.repository.saveAiResponseLog(handlerName, response);
+                },
+                onConfirmSchemaSummary: async (summary: SchemaSummary) => {
+                    onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+                },
+                onSchemasSync: async (payload: any) => {
+                    onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
+                },
+                onTemplateSelectionToConfirm: async (payload: any) => {
+                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, payload);
+                }
+            };
+            await handler.generateAndSave(response, context);
+        } else {
+            this.logger.error('PageGenerator handler not found or invalid type');
         }
     }
 }

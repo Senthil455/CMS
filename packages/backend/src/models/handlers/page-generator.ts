@@ -1,7 +1,7 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
-import { type SaveSchemaPayload, type SchemaDto } from '@cms/shared';
+import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse } from '@cms/shared';
 import { PageArchitect } from './page-architect';
 import { RouterDesigner } from './router-designer';
 import { HtmlGenerator } from './html-generator';
@@ -62,7 +62,7 @@ export class PageGenerator implements ChatHandler {
             await context.saveAssistantMessage(`I've planned the routing for "${routingPlan.pageName}" and the UI structure for your "${architecturePlan.pageType}" page.`);
 
             // 3. Context Gathering: Fetch selected Queries and their sample data
-            const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq) => {
+            const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq: any) => {
                 const queryName = sq.queryName;
                 const fieldName = sq.fieldName;
                 try {
@@ -76,13 +76,44 @@ export class PageGenerator implements ChatHandler {
                 }
             }));
 
+            // 4. Request Template Selection
+            const payload: TemplateSelectionRequest = {
+                userInput,
+                routingPlan,
+                architecturePlan,
+                queryDetails,
+                existingPageSchema,
+                schemaId,
+                templates: [
+                    { id: 'modern', name: 'Modern Editorial', description: 'Best for standard news/magazines. Uses bold typography and bento grids.' },
+                    { id: 'classic', name: 'Classic Newspaper', description: 'Best for text-heavy content. Uses serif fonts and detailed lists.' },
+                    { id: 'minimal', name: 'Minimalist Visual', description: 'Best for photography or portfolios. Focuses on whitespace and large images.' }
+                ]
+            };
+
+            await context.onTemplateSelectionToConfirm(payload);
+            await context.saveAssistantMessage("I have analyzed your request. Please select a design template to proceed with generation.");
+
+
+        } catch (error: any) {
+            await handleChatError(error, context, this.logger, "generating your HTML page");
+        }
+    }
+
+    async generateAndSave(response: TemplateSelectionResponse, context: ChatContext): Promise<void> {
+        try {
+            const { userInput, routingPlan, architecturePlan, queryDetails, existingPageSchema, schemaId } = response.requestPayload;
+
+            await context.saveAssistantMessage(`Generating page using "${response.selectedTemplate}" template...`);
+
             // 4. Generation: Call Html Generator
             const htmlResponse = await this.htmlGenerator.generate(
                 userInput,
                 routingPlan,
                 architecturePlan,
                 queryDetails,
-                existingPageSchema
+                existingPageSchema,
+                response.selectedTemplate
             );
 
             // Save AI response to database log
@@ -138,3 +169,4 @@ export class PageGenerator implements ChatHandler {
         }
     }
 }
+

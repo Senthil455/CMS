@@ -51,12 +51,25 @@ export function useSocket() {
         socketRef.current?.emit(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, data);
     }, []);
 
+    const onTemplateSelectionToConfirm = useCallback((callback: (data: any) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, callback);
+        return () => {
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, callback);
+        };
+    }, []);
+
+    const sendTemplateSelectionResponse = useCallback((data: any) => {
+        socketRef.current?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
+    }, []);
+
     return {
         isConnected,
         sendMessage,
         sendSchemaResponse,
+        sendTemplateSelectionResponse,
         onMessageReceived,
         onSchemaSummaryToConfirm,
+        onTemplateSelectionToConfirm,
         onSchemasSync,
     };
 }
