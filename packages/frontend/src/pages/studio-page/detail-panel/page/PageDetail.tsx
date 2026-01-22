@@ -5,6 +5,7 @@ import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { PagePublishSection } from './components/PagePublishSection';
 import { PageSettingsSection } from './components/PageSettingsSection';
 import { ArchitecturePlanSection } from './components/ArchitecturePlanSection';
+import { PageSelectedQueriesSection } from './components/PageSelectedQueriesSection';
 import { PagePreviewSection } from './components/PagePreviewSection';
 
 interface PageDetailProps {
@@ -54,6 +55,10 @@ export function PageDetail({ schema }: PageDetailProps) {
 
             {architecturePlan && (
                 <ArchitecturePlanSection architecturePlan={architecturePlan} />
+            )}
+
+            {architecturePlan?.selectedQueries && (
+                <PageSelectedQueriesSection selectedQueries={architecturePlan.selectedQueries} />
             )}
 
             <PagePreviewSection schema={schema} />

@@ -26,7 +26,7 @@ export default function StudioPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionToConfirm, onSchemasSync } = useSocket();
+    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSchemasSync } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
@@ -116,8 +116,14 @@ export default function StudioPage() {
             setShowConfirmation(true);
         });
 
-        const unsubTemplate = onTemplateSelectionToConfirm((data: TemplateSelectionRequest) => {
-            console.log('Template selection requested:', data);
+        const unsubTemplateList = onTemplateSelectionListToConfirm((data: TemplateSelectionRequest) => {
+            console.log('Template selection (List) requested:', data);
+            setTemplateSelectionData(data);
+            setShowTemplateSelection(true);
+        });
+
+        const unsubTemplateDetail = onTemplateSelectionDetailToConfirm((data: TemplateSelectionRequest) => {
+            console.log('Template selection (Detail) requested:', data);
             setTemplateSelectionData(data);
             setShowTemplateSelection(true);
         });
@@ -132,10 +138,11 @@ export default function StudioPage() {
         return () => {
             unsubReceived();
             unsubConfirm();
-            unsubTemplate();
+            unsubTemplateList();
+            unsubTemplateDetail();
             unsubSync();
         };
-    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionToConfirm, onSchemasSync, mutate]);
+    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSchemasSync, mutate]);
 
     const handleSend = (content: string, agentName: string) => {
         sendMessage(content, agentName);
@@ -148,10 +155,11 @@ export default function StudioPage() {
         setConfirmationData(null);
     };
 
-    const handleConfirmTemplate = (selectedTemplateId: string) => {
+    const handleConfirmTemplate = (selectedTemplateId: string, enableEngagementBar: boolean) => {
         if (templateSelectionData) {
             sendTemplateSelectionResponse({
                 selectedTemplate: selectedTemplateId,
+                enableEngagementBar,
                 requestPayload: templateSelectionData
             });
             setShowTemplateSelection(false);

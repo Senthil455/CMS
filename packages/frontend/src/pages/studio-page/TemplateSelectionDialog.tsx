@@ -11,7 +11,7 @@ interface TemplateOption {
 interface TemplateSelectionDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (selectedTemplateId: string) => void;
+    onConfirm: (selectedTemplateId: string, enableEngagementBar: boolean) => void;
     templates: TemplateOption[];
 }
 
@@ -22,12 +22,13 @@ export function TemplateSelectionDialog({
     templates
 }: TemplateSelectionDialogProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [enableEngagementBar, setEnableEngagementBar] = useState(false);
 
     if (!isOpen) return null;
 
     const handleConfirm = () => {
         if (selectedId) {
-            onConfirm(selectedId);
+            onConfirm(selectedId, enableEngagementBar);
         }
     };
 
@@ -59,7 +60,7 @@ export function TemplateSelectionDialog({
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         {templates.map((template) => (
                             <div
                                 key={template.id}
@@ -92,6 +93,25 @@ export function TemplateSelectionDialog({
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Options */}
+                    <div className="bg-app-muted/30 rounded-xl p-4 border border-border">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <div className="relative inline-flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={enableEngagementBar}
+                                    onChange={(e) => setEnableEngagementBar(e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary/80 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </div>
+                            <div>
+                                <span className="text-sm font-medium text-foreground">Include Engagement Bar</span>
+                                <p className="text-xs text-primary-muted">Adds View, Like, Share, and Bookmark buttons for detail pages.</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
 

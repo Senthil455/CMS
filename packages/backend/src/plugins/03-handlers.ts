@@ -65,24 +65,39 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             ]);
 
             const [
-                modernPrompt,
-                classicPrompt,
-                minimalPrompt
+                modernListPrompt,
+                modernDetailPrompt,
+                classicListPrompt,
+                classicDetailPrompt,
+                minimalListPrompt,
+                minimalDetailPrompt
             ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, 'styles/modern-editorial.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-list.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-detail.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-list.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-detail.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-list.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-detail.txt'), 'utf-8'),
             ]);
 
             const styleMap: Record<string, string> = {
-                'modern': modernPrompt,
-                'classic': classicPrompt,
-                'minimal': minimalPrompt
+                'modern-list': modernListPrompt,
+                'modern-detail': modernDetailPrompt,
+                'classic-list': classicListPrompt,
+                'classic-detail': classicDetailPrompt,
+                'minimal-list': minimalListPrompt,
+                'minimal-detail': minimalDetailPrompt,
+                // Fallbacks
+                'modern': modernListPrompt,
+                'classic': classicListPrompt,
+                'minimal': minimalListPrompt
             };
+
+            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
 
             const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt);
             const pageArchitect = new PageArchitect(agent, pageArchitectPrompt);
-            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, styleMap);
+            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, styleMap, engagementBarPrompt);
 
             const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);

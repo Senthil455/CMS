@@ -14,6 +14,7 @@ export class HtmlGenerator {
         private readonly aiAgent: AIAgent,
         private readonly systemPrompt: string,
         private readonly styleMap: Record<string, string>,
+        private readonly engagementBarPrompt?: string,
     ) { }
 
     async generate(
@@ -22,14 +23,23 @@ export class HtmlGenerator {
         architecturePlan: PageArchitecturePlan,
         queryDetails: string[],
         existingPageSchema: SchemaDto | null,
-        templateStyle: string = 'modern'
+        templateStyle: string = 'modern',
+        enableEngagementBar: boolean = false
     ): Promise<HtmlGenerationResponse> {
 
-        const stylePrompt = this.styleMap[templateStyle] || this.styleMap['modern'] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
+        const pageType = architecturePlan.pageType === 'detail' ? 'detail' : 'list';
+        const styleKey = `${templateStyle}-${pageType}`;
+        const stylePrompt = this.styleMap[styleKey] || this.styleMap[`modern-${pageType}`] || this.styleMap[templateStyle] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
 
         let developerMessage = `
 ${stylePrompt}
+`;
 
+        if (enableEngagementBar && this.engagementBarPrompt) {
+            developerMessage += `\n\n${this.engagementBarPrompt}\n`;
+        }
+
+        developerMessage += `
 ROUTING PLAN:
 - Path: ${routingPlan.pageName}
 - Parameters: ${routingPlan.primaryParameter || 'None'}

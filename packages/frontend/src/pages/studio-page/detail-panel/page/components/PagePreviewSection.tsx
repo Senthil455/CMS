@@ -12,15 +12,28 @@ interface PagePreviewSectionProps {
     schema: SchemaDto;
     html?: string;
     hideHeader?: boolean;
+    paramValues?: Record<string, string>;
 }
 
-export function PagePreviewSection({ schema, html, hideHeader }: PagePreviewSectionProps) {
+export function PagePreviewSection({ schema, html, hideHeader, paramValues }: PagePreviewSectionProps) {
     const page = schema.settings.page!;
     const [showData, setShowData] = useState(false);
 
     const { data: pageData } = useSWR(
-        schema.schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}?id=${schema.schemaId}` : null,
-        url => axios.get(url, { withCredentials: true }).then(res => res.data)
+        schema.schemaId ? [
+            `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}`,
+            schema.schemaId,
+            paramValues
+        ] : null,
+        ([url, id, params]) => {
+            const queryParams = new URLSearchParams({ id });
+            if (params) {
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value) queryParams.append(key, value);
+                });
+            }
+            return axios.get(`${url}?${queryParams.toString()}`, { withCredentials: true }).then(res => res.data);
+        }
     );
 
     const targetHtml = html ?? page.html;

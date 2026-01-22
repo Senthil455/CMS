@@ -77,6 +77,26 @@ export class PageGenerator implements ChatHandler {
             }));
 
             // 4. Request Template Selection
+
+            // 4. Request Template Selection
+            // Define templates based on page type
+            let templates: { id: string, name: string, description: string }[] = [];
+
+            if (architecturePlan.pageType === 'detail') {
+                templates = [
+                    { id: 'modern', name: 'Modern Editorial (Detail)', description: 'Best for articles or product details. Uses hero headers and clean typography.' },
+                    { id: 'classic', name: 'Classic Newspaper (Detail)', description: 'Best for text-heavy content. Uses serif fonts, bylines, and drop-caps.' },
+                    { id: 'minimal', name: 'Minimalist Visual (Detail)', description: 'Best for portfolios. Focuses on large images and whitespace.' }
+                ];
+            } else {
+                // Default to List/Index logic
+                templates = [
+                    { id: 'modern', name: 'Modern Editorial (List)', description: 'Best for standard news/magazines. Uses bold typography and bento grids.' },
+                    { id: 'classic', name: 'Classic Newspaper (List)', description: 'Best for text-heavy content. Uses serif fonts and detailed lists.' },
+                    { id: 'minimal', name: 'Minimalist Visual (List)', description: 'Best for photography or portfolios. Focuses on whitespace and large images.' }
+                ];
+            }
+
             const payload: TemplateSelectionRequest = {
                 userInput,
                 routingPlan,
@@ -84,14 +104,15 @@ export class PageGenerator implements ChatHandler {
                 queryDetails,
                 existingPageSchema,
                 schemaId,
-                templates: [
-                    { id: 'modern', name: 'Modern Editorial', description: 'Best for standard news/magazines. Uses bold typography and bento grids.' },
-                    { id: 'classic', name: 'Classic Newspaper', description: 'Best for text-heavy content. Uses serif fonts and detailed lists.' },
-                    { id: 'minimal', name: 'Minimalist Visual', description: 'Best for photography or portfolios. Focuses on whitespace and large images.' }
-                ]
+                templates: templates
             };
 
-            await context.onTemplateSelectionToConfirm(payload);
+            if (architecturePlan.pageType === 'detail') {
+                await context.onTemplateSelectionDetailToConfirm(payload);
+            } else {
+                await context.onTemplateSelectionListToConfirm(payload);
+            }
+
             await context.saveAssistantMessage("I have analyzed your request. Please select a design template to proceed with generation.");
 
 
@@ -113,7 +134,8 @@ export class PageGenerator implements ChatHandler {
                 architecturePlan,
                 queryDetails,
                 existingPageSchema,
-                response.selectedTemplate
+                response.selectedTemplate,
+                response.enableEngagementBar
             );
 
             // Save AI response to database log

@@ -98,8 +98,11 @@ export class ChatService {
                     onSchemasSync: async (payload: any) => {
                         onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
                     },
-                    onTemplateSelectionToConfirm: async (payload: any) => {
-                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, payload);
+                    onTemplateSelectionListToConfirm: async (payload: any) => {
+                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
+                    },
+                    onTemplateSelectionDetailToConfirm: async (payload: any) => {
+                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
                     }
                 };
 
@@ -154,8 +157,11 @@ export class ChatService {
                 onSchemasSync: async (payload: any) => {
                     onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
                 },
-                onTemplateSelectionToConfirm: async (payload: any) => {
-                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_TO_CONFIRM, payload);
+                onTemplateSelectionListToConfirm: async (payload: any) => {
+                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
+                },
+                onTemplateSelectionDetailToConfirm: async (payload: any) => {
+                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
                 }
             };
             await handler.generateAndSave(response, context);

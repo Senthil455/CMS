@@ -1,7 +1,7 @@
+DESIGN STYLE INSTRUCTION: Classic Newspaper (List View)
 
-DESIGN STYLE INSTRUCTION: Classic Newspaper
 - Layout: Use a classic 2/3 + 1/3 column layout. Main content on left, sidebar on right. Separate articles with distinct borders.
+- Density: High information density. Show excerpts and metadata.
 - Typography: Use Serif font for all Headings (e.g. 'Merriweather'). Sans-serif for UI elements.
 - Colors: Strict Black & White with one deep accent color (e.g. text-red-700). Background white or subtle stone-50.
 - Visuals: Rectangular, sharp images (no rounded corners).
-- Density: High information density. Show excerpts and metadata.

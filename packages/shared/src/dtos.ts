@@ -166,5 +166,6 @@ export interface TemplateSelectionRequest {
 
 export interface TemplateSelectionResponse {
     selectedTemplate: string;
+    enableEngagementBar?: boolean;
     requestPayload: TemplateSelectionRequest;
 }
