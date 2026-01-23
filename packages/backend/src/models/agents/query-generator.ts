@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleChatError } from './chat-agent';
+import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_TRIGGERS } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
@@ -62,10 +62,6 @@ ${schemaContext}
     }
 
     async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<void> {
-        // Save AI response to database log
-        await context.saveAiResponseLog('query-generator',
-            JSON.stringify({ ...plan, taskType: context.taskType })
-        );
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAssistantMessage("I couldn't generate a valid query configuration. Please try again with more details.");
@@ -110,9 +106,15 @@ ${schemaContext}
     async handle(userInput: string, context: AgentContext): Promise<void> {
         try {
             const plan = await this.think(userInput, context);
+
+            // Save AI response to database log
+            await context.saveAiResponseLog('query-generator',
+                JSON.stringify({ ...plan, taskType: context.taskType })
+            );
+
             await this.act(plan, context);
         } catch (error: any) {
-            await handleChatError(error, context, this.logger, "generating your query");
+            await handleAgentError(error, context, this.logger, "generating your query", this.aiProvider);
         }
     }
 }

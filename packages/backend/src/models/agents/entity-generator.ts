@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleChatError } from './chat-agent';
+import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 import { type EntityDto, type RelationshipDto, AGENT_TRIGGERS } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
@@ -82,9 +82,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
     }
 
     async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<void> {
-        // Save AI response to database log
-        await context.saveAiResponseLog('entity-generator', JSON.stringify({ ...plan, taskType: context.taskType }));
-
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -126,9 +123,13 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
     async handle(userInput: string, context: AgentContext): Promise<void> {
         try {
             const plan = await this.think(userInput, context);
+
+            // Save AI response to database log
+            await context.saveAiResponseLog('entity-generator', JSON.stringify({ ...plan, taskType: context.taskType }));
+
             await this.act(plan, context);
         } catch (error: any) {
-            await handleChatError(error, context, this.logger, "generating your entities");
+            await handleAgentError(error, context, this.logger, "generating your schema", this.aiProvider);
         }
     }
 }

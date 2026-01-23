@@ -1,4 +1,5 @@
 import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentTrigger } from '@cms/shared';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 
 export interface AgentContext {
     userId: string;
@@ -19,25 +20,19 @@ export interface Agent<T = any> {
     handle(userInput: string, context: AgentContext): Promise<void>;
 }
 
-export async function handleChatError(error: any, context: AgentContext, logger: any, actionDescription: string) {
+export async function handleAgentError(error: any, context: AgentContext, logger: any, actionDescription: string, provider?: AIProvider) {
     logger.error({ error, stack: error?.stack }, `Error in ${context.taskType} handle`);
 
     let errorMessage = error.message || 'Unknown error occurred';
 
-    // Handle Gemini 429 Quota Error
-    if (errorMessage.includes('Gemini API error 429')) {
-        try {
-            const jsonPart = errorMessage.substring(errorMessage.indexOf('{'));
-            const errorObj = JSON.parse(jsonPart);
-            if (errorObj?.error?.message) {
-                errorMessage = errorObj.error.message;
-            }
-        } catch (e) {
-            // If parsing fails, just use the original message or a cleaner fallback
-            errorMessage = 'You exceeded your current AI quota. Please wait a few seconds and try again.';
+    if (provider && typeof provider.transformError === 'function') {
+        errorMessage = provider.transformError(error);
+    } else {
+        // Fallback for providers that don't implement transformError (though interface says they should)
+        // or if provider not passed (legacy/transition)
+        if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
         }
-    } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
     }
 
     await context.saveAssistantMessage(`I'm sorry, I encountered an error while ${actionDescription}:\n${errorMessage}`);

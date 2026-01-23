@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleChatError } from './chat-agent';
+import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 
 import { AGENT_TRIGGERS } from '@cms/shared';
 // ... existing interface ...
@@ -76,11 +76,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
     }
 
     async act(plan: DataGeneratorPlan, context: AgentContext): Promise<void> {
-        // Save AI response to database log
-        await context.saveAiResponseLog(AGENT_TRIGGERS.DATA_GENERATOR,
-            JSON.stringify({ ...plan, taskType: context.taskType })
-        );
-
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
@@ -113,9 +108,15 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
     async handle(userInput: string, context: AgentContext): Promise<void> {
         try {
             const plan = await this.think(userInput, context);
+
+            // Save AI response to database log
+            await context.saveAiResponseLog(AGENT_TRIGGERS.DATA_GENERATOR,
+                JSON.stringify({ ...plan, taskType: context.taskType })
+            );
+
             await this.act(plan, context);
         } catch (error: any) {
-            await handleChatError(error, context, this.logger, "generating or inserting your data");
+            await handleAgentError(error, context, this.logger, "generating your data", this.aiProvider);
         }
     }
 }

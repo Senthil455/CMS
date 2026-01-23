@@ -3,7 +3,7 @@ import { type SchemaDto, type SaveSchemaPayload, type TemplateSelectionResponse 
 import { type RoutingPlan, type PageArchitecturePlan } from './page-generator';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleChatError } from './chat-agent';
+import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 
 export interface HtmlGenerationResponse {
     name: string;
@@ -67,11 +67,6 @@ export class HtmlGenerator implements Agent<HtmlGeneratorPlan> {
     }
 
     async act(plan: HtmlGeneratorPlan, context: AgentContext): Promise<void> {
-        // Save AI response to database log
-        await context.saveAiResponseLog('page-generator',
-            JSON.stringify({ ...plan, taskType: context.taskType })
-        );
-
         let { title } = plan;
         let name = plan.routingPlan.pageName || (plan.existingPageSchema?.name) || `generated-page-${Date.now()}`;
         title = title || (plan.existingPageSchema?.settings.page?.title) || 'Generated Page';
@@ -124,9 +119,15 @@ export class HtmlGenerator implements Agent<HtmlGeneratorPlan> {
             // AND 'handle' also called 'generateAndSave'.
             // Now logic is in 'think' and 'act'.
             const plan = await this.think(userInput, context);
+
+            // Save AI response to database log
+            await context.saveAiResponseLog('page-generator',
+                JSON.stringify({ ...plan, taskType: context.taskType })
+            );
+
             await this.act(plan, context);
-        } catch (error) {
-            await handleChatError(error, context, this.logger, "processing html generation request");
+        } catch (error: any) {
+            await handleAgentError(error, context, this.logger, "generating your html", this.aiProvider);
         }
     }
 

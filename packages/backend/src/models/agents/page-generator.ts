@@ -1,6 +1,6 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleChatError } from './chat-agent';
+import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse, AGENT_TRIGGERS } from '@cms/shared';
 import type { AIProvider } from '../../infrastructures/agent.interface';
 
@@ -146,7 +146,7 @@ export class PageGenerator implements Agent<PageGeneratorPlan> {
             const plan = await this.think(userInput, context);
             await this.act(plan, context);
         } catch (error: any) {
-            await handleChatError(error, context, this.logger, "generating your HTML page");
+            await handleAgentError(error, context, this.logger, "generating your page", this.aiProvider);
         }
     }
 

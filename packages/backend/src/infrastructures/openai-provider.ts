@@ -45,4 +45,11 @@ export class OpenAIProvider implements AIProvider {
             throw new Error('Failed to generate via OpenAI SDK');
         }
     }
+    transformError(error: any): string {
+        let errorMessage = error.message || 'Unknown error occurred';
+        if (error.response?.data?.error?.message) {
+            errorMessage = error.response.data.error.message;
+        }
+        return errorMessage;
+    }
 }

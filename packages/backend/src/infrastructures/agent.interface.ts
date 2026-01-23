@@ -5,4 +5,5 @@ export interface AgentMessage {
 
 export interface AIProvider {
     generate(system: string, developer: string, user: string): Promise<any>;
+    transformError(error: any): string;
 }
