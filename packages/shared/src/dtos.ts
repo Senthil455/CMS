@@ -157,6 +157,7 @@ export interface TemplateSelectionRequest {
     queryDetails: string[];
     existingPageSchema: SchemaDto | null;
     schemaId: string;
+    providerName: string;
     templates: {
         id: string;
         name: string;

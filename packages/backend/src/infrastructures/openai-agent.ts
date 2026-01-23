@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
-import type { AIAgent, AgentMessage } from './agent.interface';
+import type { AIProvider, AgentMessage } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
-export class OpenAIAgent implements AIAgent {
+export class OpenAIProvider implements AIProvider {
     private readonly openai: OpenAI;
 
     constructor(
@@ -19,7 +19,7 @@ export class OpenAIAgent implements AIAgent {
 
     async generate(system: string, developer: string, user: string): Promise<any> {
         try {
-            this.logger.info('OpenAIAgent generating from roles using SDK');
+            this.logger.info('OpenAIProvider generating from roles using SDK');
 
             const response = await this.openai.chat.completions.create({
                 model: this.model,

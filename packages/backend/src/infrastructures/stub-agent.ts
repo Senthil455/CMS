@@ -1,6 +1,6 @@
-import type { AIAgent, AgentMessage } from './agent.interface';
+import type { AIProvider } from './agent.interface';
 
-export class StubAgent implements AIAgent {
+export class StubProvider implements AIProvider {
     async generate(system: string, developer: string, user: string): Promise<any> {
         try {
             return JSON.parse(user);

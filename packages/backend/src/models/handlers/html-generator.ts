@@ -1,4 +1,4 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import { type SchemaDto } from '@cms/shared';
 import { type RoutingPlan } from './router-designer';
 import { type PageArchitecturePlan } from './page-architect';
@@ -11,7 +11,7 @@ export interface HtmlGenerationResponse {
 
 export class HtmlGenerator {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly styleMap: Record<string, string>,
         private readonly engagementBarPrompt?: string,
@@ -65,7 +65,7 @@ ${queryDetails.join('\n')}
             }, null, 2)}`;
         }
 
-        const response = await this.aiAgent.generate(
+        const response = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
             userInput

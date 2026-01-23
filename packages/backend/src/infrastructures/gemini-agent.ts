@@ -1,7 +1,7 @@
-import type { AIAgent } from './agent.interface';
+import type { AIProvider } from './agent.interface';
 import type { ServiceLogger } from '../types/logger';
 
-export class GeminiAgent implements AIAgent {
+export class GeminiProvider implements AIProvider {
     private cacheNames = new Map<string, string>();
 
     constructor(
@@ -88,7 +88,7 @@ export class GeminiAgent implements AIAgent {
                 };
             }
 
-            this.logger.debug({ model: this.model, cached: !!cacheName }, 'GeminiAgent generating content');
+            this.logger.debug({ model: this.model, cached: !!cacheName }, 'GeminiProvider generating content');
 
             const resp = await fetch(endpoint, {
                 method: 'POST',

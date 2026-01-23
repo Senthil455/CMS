@@ -1,7 +1,7 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
-import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse } from '@cms/shared';
+import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse, AGENT_TRIGGERS } from '@cms/shared';
 import { PageArchitect } from './page-architect';
 import { RouterDesigner } from './router-designer';
 import { HtmlGenerator } from './html-generator';
@@ -14,6 +14,7 @@ export class PageGenerator implements ChatHandler {
         private readonly pageArchitect: PageArchitect,
         private readonly routerDesigner: RouterDesigner,
         private readonly htmlGenerator: HtmlGenerator,
+        private readonly templates: Record<string, { id: string, name: string, description: string }[]>
     ) { }
 
     async handle(userInput: string, context: ChatContext): Promise<void> {
@@ -22,7 +23,7 @@ export class PageGenerator implements ChatHandler {
             let schemaId = '';
 
             // 1. Identification: Check if user input contains #schemaId:
-            const idMatch = userInput.match(/@page_generator#([^:]+):/);
+            const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.PAGE_GENERATOR}#([^:]+):`));
             if (idMatch) {
                 try {
                     existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
@@ -76,25 +77,14 @@ export class PageGenerator implements ChatHandler {
                 }
             }));
 
-            // 4. Request Template Selection
-
-            // 4. Request Template Selection
             // Define templates based on page type
             let templates: { id: string, name: string, description: string }[] = [];
 
             if (architecturePlan.pageType === 'detail') {
-                templates = [
-                    { id: 'modern', name: 'Modern Editorial (Detail)', description: 'Best for articles or product details. Uses hero headers and clean typography.' },
-                    { id: 'classic', name: 'Classic Newspaper (Detail)', description: 'Best for text-heavy content. Uses serif fonts, bylines, and drop-caps.' },
-                    { id: 'minimal', name: 'Minimalist Visual (Detail)', description: 'Best for portfolios. Focuses on large images and whitespace.' }
-                ];
+                templates = this.templates['detail'] || [];
             } else {
                 // Default to List/Index logic
-                templates = [
-                    { id: 'modern', name: 'Modern Editorial (List)', description: 'Best for standard news/magazines. Uses bold typography and bento grids.' },
-                    { id: 'classic', name: 'Classic Newspaper (List)', description: 'Best for text-heavy content. Uses serif fonts and detailed lists.' },
-                    { id: 'minimal', name: 'Minimalist Visual (List)', description: 'Best for photography or portfolios. Focuses on whitespace and large images.' }
-                ];
+                templates = this.templates['list'] || [];
             }
 
             const payload: TemplateSelectionRequest = {
@@ -104,6 +94,7 @@ export class PageGenerator implements ChatHandler {
                 queryDetails,
                 existingPageSchema,
                 schemaId,
+                providerName: context.providerName,
                 templates: templates
             };
 
@@ -126,6 +117,10 @@ export class PageGenerator implements ChatHandler {
             const { userInput, routingPlan, architecturePlan, queryDetails, existingPageSchema, schemaId } = response.requestPayload;
 
             await context.saveAssistantMessage(`Generating page using "${response.selectedTemplate}" template...`);
+            // Save AI response to database log
+            await context.saveAiResponseLog('page-generator-template-selection-response',
+                JSON.stringify({ ...response, taskType: 'page-generator-template-selection-response' })
+            );
 
             // 4. Generation: Call Html Generator
             const htmlResponse = await this.htmlGenerator.generate(

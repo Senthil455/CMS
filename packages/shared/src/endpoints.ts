@@ -8,7 +8,7 @@ export const ENDPOINTS = {
         ME: '/api/me',
     },
     AI: {
-        AGENTS: '/cmsapi/ai/agents',
+        PROVIDERS: '/cmsapi/ai/providers',
         LOGS: '/cmsapi/ai/logs',
     },
     SCHEMA: {

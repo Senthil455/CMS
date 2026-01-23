@@ -1,4 +1,4 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { ChatContext } from './chat-handler';
 
 export interface RoutingPlan {
@@ -10,7 +10,7 @@ export interface RoutingPlan {
 
 export class RouterDesigner {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
     ) { }
 
@@ -21,7 +21,7 @@ export class RouterDesigner {
             developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
         }
 
-        const response = await this.aiAgent.generate(
+        const response = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
             userInput

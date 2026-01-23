@@ -4,7 +4,8 @@ import {
     type SchemaSummary,
     type OnServerToClientEvent,
     type TemplateSelectionRequest,
-    type TemplateSelectionResponse
+    type TemplateSelectionResponse,
+    AGENT_TRIGGERS
 } from '@cms/shared';
 import type { ChatContext, ChatHandler, HandlerType } from '../models/handlers/chat-handler';
 import { PageGenerator } from '../models/handlers/page-generator';
@@ -55,30 +56,28 @@ export class ChatService {
         userId: string,
         content: string,
         externalCookie: string,
-        agentName: string,
+        providerName: string,
         onEvent: OnServerToClientEvent): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
-
-
         // 2. Intent Classifier
         let taskType: HandlerType | null = null;
 
-        if (content.includes('@entity_generator') || content.includes('@entity_generate')) {
-            taskType = 'entity_generator';
-        } else if (content.includes('@page_generator') || content.includes('@page_generate')) {
-            taskType = 'page_generator';
-        } else if (content.includes('@query_generator')) {
-            taskType = 'query_generator';
-        } else if (content.includes('@data_generator')) {
-            taskType = 'data_generator';
+        if (content.includes(AGENT_TRIGGERS.ENTITY_GENERATOR)) {
+            taskType = AGENT_TRIGGERS.ENTITY_GENERATOR;
+        } else if (content.includes(AGENT_TRIGGERS.PAGE_GENERATOR)) {
+            taskType = AGENT_TRIGGERS.PAGE_GENERATOR;
+        } else if (content.includes(AGENT_TRIGGERS.QUERY_GENERATOR)) {
+            taskType = AGENT_TRIGGERS.QUERY_GENERATOR;
+        } else if (content.includes(AGENT_TRIGGERS.DATA_GENERATOR)) {
+            taskType = AGENT_TRIGGERS.DATA_GENERATOR;
         } else {
-            taskType = await this.intentClassifier[agentName]!.resolve(content);
+            taskType = await this.intentClassifier[providerName]!.resolve(content);
         }
         if (taskType) {
-            const handler = this.chatHandlers[agentName]?.[taskType];
+            const handler = this.chatHandlers[providerName]?.[taskType];
             if (handler) {
                 this.logger.info('Executing resolved handler');
 
@@ -86,6 +85,7 @@ export class ChatService {
                     taskType,
                     userId,
                     externalCookie,
+                    providerName,
                     saveAssistantMessage: async (content: string, payload?: any) => {
                         return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
                     },
@@ -138,13 +138,15 @@ export class ChatService {
         }
     }
 
-    async handleTemplateSelectionResponse(userId: string, agentName: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
-        const handler = this.chatHandlers[agentName]?.['page_generator'];
+    async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+        const providerName = response.requestPayload.providerName || 'gemini';
+        const handler = this.chatHandlers[providerName]?.[AGENT_TRIGGERS.PAGE_GENERATOR];
         if (handler instanceof PageGenerator) {
             const context: ChatContext = {
-                taskType: 'page_generator',
+                taskType: AGENT_TRIGGERS.PAGE_GENERATOR,
                 userId,
                 externalCookie,
+                providerName,
                 saveAssistantMessage: async (content: string, payload?: any) => {
                     return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
                 },

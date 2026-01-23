@@ -1,5 +1,5 @@
 import { Trash2, Edit2, Layout, Sparkles } from 'lucide-react';
-import type { PageDto } from '@cms/shared';
+import { type PageDto, AGENT_TRIGGERS } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
 interface PageHeaderProps {
@@ -30,7 +30,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             }
         >
             <button
-                onClick={() => onChatAction(`@page_generate#${schemaId}:`)}
+                onClick={() => onChatAction(`${AGENT_TRIGGERS.PAGE_GENERATOR}#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />

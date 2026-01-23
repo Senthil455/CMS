@@ -1,4 +1,4 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { ChatContext } from './chat-handler';
 
 import type { RoutingPlan } from './router-designer';
@@ -29,7 +29,7 @@ export interface PageArchitecturePlan {
 
 export class PageArchitect {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
     ) { }
 
@@ -56,7 +56,7 @@ ${queryListContext}
 
         developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
 
-        const response = await this.aiAgent.generate(
+        const response = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
             userInput

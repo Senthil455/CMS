@@ -1,8 +1,8 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
-import { type EntityDto, type RelationshipDto } from '@cms/shared';
+import { type EntityDto, type RelationshipDto, AGENT_TRIGGERS } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
 
@@ -13,7 +13,7 @@ export interface EntityGeneratorResponse {
 
 export class EntityGenerator implements ChatHandler {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly entitySchema: string,
         private readonly attributeSchema: string,
@@ -33,7 +33,7 @@ export class EntityGenerator implements ChatHandler {
             schemasText += `\n\n${existingContext}`;
         }
 
-        const response = await this.aiAgent.generate(
+        const response = await this.aiProvider.generate(
             this.systemPrompt,
             schemasText,
             userInput
@@ -45,7 +45,7 @@ export class EntityGenerator implements ChatHandler {
     async handle(userInput: string, context: ChatContext): Promise<void> {
         try {
             let existingContext = '';
-            const idMatch = userInput.match(/@entity_generator#([^:]+):/);
+            const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.ENTITY_GENERATOR}#([^:]+):`));
 
             if (idMatch) {
                 const schemaId = idMatch[1] as string;

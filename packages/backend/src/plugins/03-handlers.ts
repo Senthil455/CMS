@@ -16,7 +16,7 @@ import { HtmlGenerator } from '../models/handlers/html-generator';
 import { DataGenerator } from '../models/handlers/data-generator';
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
-    const agents = fastify.aiAgent;
+    const providers = fastify.aiProvider;
     const cmsClient = fastify.cms;
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
 
@@ -34,14 +34,14 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     const intentClassifiers: Record<string, IntentClassifier> = {};
 
-    for (const [agentName, agent] of Object.entries(agents)) {
-        const promptSubDir = agentName;
+    for (const [providerName, provider] of Object.entries(providers)) {
+        const promptSubDir = providerName;
         try {
             const loadPrompt = async (fileName: string) => {
                 try {
                     return await fs.readFile(path.join(promptsDir, `${promptSubDir}/${fileName}`), 'utf-8');
                 } catch (e) {
-                    fastify.log.warn(`Prompt ${fileName} not found for agent ${agentName}, using empty string`);
+                    fastify.log.warn(`Prompt ${fileName} not found for provider ${providerName}, using empty string`);
                     return '';
                 }
             };
@@ -95,42 +95,46 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const engagementBarPrompt = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
 
-            const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt);
-            const pageArchitect = new PageArchitect(agent, pageArchitectPrompt);
-            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt, styleMap, engagementBarPrompt);
+            const routerDesigner = new RouterDesigner(provider, routerDesignerPrompt);
+            const pageArchitect = new PageArchitect(provider, pageArchitectPrompt);
+            const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, engagementBarPrompt);
 
-            const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
+            const dataDir = path.join(__dirname, '../data');
+            const templatesData = await fs.readFile(path.join(dataDir, 'templates.json'), 'utf-8');
+            const templates = JSON.parse(templatesData);
+
+            const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
-            const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(cmsClient, modelLogger, config.CMS_PUBLIC_URL, pageArchitect, routerDesigner, htmlGenerator);
-            const dataGenerator = new DataGenerator(agent, dataGeneratorPrompt, cmsClient, modelLogger);
+            const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
+            const pageGenerator = new PageGenerator(cmsClient, modelLogger, config.CMS_PUBLIC_URL, pageArchitect, routerDesigner, htmlGenerator, templates);
+            const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
 
             const intentClassifier = new IntentClassifier(
-                agent,
+                provider,
                 intentClassifierPrompt
             );
 
-            intentClassifiers[agentName] = intentClassifier;
+            intentClassifiers[providerName] = intentClassifier;
 
             // @ts-ignore
             if (!fastify.chatHandlers) {
                 fastify.decorate('chatHandlers', {});
             }
             // @ts-ignore
-            if (!fastify.chatHandlers[agentName]) {
+            if (!fastify.chatHandlers[providerName]) {
                 // @ts-ignore
-                fastify.chatHandlers[agentName] = {};
+                fastify.chatHandlers[providerName] = {};
             }
 
             // @ts-ignore
-            fastify.chatHandlers[agentName] = {
+            fastify.chatHandlers[providerName] = {
                 entity_generator: entityGenerator,
                 query_generator: queryGenerator,
                 page_generator: pageGenerator,
                 data_generator: dataGenerator,
             };
         } catch (error) {
-            fastify.log.warn(`Failed to load prompts for agent "${agentName}": ${(error as Error).message}`);
+            fastify.log.warn(`Failed to load prompts for provider "${providerName}": ${(error as Error).message}`);
         }
     }
 
@@ -139,5 +143,5 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
 export default fp(handlersPlugin, {
     name: 'intentClassifier',
-    dependencies: ['aiAgent', 'cms']
+    dependencies: ['aiProvider', 'cms']
 });

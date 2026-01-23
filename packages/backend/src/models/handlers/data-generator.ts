@@ -1,8 +1,10 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
 
+import { AGENT_TRIGGERS } from '@cms/shared';
+// ... existing interface ...
 export interface DataGeneratorResponse {
     entityName: string;
     data: any[];
@@ -10,7 +12,7 @@ export interface DataGeneratorResponse {
 
 export class DataGenerator implements ChatHandler {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
@@ -21,17 +23,41 @@ export class DataGenerator implements ChatHandler {
             await context.saveAssistantMessage('I am data generator, I am fetching the latest schema and generating your data...');
 
             // 1. Fetch Schema
-            const entities = await this.cmsClient.getAllXEntity(context.externalCookie);
+            let entities: any[] = [];
+
+            // Try to parse schemaId from input
+            const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.DATA_GENERATOR}#([^:]+):`));
+
+            if (idMatch) {
+                const schemaId = idMatch[1];
+                try {
+                    const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId as string);
+                    if (schema && schema.settings.entity) {
+                        const entityName = schema.settings.entity.name;
+                        const xEntity = await this.cmsClient.getXEntity(context.externalCookie, entityName);
+                        entities = [xEntity];
+                        await context.saveAssistantMessage(`I found the entity "${entityName}". Generating data based on its schema...`);
+                    } else {
+                        // Fallback if schema/entity not found
+                        entities = await this.cmsClient.getAllXEntity(context.externalCookie);
+                    }
+                } catch (e) {
+                    this.logger.warn({ schemaId, error: e }, 'Failed to fetch specific schema for data generation');
+                    entities = await this.cmsClient.getAllXEntity(context.externalCookie);
+                }
+            } else {
+                entities = await this.cmsClient.getAllXEntity(context.externalCookie);
+            }
 
             // 2. Call AI Agent to generate data
-            const response: DataGeneratorResponse = await this.aiAgent.generate(
+            const response: DataGeneratorResponse = await this.aiProvider.generate(
                 this.systemPrompt,
                 `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`,
                 userInput
             );
 
             // Save AI response to database log
-            await context.saveAiResponseLog('data-generator',
+            await context.saveAiResponseLog(AGENT_TRIGGERS.DATA_GENERATOR,
                 JSON.stringify({ ...response, taskType: context.taskType })
             );
 

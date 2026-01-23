@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { EntityGenerator } from '../entity-generator.js';
-import { StubAgent } from '../../../infrastructures/stub-agent.js';
+import { StubProvider } from '../../../infrastructures/stub-agent.js';
 import type { ChatContext } from '../chat-handler.js';
 import { CmsClient } from '../../../infrastructures/cms-client.js';
 import type { ServiceLogger } from '../../../types/logger.js';
@@ -50,8 +50,9 @@ describe('EntityGenerator', () => {
             { name: 'post', schemaId: 'sid-123' }
         ] as any);
 
+        const agent = new StubProvider();
         let generator: EntityGenerator = new EntityGenerator(
-            new StubAgent(),
+            agent,
             stubContent,
             'ENTITY_SCHEMA_STUB',
             'ATTRIBUTE_SCHEMA_STUB',

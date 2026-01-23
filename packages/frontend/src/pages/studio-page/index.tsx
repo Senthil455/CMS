@@ -144,8 +144,8 @@ export default function StudioPage() {
         };
     }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSchemasSync, mutate]);
 
-    const handleSend = (content: string, agentName: string) => {
-        sendMessage(content, agentName);
+    const handleSend = (content: string, providerName: string) => {
+        sendMessage(content, providerName);
         setShowChat(true);
     };
 

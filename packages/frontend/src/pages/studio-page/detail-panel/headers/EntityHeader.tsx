@@ -1,5 +1,5 @@
 import { Trash2, Edit2, Database, Sparkles } from 'lucide-react';
-import type { EntityDto } from '@cms/shared';
+import { type EntityDto, AGENT_TRIGGERS } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
 interface EntityHeaderProps {
@@ -30,7 +30,7 @@ export function EntityHeader({ entity, schemaId, publicationStatus, onDelete, on
             }
         >
             <button
-                onClick={() => onChatAction(`@entity_generate#${schemaId}:`)}
+                onClick={() => onChatAction(`${AGENT_TRIGGERS.ENTITY_GENERATOR}#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />

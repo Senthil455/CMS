@@ -9,7 +9,7 @@ interface ChatPanelProps {
     isReachingEnd: boolean;
     isFetchingMore: boolean;
     onLoadMore: () => Promise<void>;
-    onSend: (content: string, agentName: string) => void;
+    onSend: (content: string, providerName: string) => void;
     chatDraft?: string | null;
     onDraftConsumed?: () => void;
 }

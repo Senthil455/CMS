@@ -1,17 +1,17 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import { type HandlerType } from './chat-handler';
 
 
 
 export class IntentClassifier {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
     ) { }
 
     async resolve(userInput: string): Promise<HandlerType | null> {
         try {
-            const response = await this.aiAgent.generate(this.systemPrompt, '', userInput);
+            const response = await this.aiProvider.generate(this.systemPrompt, '', userInput);
 
             if (response && typeof response === 'object') {
                 const { taskType } = response;

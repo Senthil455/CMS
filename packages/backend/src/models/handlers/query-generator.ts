@@ -1,12 +1,12 @@
-import type { AIAgent } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type ChatHandler, type ChatContext, handleChatError } from './chat-handler';
-import { type QueryResponse, type SchemaDto } from '@cms/shared';
+import { type QueryResponse, type SchemaDto, AGENT_TRIGGERS } from '@cms/shared';
 
 export class QueryGenerator implements ChatHandler {
     constructor(
-        private readonly aiAgent: AIAgent,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
@@ -18,7 +18,7 @@ export class QueryGenerator implements ChatHandler {
             let schemaId = '';
 
             // Check if user input contains #schemaId:
-            const idMatch = userInput.match(/@query_generator#([^:]+):/);
+            const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.QUERY_GENERATOR}#([^:]+):`));
             if (idMatch) {
                 schemaId = idMatch[1] as string;
                 try {
@@ -43,7 +43,7 @@ export class QueryGenerator implements ChatHandler {
 
             // 2. Call AI Agent to generate GraphQL query
             // Developer message is set as SDL + existing query if any
-            const queryResponse: QueryResponse = await this.aiAgent.generate(
+            const queryResponse: QueryResponse = await this.aiProvider.generate(
                 this.systemPrompt,
                 developerMessage,
                 userInput

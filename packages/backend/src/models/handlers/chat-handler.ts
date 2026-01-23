@@ -1,9 +1,10 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload } from '@cms/shared';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentTrigger } from '@cms/shared';
 
 export interface ChatContext {
     userId: string;
     externalCookie: string;
     taskType: HandlerType;
+    providerName: string;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
@@ -16,7 +17,7 @@ export interface ChatHandler {
     handle(userInput: string, context: ChatContext): Promise<void>;
 }
 
-export type HandlerType = 'entity_generator' | 'query_generator' | 'page_generator' | 'data_generator';
+export type HandlerType = AgentTrigger;
 
 export async function handleChatError(error: any, context: ChatContext, logger: any, actionDescription: string) {
     logger.error({ error, stack: error?.stack }, `Error in ${context.taskType} handle`);
