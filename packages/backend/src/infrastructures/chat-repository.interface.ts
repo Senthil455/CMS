@@ -5,4 +5,5 @@ export interface IChatRepository {
     findAll(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]>;
     saveAiResponseLog(handler: string, response: string): Promise<void>;
     findAllAiResponseLogs(): Promise<any[]>;
+    findAiResponseLogById(id: number): Promise<any | null>;
 }

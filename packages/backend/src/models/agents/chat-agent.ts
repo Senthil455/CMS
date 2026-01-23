@@ -1,9 +1,9 @@
 import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentTrigger } from '@cms/shared';
 
-export interface ChatContext {
+export interface AgentContext {
     userId: string;
     externalCookie: string;
-    taskType: HandlerType;
+    taskType: AgentTrigger;
     providerName: string;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
@@ -13,13 +13,13 @@ export interface ChatContext {
     onTemplateSelectionDetailToConfirm: (payload: any) => Promise<void>;
 }
 
-export interface ChatHandler {
-    handle(userInput: string, context: ChatContext): Promise<void>;
+export interface Agent<T = any> {
+    think(userInput: string, context: AgentContext): Promise<T>;
+    act(plan: T, context: AgentContext): Promise<void>;
+    handle(userInput: string, context: AgentContext): Promise<void>;
 }
 
-export type HandlerType = AgentTrigger;
-
-export async function handleChatError(error: any, context: ChatContext, logger: any, actionDescription: string) {
+export async function handleChatError(error: any, context: AgentContext, logger: any, actionDescription: string) {
     logger.error({ error, stack: error?.stack }, `Error in ${context.taskType} handle`);
 
     let errorMessage = error.message || 'Unknown error occurred';

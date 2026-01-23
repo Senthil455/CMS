@@ -5,14 +5,16 @@ import {
     type OnServerToClientEvent,
     type TemplateSelectionRequest,
     type TemplateSelectionResponse,
-    AGENT_TRIGGERS
+    AGENT_TRIGGERS,
+    type AgentTrigger
 } from '@cms/shared';
-import type { ChatContext, ChatHandler, HandlerType } from '../models/handlers/chat-handler';
-import { PageGenerator } from '../models/handlers/page-generator';
+import type { Agent, AgentContext } from '../models/agents/chat-agent';
+import { PageGenerator } from '../models/agents/page-generator';
+import { HtmlGenerator } from '../models/agents/html-generator';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
-import { IntentClassifier } from '../models/handlers/intent-classifier';
+import { IntentClassifier } from '../models/agents/intent-classifier';
 import { SchemaManager } from '../models/cms/schema-manager';
 
 export class ChatService {
@@ -20,7 +22,7 @@ export class ChatService {
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
-        private readonly chatHandlers: Record<string, Partial<Record<HandlerType, ChatHandler>>>,
+        private readonly chatHandlers: Record<string, Partial<Record<AgentTrigger, Agent>>>,
         private readonly logger: ServiceLogger,
     ) { }
 
@@ -63,7 +65,7 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         // 2. Intent Classifier
-        let taskType: HandlerType | null = null;
+        let taskType: AgentTrigger | null = null;
 
         if (content.includes(AGENT_TRIGGERS.ENTITY_GENERATOR)) {
             taskType = AGENT_TRIGGERS.ENTITY_GENERATOR;
@@ -81,7 +83,7 @@ export class ChatService {
             if (handler) {
                 this.logger.info('Executing resolved handler');
 
-                const context: ChatContext = {
+                const context: AgentContext = {
                     taskType,
                     userId,
                     externalCookie,
@@ -140,10 +142,10 @@ export class ChatService {
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         const providerName = response.requestPayload.providerName || 'gemini';
-        const handler = this.chatHandlers[providerName]?.[AGENT_TRIGGERS.PAGE_GENERATOR];
-        if (handler instanceof PageGenerator) {
-            const context: ChatContext = {
-                taskType: AGENT_TRIGGERS.PAGE_GENERATOR,
+        const handler = this.chatHandlers[providerName]?.[AGENT_TRIGGERS.HTML_GENERATOR];
+        if (handler instanceof HtmlGenerator) {
+            const context: AgentContext = {
+                taskType: AGENT_TRIGGERS.HTML_GENERATOR,
                 userId,
                 externalCookie,
                 providerName,
@@ -166,9 +168,63 @@ export class ChatService {
                     onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
                 }
             };
-            await handler.generateAndSave(response, context);
+            await handler.handle(JSON.stringify(response), context);
         } else {
-            this.logger.error('PageGenerator handler not found or invalid type');
+            this.logger.error('HtmlGenerator handler not found or invalid type');
         }
+    }
+    async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+        const log = await this.repository.findAiResponseLogById(logId);
+        if (!log) {
+            throw new Error(`Log with ID ${logId} not found`);
+        }
+
+        const responseContent = log.response;
+        const handlerName = log.handler;
+
+        let targetHandler: Agent | undefined;
+        let providerName = 'gemini';
+
+        for (const [pName, handlers] of Object.entries(this.chatHandlers)) {
+            if (handlers[handlerName as AgentTrigger]) {
+                targetHandler = handlers[handlerName as AgentTrigger];
+                providerName = pName;
+                break;
+            }
+        }
+
+        if (!targetHandler) {
+            throw new Error(`No handler found for task type: ${handlerName}`);
+        }
+
+        const context: AgentContext = {
+            taskType: handlerName as AgentTrigger,
+            userId,
+            externalCookie,
+            providerName,
+            saveAssistantMessage: async (content: string, payload?: any) => {
+                return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
+            },
+            saveAiResponseLog: async (hName: string, resp: string) => {
+                await this.repository.saveAiResponseLog(hName, resp);
+            },
+            onConfirmSchemaSummary: async (summary: SchemaSummary) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+            },
+            onSchemasSync: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
+            },
+            onTemplateSelectionListToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
+            },
+            onTemplateSelectionDetailToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
+            }
+        };
+
+        const plan = JSON.parse(responseContent);
+
+        await this.saveAssistantMessage(userId, "Manually triggering action from log...");
+        await targetHandler.act(plan, context);
     }
 }

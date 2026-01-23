@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { EntityGenerator } from '../entity-generator.js';
-import { StubProvider } from '../../../infrastructures/stub-agent.js';
-import type { ChatContext } from '../chat-handler.js';
+
+import type { AgentContext } from '../chat-agent.js';
 import { CmsClient } from '../../../infrastructures/cms-client.js';
 import type { ServiceLogger } from '../../../types/logger.js';
 import { config } from '../../../config.js';
@@ -32,7 +32,7 @@ describe('EntityGenerator', () => {
 
     const realCmsClient = new CmsClient(config.CMS_BASE_URL);
 
-    const mockChatContext: ChatContext = {
+    const mockChatContext: AgentContext = {
         saveAssistantMessage: vi.fn().mockResolvedValue({ id: 1 }),
         saveAiResponseLog: vi.fn().mockResolvedValue(undefined),
         onConfirmSchemaSummary: vi.fn().mockResolvedValue(undefined),
@@ -50,7 +50,12 @@ describe('EntityGenerator', () => {
             { name: 'post', schemaId: 'sid-123' }
         ] as any);
 
-        const agent = new StubProvider();
+        // Mock provider
+        const agent = {
+            generate: async (system: string, developer: string, user: string) => {
+                return JSON.parse(user);
+            }
+        };
         let generator: EntityGenerator = new EntityGenerator(
             agent,
             stubContent,

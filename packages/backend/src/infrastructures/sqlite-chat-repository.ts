@@ -55,4 +55,10 @@ export class SqliteChatRepository implements IChatRepository {
             orderBy: { timestamp: 'desc' },
         });
     }
+
+    async findAiResponseLogById(id: number): Promise<any | null> {
+        return this.prisma.aiResponseLog.findUnique({
+            where: { id },
+        });
+    }
 }

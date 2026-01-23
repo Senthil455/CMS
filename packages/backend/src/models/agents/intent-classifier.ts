@@ -1,5 +1,5 @@
 import type { AIProvider } from '../../infrastructures/agent.interface';
-import { type HandlerType } from './chat-handler';
+import { type AgentTrigger } from '@cms/shared';
 
 
 
@@ -9,13 +9,13 @@ export class IntentClassifier {
         private readonly systemPrompt: string,
     ) { }
 
-    async resolve(userInput: string): Promise<HandlerType | null> {
+    async resolve(userInput: string): Promise<AgentTrigger | null> {
         try {
             const response = await this.aiProvider.generate(this.systemPrompt, '', userInput);
 
             if (response && typeof response === 'object') {
                 const { taskType } = response;
-                return taskType as HandlerType;
+                return taskType as AgentTrigger;
             }
 
             return null;

@@ -11,7 +11,7 @@ const envSchema = z.object({
     SESSION_COOKIE_NAME: z.string().default('session'),
     FRONTEND_URL: z.string().url().default('http://localhost:5173'),
     SESSION_MAX_AGE: z.string().transform(Number).default('86400000'),
-    AI_PROVIDER: z.enum(['stub', 'openai', 'gemini']).default('gemini'),
+    AI_PROVIDER: z.enum(['openai', 'gemini']).default('gemini'),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_API_URL: z.string().url().default('https://generativelanguage.googleapis.com'),
     GEMINI_MODEL: z.string().default('gemini-2.5-flash'),

@@ -194,6 +194,30 @@ export default function AiLogsPage() {
                                         </button>
                                     </div>
                                     <div className="p-8">
+                                        <div className="flex justify-end mb-4">
+                                            <button
+                                                onClick={async () => {
+                                                    if (!selectedLog) return;
+                                                    try {
+                                                        await axios.post(
+                                                            `${config.API_BASE_URL}${ENDPOINTS.AI.ACT_ON_LOG.replace(':id', selectedLog.id.toString())}`,
+                                                            {},
+                                                            { withCredentials: true }
+                                                        );
+                                                        // Show success message or specific feedback?
+                                                        // For now, simple console or maybe navigate to chat?
+                                                        navigate('/app'); // Go back to chat to see the action
+                                                    } catch (e) {
+                                                        console.error('Failed to act on log', e);
+                                                        // Ideally show a toast
+                                                    }
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95"
+                                            >
+                                                <Cpu className="w-4 h-4" />
+                                                Act on this Plan
+                                            </button>
+                                        </div>
                                         {renderValue(selectedLog.response)}
                                     </div>
                                 </div>

@@ -5,15 +5,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config';
 
-import { IntentClassifier } from '../models/handlers/intent-classifier';
-import { EntityGenerator } from '../models/handlers/entity-generator';
+import { IntentClassifier } from '../models/agents/intent-classifier';
+import { EntityGenerator } from '../models/agents/entity-generator';
 
-import { QueryGenerator } from '../models/handlers/query-generator';
-import { PageGenerator } from '../models/handlers/page-generator';
-import { PageArchitect } from '../models/handlers/page-architect';
-import { RouterDesigner } from '../models/handlers/router-designer';
-import { HtmlGenerator } from '../models/handlers/html-generator';
-import { DataGenerator } from '../models/handlers/data-generator';
+import { QueryGenerator } from '../models/agents/query-generator';
+import { PageGenerator } from '../models/agents/page-generator';
+// removed PageArchitect and RouterDesigner import
+import { HtmlGenerator } from '../models/agents/html-generator';
+import { DataGenerator } from '../models/agents/data-generator';
+// removed HtmlGenerationHandler import
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const providers = fastify.aiProvider;
@@ -95,9 +95,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const engagementBarPrompt = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
 
-            const routerDesigner = new RouterDesigner(provider, routerDesignerPrompt);
-            const pageArchitect = new PageArchitect(provider, pageArchitectPrompt);
-            const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, engagementBarPrompt);
+            // removed routerDesigner and pageArchitect instantiation
+            const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, engagementBarPrompt, cmsClient, modelLogger);
 
             const dataDir = path.join(__dirname, '../data');
             const templatesData = await fs.readFile(path.join(dataDir, 'templates.json'), 'utf-8');
@@ -106,8 +105,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(cmsClient, modelLogger, config.CMS_PUBLIC_URL, pageArchitect, routerDesigner, htmlGenerator, templates);
+            const pageGenerator = new PageGenerator(provider, pageArchitectPrompt, routerDesignerPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL, templates);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
+            // removed htmlGenerationHandler instantiation
 
             const intentClassifier = new IntentClassifier(
                 provider,
@@ -132,6 +132,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 query_generator: queryGenerator,
                 page_generator: pageGenerator,
                 data_generator: dataGenerator,
+                html_generator: htmlGenerator,
             };
         } catch (error) {
             fastify.log.warn(`Failed to load prompts for provider "${providerName}": ${(error as Error).message}`);

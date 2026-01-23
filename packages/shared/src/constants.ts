@@ -3,6 +3,7 @@ export const AGENT_TRIGGERS = {
     PAGE_GENERATOR: '@page_generator',
     QUERY_GENERATOR: '@query_generator',
     DATA_GENERATOR: '@data_generator',
+    HTML_GENERATOR: '@html_generator',
 } as const;
 
 export type AgentTrigger = typeof AGENT_TRIGGERS[keyof typeof AGENT_TRIGGERS];
