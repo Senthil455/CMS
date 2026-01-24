@@ -41,11 +41,12 @@ export class SqliteChatRepository implements IChatRepository {
         }));
     }
 
-    async saveAiResponseLog(handler: string, response: string): Promise<void> {
+    async saveAiResponseLog(handler: string, response: string, providerName?: string): Promise<void> {
         await this.prisma.aiResponseLog.create({
             data: {
                 handler,
                 response,
+                providerName: providerName || null,
             },
         });
     }
@@ -58,6 +59,12 @@ export class SqliteChatRepository implements IChatRepository {
 
     async findAiResponseLogById(id: number): Promise<any | null> {
         return this.prisma.aiResponseLog.findUnique({
+            where: { id },
+        });
+    }
+
+    async deleteAiResponseLog(id: number): Promise<void> {
+        await this.prisma.aiResponseLog.delete({
             where: { id },
         });
     }

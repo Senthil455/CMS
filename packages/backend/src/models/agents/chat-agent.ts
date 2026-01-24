@@ -1,10 +1,10 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentTrigger } from '@cms/shared';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName } from '@cms/shared';
 import type { AIProvider } from '../../infrastructures/agent.interface';
 
 export interface AgentContext {
     userId: string;
     externalCookie: string;
-    taskType: AgentTrigger;
+    taskType: AgentName;
     providerName: string;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;

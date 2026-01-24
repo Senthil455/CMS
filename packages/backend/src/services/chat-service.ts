@@ -3,13 +3,11 @@ import {
     type ChatMessage,
     type SchemaSummary,
     type OnServerToClientEvent,
-    type TemplateSelectionRequest,
     type TemplateSelectionResponse,
-    AGENT_TRIGGERS,
-    type AgentTrigger
+    AGENT_NAMES,
+    type AgentName
 } from '@cms/shared';
 import type { Agent, AgentContext } from '../models/agents/chat-agent';
-import { PageGenerator } from '../models/agents/page-generator';
 import { HtmlGenerator } from '../models/agents/html-generator';
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
@@ -22,7 +20,7 @@ export class ChatService {
         private readonly repository: IChatRepository,
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
-        private readonly chatHandlers: Record<string, Partial<Record<AgentTrigger, Agent>>>,
+        private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
         private readonly logger: ServiceLogger,
     ) { }
 
@@ -40,6 +38,10 @@ export class ChatService {
 
     async getAiResponseLogs(): Promise<any[]> {
         return this.repository.findAllAiResponseLogs();
+    }
+
+    async deleteAiResponseLog(id: number): Promise<void> {
+        return this.repository.deleteAiResponseLog(id);
     }
 
     // Helper method to save and emit assistant messages
@@ -65,19 +67,20 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         // 2. Intent Classifier
-        let taskType: AgentTrigger | null = null;
+        let taskType: AgentName | null = null;
 
-        if (content.includes(AGENT_TRIGGERS.ENTITY_GENERATOR)) {
-            taskType = AGENT_TRIGGERS.ENTITY_GENERATOR;
-        } else if (content.includes(AGENT_TRIGGERS.PAGE_GENERATOR)) {
-            taskType = AGENT_TRIGGERS.PAGE_GENERATOR;
-        } else if (content.includes(AGENT_TRIGGERS.QUERY_GENERATOR)) {
-            taskType = AGENT_TRIGGERS.QUERY_GENERATOR;
-        } else if (content.includes(AGENT_TRIGGERS.DATA_GENERATOR)) {
-            taskType = AGENT_TRIGGERS.DATA_GENERATOR;
-        } else {
+        if (content.trim().startsWith('@')) {
+            // Check for explicit trigger (e.g. "@entity_generator")
+            const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
+            if (explicitTrigger) {
+                taskType = explicitTrigger;
+            }
+        }
+
+        if (!taskType) {
             taskType = await this.intentClassifier[providerName]!.resolve(content);
         }
+
         if (taskType) {
             const handler = this.chatHandlers[providerName]?.[taskType];
             if (handler) {
@@ -92,7 +95,7 @@ export class ChatService {
                         return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
                     },
                     saveAiResponseLog: async (handlerName: string, response: string) => {
-                        await this.repository.saveAiResponseLog(handlerName, response);
+                        await this.repository.saveAiResponseLog(handlerName, response, providerName);
                     },
                     onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                         onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
@@ -142,10 +145,10 @@ export class ChatService {
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         const providerName = response.requestPayload.providerName || 'gemini';
-        const handler = this.chatHandlers[providerName]?.[AGENT_TRIGGERS.HTML_GENERATOR];
+        const handler = this.chatHandlers[providerName]?.[AGENT_NAMES.HTML_GENERATOR];
         if (handler instanceof HtmlGenerator) {
             const context: AgentContext = {
-                taskType: AGENT_TRIGGERS.HTML_GENERATOR,
+                taskType: AGENT_NAMES.HTML_GENERATOR,
                 userId,
                 externalCookie,
                 providerName,
@@ -153,7 +156,7 @@ export class ChatService {
                     return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
                 },
                 saveAiResponseLog: async (handlerName: string, response: string) => {
-                    await this.repository.saveAiResponseLog(handlerName, response);
+                    await this.repository.saveAiResponseLog(handlerName, response, providerName);
                 },
                 onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                     onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
@@ -183,11 +186,14 @@ export class ChatService {
         const handlerName = log.handler;
 
         let targetHandler: Agent | undefined;
-        let providerName = 'gemini';
+        let providerName = log.providerName || 'gemini';
 
         for (const [pName, handlers] of Object.entries(this.chatHandlers)) {
-            if (handlers[handlerName as AgentTrigger]) {
-                targetHandler = handlers[handlerName as AgentTrigger];
+            // If provider is specified in log, only enforce that one
+            if (log.providerName && pName !== log.providerName) continue;
+
+            if (handlers[handlerName as AgentName]) {
+                targetHandler = handlers[handlerName as AgentName];
                 providerName = pName;
                 break;
             }
@@ -198,7 +204,7 @@ export class ChatService {
         }
 
         const context: AgentContext = {
-            taskType: handlerName as AgentTrigger,
+            taskType: handlerName as AgentName,
             userId,
             externalCookie,
             providerName,
@@ -206,7 +212,7 @@ export class ChatService {
                 return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
             },
             saveAiResponseLog: async (hName: string, resp: string) => {
-                await this.repository.saveAiResponseLog(hName, resp);
+                await this.repository.saveAiResponseLog(hName, resp, providerName);
             },
             onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                 onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);

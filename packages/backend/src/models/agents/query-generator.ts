@@ -2,7 +2,7 @@ import type { AIProvider } from '../../infrastructures/agent.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
-import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_TRIGGERS } from '@cms/shared';
+import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
     schemaId?: string;
@@ -22,7 +22,7 @@ export class QueryGenerator implements Agent<QueryGeneratorPlan> {
         let schemaId = '';
 
         // 1. Identification: Check if user input contains #schemaId:
-        const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.QUERY_GENERATOR}#([^:]+):`));
+        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.QUERY_GENERATOR}#([^:]+):`));
         if (idMatch) {
             try {
                 existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
@@ -108,7 +108,7 @@ ${schemaContext}
             const plan = await this.think(userInput, context);
 
             // Save AI response to database log
-            await context.saveAiResponseLog('query-generator',
+            await context.saveAiResponseLog(AGENT_NAMES.QUERY_GENERATOR,
                 JSON.stringify({ ...plan, taskType: context.taskType })
             );
 

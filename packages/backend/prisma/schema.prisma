@@ -20,6 +20,7 @@ model ChatMessage {
 model AiResponseLog {
   id        Int      @id @default(autoincrement())
   handler   String
+  providerName String? // 'openai' | 'gemini' etc.
   response  String
   timestamp DateTime @default(now())
 }

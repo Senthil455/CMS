@@ -11,6 +11,7 @@ export const ENDPOINTS = {
         PROVIDERS: '/cmsapi/ai/providers',
         LOGS: '/cmsapi/ai/logs',
         ACT_ON_LOG: '/cmsapi/ai/logs/:id/act',
+        DELETE_LOG: '/cmsapi/ai/logs/:id',
     },
     SCHEMA: {
         ALL: '/api/schemas?type=',

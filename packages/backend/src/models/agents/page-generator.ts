@@ -1,50 +1,20 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
-import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse, AGENT_TRIGGERS } from '@cms/shared';
+import { type SaveSchemaPayload, type SchemaDto, type TemplateSelectionRequest, type TemplateSelectionResponse, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../../infrastructures/agent.interface';
-
-export interface RoutingPlan {
-    pageName: string;
-    primaryParameter?: string;
-    linkingRules: string[];
-    routerHints: string;
-}
-
-export interface PageArchitecturePlan {
-    pageType: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
-    layout: {
-        hasHeader: boolean;
-        hasSidebar: boolean;
-        hasFooter: boolean;
-        structure: string;
-    };
-
-    selectedQueries: Array<{
-        queryName: string;
-        fieldName: string;
-        type: 'single' | 'list';
-        description: string;
-        args: Record<string, 'fromPath' | 'fromQuery'>;
-    }>;
-    components: Array<{
-        name: string;
-        type: string;
-        queriesUsed: string[];
-    }>;
-    architectureHints: string;
-}
+import { RouterDesigner, type RoutingPlan } from '../planners/router-designer';
+import { PageArchitect, type PageArchitecturePlan } from '../planners/page-architect';
 
 export interface PageGeneratorPlan extends TemplateSelectionRequest {
-    // TemplateSelectionRequest already contains what act needs: userInput, routingPlan, architecturePlan, queryDetails, existingPageSchema, schemaId, providerName, templates
-    // But we need to structure `think` to return this.
+    // TemplateSelectionRequest already contains: userInput, routingPlan, architecturePlan, queryDetails, existingPageSchema, schemaId, providerName, templates
 }
 
 export class PageGenerator implements Agent<PageGeneratorPlan> {
     constructor(
         private readonly aiProvider: AIProvider,
-        private readonly pageArchitectPrompt: string,
-        private readonly routerDesignerPrompt: string,
+        private readonly routerDesigner: RouterDesigner,
+        private readonly pageArchitect: PageArchitect,
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
         private readonly baseUrl: string,
@@ -56,7 +26,7 @@ export class PageGenerator implements Agent<PageGeneratorPlan> {
         let schemaId = '';
 
         // 1. Identification: Check if user input contains #schemaId:
-        const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.PAGE_GENERATOR}#([^:]+):`));
+        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.PAGE_GENERATOR}#([^:]+):`));
         if (idMatch) {
             try {
                 existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
@@ -88,9 +58,9 @@ export class PageGenerator implements Agent<PageGeneratorPlan> {
             }
         }
 
-        const routingPlan = await this.planRouting(userInput, existingRoutingPlan);
+        const routingPlan = await this.routerDesigner.plan(userInput, context, existingRoutingPlan);
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
-        const architecturePlan = await this.planArchitecture(userInput, queries, routingPlan, existingArchitecture);
+        const architecturePlan = await this.pageArchitect.plan(userInput, context, queries, routingPlan, existingArchitecture);
 
         await context.saveAssistantMessage(`I've planned the routing for "${routingPlan.pageName}" and the UI structure for your "${architecturePlan.pageType}" page.`);
 
@@ -147,84 +117,6 @@ export class PageGenerator implements Agent<PageGeneratorPlan> {
             await this.act(plan, context);
         } catch (error: any) {
             await handleAgentError(error, context, this.logger, "generating your page", this.aiProvider);
-        }
-    }
-
-    private async planRouting(userInput: string, existingPlan?: RoutingPlan): Promise<RoutingPlan> {
-        let developerMessage = 'DETERMINE THE ROUTING STRUCTURE AND LINKING RULES.';
-
-        if (existingPlan) {
-            developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
-        }
-
-        const response = await this.aiProvider.generate(
-            this.routerDesignerPrompt,
-            developerMessage,
-            userInput
-        );
-
-        try {
-            if (typeof response === 'string') {
-                return JSON.parse(response);
-            }
-            return response as RoutingPlan;
-        } catch (e) {
-            console.error('Failed to parse RouterDesigner response:', response);
-            return {
-                pageName: `generated-page-${Date.now()}`,
-                linkingRules: [],
-                routerHints: 'Fallback to default naming'
-            };
-        }
-    }
-
-    private async planArchitecture(userInput: string, availableQueries: any[],
-        routingPlan: RoutingPlan, existingArchitecture?: Partial<PageArchitecturePlan>): Promise<PageArchitecturePlan> {
-        const queryListContext = availableQueries.map(q =>
-            `- ${q.name}: ${q.settings?.query?.source}
-             arguments: ${JSON.stringify(q.settings?.query?.arguments)}
-            `).join('\n');
-
-        let developerMessage = `
-ROUTING PLAN:
-- Planned Path: ${routingPlan.pageName}
-- Parameters: ${routingPlan.primaryParameter || 'None'}
-- Linking Rules: ${routingPlan.linkingRules.join(', ')}
-
-AVAILABLE QUERIES:
-${queryListContext}
-`;
-
-        if (existingArchitecture) {
-            developerMessage += `\nEXISTING STRUCTURE:\n${JSON.stringify(existingArchitecture, null, 2)}\nPreserve the existing structure unless changes are requested.`;
-        }
-
-        developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
-
-        const response = await this.aiProvider.generate(
-            this.pageArchitectPrompt,
-            developerMessage,
-            userInput
-        );
-
-        // Expecting JSON response as specified in prompt
-        try {
-            if (typeof response === 'string') {
-                return JSON.parse(response);
-            }
-            return response as PageArchitecturePlan;
-        } catch (e) {
-            console.error('Failed to parse PageArchitect response:', response);
-            // Fallback plan
-            return {
-                pageType: 'custom',
-                layout: { hasHeader: true, hasSidebar: false, hasFooter: false, structure: 'Simple container' },
-                selectedQueries: [
-                    { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
-                ],
-                components: [],
-                architectureHints: 'Generate a basic layout'
-            };
         }
     }
 }

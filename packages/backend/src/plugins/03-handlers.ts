@@ -4,13 +4,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config';
+import { AGENT_NAMES } from '@cms/shared';
 
 import { IntentClassifier } from '../models/agents/intent-classifier';
 import { EntityGenerator } from '../models/agents/entity-generator';
 
 import { QueryGenerator } from '../models/agents/query-generator';
 import { PageGenerator } from '../models/agents/page-generator';
-// removed PageArchitect and RouterDesigner import
+import { RouterDesigner } from '../models/planners/router-designer';
+import { PageArchitect } from '../models/planners/page-architect';
 import { HtmlGenerator } from '../models/agents/html-generator';
 import { DataGenerator } from '../models/agents/data-generator';
 // removed HtmlGenerationHandler import
@@ -95,7 +97,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const engagementBarPrompt = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
 
-            // removed routerDesigner and pageArchitect instantiation
+            // Instantiate Planners
+            const routerDesigner = new RouterDesigner(provider, routerDesignerPrompt);
+            const pageArchitect = new PageArchitect(provider, pageArchitectPrompt);
+
             const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, engagementBarPrompt, cmsClient, modelLogger);
 
             const dataDir = path.join(__dirname, '../data');
@@ -105,7 +110,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(provider, pageArchitectPrompt, routerDesignerPrompt, cmsClient, modelLogger, config.CMS_PUBLIC_URL, templates);
+            const pageGenerator = new PageGenerator(provider, routerDesigner, pageArchitect, cmsClient, modelLogger, config.CMS_PUBLIC_URL, templates);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
             // removed htmlGenerationHandler instantiation
 
@@ -127,12 +132,13 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             }
 
             // @ts-ignore
+            // @ts-ignore
             fastify.chatHandlers[providerName] = {
-                entity_generator: entityGenerator,
-                query_generator: queryGenerator,
-                page_generator: pageGenerator,
-                data_generator: dataGenerator,
-                html_generator: htmlGenerator,
+                [AGENT_NAMES.ENTITY_GENERATOR]: entityGenerator,
+                [AGENT_NAMES.QUERY_GENERATOR]: queryGenerator,
+                [AGENT_NAMES.PAGE_GENERATOR]: pageGenerator,
+                [AGENT_NAMES.DATA_GENERATOR]: dataGenerator,
+                [AGENT_NAMES.HTML_GENERATOR]: htmlGenerator,
             };
         } catch (error) {
             fastify.log.warn(`Failed to load prompts for provider "${providerName}": ${(error as Error).message}`);

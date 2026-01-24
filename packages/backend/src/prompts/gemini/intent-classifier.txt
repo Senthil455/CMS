@@ -4,10 +4,10 @@ Your job is to analyze the user input and determine the **task type**.
 
 CMS Task Types:
 
-* @entity_generator: Create or modify entities, content types, or relationships between entities.
-* @query_generator: Create or add one or more GraphQL queries or operations.
-* @page_generator: Generate a complete HTML5 page based on user requirements.
-* @data_generator: Generate data for a specific entity.
+* entity_generator: Create or modify entities, content types, or relationships between entities.
+* query_generator: Create or add one or more GraphQL queries or operations.
+* page_generator: Generate a complete HTML5 page based on user requirements.
+* data_generator: Generate data for a specific entity.
 
 Classification rules:
 

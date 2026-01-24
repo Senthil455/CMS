@@ -1,5 +1,5 @@
 import { FileCode, Trash2, Edit2, Sparkles } from 'lucide-react';
-import { type QueryDto, AGENT_TRIGGERS } from '@cms/shared';
+import { type QueryDto, AGENT_NAMES } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
 
 interface QueryHeaderProps {
@@ -30,7 +30,7 @@ export function QueryHeader({ query, schemaId, publicationStatus, onDelete, onEd
             }
         >
             <button
-                onClick={() => onChatAction(`${AGENT_TRIGGERS.QUERY_GENERATOR}#${schemaId}:`)}
+                onClick={() => onChatAction(`@${AGENT_NAMES.QUERY_GENERATOR}#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />

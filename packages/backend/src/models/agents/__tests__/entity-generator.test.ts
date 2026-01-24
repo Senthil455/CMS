@@ -54,7 +54,8 @@ describe('EntityGenerator', () => {
         const agent = {
             generate: async (system: string, developer: string, user: string) => {
                 return JSON.parse(user);
-            }
+            },
+            transformError: (error: any) => error.message
         };
         let generator: EntityGenerator = new EntityGenerator(
             agent,

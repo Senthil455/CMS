@@ -1,4 +1,4 @@
-import { type SchemaDto, AGENT_TRIGGERS } from '@cms/shared';
+import { type SchemaDto, AGENT_NAMES } from '@cms/shared';
 import { Table, Lock, Terminal, Share2, UploadCloud, Sparkles, ChevronRight, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { config } from '../../../../config';
@@ -89,7 +89,7 @@ export function EntityDetail({ schema, allSchemas, onChatAction }: EntityDetailP
                                 <Share2 className="w-3 h-3 opacity-50" />
                             </a>
                             <button
-                                onClick={() => onChatAction(`${AGENT_TRIGGERS.DATA_GENERATOR}#${schema.schemaId}: generate data for ${entity.name}`)}
+                                onClick={() => onChatAction(`@${AGENT_NAMES.DATA_GENERATOR}#${schema.schemaId}: generate data for ${entity.name}`)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 border border-purple-500/20 rounded-lg text-xs font-bold transition-all active:scale-[0.98]"
                             >
                                 <Sparkles className="w-3.5 h-3.5 fill-current" />

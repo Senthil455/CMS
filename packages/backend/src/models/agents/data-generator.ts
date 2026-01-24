@@ -3,7 +3,7 @@ import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
 
-import { AGENT_TRIGGERS } from '@cms/shared';
+import { AGENT_NAMES } from '@cms/shared';
 // ... existing interface ...
 export interface DataGeneratorResponse {
     entityName: string;
@@ -31,7 +31,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         let specificEntityName: string | undefined;
 
         // Try to parse schemaId from input
-        const idMatch = userInput.match(new RegExp(`${AGENT_TRIGGERS.DATA_GENERATOR}#([^:]+):`));
+        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.DATA_GENERATOR}#([^:]+):`));
 
         if (idMatch) {
             const schemaId = idMatch[1];
@@ -110,7 +110,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             const plan = await this.think(userInput, context);
 
             // Save AI response to database log
-            await context.saveAiResponseLog(AGENT_TRIGGERS.DATA_GENERATOR,
+            await context.saveAiResponseLog(AGENT_NAMES.DATA_GENERATOR,
                 JSON.stringify({ ...plan, taskType: context.taskType })
             );
 

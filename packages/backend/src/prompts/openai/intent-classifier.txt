@@ -8,7 +8,8 @@ CMS Task Types:
 * entity_generator: Generate, create or modify entities, schemas, or data structures.
 * query_generator: Generate one or more GraphQL queries.
 * design_page: Generate a description of a page layout.
-* data_generator: Generate example data for an entity.* delete_page: Remove a page layout.
+* data_generator: Generate example data for an entity.
+* delete_page: Remove a page layout.
 * list_entities: List all entities or schemas.
 * list_pages: List all pages.
 * page_generator: Generate a complete HTML5 page based on user requirements.

@@ -22,6 +22,14 @@ const aiLogRouter: FastifyPluginAsync = async (fastify) => {
 
         return { success: true };
     });
+    fastify.delete(ENDPOINTS.AI.DELETE_LOG, {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const { chatService } = fastify as any;
+        await chatService.deleteAiResponseLog(parseInt(id));
+        return { success: true };
+    });
 };
 
 export default aiLogRouter;
