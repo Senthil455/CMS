@@ -69,10 +69,17 @@ dotnet run
 ```
 _Verify that `http://127.0.0.1:5000` is accessible._
 
-### 3. Configure Environment (CMS)
-Open a new terminal and set up the AI agent with your Gemini API key.
+### 3. Setup CMS
+Run the following commands from the `cms` root directory:
+
+**1. Install Dependencies**
 ```bash
-cd cms/packages/backend
+npm install
+```
+
+**2. Configure Backend**
+```bash
+cd packages/backend
 cp .env.example .env
 ```
 Edit `.env` and add your key (you can get a free one [here](https://aistudio.google.com/app/apikey)):
@@ -80,10 +87,24 @@ Edit `.env` and add your key (you can get a free one [here](https://aistudio.goo
 GEMINI_API_KEY=your_key_here
 ```
 
+Initialize the database and Prisma client:
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+**3. Configure Frontend**
+```bash
+cd ../frontend
+cp .env.example .env
+```
+_(No edit needed for default local setup)_
+
 ### 4. Start Development Server
-Run the CMS agent.
+Return to the root directory and start the app.
 ```bash
 # From cms root
+cd ../../
 npm run dev
 ```
 Visit **http://127.0.0.1:5173** to start building!
