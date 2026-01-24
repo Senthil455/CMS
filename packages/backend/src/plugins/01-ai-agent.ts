@@ -3,23 +3,25 @@ import fp from 'fastify-plugin';
 import { config } from '../config';
 
 
-import { OpenAIProvider } from '../infrastructures/openai-provider';
-import { GeminiProvider } from '../infrastructures/gemini-provider';
+import { StubAgent } from '../infrastructures/stub-agent';
+import { OpenAIAgent } from '../infrastructures/openai-agent';
+import { GeminiAgent } from '../infrastructures/gemini-agent';
 
-import type { AIProvider } from '../infrastructures/ai-provider.interface';
+import type { AIAgent } from '../infrastructures/agent.interface';
 
 const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
 
-    const providers: Record<string, AIProvider> = {
-        openai: new OpenAIProvider(
+    const agents: Record<string, AIAgent> = {
+        stub: new StubAgent(),
+        openai: new OpenAIAgent(
             config.OPENAI_API_KEY || '',
             config.OPENAI_API_URL,
             config.OPENAI_MODEL,
             infraLogger
         ),
 
-        gemini: new GeminiProvider(
+        gemini: new GeminiAgent(
             config.GEMINI_API_KEY || '',
             config.GEMINI_API_URL,
             config.GEMINI_MODEL,
@@ -28,9 +30,9 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
         )
     };
 
-    fastify.decorate('aiProvider', providers);
+    fastify.decorate('aiAgent', agents);
 };
 
 export default fp(aiAgentPlugin, {
-    name: 'aiProvider'
+    name: 'aiAgent'
 });

@@ -4,8 +4,6 @@ import { PrismaClient } from '@prisma/client';
 import { SqliteChatRepository } from '../infrastructures/sqlite-chat-repository';
 import { ChatService } from '../services/chat-service';
 import { AuthService } from '../services/auth-service';
-import { SocketService } from '../services/socket-service';
-import { statusService } from '../services/status-service';
 
 import { config } from '../config';
 
@@ -25,16 +23,12 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         intentClassifier,
         // @ts-ignore
         fastify.chatHandlers,
-        statusService,
         serviceLogger
     );
     const authService = new AuthService(cmsClient, serviceLogger);
-    const socketService = new SocketService(fastify.io);
 
     fastify.decorate('chatService', chatService);
     fastify.decorate('authService', authService);
-    fastify.decorate('socketService', socketService);
-    fastify.decorate('statusService', statusService);
 
     fastify.addHook('onClose', async () => {
         await prisma.$disconnect();

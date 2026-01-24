@@ -1,6 +1,5 @@
 import type { ChatMessage } from './contracts.js';
 import { SchemaSummary } from './dtos.js';
-import type { AgentName } from './constants.js';
 
 export const SOCKET_EVENTS = {
     CHAT: {
@@ -9,15 +8,11 @@ export const SOCKET_EVENTS = {
         SCHEMA_SUMMARY_TO_CONFIRM: 'chat:schema_summary_to_confirm',
         SCHEMA_SUMMARY_RESPONSE: 'chat:schema_summary_response',
         SCHEMAS_SYNC: 'chat:schemas_sync',
-        // TEMPLATE_SELECTION_TO_CONFIRM: 'chat:template_selection_to_confirm',
-        TEMPLATE_SELECTION_LIST_TO_CONFIRM: 'chat:template_selection_list_to_confirm',
-        TEMPLATE_SELECTION_DETAIL_TO_CONFIRM: 'chat:template_selection_detail_to_confirm',
-        TEMPLATE_SELECTION_RESPONSE: 'chat:template_selection_response',
     }
 } as const;
 
 export interface SystemMessagePayload {
-    task_type: AgentName;
+    task_type: 'query_generator' | 'entity_generator' | 'page_generator' | 'data_generator';
     schemasId: string[];
 }
 
@@ -25,15 +20,11 @@ export interface ServerToClientEvents {
     [SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED]: (message: ChatMessage) => void;
     [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM]: (summary: SchemaSummary) => void;
     [SOCKET_EVENTS.CHAT.SCHEMAS_SYNC]: (data: SystemMessagePayload) => void;
-    [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM]: (data: any) => void;
-    [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM]: (data: any) => void;
-
 }
 
 export interface ClientToServerEvents {
-    [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string, providerName?: string }) => void;
+    [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string, agentName?: string }) => void;
     [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummary) => void;
-    [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE]: (data: any) => void;
 }
 
 export interface InterServerEvents {

@@ -2,12 +2,11 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Database, Calendar, Cpu, Clock, Copy, Check, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Database, Calendar, Cpu, Clock, Copy, Check } from 'lucide-react';
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
 import { ENDPOINTS } from '@cms/shared';
 import { config } from '../config';
-import toast from 'react-hot-toast';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
@@ -20,7 +19,7 @@ interface AiLog {
 
 export default function AiLogsPage() {
     const navigate = useNavigate();
-    const { data, error, isLoading, mutate } = useSWR(`${config.API_BASE_URL}${ENDPOINTS.AI.LOGS}`, fetcher);
+    const { data, error, isLoading } = useSWR(`${config.API_BASE_URL}${ENDPOINTS.AI.LOGS}`, fetcher);
     const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
     const [copied, setCopied] = useState(false);
 
@@ -183,41 +182,18 @@ export default function AiLogsPage() {
                                             <h2 className="text-sm font-bold text-primary-muted uppercase tracking-widest">Response Content</h2>
                                             <p className="text-[10px] text-primary-muted mt-1 font-mono uppercase italic">{selectedLog.response.length.toLocaleString()} bytes</p>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={async () => {
-                                                    if (!confirm('Are you sure you want to delete this log?')) return;
-                                                    try {
-                                                        await axios.delete(
-                                                            `${config.API_BASE_URL}${ENDPOINTS.AI.DELETE_LOG.replace(':id', selectedLog.id.toString())}`,
-                                                            { withCredentials: true }
-                                                        );
-                                                        toast.success('Log deleted');
-                                                        mutate();
-                                                        setSelectedLogId(null);
-                                                    } catch (error) {
-                                                        toast.error('Failed to delete log');
-                                                    }
-                                                }}
-                                                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-500 font-bold text-xs hover:bg-red-100 transition-all shadow-sm active:scale-95"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                                Delete
-                                            </button>
-                                            <button
-                                                onClick={() => handleCopy(selectedLog.response)}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold ${copied
-                                                    ? 'bg-green-500/10 border-green-500/50 text-green-600'
-                                                    : 'bg-app-surface border-border hover:border-primary/50 text-primary-muted hover:text-primary shadow-sm active:scale-95'
-                                                    }`}
-                                            >
-                                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                                {copied ? 'Copied!' : 'Copy Formatted JSON'}
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => handleCopy(selectedLog.response)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold ${copied
+                                                ? 'bg-green-500/10 border-green-500/50 text-green-600'
+                                                : 'bg-app-surface border-border hover:border-primary/50 text-primary-muted hover:text-primary shadow-sm active:scale-95'
+                                                }`}
+                                        >
+                                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                            {copied ? 'Copied!' : 'Copy Formatted JSON'}
+                                        </button>
                                     </div>
                                     <div className="p-8">
-
                                         {renderValue(selectedLog.response)}
                                     </div>
                                 </div>

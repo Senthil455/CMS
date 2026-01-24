@@ -2,7 +2,7 @@ import { Database, Search, FileText, Layout, Activity } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchemas } from '../../../hooks/use-schemas';
-import { type SchemaDto, AGENT_NAMES } from '@cms/shared';
+import { type SchemaDto } from '@cms/shared';
 import { AddEntityDialog } from './AddEntityDialog';
 import { AddQueryDialog } from './AddQueryDialog';
 import { AddPageDialog } from './AddPageDialog';
@@ -39,7 +39,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAI = () => {
         setIsAddEntityDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.ENTITY_GENERATOR} `);
+        onChatAction('@entity_generate ');
     };
 
     const handleManualCreateEntity = async (name: string) => {
@@ -82,7 +82,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAIPage = () => {
         setIsAddPageDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.PAGE_PLANNER} `);
+        onChatAction('@page_generate ');
     };
 
     const handleManualCreatePage = async (name: string) => {
@@ -121,7 +121,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAIQuery = () => {
         setIsAddQueryDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.QUERY_GENERATOR} `);
+        onChatAction('@query_generator ');
     };
 
     const handleManualCreateQuery = async (name: string) => {

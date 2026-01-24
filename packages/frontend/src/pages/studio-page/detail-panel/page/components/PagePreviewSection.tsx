@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Globe, Database } from 'lucide-react';
 import useSWR from 'swr';
 import axios from 'axios';
@@ -8,59 +8,34 @@ import 'react18-json-view/src/style.css';
 import { type SchemaDto, ENDPOINTS } from '@cms/shared';
 import { config } from '../../../../../config';
 
-// Register Handlebars helpers for common operations
-Handlebars.registerHelper('gt', (a, b) => a > b);
-Handlebars.registerHelper('lt', (a, b) => a < b);
-Handlebars.registerHelper('eq', (a, b) => a === b);
-Handlebars.registerHelper('and', (...args) => args.slice(0, -1).every(Boolean));
-Handlebars.registerHelper('or', (...args) => args.slice(0, -1).some(Boolean));
-
 interface PagePreviewSectionProps {
     schema: SchemaDto;
     html?: string;
     hideHeader?: boolean;
-    paramValues?: Record<string, string>;
-    onRenderError?: (error: string | null) => void;
 }
 
-export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRenderError }: PagePreviewSectionProps) {
+export function PagePreviewSection({ schema, html, hideHeader }: PagePreviewSectionProps) {
     const page = schema.settings.page!;
     const [showData, setShowData] = useState(false);
 
     const { data: pageData } = useSWR(
-        schema.schemaId ? [
-            `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}`,
-            schema.schemaId,
-            paramValues
-        ] : null,
-        ([url, id, params]) => {
-            const queryParams = new URLSearchParams({ id });
-            if (params) {
-                Object.entries(params).forEach(([key, value]) => {
-                    if (value) queryParams.append(key, value);
-                });
-            }
-            return axios.get(`${url}?${queryParams.toString()}`, { withCredentials: true }).then(res => res.data);
-        }
+        schema.schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}?id=${schema.schemaId}` : null,
+        url => axios.get(url, { withCredentials: true }).then(res => res.data)
     );
 
     const targetHtml = html ?? page.html;
 
-    const { renderedHtml, renderError } = useMemo(() => {
-        if (!pageData || !targetHtml) return { renderedHtml: targetHtml, renderError: null };
+    const renderedHtml = useMemo(() => {
+        if (!pageData || !targetHtml) return targetHtml;
         try {
             const template = Handlebars.compile(targetHtml);
             const result = template(pageData);
-            return { renderedHtml: result, renderError: null };
+            return result;
         } catch (e) {
             console.error('Failed to render Handlebars template', e);
-            return { renderedHtml: targetHtml, renderError: e instanceof Error ? e.message : String(e) };
+            return targetHtml;
         }
     }, [targetHtml, pageData]);
-
-    useEffect(() => {
-        onRenderError?.(renderError);
-    }, [renderError, onRenderError]);
 
     return (
         <section className={`space-y-4 ${hideHeader ? 'h-full flex flex-col' : ''}`}>
@@ -93,8 +68,8 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
                             <span className="text-orange-500 animate-pulse">Data: Loading...</span>
                         )}
                         <span className="w-px h-2 bg-border"></span>
-                        <span className={renderError ? "text-red-500" : (renderedHtml !== targetHtml ? "text-green-500" : "text-orange-500")}>
-                            Render: {renderError || (renderedHtml !== targetHtml ? "Success" : "Original HTML")}
+                        <span className={renderedHtml !== targetHtml ? "text-green-500" : "text-orange-500"}>
+                            Render: {renderedHtml !== targetHtml ? "Success" : "Original HTML"}
                         </span>
                     </div>
                 </div>

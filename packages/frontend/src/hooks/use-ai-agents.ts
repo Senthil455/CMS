@@ -5,9 +5,9 @@ import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
-export function useAIProviders() {
+export function useAIAgents() {
     const { data, error, isLoading } = useSWR<ApiResponse<string[]>>(
-        `${config.API_BASE_URL}${ENDPOINTS.AI.PROVIDERS}`,
+        `${config.API_BASE_URL}${ENDPOINTS.AI.AGENTS}`,
         fetcher,
         {
             revalidateOnFocus: false,
@@ -16,7 +16,7 @@ export function useAIProviders() {
     );
 
     return {
-        providers: data?.data || [],
+        agents: data?.data || [],
         isLoading,
         isError: !!error || (data && !data.success),
     };

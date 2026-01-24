@@ -1,9 +1,7 @@
 import { AuthService } from '../services/auth-service';
 import { ChatService } from '../services/chat-service';
-import { SocketService } from '../services/socket-service';
-import { StatusService } from '../services/status-service';
-import { IntentClassifier } from '../models/agents/intent-classifier';
-import { AIProvider } from '../infrastructures/ai-provider.interface';
+import { IntentClassifier } from '../models/handlers/intent-classifier';
+import { AIAgent } from '../infrastructures/agent.interface';
 import { CmsClient } from '../infrastructures/cms-client';
 import type { ServerToClientEvents, ClientToServerEvents, User } from '@cms/shared';
 import type { SessionStore } from '@fastify/session';
@@ -14,10 +12,8 @@ declare module 'fastify' {
         io: Server<ClientToServerEvents, ServerToClientEvents>;
         chatService: ChatService;
         authService: AuthService;
-        socketService: SocketService;
-        statusService: StatusService;
         intentClassifier: Record<string, IntentClassifier>;
-        aiProvider: Record<string, AIProvider>;
+        aiAgent: Record<string, AIAgent>;
         cms: CmsClient;
         sessionStore: SessionStore;
         authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;

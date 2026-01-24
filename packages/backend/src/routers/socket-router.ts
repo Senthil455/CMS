@@ -16,10 +16,10 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 socket.emit(event, ...args);
             };
 
-            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, providerName?: string }) => {
+            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, agentName?: string }) => {
                 try {
-                    const providerName = data.providerName || config.AI_PROVIDER;
-                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, providerName, onEvent);
+                    const agentName = data.agentName || config.AI_AGENT;
+                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, agentName, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', error);
                 }
@@ -30,14 +30,6 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                     await fastify.chatService.handleSchemaSummaryResponse(userId, data, socket.data.externalCookie, onEvent);
                 } catch (error) {
                     console.error('Error handling schema summary response:', error);
-                }
-            });
-
-            socket.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, async (data: any) => {
-                try {
-                    await fastify.chatService.handleTemplateSelectionResponse(userId, data, socket.data.externalCookie, onEvent);
-                } catch (error) {
-                    console.error('Error handling template selection response:', error);
                 }
             });
 
