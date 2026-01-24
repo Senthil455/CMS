@@ -26,6 +26,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues }: Pa
             paramValues
         ] : null,
         ([url, id, params]) => {
+            debugger;
             const queryParams = new URLSearchParams({ id });
             if (params) {
                 Object.entries(params).forEach(([key, value]) => {
@@ -41,6 +42,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues }: Pa
     const renderedHtml = useMemo(() => {
         if (!pageData || !targetHtml) return targetHtml;
         try {
+            debugger;
             const template = Handlebars.compile(targetHtml);
             const result = template(pageData);
             return result;

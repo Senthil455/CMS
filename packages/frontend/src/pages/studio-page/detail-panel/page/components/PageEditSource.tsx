@@ -5,14 +5,14 @@ import useSWR from 'swr';
 import axios from 'axios';
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
-import { type SchemaDto, type PageDto, ENDPOINTS } from '@cms/shared';
+import { type SchemaDto, type ParsedPageDto, ENDPOINTS } from '@cms/shared';
 import { PagePreviewSection } from './PagePreviewSection';
 import { config } from '../../../../../config';
 
 interface PageEditSourceProps {
     item: SchemaDto;
-    pageForm: PageDto;
-    onUpdateField: (field: keyof PageDto, value: any) => void;
+    pageForm: ParsedPageDto;
+    onUpdateField: (field: keyof ParsedPageDto, value: any) => void;
     onSave: () => void;
     onCancel: () => void;
     isSaving: boolean;
@@ -29,12 +29,19 @@ export function PageEditSource({
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [paramValues, setParamValues] = useState<Record<string, string>>({});
 
+
     // Identify needed params from page name
-    const neededParams = (
-        pageForm.name.match(/\{([^}]+)\}/g)?.map(p => p.slice(1, -1)) || []
-    ).concat(
-        pageForm.name.match(/:([a-zA-Z0-9_]+)/g)?.map(p => p.slice(1)) || []
-    );
+    // Identify needed params from queries
+    const queryParamsList: string[] = [];
+    pageForm.metadata?.architecturePlan?.selectedQueries?.forEach(q => {
+        if (q.args) {
+            Object.keys(q.args).forEach(arg => {
+                queryParamsList.push(arg);
+            });
+        }
+    });
+
+    const neededParams = Array.from(new Set(queryParamsList));
 
     const { data: pageData } = useSWR(
         item.schemaId ? [
@@ -140,7 +147,7 @@ export function PageEditSource({
                         />
                     </div>
 
-                    {isFullScreen && pageData && (
+                    {pageData && (
                         <div className="h-1/3 flex flex-col border border-border rounded-xl overflow-hidden bg-white shadow-sm">
                             <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-app-surface shrink-0">
                                 <Database className="w-3 h-3 text-primary-muted" />

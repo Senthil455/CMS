@@ -1,4 +1,4 @@
-import { type SchemaDto } from '@cms/shared';
+import { type SchemaDto, type PageMetadata } from '@cms/shared';
 import { useState, useMemo } from 'react';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
@@ -13,13 +13,14 @@ interface PageDetailProps {
 }
 
 export function PageDetail({ schema }: PageDetailProps) {
+    debugger;
     const page = schema.settings.page!;
 
     const { publishSchema } = useSchemas();
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
 
-    const metadata = useMemo(() => {
+    const metadata = useMemo<PageMetadata | null>(() => {
         if (!page.metadata) return null;
         try {
             return JSON.parse(page.metadata);

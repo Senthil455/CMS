@@ -57,6 +57,10 @@ export interface PageDto {
     metadata: string;
 }
 
+export interface ParsedPageDto extends Omit<PageDto, 'metadata'> {
+    metadata: PageMetadata;
+}
+
 export interface SchemaDto {
     id: number;
     schemaId: string;
@@ -152,11 +156,7 @@ export interface AssetListResponse {
 
 export interface TemplateSelectionRequest {
     userInput: string;
-    routingPlan: any;
-    architecturePlan: any;
-    queryDetails: string[];
-    existingPageSchema: SchemaDto | null;
-    schemaId: string;
+    pageType: 'list' | 'detail';
     providerName: string;
     templates: {
         id: string;
@@ -169,4 +169,39 @@ export interface TemplateSelectionResponse {
     selectedTemplate: string;
     enableEngagementBar?: boolean;
     requestPayload: TemplateSelectionRequest;
+}
+
+export interface RoutingPlan {
+    pageName: string;
+    primaryParameter?: string;
+    linkingRules: string[];
+    routerHints: string;
+}
+
+export interface PageArchitecturePlan {
+    pageType: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
+    layout: {
+        hasHeader: boolean;
+        hasSidebar: boolean;
+        hasFooter: boolean;
+        structure: string;
+    };
+    selectedQueries: Array<{
+        queryName: string;
+        fieldName: string;
+        type: 'single' | 'list';
+        description: string;
+        args: Record<string, 'fromPath' | 'fromQuery'>;
+    }>;
+    components: Array<{
+        name: string;
+        type: string;
+        queriesUsed: string[];
+    }>;
+    architectureHints: string;
+}
+
+export interface PageMetadata {
+    routingPlan?: RoutingPlan;
+    architecturePlan?: PageArchitecturePlan;
 }

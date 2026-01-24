@@ -1,4 +1,4 @@
-import type { AIProvider } from './agent.interface';
+import type { AIProvider } from './ai-provider.interface';
 import type { ServiceLogger } from '../types/logger';
 
 export class GeminiProvider implements AIProvider {

@@ -1,7 +1,7 @@
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
+import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
@@ -120,7 +120,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         });
     }
 
-    async handle(userInput: string, context: AgentContext): Promise<void> {
+    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
         try {
             const plan = await this.think(userInput, context);
 
@@ -128,8 +128,10 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             await context.saveAiResponseLog(AGENT_NAMES.ENTITY_GENERATOR, JSON.stringify({ ...plan, taskType: context.taskType }));
 
             await this.act(plan, context);
+            return null;
         } catch (error: any) {
             await handleAgentError(error, context, this.logger, "generating your schema", this.aiProvider);
+            return null;
         }
     }
 }

@@ -1,5 +1,5 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName } from '@cms/shared';
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest } from '@cms/shared';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
     userId: string;
@@ -10,14 +10,19 @@ export interface AgentContext {
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
-    onTemplateSelectionListToConfirm: (payload: any) => Promise<void>;
-    onTemplateSelectionDetailToConfirm: (payload: any) => Promise<void>;
+    onTemplateSelectionListToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
+    onTemplateSelectionDetailToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
+}
+
+export interface AgentResponse {
+    nextAgent: AgentName;
+    nextUserInput: string;
 }
 
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<T>;
     act(plan: T, context: AgentContext): Promise<void>;
-    handle(userInput: string, context: AgentContext): Promise<void>;
+    handle(userInput: string, context: AgentContext): Promise<AgentResponse | null>;
 }
 
 export async function handleAgentError(error: any, context: AgentContext, logger: any, actionDescription: string, provider?: AIProvider) {

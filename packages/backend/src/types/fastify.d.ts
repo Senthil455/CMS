@@ -1,7 +1,7 @@
 import { AuthService } from '../services/auth-service';
 import { ChatService } from '../services/chat-service';
 import { IntentClassifier } from '../models/handlers/intent-classifier';
-import { AIProvider } from '../infrastructures/agent.interface';
+import { AIProvider } from '../infrastructures/ai-provider.interface';
 import { CmsClient } from '../infrastructures/cms-client';
 import type { ServerToClientEvents, ClientToServerEvents, User } from '@cms/shared';
 import type { SessionStore } from '@fastify/session';

@@ -4,6 +4,9 @@ export const AGENT_NAMES = {
     QUERY_GENERATOR: 'query_generator',
     DATA_GENERATOR: 'data_generator',
     HTML_GENERATOR: 'html_generator',
+    ENGAGEMENT_BAR_AGENT: 'engagement_bar_agent',
+    ROUTER_DESIGNER: 'router_designer',
+    ARCHITECT_DESIGNER: 'architect_designer',
 } as const;
 
 export type AgentName = typeof AGENT_NAMES[keyof typeof AGENT_NAMES];

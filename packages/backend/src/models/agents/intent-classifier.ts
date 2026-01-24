@@ -1,4 +1,4 @@
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import { type AgentName } from '@cms/shared';
 
 

@@ -1,4 +1,4 @@
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { AgentContext } from '../agents/chat-agent';
 import type { Planner } from './planner.interface';
 import type { RoutingPlan } from './router-designer';

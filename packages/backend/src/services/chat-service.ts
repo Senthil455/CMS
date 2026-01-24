@@ -8,7 +8,7 @@ import {
     type AgentName
 } from '@cms/shared';
 import type { Agent, AgentContext } from '../models/agents/chat-agent';
-import { HtmlGenerator } from '../models/agents/html-generator';
+
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -56,6 +56,33 @@ export class ChatService {
         return message;
     }
 
+    private async executeAgent(
+        taskType: AgentName,
+        userInput: string,
+        context: AgentContext
+    ): Promise<void> {
+        const handler = this.chatHandlers[context.providerName]?.[taskType];
+        if (!handler) {
+            this.logger.error({ taskType, providerName: context.providerName }, 'Handler not found for task type');
+            return;
+        }
+
+        this.logger.info({ taskType }, 'Executing handler');
+
+        try {
+            const response = await handler.handle(userInput, { ...context, taskType });
+
+            if (response) {
+                this.logger.info({ nextAgent: response.nextAgent }, 'Agent requested chaining');
+                await this.executeAgent(response.nextAgent, response.nextUserInput, context);
+            }
+        } catch (error) {
+            this.logger.error({ error, taskType }, 'Error executing agent');
+            // Error handling is mostly done inside agent.handle via handleAgentError, 
+            // but if something bubbles up:
+        }
+    }
+
     async handleUserMessage(
         userId: string,
         content: string,
@@ -82,8 +109,7 @@ export class ChatService {
         }
 
         if (taskType) {
-            const handler = this.chatHandlers[providerName]?.[taskType];
-            if (handler) {
+            if (this.chatHandlers[providerName]?.[taskType]) {
                 this.logger.info('Executing resolved handler');
 
                 const context: AgentContext = {
@@ -111,7 +137,7 @@ export class ChatService {
                     }
                 };
 
-                await handler.handle(content, context);
+                await this.executeAgent(taskType, content, context);
                 return;
             }
 
@@ -145,10 +171,9 @@ export class ChatService {
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         const providerName = response.requestPayload.providerName || 'gemini';
-        const handler = this.chatHandlers[providerName]?.[AGENT_NAMES.HTML_GENERATOR];
-        if (handler instanceof HtmlGenerator) {
+        if (this.chatHandlers[providerName]?.[AGENT_NAMES.ROUTER_DESIGNER]) {
             const context: AgentContext = {
-                taskType: AGENT_NAMES.HTML_GENERATOR,
+                taskType: AGENT_NAMES.ROUTER_DESIGNER,
                 userId,
                 externalCookie,
                 providerName,
@@ -171,9 +196,11 @@ export class ChatService {
                     onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
                 }
             };
-            await handler.handle(JSON.stringify(response), context);
+
+            // Pass the entire response as input, RouterDesignerAgent is updated to handle it
+            await this.executeAgent(AGENT_NAMES.ROUTER_DESIGNER, JSON.stringify(response), context);
         } else {
-            this.logger.error('HtmlGenerator handler not found or invalid type');
+            this.logger.error('RouterDesigner handler not found');
         }
     }
     async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {

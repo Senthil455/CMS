@@ -6,7 +6,7 @@ import { config } from '../config';
 import { OpenAIProvider } from '../infrastructures/openai-provider';
 import { GeminiProvider } from '../infrastructures/gemini-provider';
 
-import type { AIProvider } from '../infrastructures/agent.interface';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });

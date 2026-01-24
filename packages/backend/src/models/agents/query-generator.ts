@@ -1,7 +1,7 @@
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
+import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
@@ -103,7 +103,7 @@ ${schemaContext}
         }
     }
 
-    async handle(userInput: string, context: AgentContext): Promise<void> {
+    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
         try {
             const plan = await this.think(userInput, context);
 
@@ -113,8 +113,10 @@ ${schemaContext}
             );
 
             await this.act(plan, context);
+            return null;
         } catch (error: any) {
             await handleAgentError(error, context, this.logger, "generating your query", this.aiProvider);
+            return null;
         }
     }
 }

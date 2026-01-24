@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { AIProvider, AgentMessage } from './agent.interface';
+import type { AIProvider, AgentMessage } from './ai-provider.interface';
 import type { ServiceLogger } from '../types/logger';
 
 export class OpenAIProvider implements AIProvider {

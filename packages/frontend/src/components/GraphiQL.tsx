@@ -1,7 +1,6 @@
 import { GraphiQL as GraphiQLReact } from 'graphiql';
 import 'graphiql/style.css';
 import './GraphiQL.css';
-import { config } from '../config';
 
 interface CustomGraphiQLProps {
     key: string;
@@ -12,11 +11,11 @@ interface CustomGraphiQLProps {
 }
 
 const fetcher = async (params: any) => {
-    const res = await fetch(config.CMS_BASE_URL + '/graphql', {
+    const res = await fetch('/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
-        credentials: 'include'
+        // credentials: 'include'
     })
     return res.json()
 }

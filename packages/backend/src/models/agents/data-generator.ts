@@ -1,7 +1,7 @@
-import type { AIProvider } from '../../infrastructures/agent.interface';
+import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, handleAgentError } from './chat-agent';
+import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
 
 import { AGENT_NAMES } from '@cms/shared';
 // ... existing interface ...
@@ -105,7 +105,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         await context.saveAssistantMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
     }
 
-    async handle(userInput: string, context: AgentContext): Promise<void> {
+    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
         try {
             const plan = await this.think(userInput, context);
 
@@ -115,8 +115,10 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             );
 
             await this.act(plan, context);
+            return null;
         } catch (error: any) {
             await handleAgentError(error, context, this.logger, "generating your data", this.aiProvider);
+            return null;
         }
     }
 }
