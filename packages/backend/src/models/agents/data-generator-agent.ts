@@ -22,7 +22,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super(AGENT_NAMES.DATA_GENERATOR, "generating your data", logger, aiProvider);
+        super("generating your data", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {

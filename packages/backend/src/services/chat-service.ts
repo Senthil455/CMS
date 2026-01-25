@@ -61,12 +61,12 @@ export class ChatService {
         userId: string,
         externalCookie: string,
         providerName: string,
-        taskType: AgentName,
+        agentName: AgentName,
         onEvent: OnServerToClientEvent,
         schemaId?: string
     ): AgentContext {
         return {
-            taskType,
+            agentName,
             userId,
             externalCookie,
             providerName,
@@ -106,11 +106,13 @@ export class ChatService {
         this.logger.info({ taskType }, 'Executing handler');
 
         try {
-            const response = await handler.handle(userInput, { ...context, taskType });
+            // Update context with the specific agent for this execution
+            const agentContext = { ...context, agentName: taskType };
+            const response = await handler.handle(userInput, agentContext);
 
             if (response) {
                 this.logger.info({ nextAgent: response.nextAgent }, 'Agent requested chaining');
-                await this.executeAgent(response.nextAgent, response.nextUserInput, context);
+                await this.executeAgent(response.nextAgent, response.nextUserInput, agentContext);
             }
         } catch (error) {
             this.logger.error({ error, taskType }, 'Error executing agent');

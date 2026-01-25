@@ -16,7 +16,7 @@ export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super(AGENT_NAMES.QUERY_GENERATOR, "generating your query", logger, aiProvider);
+        super("generating your query", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<QueryGeneratorPlan> {

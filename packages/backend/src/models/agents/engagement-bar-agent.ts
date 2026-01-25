@@ -17,7 +17,7 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super(AGENT_NAMES.ENGAGEMENT_BAR_AGENT, "adding engagement bar", logger, aiProvider);
+        super("adding engagement bar", logger, aiProvider);
     }
 
     public getSnippet(): string {

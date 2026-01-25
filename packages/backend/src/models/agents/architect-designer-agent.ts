@@ -18,7 +18,7 @@ export class ArchitectDesignerAgent extends BaseAgent<ArchitectDesignerAgentPlan
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger
     ) {
-        super(AGENT_NAMES.ARCHITECT_DESIGNER, "architecting your page", logger, aiProvider);
+        super("architecting your page", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<ArchitectDesignerAgentPlan> {

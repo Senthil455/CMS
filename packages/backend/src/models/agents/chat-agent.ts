@@ -4,7 +4,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 export interface AgentContext {
     userId: string;
     externalCookie: string;
-    taskType: AgentName;
+    agentName: AgentName;
     providerName: string;
     schemaId?: string;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
@@ -30,7 +30,6 @@ import type { ServiceLogger } from '../../types/logger';
 
 export abstract class BaseAgent<T> implements Agent<T> {
     constructor(
-        protected readonly agentName: string,
         protected readonly actionDescription: string,
         protected readonly logger: ServiceLogger,
         protected readonly aiProvider: AIProvider
@@ -42,13 +41,13 @@ export abstract class BaseAgent<T> implements Agent<T> {
 
     // Common handle implementation
     async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        this.logger.info(`${this.agentName} initiated via direct handle call`);
+        this.logger.info(`${context.agentName} initiated via direct handle call`);
         try {
             const plan = await this.think(userInput, context);
 
             await context.saveAiResponseLog(
-                this.agentName,
-                JSON.stringify({ ...plan, taskType: context.taskType })
+                context.agentName,
+                JSON.stringify({ ...plan, taskType: context.agentName })
             );
 
             return await this.act(plan, context);
@@ -66,7 +65,7 @@ export abstract class BaseAgent<T> implements Agent<T> {
 }
 
 export async function handleAgentError(error: any, context: AgentContext, logger: any, actionDescription: string, provider?: AIProvider) {
-    logger.error({ error, stack: error?.stack }, `Error in ${context.taskType} handle`);
+    logger.error({ error, stack: error?.stack }, `Error in ${context.agentName} handle`);
 
     let errorMessage = error.message || 'Unknown error occurred';
 

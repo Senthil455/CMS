@@ -11,7 +11,7 @@ export class PageGenerator extends BaseAgent<TemplateSelectionRequest> {
         logger: ServiceLogger,
         private readonly templates: Record<string, { id: string, name: string, description: string }[]>
     ) {
-        super(AGENT_NAMES.PAGE_GENERATOR, "generating your page", logger, aiProvider);
+        super("generating your page", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<TemplateSelectionRequest> {

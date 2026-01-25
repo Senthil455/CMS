@@ -25,7 +25,7 @@ export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
         logger: ServiceLogger,
         private readonly baseUrl: string,
     ) {
-        super(AGENT_NAMES.HTML_GENERATOR, "generating your html", logger, aiProvider);
+        super("generating your html", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<HtmlGeneratorPlan> {

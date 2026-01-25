@@ -14,8 +14,8 @@ export class IntentClassifier {
             const response = await this.aiProvider.generate(this.systemPrompt, '', userInput);
 
             if (response && typeof response === 'object') {
-                const { taskType } = response;
-                return taskType as AgentName;
+                const { agentName, taskType } = response;
+                return (agentName || taskType) as AgentName;
             }
 
             return null;

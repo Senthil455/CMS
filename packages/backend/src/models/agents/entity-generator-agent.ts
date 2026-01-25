@@ -26,7 +26,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super(AGENT_NAMES.ENTITY_GENERATOR, "generating your schema", logger, aiProvider);
+        super("generating your schema", logger, aiProvider);
     }
 
     async create(userInput: string, existingContext?: string): Promise<EntityGeneratorResponse> {

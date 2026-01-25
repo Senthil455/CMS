@@ -14,7 +14,7 @@ export class RouterDesignerAgent extends BaseAgent<RoutingPlan> {
         private readonly cmsClient: CmsClient, // Keep checking schema
         logger: ServiceLogger
     ) {
-        super(AGENT_NAMES.ROUTER_DESIGNER, "designing your route", logger, aiProvider);
+        super("designing your route", logger, aiProvider);
     }
 
     async think(userInput: string, context: AgentContext): Promise<RoutingPlan> {
