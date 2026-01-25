@@ -1,5 +1,6 @@
 import type { ChatMessage } from './contracts.js';
 import { SchemaSummary } from './dtos.js';
+import type { AgentName } from './constants.js';
 
 export const SOCKET_EVENTS = {
     CHAT: {
@@ -16,7 +17,7 @@ export const SOCKET_EVENTS = {
 } as const;
 
 export interface SystemMessagePayload {
-    task_type: 'query_generator' | 'entity_generator' | 'page_generator' | 'data_generator' | 'engagement_bar_agent' | 'router_designer' | 'architect_designer';
+    task_type: AgentName;
     schemasId: string[];
 }
 

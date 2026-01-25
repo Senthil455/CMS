@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { ENDPOINTS, SOCKET_EVENTS } from '@cms/shared';
+import { ENDPOINTS, SOCKET_EVENTS, AGENT_NAMES } from '@cms/shared';
 
 const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.HISTORY, {
@@ -23,9 +23,9 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const { schemaId } = request.body as { schemaId: string };
+            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
             const userId = request.user!.id.toString();
-            const externalCookie = request.cookies['cms-auth'] || '';
+            const externalCookie = request.headers.cookie || '';
 
             // Define onEvent to emit to the specific user via socket
             const onEvent = (event: string, payload: any) => {
@@ -42,7 +42,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 userId,
                 syntheticMessage,
                 externalCookie,
-                'gemini', // default provider
+                providerName || 'gemini', // default provider
                 onEvent
             );
 
@@ -50,6 +50,35 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         } catch (error) {
             fastify.log.error(error);
             return reply.status(500).send({ success: false, error: 'Failed to trigger Engagement Bar Agent' });
+        }
+    });
+
+    fastify.post(ENDPOINTS.CHAT.USER_AVATAR, {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        try {
+            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
+            const userId = request.user!.id.toString();
+            const externalCookie = request.headers.cookie || '';
+
+            const onEvent = (event: string, payload: any) => {
+                fastify.socketService.emitToUser(userId, event, payload);
+            };
+
+            const syntheticMessage = `@${AGENT_NAMES.USER_AVATAR_AGENT} #${schemaId}: Add user avatar to header`;
+
+            await fastify.chatService.handleUserMessage(
+                userId,
+                syntheticMessage,
+                externalCookie,
+                providerName || 'gemini',
+                onEvent
+            );
+
+            return { success: true, message: 'User Avatar Agent triggered successfully' };
+        } catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Agent' });
         }
     });
 };

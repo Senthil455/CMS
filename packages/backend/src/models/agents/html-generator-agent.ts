@@ -24,9 +24,11 @@ export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
         private readonly baseUrl: string,
+        private readonly userAvatarSnippet: string,
     ) {
         super("generating your html", logger, aiProvider);
     }
+
 
     async think(userInput: string, context: AgentContext): Promise<HtmlGeneratorPlan> {
         this.logger.info('HtmlGenerator think started');
@@ -99,7 +101,11 @@ ${JSON.stringify(architecturePlan.selectedQueries, null, 2)}
 
 DATA ENDPOINTS:
 ${queryDetails.join('\n')}
+
+USER AVATAR SNIPPET (use {{userAvatar}} to inject it):
+${this.userAvatarSnippet}
 `;
+
 
         if (existingPageSchema.settings.page.html) {
             const p = existingPageSchema.settings.page;
@@ -125,8 +131,10 @@ ${queryDetails.join('\n')}
 
         return {
             ...htmlResponse,
+            html: htmlResponse.html.replace('{{userAvatar}}', this.userAvatarSnippet),
             enableEngagementBar
         };
+
     }
 
     async act(plan: HtmlGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {

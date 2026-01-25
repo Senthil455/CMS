@@ -1,0 +1,32 @@
+<div x-data="{
+    user: null,
+    async init() {
+        this.user = await window.cmsSdk.userService.fetchMe();
+    },
+    async handleClick() {
+        if (this.user) {
+            window.location.href = '/portal';
+        } else {
+            try {
+                this.user = await window.cmsSdk.userService.login();
+            } catch (e) {
+                console.log('Login failed or cancelled');
+            }
+        }
+    }
+
+}" x-init="init()" class="fixed top-4 right-4 z-50">
+    <template x-if="user">
+        <button @click="handleClick()"
+            class="flex items-center gap-2 p-1 pr-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full shadow-sm hover:shadow-md transition-all">
+            <img :src="user.avatarUrl" class="w-8 h-8 rounded-full border border-gray-100" />
+            <span x-text="user.username" class="text-sm font-medium text-gray-700"></span>
+        </button>
+    </template>
+    <template x-if="!user">
+        <button @click="handleClick()"
+            class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full shadow-sm hover:shadow-md transition-all">
+            Sign In
+        </button>
+    </template>
+</div>

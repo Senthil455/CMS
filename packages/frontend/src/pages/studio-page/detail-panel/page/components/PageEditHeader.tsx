@@ -7,9 +7,9 @@ interface PageEditHeaderProps {
     onTabChange: (tab: 'settings' | 'code') => void;
     onSave: () => void;
     onCancel: () => void;
-    onAddEngagementBar?: () => void;
     isSaving: boolean;
 }
+
 
 export function PageEditHeader({
     item,
@@ -17,9 +17,9 @@ export function PageEditHeader({
     onTabChange,
     onSave,
     onCancel,
-    onAddEngagementBar,
     isSaving
 }: PageEditHeaderProps) {
+
     return (
         <div className="p-4 border-b border-border flex items-center justify-between bg-app-surface shadow-sm">
             <div className="flex items-center gap-3">
@@ -75,17 +75,6 @@ export function PageEditHeader({
                     )}
                     Save Changes
                 </button>
-
-                {onAddEngagementBar && (
-                    <button
-                        onClick={onAddEngagementBar}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white hover:bg-purple-700 rounded-lg text-xs font-bold transition-all disabled:opacity-50 shadow-md ml-2"
-                    >
-                        Add Engagement Bar
-                    </button>
-                )}
-
 
             </div>
         </div>

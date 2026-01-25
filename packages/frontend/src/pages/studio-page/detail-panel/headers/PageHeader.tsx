@@ -1,4 +1,4 @@
-import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus } from 'lucide-react';
+import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus, UserCircle } from 'lucide-react';
 import { type PageDto, AGENT_NAMES, type PageMetadata, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -25,12 +25,15 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     }
 
     const engagementBarEnabled = metadata.enableEngagementBar;
+    const userAvatarEnabled = metadata.enableUserAvatar;
 
     const handleAddSocialBar = async () => {
         try {
-            toast.loading('Triggering Engagement Bar Agent...', { id: 'engagement-bar' });
+            const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
+            toast.loading(`Triggering Engagement Bar Agent (${providerName})...`, { id: 'engagement-bar' });
             await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.ENGAGEMENT_BAR}`, {
-                schemaId
+                schemaId,
+                providerName
             }, {
                 withCredentials: true
             });
@@ -39,6 +42,24 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         } catch (error) {
             console.error(error);
             toast.error('Failed to trigger Engagement Bar Agent', { id: 'engagement-bar' });
+        }
+    };
+
+    const handleAddUserAvatar = async () => {
+        try {
+            const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
+            toast.loading(`Triggering User Avatar Agent (${providerName})...`, { id: 'user-avatar' });
+            await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.USER_AVATAR}`, {
+                schemaId,
+                providerName
+            }, {
+                withCredentials: true
+            });
+            toast.success('User Avatar Agent triggered. Check chat for progress.', { id: 'user-avatar' });
+            onChatAction(`@${AGENT_NAMES.USER_AVATAR_AGENT} #${schemaId}: checking progress...`);
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to trigger User Avatar Agent', { id: 'user-avatar' });
         }
     };
 
@@ -67,13 +88,23 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                 Ask AI to Modify
             </button>
 
-            {!engagementBarEnabled && (
+            {!engagementBarEnabled && metadata.entityName && (
                 <button
                     onClick={handleAddSocialBar}
                     className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-lg text-xs font-bold transition-all border border-blue-500/20 ml-1"
                 >
                     <MessageSquarePlus className="w-3.5 h-3.5" />
                     Add Social Bar
+                </button>
+            )}
+
+            {!userAvatarEnabled && (
+                <button
+                    onClick={handleAddUserAvatar}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-600 rounded-lg text-xs font-bold transition-all border border-green-500/20 ml-1"
+                >
+                    <UserCircle className="w-3.5 h-3.5" />
+                    Add User Avatar
                 </button>
             )}
 

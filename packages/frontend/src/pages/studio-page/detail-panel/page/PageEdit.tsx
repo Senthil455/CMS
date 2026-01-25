@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, AGENT_NAMES } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { useSocket } from '../../../../hooks/use-socket';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
@@ -34,7 +34,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
     const [error, setError] = useState<string | null>(null);
 
     const { publishSchema } = useSchemas();
-    const { sendMessage } = useSocket();
+    const { } = useSocket();
     const [pageForm, setPageForm] = useState<ParsedPageDto>(() => {
         const initialForm = JSON.parse(JSON.stringify(item.settings.page));
         if (typeof initialForm.metadata === 'string') {
@@ -90,14 +90,9 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
     };
 
 
-    const handleAddEngagementBar = () => {
-        const message = `@${AGENT_NAMES.ENGAGEMENT_BAR_AGENT} #${item.schemaId}: Add engagement bar`;
-        sendMessage(message);
-        toast.success('Engagement Bar Agent triggered');
-        onCancel(); // Close panel to see chat
-    };
 
     const updateField = (field: keyof ParsedPageDto, value: any) => {
+
         setPageForm({ ...pageForm, [field]: value });
     };
 
@@ -109,10 +104,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                 onTabChange={handleTabChange}
                 onSave={handleSave}
                 onCancel={onCancel}
-
                 isSaving={isSaving}
-                onAddEngagementBar={item.schemaId?.includes('detail') || pageForm.html?.includes('detail') || true ? handleAddEngagementBar : undefined}
-
             />
 
             <div className="flex-1 overflow-auto p-6 flex flex-col gap-6">

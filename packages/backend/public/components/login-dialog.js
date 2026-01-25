@@ -51,8 +51,14 @@ export const loginDialog = {
                 const password = formData.get('password');
 
                 try {
-                    const user = await window.cmsSdk.userApi.login(username, password);
-                    document.body.removeChild(dialog);
+                    const user = {
+                        email: formData.get('username'),
+                        password: formData.get('password')
+                    };
+                    // The dialog doesn't close itself until the parent tells it success? 
+                    // Actually, let's just return the data and let the service handle the close on success.
+                    // Or keep it simple: resolve data, caller handles success/failure and closing.
+                    // For the sake of simplicity, let's resolve the data.
                     resolve(user);
                 } catch (err) {
                     errorDiv.textContent = 'Invalid username or password';
@@ -60,5 +66,16 @@ export const loginDialog = {
                 }
             };
         });
+    },
+    close() {
+        const dialog = document.getElementById('cms-login-dialog');
+        if (dialog) document.body.removeChild(dialog);
+    },
+    showError(message) {
+        const errorDiv = document.getElementById('cms-login-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
     }
 };

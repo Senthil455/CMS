@@ -1,6 +1,5 @@
 import { engagementApi } from '../api/engagement.js';
-import { userApi } from '../api/user.js';
-import { loginDialog } from '../components/login-dialog.js';
+import { userService } from './user.js';
 
 export const engagementService = {
     getStats(entityName) {
@@ -17,19 +16,15 @@ export const engagementService = {
             });
     },
     async toggle(entityName, type, stats) {
-        let user = await userApi.fetchMe();
-
-        if (!user) {
-            try {
-                user = await loginDialog.show();
-            } catch (e) {
-                console.log('Login cancelled, cannot toggle');
-                return;
-            }
+        try {
+            await userService.ensureLogin();
+        } catch (e) {
+            console.log('Login failed or cancelled, cannot toggle');
+            return;
         }
 
-
         const recordId = window.location.pathname.split('/').filter(Boolean).pop();
+
         const s = stats[type];
         s.active = !s.active;
         if (typeof s.count !== 'undefined') s.count += s.active ? 1 : -1;

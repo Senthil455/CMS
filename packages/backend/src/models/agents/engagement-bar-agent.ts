@@ -51,7 +51,7 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
 
         const developerMessage = JSON.stringify({
             existingHtml: pageDto.html,
-            engagementBarSnippet: this.engagementBarSnippet.replaceAll('{{entityName}}', metadata.entityName!)
+            engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.entityName!)
         }, null, 2);
 
         const res = await this.aiProvider.generate(
@@ -72,11 +72,17 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
     async act(plan: EngagementBarPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
+        const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
+        metadata.enableEngagementBar = true;
+
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
             type: 'page',
             settings: {
-                page: pageDto
+                page: {
+                    ...pageDto,
+                    metadata: JSON.stringify(metadata)
+                }
             }
         };
 

@@ -17,6 +17,7 @@ import { PageTypePlanner } from '../models/planners/page-type-planner';
 import { HtmlGenerator } from '../models/agents/html-generator-agent';
 import { DataGenerator } from '../models/agents/data-generator-agent';
 import { EngagementBarAgent } from '../models/agents/engagement-bar-agent';
+import { UserAvatarAgent } from '../models/agents/user-avatar-agent';
 import { RouterDesignerAgent } from '../models/agents/router-designer-agent';
 import { ArchitectDesignerAgent } from '../models/agents/architect-designer-agent';
 // removed HtmlGenerationHandler import
@@ -101,8 +102,11 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 'minimal': minimalListPrompt
             };
 
+            const userAvatarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/user-avatar-agent.txt`), 'utf-8').catch(() => '');
             const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.txt`), 'utf-8').catch(() => '');
             const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
+            const userAvatarSnippet = await fs.readFile(path.join(promptsDir, 'components/user-avatar.html'), 'utf-8').catch(() => '');
+
 
             // Instantiate Planners
             const routerDesigner = new RouterDesigner(provider, routerDesignerPrompt);
@@ -110,10 +114,12 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const pageTypePlanner = new PageTypePlanner(provider, pageTypePlannerPrompt);
 
             const engagementBarAgent = new EngagementBarAgent(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
+            const userAvatarAgent = new UserAvatarAgent(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
             const routerDesignerAgent = new RouterDesignerAgent(provider, routerDesigner, cmsClient, modelLogger);
             const architectDesignerAgent = new ArchitectDesignerAgent(provider, pageArchitect, cmsClient, modelLogger);
 
-            const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
+            const htmlGenerator = new HtmlGenerator(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL, userAvatarSnippet);
+
 
             const dataDir = path.join(__dirname, '../data');
             const templatesData = await fs.readFile(path.join(dataDir, 'templates.json'), 'utf-8');
@@ -152,6 +158,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.DATA_GENERATOR]: dataGenerator,
                 [AGENT_NAMES.HTML_GENERATOR]: htmlGenerator,
                 [AGENT_NAMES.ENGAGEMENT_BAR_AGENT]: engagementBarAgent,
+                [AGENT_NAMES.USER_AVATAR_AGENT]: userAvatarAgent,
                 [AGENT_NAMES.ROUTER_DESIGNER]: routerDesignerAgent,
                 [AGENT_NAMES.ARCHITECT_DESIGNER]: architectDesignerAgent,
             };

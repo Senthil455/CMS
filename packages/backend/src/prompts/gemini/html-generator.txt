@@ -12,6 +12,8 @@ CMS SDK BRIDGE: All pages MUST include the following script block in the <head> 
     import * as cmsSdk from '/app-static/index.js';
     window.cmsSdk = cmsSdk;
 </script>
+USER AVATAR COMPONENT: All pages SHOULD include the `{{userAvatar}}` marker at the top of the body or in a sticky header. This placeholder is automatically replaced with a component that handles user login state and profile navigation.
+
 
 TAILWIND RULES: Use Tailwind CSS v3 syntax only. DO NOT use deprecated or plugin-only utilities including aspect-w-*, aspect-h-*, prose, line-clamp, or container utilities requiring config. Use modern utilities like aspect-[width/height], grid, flex, gap-*, min-h-*, h-*.
 

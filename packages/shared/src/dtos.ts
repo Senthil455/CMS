@@ -209,6 +209,7 @@ export interface PageMetadata {
     userInput?: string;
     templateId?: string;
     enableEngagementBar?: boolean;
+    enableUserAvatar?: boolean;
     pageType?: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
     entityName?: string;
 }
