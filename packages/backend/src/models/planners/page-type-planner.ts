@@ -5,6 +5,7 @@ import type { Planner } from './planner.interface';
 export interface PageTypePlan {
     pageType: 'list' | 'detail';
     schemaId?: string | null;
+    entityName?: string | null;
 }
 
 export class PageTypePlanner implements Planner<PageTypePlan> {
@@ -13,11 +14,13 @@ export class PageTypePlanner implements Planner<PageTypePlan> {
         private readonly systemPrompt: string,
     ) { }
 
-    async plan(userInput: string, context: AgentContext): Promise<PageTypePlan> {
+    async plan(userInput: string, context: AgentContext, entityNames: string[] = []): Promise<PageTypePlan> {
+
+        const entitiesList = entityNames.length > 0 ? entityNames.join(", ") : "None";
 
         const response = await this.aiProvider.generate(
             this.systemPrompt,
-            "Determine the page type based on user input.",
+            `Existing Entities: [${entitiesList}]\n\nDetermine the page type and relevant entity based on user input.`,
             userInput
         );
 

@@ -74,7 +74,7 @@ export class PageManager {
         return newSchemaId;
     }
 
-    async savePageTypeAndTemplate(schemaId: string | null | undefined, pageType: string, templateId: string, userInput: string): Promise<string> {
+    async savePageTypeAndTemplate(schemaId: string | null | undefined, pageType: string, templateId: string, userInput: string, enableEngagementBar?: boolean, entityName?: string): Promise<string> {
         let pageSettings: any = {
             name: `generated-page-${Date.now()}`,
             title: `Generated Page ${Date.now()}`,
@@ -102,7 +102,9 @@ export class PageManager {
             ...metadata,
             pageType,
             templateId,
-            userInput
+            userInput,
+            enableEngagementBar,
+            entityName
         };
 
         const payload: SaveSchemaPayload = {

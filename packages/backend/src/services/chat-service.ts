@@ -33,7 +33,7 @@ export class ChatService {
         return this.repository.save({ userId, content, role: 'user' });
     }
 
-    async saveAssistantMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
+    async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
         return this.repository.save({ userId, content, role: 'assistant', payload });
     }
 
@@ -46,13 +46,13 @@ export class ChatService {
     }
 
     // Helper method to save and emit assistant messages
-    private async saveAndEmitAssistantMessage(
+    private async saveAndEmitAgentMessage(
         userId: string,
         content: string,
         onEvent: OnServerToClientEvent,
         payload?: any
     ): Promise<ChatMessage> {
-        const message = await this.saveAssistantMessage(userId, content, payload);
+        const message = await this.saveAgentMessage(userId, content, payload);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
     }
@@ -71,8 +71,8 @@ export class ChatService {
             externalCookie,
             providerName,
             ...(schemaId ? { schemaId } : {}),
-            saveAssistantMessage: async (content: string, payload?: any) => {
-                return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
+            saveAgentMessage: async (content: string, payload?: any) => {
+                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
             },
             saveAiResponseLog: async (handlerName: string, response: string) => {
                 await this.repository.saveAiResponseLog(handlerName, response, providerName, schemaId);
@@ -132,43 +132,43 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         // 2. Intent Classifier
-        let taskType: AgentName | null = null;
+        let agent: AgentName | null = null;
 
         if (content.trim().startsWith('@')) {
             // Check for explicit trigger (e.g. "@entity_generator")
             const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
             if (explicitTrigger) {
-                taskType = explicitTrigger;
+                agent = explicitTrigger;
             }
         }
 
-        if (!taskType) {
-            taskType = await this.intentClassifier[providerName]!.resolve(content);
+        if (!agent) {
+            agent = await this.intentClassifier[providerName]!.resolve(content);
         }
 
-        if (taskType) {
-            if (this.chatHandlers[providerName]?.[taskType]) {
+        if (agent) {
+            if (this.chatHandlers[providerName]?.[agent]) {
                 this.logger.info('Executing resolved handler');
 
-                const context = this.createContext(userId, externalCookie, providerName, taskType, onEvent);
+                const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
 
-                await this.executeAgent(taskType, content, context);
+                await this.executeAgent(agent, content, context);
                 return;
             }
 
             // Fallback or default behavior if no command resolved
-            const aiMessage = await this.saveAssistantMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
+            const aiMessage = await this.saveAgentMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
             onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
         }
     }
 
     async handleSchemaSummaryResponse(userId: string, response: SchemaSummary, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         if (response.entities.length === 0) {
-            await this.saveAssistantMessage(userId, 'No entities provided to commit.');
+            await this.saveAgentMessage(userId, 'No entities provided to commit.');
             return;
         }
 
-        await this.saveAssistantMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
+        await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
         try {
             const schemaManager = new EntityManager(this.cmsClient, this.logger, externalCookie);
@@ -177,10 +177,10 @@ export class ChatService {
                 task_type: 'entity_generator',
                 schemasId: schemaIds
             });
-            await this.saveAndEmitAssistantMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
+            await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
         } catch (error) {
             this.logger.error({ error }, 'Failed to commit schema changes');
-            await this.saveAndEmitAssistantMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
+            await this.saveAndEmitAgentMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
         }
     }
 
@@ -191,7 +191,9 @@ export class ChatService {
             response.requestPayload.schemaId,
             response.requestPayload.pageType,
             response.selectedTemplate,
-            response.requestPayload.userInput
+            response.requestPayload.userInput,
+            response.enableEngagementBar,
+            response.requestPayload.entityName
         );
 
         const providerName = response.requestPayload.providerName || 'gemini';
@@ -206,7 +208,7 @@ export class ChatService {
             this.logger.error('RouterDesigner handler not found');
         }
     }
-    async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+    async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
         const log = await this.repository.findAiResponseLogById(logId);
         if (!log) {
             throw new Error(`Log with ID ${logId} not found`);
@@ -237,9 +239,9 @@ export class ChatService {
 
         const plan = JSON.parse(responseContent);
 
-        await this.saveAssistantMessage(userId, "Manually triggering action from log...");
+        await this.saveAgentMessage(userId, "Manually triggering action from log...");
         var res = await targetHandler.act(plan, context);
-        if (res) {
+        if (res && continuePipeline) {
             this.executeAgent(res.nextAgent, res.nextUserInput, context);
         }
     }

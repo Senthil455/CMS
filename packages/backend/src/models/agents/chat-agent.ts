@@ -7,7 +7,7 @@ export interface AgentContext {
     agentName: AgentName;
     providerName: string;
     schemaId?: string;
-    saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
+    saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
@@ -79,5 +79,5 @@ export async function handleAgentError(error: any, context: AgentContext, logger
         }
     }
 
-    await context.saveAssistantMessage(`I'm sorry, I encountered an error while ${actionDescription}:\n${errorMessage}`);
+    await context.saveAgentMessage(`I'm sorry, I encountered an error while ${actionDescription}:\n${errorMessage}`);
 }

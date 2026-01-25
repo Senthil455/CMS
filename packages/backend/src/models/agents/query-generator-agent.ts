@@ -31,11 +31,11 @@ export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
                 schemaId = idMatch[1] as string;
                 if (existingPageSchema && existingPageSchema.type === 'query') {
                     const qName = existingPageSchema.name;
-                    await context.saveAssistantMessage(`I found the existing query "${qName}". I will fetch the latest schema and help you modify it...`);
+                    await context.saveAgentMessage(`I found the existing query "${qName}". I will fetch the latest schema and help you modify it...`);
                 }
             } catch (e) {
                 this.logger.warn({ schemaId }, 'Existing query not found for modification');
-                await context.saveAssistantMessage(`I couldn't find the existing query with ID "${schemaId}". I will generate a new query for you...`);
+                await context.saveAgentMessage(`I couldn't find the existing query with ID "${schemaId}". I will generate a new query for you...`);
             }
         }
 
@@ -66,14 +66,14 @@ ${schemaContext}
     async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
-            await context.saveAssistantMessage("I couldn't generate a valid query configuration. Please try again with more details.");
+            await context.saveAgentMessage("I couldn't generate a valid query configuration. Please try again with more details.");
             return null;
         }
 
         const schemaIds: string[] = [];
 
         for (const [name, source] of Object.entries(plan.queries)) {
-            await context.saveAssistantMessage(`Executing generated query "${name}":\n${source}`);
+            await context.saveAgentMessage(`Executing generated query "${name}":\n${source}`);
 
             let targetSchemaId = '';
             // If we are editing, check if name matches
@@ -86,10 +86,10 @@ ${schemaContext}
             try {
                 const newSchemaId = await this.cmsClient.saveQuery(context.externalCookie, targetSchemaId, name, source);
                 schemaIds.push(newSchemaId);
-                await context.saveAssistantMessage(`Query "${name}" executed successfully.`);
+                await context.saveAgentMessage(`Query "${name}" executed successfully.`);
             } catch (e: any) {
                 this.logger.error({ error: e }, 'Failed to save query');
-                await context.saveAssistantMessage(`Failed to save query "${name}".`);
+                await context.saveAgentMessage(`Failed to save query "${name}".`);
             }
         }
 
@@ -101,7 +101,7 @@ ${schemaContext}
             const finalMessage = plan.existingPageSchema
                 ? `I have updated the queries, you can view them in CMS.`
                 : `I have generated the queries, you can find them in CMS.`;
-            await context.saveAssistantMessage(finalMessage);
+            await context.saveAgentMessage(finalMessage);
         }
         return null;
     }

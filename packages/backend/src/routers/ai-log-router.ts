@@ -13,12 +13,13 @@ const aiLogRouter: FastifyPluginAsync = async (fastify) => {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         const { id } = request.params as { id: string };
+        const { continuePipeline } = request.body as { continuePipeline?: boolean };
         const { chatService, socketService } = fastify as any;
         const user = request.user as { id: string };
 
         await chatService.actOnLog(parseInt(id), user.id, request.headers.cookie || '', (event: string, payload: any) => {
             socketService.emitToUser(user.id, event, payload);
-        });
+        }, continuePipeline);
 
         return { success: true };
     });

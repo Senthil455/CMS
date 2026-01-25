@@ -78,7 +78,7 @@ export class ArchitectDesignerAgent extends BaseAgent<ArchitectDesignerAgentPlan
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
 
-        await context.saveAssistantMessage(`I've planned the structure and components for your page.`);
+        await context.saveAgentMessage(`I've planned the structure and components for your page.`);
 
         // Chain to HTML Generator
         return {

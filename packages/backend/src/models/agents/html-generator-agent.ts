@@ -145,7 +145,7 @@ ${queryDetails.join('\n')}
 
         // Completion
         const finalMessage = "I have generated your HTML page, you can find it in CMS.";
-        await context.saveAssistantMessage(finalMessage);
+        await context.saveAgentMessage(finalMessage);
 
         if (plan.enableEngagementBar) {
             return {

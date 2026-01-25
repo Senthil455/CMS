@@ -48,7 +48,7 @@ export class RouterDesignerAgent extends BaseAgent<RoutingPlan> {
 
         const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
         await pageManager.saveRoutingPlan(context.schemaId!, plan);
-        await context.saveAssistantMessage(`I've designed the routing for your page.`);
+        await context.saveAgentMessage(`I've designed the routing for your page.`);
 
         // Chain to Architect
         return {

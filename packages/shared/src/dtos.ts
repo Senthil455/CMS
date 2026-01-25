@@ -158,6 +158,7 @@ export interface TemplateSelectionRequest {
     userInput: string;
     schemaId?: string;
     pageType: 'list' | 'detail';
+    entityName?: string;
     providerName: string;
     templates: {
         id: string;
@@ -209,4 +210,5 @@ export interface PageMetadata {
     templateId?: string;
     enableEngagementBar?: boolean;
     pageType?: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
+    entityName?: string;
 }

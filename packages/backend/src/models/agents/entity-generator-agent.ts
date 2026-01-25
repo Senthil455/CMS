@@ -64,14 +64,14 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
                         tableName: ent.tableName,
                         attributes: ent.attributes
                     }, null, 2)}`;
-                    await context.saveAssistantMessage(`I found the existing entity "${ent.name}". I'll fetch its schema and help you modify it...`);
+                    await context.saveAgentMessage(`I found the existing entity "${ent.name}". I'll fetch its schema and help you modify it...`);
                 }
             } catch (e) {
                 this.logger.warn({ schemaId }, 'Existing entity not found for modification');
-                await context.saveAssistantMessage(`I couldn't find an existing entity with ID "${schemaId}". I'll proceed with generating what you need...`);
+                await context.saveAgentMessage(`I couldn't find an existing entity with ID "${schemaId}". I'll proceed with generating what you need...`);
             }
         } else {
-            await context.saveAssistantMessage('I am entity generator, I am analyzing your requirements and generating the schema...');
+            await context.saveAgentMessage('I am entity generator, I am analyzing your requirements and generating the schema...');
         }
 
         const resp = await this.create(userInput, existingContext);

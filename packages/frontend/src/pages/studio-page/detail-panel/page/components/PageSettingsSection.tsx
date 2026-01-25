@@ -1,10 +1,10 @@
-import { Layout, FileText, Globe, ExternalLink } from 'lucide-react';
-import { type PageDto } from '@cms/shared';
+import { Layout, FileText, Globe, ExternalLink, Tag, Box, MessageSquare } from 'lucide-react';
+import { type ParsedPageDto } from '@cms/shared';
 import { config } from '../../../../../config';
 import { DetailItem } from './DetailItem';
 
 interface PageSettingsSectionProps {
-    page: PageDto;
+    page: ParsedPageDto;
 }
 
 export function PageSettingsSection({ page }: PageSettingsSectionProps) {
@@ -17,6 +17,31 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <DetailItem label="Page Name" value={page.name} icon={<FileText className="w-3.5 h-3.5" />} />
                 <DetailItem label="Page Title" value={page.title} icon={<Globe className="w-3.5 h-3.5" />} />
+
+                {page.metadata?.pageType && (
+                    <DetailItem
+                        label="Type"
+                        value={page.metadata.pageType}
+                        icon={<Tag className="w-3.5 h-3.5" />}
+                    />
+                )}
+
+                {page.metadata?.templateId && (
+                    <DetailItem
+                        label="Template"
+                        value={page.metadata.templateId}
+                        icon={<Box className="w-3.5 h-3.5" />}
+                    />
+                )}
+
+                {(page.metadata?.pageType === 'detail' || (page.metadata as any)?.enableEngagementBar !== undefined) && (
+                    <DetailItem
+                        label="Engagement Bar"
+                        value={page.metadata?.enableEngagementBar ? 'Enabled' : 'Disabled'}
+                        icon={<MessageSquare className="w-3.5 h-3.5" />}
+                    />
+                )}
+
                 <div className="md:col-span-2">
                     <DetailItem
                         label="Page URL"

@@ -36,12 +36,12 @@ export function AiLogsList() {
         setTimeout(() => setCopied(null), 2000);
     };
 
-    const handleAct = async (log: AiLog) => {
+    const handleAct = async (log: AiLog, continuePipeline: boolean = false) => {
         try {
             setActingLogId(log.id);
             await axios.post(
                 `${config.API_BASE_URL}${ENDPOINTS.AI.ACT_ON_LOG.replace(':id', log.id.toString())}`,
-                {},
+                { continuePipeline },
                 { withCredentials: true }
             );
             toast.success('Action triggered');
@@ -105,12 +105,20 @@ export function AiLogsList() {
                         <div className="p-3 bg-app-muted/20 text-xs border-t border-border animate-in slide-in-from-top-2 duration-200">
                             <div className="flex gap-2 mb-3">
                                 <button
-                                    onClick={() => handleAct(log)}
+                                    onClick={() => handleAct(log, false)}
                                     disabled={actingLogId === log.id}
                                     className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
                                 >
                                     {actingLogId === log.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                                     Act
+                                </button>
+                                <button
+                                    onClick={() => handleAct(log, true)}
+                                    disabled={actingLogId === log.id}
+                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {actingLogId === log.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                                    Act & Continue
                                 </button>
                                 <button
                                     onClick={() => handleCopy(log.id, log.response)}

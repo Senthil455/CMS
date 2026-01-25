@@ -26,7 +26,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
     }
 
     async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {
-        await context.saveAssistantMessage('I am data generator, I am fetching the latest schema and generating your data...');
+        await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
 
         // 1. Fetch Schema
         let entities: any[] = [];
@@ -43,7 +43,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
                     specificEntityName = schema.settings.entity.name;
                     const xEntity = await this.cmsClient.getXEntity(context.externalCookie, specificEntityName);
                     entities = [xEntity];
-                    await context.saveAssistantMessage(`I found the entity "${specificEntityName}". Generating data based on its schema...`);
+                    await context.saveAgentMessage(`I found the entity "${specificEntityName}". Generating data based on its schema...`);
                 } else {
                     // Fallback if schema/entity not found
                     entities = await this.cmsClient.getAllXEntity(context.externalCookie);
@@ -81,16 +81,16 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
-            await context.saveAssistantMessage('I could not generate any data. Please make sure the entity exists and your request is clear.');
+            await context.saveAgentMessage('I could not generate any data. Please make sure the entity exists and your request is clear.');
             return null;
         }
 
         if (!targetEntity) {
-            await context.saveAssistantMessage(`I could not find the entity "${entityName}" in the schema definition.`);
+            await context.saveAgentMessage(`I could not find the entity "${entityName}" in the schema definition.`);
             return null;
         }
 
-        await context.saveAssistantMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
+        await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
 
         // 3. Insert data into CMS
         let successCount = 0;
@@ -104,7 +104,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             }
         }
 
-        await context.saveAssistantMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
+        await context.saveAgentMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
         return null;
     }
 }
