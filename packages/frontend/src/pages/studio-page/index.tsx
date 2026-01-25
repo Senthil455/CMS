@@ -273,6 +273,7 @@ export default function StudioPage() {
                 onClose={() => setShowTemplateSelection(false)}
                 onConfirm={handleConfirmTemplate}
                 templates={templateSelectionData?.templates || []}
+                pageType={templateSelectionData?.pageType}
             />
 
             <DeleteConfirmDialog

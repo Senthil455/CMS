@@ -2,18 +2,20 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
-import { AGENT_NAMES, type SaveSchemaPayload, type TemplateSelectionResponse } from '@cms/shared';
-import { RouterDesigner, type RoutingPlan } from '../planners/router-designer-planner';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
+import { AGENT_NAMES, type SaveSchemaPayload, type TemplateSelectionResponse, type RoutingPlan } from '@cms/shared';
+import { RouterDesigner } from '../planners/router-designer-planner';
 import { PageManager } from '../cms/page-manager';
 
-export class RouterDesignerAgent implements Agent<RoutingPlan> {
+export class RouterDesignerAgent extends BaseAgent<RoutingPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly routerDesigner: RouterDesigner,
         private readonly cmsClient: CmsClient, // Keep checking schema
-        private readonly logger: ServiceLogger
-    ) { }
+        logger: ServiceLogger
+    ) {
+        super(AGENT_NAMES.ROUTER_DESIGNER, "designing your route", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<RoutingPlan> {
         let existingRoutingPlan: any = undefined;
@@ -42,28 +44,16 @@ export class RouterDesignerAgent implements Agent<RoutingPlan> {
         };
     }
 
-    async act(plan: RoutingPlan, context: AgentContext): Promise<void> {
+    async act(plan: RoutingPlan, context: AgentContext): Promise<AgentResponse | null> {
 
         const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
         await pageManager.saveRoutingPlan(context.schemaId!, plan);
         await context.saveAssistantMessage(`I've designed the routing for your page.`);
-    }
 
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-            await context.saveAiResponseLog(AGENT_NAMES.ROUTER_DESIGNER, JSON.stringify({ ...plan, taskType: context.taskType }));
-            await this.act(plan, context);
-
-            // Chain to Architect
-            return {
-                nextAgent: AGENT_NAMES.ARCHITECT_DESIGNER,
-                nextUserInput: ``//no userInput, next agent can get userInput from context
-            };
-
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "designing your route", this.aiProvider);
-            return null;
-        }
+        // Chain to Architect
+        return {
+            nextAgent: AGENT_NAMES.ARCHITECT_DESIGNER,
+            nextUserInput: ``//no userInput, next agent can get userInput from context
+        };
     }
 }

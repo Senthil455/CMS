@@ -1,16 +1,18 @@
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { type TemplateSelectionRequest, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import { PageTypePlanner } from '../planners/page-type-planner';
 
-export class PageGenerator implements Agent<TemplateSelectionRequest> {
+export class PageGenerator extends BaseAgent<TemplateSelectionRequest> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly pageTypePlanner: PageTypePlanner,
-        private readonly logger: ServiceLogger,
+        logger: ServiceLogger,
         private readonly templates: Record<string, { id: string, name: string, description: string }[]>
-    ) { }
+    ) {
+        super(AGENT_NAMES.PAGE_GENERATOR, "generating your page", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<TemplateSelectionRequest> {
 
@@ -40,7 +42,7 @@ export class PageGenerator implements Agent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<void> {
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<AgentResponse | null> {
         const pageType = plan.pageType;
         if (pageType === 'detail') {
             await context.onTemplateSelectionDetailToConfirm(plan);
@@ -49,23 +51,7 @@ export class PageGenerator implements Agent<TemplateSelectionRequest> {
         }
 
         await context.saveAssistantMessage("I have analyzed your request. Please select a design template to proceed with generation.");
-    }
-
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-
-            // Save AI response to database log
-            await context.saveAiResponseLog(AGENT_NAMES.PAGE_GENERATOR,
-                JSON.stringify({ ...plan, taskType: context.taskType })
-            );
-
-            await this.act(plan, context);
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "generating your page", this.aiProvider);
-            return null;
-        }
+        return null;
     }
 }
 

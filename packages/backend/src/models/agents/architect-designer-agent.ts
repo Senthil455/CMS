@@ -2,7 +2,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { AGENT_NAMES, type SaveSchemaPayload } from '@cms/shared';
 import { PageArchitect, type PageArchitecturePlan } from '../planners/page-architect-planner';
 
@@ -11,13 +11,15 @@ export interface ArchitectDesignerAgentPlan extends PageArchitecturePlan {
     schemaId: string;
 }
 
-export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan> {
+export class ArchitectDesignerAgent extends BaseAgent<ArchitectDesignerAgentPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly pageArchitect: PageArchitect,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger
-    ) { }
+        logger: ServiceLogger
+    ) {
+        super(AGENT_NAMES.ARCHITECT_DESIGNER, "architecting your page", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<ArchitectDesignerAgentPlan> {
         // Extract schemaId
@@ -53,7 +55,7 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
         };
     }
 
-    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<void> {
+    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<AgentResponse | null> {
         const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, plan.schemaId);
         if (!existingSchema || !existingSchema.settings?.page) throw new Error("Schema not found or missing page settings during Act.");
 
@@ -77,23 +79,11 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
         await this.cmsClient.saveSchema(context.externalCookie, payload);
 
         await context.saveAssistantMessage(`I've planned the structure and components for your page.`);
-    }
 
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-            await context.saveAiResponseLog(AGENT_NAMES.ARCHITECT_DESIGNER, JSON.stringify({ ...plan, taskType: context.taskType }));
-            await this.act(plan, context);
-
-            // Chain to HTML Generator
-            return {
-                nextAgent: AGENT_NAMES.HTML_GENERATOR,
-                nextUserInput: ``
-            };
-
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "architecting your page", this.aiProvider);
-            return null;
-        }
+        // Chain to HTML Generator
+        return {
+            nextAgent: AGENT_NAMES.HTML_GENERATOR,
+            nextUserInput: ``
+        };
     }
 }

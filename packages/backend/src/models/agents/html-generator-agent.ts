@@ -2,7 +2,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type TemplateSelectionResponse, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { PageManager } from '../cms/page-manager';
 
 
@@ -16,14 +16,17 @@ export interface HtmlGeneratorPlan extends HtmlGenerationResponse {
     enableEngagementBar: boolean;
 }
 
-export class HtmlGenerator implements Agent<HtmlGeneratorPlan> {
+export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly styleMap: Record<string, string>,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger,
-    ) { }
+        logger: ServiceLogger,
+        private readonly baseUrl: string,
+    ) {
+        super(AGENT_NAMES.HTML_GENERATOR, "generating your html", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<HtmlGeneratorPlan> {
         this.logger.info('HtmlGenerator think started');
@@ -50,18 +53,30 @@ export class HtmlGenerator implements Agent<HtmlGeneratorPlan> {
 
         const templateStyle = metadata.templateId || 'modern';
 
-        const queryDetails = await Promise.all((architecturePlan.selectedQueries || []).map(async (sq) => {
+
+
+        // 3. Context Gathering: Fetch selected Queries and their sample data
+        const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq) => {
             const queryName = sq.queryName;
+            const fieldName = sq.fieldName;
             try {
-                return `QUERY: ${queryName}`;
+                const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
+                return `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
+                    REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
             } catch (e) {
-                return `QUERY: ${queryName}`;
+                return `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
             }
         }));
 
-        const enableEngagementBar = metadata.enableEngagementBar || false;
 
         const pageType = metadata.pageType;
+        let enableEngagementBar = metadata.enableEngagementBar || false;
+
+        if (pageType === 'list') {
+            enableEngagementBar = false;
+        }
         const styleKey = `${templateStyle}-${pageType}`;
         const stylePrompt = this.styleMap[styleKey] || this.styleMap[`modern-${pageType}`] || this.styleMap[templateStyle] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
 
@@ -114,7 +129,7 @@ ${queryDetails.join('\n')}
         };
     }
 
-    async act(plan: HtmlGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: HtmlGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
         const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
@@ -131,28 +146,13 @@ ${queryDetails.join('\n')}
         // Completion
         const finalMessage = "I have generated your HTML page, you can find it in CMS.";
         await context.saveAssistantMessage(finalMessage);
-    }
 
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        this.logger.info('HtmlGenerator initiated via direct handle call');
-        try {
-            const plan = await this.think(userInput, context);
-            await context.saveAiResponseLog(AGENT_NAMES.HTML_GENERATOR,
-                JSON.stringify({ ...plan, taskType: context.taskType })
-            );
-            await this.act(plan, context);
-
-            if (plan.enableEngagementBar) {
-                return {
-                    nextAgent: AGENT_NAMES.ENGAGEMENT_BAR_AGENT,
-                    nextUserInput: ``
-                };
-            }
-
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "generating your html", this.aiProvider);
-            return null;
+        if (plan.enableEngagementBar) {
+            return {
+                nextAgent: AGENT_NAMES.ENGAGEMENT_BAR_AGENT,
+                nextUserInput: ``
+            };
         }
+        return null;
     }
 }

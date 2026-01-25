@@ -2,11 +2,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { AgentContext } from '../agents/chat-agent';
 import type { Planner } from './planner.interface';
 
-export interface RoutingPlan {
-    pageName: string;
-    primaryParameter?: string;
-    linkingRules: string[];
-}
+import { type RoutingPlan } from '@cms/shared';
 
 export class RouterDesigner implements Planner<RoutingPlan> {
     constructor(
@@ -36,7 +32,8 @@ export class RouterDesigner implements Planner<RoutingPlan> {
             console.error('Failed to parse RouterDesigner response:', response);
             return {
                 pageName: `generated-page-${Date.now()}`,
-                linkingRules: []
+                linkingRules: [],
+                routerHints: ''
             };
         }
     }

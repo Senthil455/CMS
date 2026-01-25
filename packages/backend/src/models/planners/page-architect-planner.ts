@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { AgentContext } from '../agents/chat-agent';
 import type { Planner } from './planner.interface';
-import type { RoutingPlan } from './router-designer-planner';
+import { type RoutingPlan } from '@cms/shared';
 
 export interface PageArchitecturePlan {
     pageType: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';

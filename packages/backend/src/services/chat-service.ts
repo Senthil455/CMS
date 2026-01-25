@@ -236,6 +236,9 @@ export class ChatService {
         const plan = JSON.parse(responseContent);
 
         await this.saveAssistantMessage(userId, "Manually triggering action from log...");
-        await targetHandler.act(plan, context);
+        var res = await targetHandler.act(plan, context);
+        if (res) {
+            this.executeAgent(res.nextAgent, res.nextUserInput, context);
+        }
     }
 }

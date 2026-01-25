@@ -22,8 +22,47 @@ export interface AgentResponse {
 
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<T>;
-    act(plan: T, context: AgentContext): Promise<void>;
+    act(plan: T, context: AgentContext): Promise<AgentResponse | null>;
     handle(userInput: string, context: AgentContext): Promise<AgentResponse | null>;
+}
+
+import type { ServiceLogger } from '../../types/logger';
+
+export abstract class BaseAgent<T> implements Agent<T> {
+    constructor(
+        protected readonly agentName: string,
+        protected readonly actionDescription: string,
+        protected readonly logger: ServiceLogger,
+        protected readonly aiProvider: AIProvider
+    ) { }
+
+    // Abstract methods that subclasses must implement
+    abstract think(userInput: string, context: AgentContext): Promise<T>;
+    abstract act(plan: T, context: AgentContext): Promise<AgentResponse | null>;
+
+    // Common handle implementation
+    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
+        this.logger.info(`${this.agentName} initiated via direct handle call`);
+        try {
+            const plan = await this.think(userInput, context);
+
+            await context.saveAiResponseLog(
+                this.agentName,
+                JSON.stringify({ ...plan, taskType: context.taskType })
+            );
+
+            return await this.act(plan, context);
+        } catch (error: any) {
+            await handleAgentError(
+                error,
+                context,
+                this.logger,
+                this.actionDescription,
+                this.aiProvider
+            );
+            return null;
+        }
+    }
 }
 
 export async function handleAgentError(error: any, context: AgentContext, logger: any, actionDescription: string, provider?: AIProvider) {

@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 
 import { AGENT_NAMES } from '@cms/shared';
 // ... existing interface ...
@@ -15,13 +15,15 @@ export interface DataGeneratorPlan extends DataGeneratorResponse {
     entities: any[];
 }
 
-export class DataGenerator implements Agent<DataGeneratorPlan> {
+export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger,
-    ) { }
+        logger: ServiceLogger,
+    ) {
+        super(AGENT_NAMES.DATA_GENERATOR, "generating your data", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {
         await context.saveAssistantMessage('I am data generator, I am fetching the latest schema and generating your data...');
@@ -75,17 +77,17 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         };
     }
 
-    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
             await context.saveAssistantMessage('I could not generate any data. Please make sure the entity exists and your request is clear.');
-            return;
+            return null;
         }
 
         if (!targetEntity) {
             await context.saveAssistantMessage(`I could not find the entity "${entityName}" in the schema definition.`);
-            return;
+            return null;
         }
 
         await context.saveAssistantMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
@@ -103,22 +105,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         }
 
         await context.saveAssistantMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
-    }
-
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-
-            // Save AI response to database log
-            await context.saveAiResponseLog(AGENT_NAMES.DATA_GENERATOR,
-                JSON.stringify({ ...plan, taskType: context.taskType })
-            );
-
-            await this.act(plan, context);
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "generating your data", this.aiProvider);
-            return null;
-        }
+        return null;
     }
 }

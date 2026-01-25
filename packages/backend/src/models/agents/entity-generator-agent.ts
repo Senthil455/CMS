@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
@@ -16,16 +16,18 @@ export interface EntityGeneratorPlan extends EntityGeneratorResponse {
     userInput: string;
 }
 
-export class EntityGenerator implements Agent<EntityGeneratorPlan> {
+export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly entitySchema: string,
         private readonly attributeSchema: string,
         private readonly relationshipSchema: string,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger,
-    ) { }
+        logger: ServiceLogger,
+    ) {
+        super(AGENT_NAMES.ENTITY_GENERATOR, "generating your schema", logger, aiProvider);
+    }
 
     async create(userInput: string, existingContext?: string): Promise<EntityGeneratorResponse> {
         let schemasText = [
@@ -81,7 +83,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         };
     }
 
-    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -118,20 +120,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             entities: summaryEntities,
             relationships: normalizedRelationships
         });
-    }
-
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-
-            // Save AI response to database log
-            await context.saveAiResponseLog(AGENT_NAMES.ENTITY_GENERATOR, JSON.stringify({ ...plan, taskType: context.taskType }));
-
-            await this.act(plan, context);
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "generating your schema", this.aiProvider);
-            return null;
-        }
+        return null;
     }
 }

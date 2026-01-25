@@ -1,17 +1,10 @@
-import { Layout, FileText, Cpu } from 'lucide-react';
+import { Layout, Cpu } from 'lucide-react';
 import { DetailItem } from './DetailItem';
 
+import { type PageArchitecturePlan } from '@cms/shared';
+
 interface ArchitecturePlanSectionProps {
-    architecturePlan: {
-        pageType: string;
-        architectureHints: string;
-        selectedQueries: Array<{
-            queryName: string;
-            fieldName: string;
-            type: string;
-            description: string;
-        }>;
-    };
+    architecturePlan: PageArchitecturePlan;
 }
 
 export function ArchitecturePlanSection({ architecturePlan }: ArchitecturePlanSectionProps) {
@@ -23,13 +16,7 @@ export function ArchitecturePlanSection({ architecturePlan }: ArchitecturePlanSe
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <DetailItem label="Page Type" value={architecturePlan.pageType} icon={<Layout className="w-3.5 h-3.5" />} />
-                <div className="md:col-span-2">
-                    <DetailItem
-                        label="Architecture Hints"
-                        value={architecturePlan.architectureHints}
-                        icon={<FileText className="w-3.5 h-3.5" />}
-                    />
-                </div>
+
             </div>
 
 

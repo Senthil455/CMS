@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
@@ -9,13 +9,15 @@ export interface QueryGeneratorPlan extends QueryResponse {
     existingPageSchema: SchemaDto | null;
 }
 
-export class QueryGenerator implements Agent<QueryGeneratorPlan> {
+export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger,
-    ) { }
+        logger: ServiceLogger,
+    ) {
+        super(AGENT_NAMES.QUERY_GENERATOR, "generating your query", logger, aiProvider);
+    }
 
     async think(userInput: string, context: AgentContext): Promise<QueryGeneratorPlan> {
         let existingPageSchema: SchemaDto | null = null;
@@ -61,11 +63,11 @@ ${schemaContext}
         };
     }
 
-    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAssistantMessage("I couldn't generate a valid query configuration. Please try again with more details.");
-            return;
+            return null;
         }
 
         const schemaIds: string[] = [];
@@ -101,22 +103,6 @@ ${schemaContext}
                 : `I have generated the queries, you can find them in CMS.`;
             await context.saveAssistantMessage(finalMessage);
         }
-    }
-
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-
-            // Save AI response to database log
-            await context.saveAiResponseLog(AGENT_NAMES.QUERY_GENERATOR,
-                JSON.stringify({ ...plan, taskType: context.taskType })
-            );
-
-            await this.act(plan, context);
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "generating your query", this.aiProvider);
-            return null;
-        }
+        return null;
     }
 }

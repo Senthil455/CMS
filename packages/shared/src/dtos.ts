@@ -205,4 +205,8 @@ export interface PageArchitecturePlan {
 export interface PageMetadata {
     routingPlan?: RoutingPlan;
     architecturePlan?: PageArchitecturePlan;
+    userInput?: string;
+    templateId?: string;
+    enableEngagementBar?: boolean;
+    pageType?: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
 }

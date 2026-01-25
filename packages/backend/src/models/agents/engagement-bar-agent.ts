@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 import { AGENT_NAMES, type PageDto, type SaveSchemaPayload } from '@cms/shared';
 
 export interface EngagementBarPlan {
@@ -9,14 +9,16 @@ export interface EngagementBarPlan {
     pageDto: PageDto;
 }
 
-export class EngagementBarAgent implements Agent<EngagementBarPlan> {
+export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
     constructor(
-        private readonly aiProvider: AIProvider,
+        aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly engagementBarSnippet: string,
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger,
-    ) { }
+        logger: ServiceLogger,
+    ) {
+        super(AGENT_NAMES.ENGAGEMENT_BAR_AGENT, "adding engagement bar", logger, aiProvider);
+    }
 
     public getSnippet(): string {
         return this.engagementBarSnippet;
@@ -102,7 +104,7 @@ INSTRUCTIONS:
         };
     }
 
-    async act(plan: EngagementBarPlan, context: AgentContext): Promise<void> {
+    async act(plan: EngagementBarPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
         const payload: SaveSchemaPayload = {
@@ -121,17 +123,6 @@ INSTRUCTIONS:
             task_type: AGENT_NAMES.ENGAGEMENT_BAR_AGENT,
             schemasId: [schemaId]
         });
-    }
-
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
-        try {
-            const plan = await this.think(userInput, context);
-            await context.saveAiResponseLog(AGENT_NAMES.ENGAGEMENT_BAR_AGENT, JSON.stringify({ ...plan, taskType: context.taskType }));
-            await this.act(plan, context);
-            return null;
-        } catch (error: any) {
-            await handleAgentError(error, context, this.logger, "adding engagement bar", this.aiProvider);
-            return null;
-        }
+        return null;
     }
 }

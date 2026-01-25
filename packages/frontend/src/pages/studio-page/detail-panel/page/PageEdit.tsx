@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { type SchemaDto, type SaveSchemaPayload, type PageDto, type ParsedPageDto, AGENT_NAMES } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, AGENT_NAMES } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { useSocket } from '../../../../hooks/use-socket';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';

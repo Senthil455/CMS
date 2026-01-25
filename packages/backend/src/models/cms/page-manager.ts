@@ -125,7 +125,7 @@ export class PageManager {
         return newSchemaId;
     }
 
-    async saveRoutingPlan(schemaId: string, plan: object): Promise<void> {
+    async saveRoutingPlan(schemaId: string, plan: RoutingPlan): Promise<void> {
         const schema = await this.cmsClient.getSchemaBySchemaId(this.externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
             throw new Error(`Page with schemaId ${schemaId} not found`);
@@ -146,7 +146,7 @@ export class PageManager {
             type: 'page',
             settings: {
                 page: {
-                    name: pageSettings.name,
+                    name: plan.pageName,
                     title: pageSettings.title,
                     html: pageSettings.html,
                     source: pageSettings.source,
