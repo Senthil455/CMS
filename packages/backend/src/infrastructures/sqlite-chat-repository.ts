@@ -41,12 +41,13 @@ export class SqliteChatRepository implements IChatRepository {
         }));
     }
 
-    async saveAiResponseLog(handler: string, response: string, providerName?: string): Promise<void> {
+    async saveAiResponseLog(handler: string, response: string, providerName?: string, schemaId?: string): Promise<void> {
         await this.prisma.aiResponseLog.create({
             data: {
                 handler,
                 response,
                 providerName: providerName || null,
+                schemaId: schemaId || null,
             },
         });
     }

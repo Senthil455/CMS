@@ -6,7 +6,6 @@ export interface RoutingPlan {
     pageName: string;
     primaryParameter?: string;
     linkingRules: string[];
-    routerHints: string;
 }
 
 export class RouterDesigner implements Planner<RoutingPlan> {
@@ -37,8 +36,7 @@ export class RouterDesigner implements Planner<RoutingPlan> {
             console.error('Failed to parse RouterDesigner response:', response);
             return {
                 pageName: `generated-page-${Date.now()}`,
-                linkingRules: [],
-                routerHints: 'Fallback to default naming'
+                linkingRules: []
             };
         }
     }

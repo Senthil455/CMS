@@ -4,146 +4,48 @@ import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
 import { AGENT_NAMES, type SaveSchemaPayload, type TemplateSelectionResponse } from '@cms/shared';
-import { RouterDesigner, type RoutingPlan } from '../planners/router-designer';
+import { RouterDesigner, type RoutingPlan } from '../planners/router-designer-planner';
+import { PageManager } from '../cms/page-manager';
 
-export interface RouterDesignerAgentPlan extends RoutingPlan {
-    pageName: string;
-    userInput: string;
-    schemaId?: string;
-}
-
-export class RouterDesignerAgent implements Agent<RouterDesignerAgentPlan> {
+export class RouterDesignerAgent implements Agent<RoutingPlan> {
     constructor(
         private readonly aiProvider: AIProvider,
         private readonly routerDesigner: RouterDesigner,
-        private readonly cmsClient: CmsClient,
+        private readonly cmsClient: CmsClient, // Keep checking schema
         private readonly logger: ServiceLogger
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<RouterDesignerAgentPlan> {
+    async think(userInput: string, context: AgentContext): Promise<RoutingPlan> {
         let existingRoutingPlan: any = undefined;
-        let schemaId = '';
-        let pageType = 'list'; // Default
+        let actualUserInput = userInput;
 
-        // 1. Check if input is JSON (TemplateSelectionResponse) or string
-        let originalInput = userInput;
-
-        try {
-            // Try parsing if it looks like JSON or if it comes from template selection
-            if (userInput.trim().startsWith('{')) {
-                const selectionResponse = JSON.parse(userInput) as TemplateSelectionResponse;
-                if (selectionResponse.requestPayload) {
-                    originalInput = selectionResponse.requestPayload.userInput;
-                    // SchemaId is not directly in payload anymore, but might be in input string in legacy cases
-                    // or we rely on the parser below.
-
-                    // Read pageType directly
-                    if (selectionResponse.requestPayload.pageType) {
-                        pageType = selectionResponse.requestPayload.pageType;
+        if (context.schemaId) {
+            try {
+                const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, context.schemaId);
+                if (schema && schema.settings.page && schema.settings.page.metadata) {
+                    const metadata = JSON.parse(schema.settings.page.metadata);
+                    if (metadata.userInput) {
+                        actualUserInput = metadata.userInput;
                     }
-                }
-            }
-        } catch (e) {
-            // Not JSON, normal input
-        }
-
-        // 2. Or check for #schemaId
-        if (!schemaId) {
-            const idMatch = originalInput.match(new RegExp(`${AGENT_NAMES.ROUTER_DESIGNER}#([^:]+):`));
-            if (idMatch && idMatch[1]) {
-                schemaId = idMatch[1];
-                try {
-                    const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
-                    if (existingSchema && existingSchema.settings?.page?.metadata) {
-                        const metadata = JSON.parse(existingSchema.settings.page.metadata);
+                    if (metadata.routingPlan) {
                         existingRoutingPlan = metadata.routingPlan;
-                        if (metadata.architecturePlan?.pageType) {
-                            pageType = metadata.architecturePlan.pageType;
-                        }
                     }
-                } catch (e) {
-                    this.logger.warn({ schemaId }, 'Failed to fetch existing schema for routing');
                 }
+            } catch (e) {
+                this.logger.warn({ schemaId: context.schemaId, error: e }, 'Failed to fetch existing schema for routing');
             }
         }
 
-        const routingPlan = await this.routerDesigner.plan(originalInput, context, existingRoutingPlan);
-
+        const routingPlan = await this.routerDesigner.plan(actualUserInput, context, existingRoutingPlan);
         return {
             ...routingPlan,
-            userInput: originalInput,
-            schemaId,
-            // We'll attach pageType to the saved metadata, so pass it along loosely or relying on it being in plan?
-            // RoutingPlan doesn't have pageType. We need to preserve it.
-            // Let's hack it into routingPlan or just save it. 
-            // Better: Return it in plan.
-            // But interface RoutingPlan is fixed.
-            // We will just handle it in Act.
-        } as RouterDesignerAgentPlan & { pageType: string };
+        };
     }
 
-    async act(plan: RouterDesignerAgentPlan & { pageType?: string }, context: AgentContext): Promise<void> {
-        // Create or Update Schema
-        let name = plan.pageName || `generated-page-${Date.now()}`;
-        const pageType = plan.pageType || 'list';
+    async act(plan: RoutingPlan, context: AgentContext): Promise<void> {
 
-        // Retrieve existing if we have schemaId to preserve other metadata?
-        // Ideally we do non-destructive updates. 
-        // But here we are "Designing", so we might overwrite routingPlan.
-
-        const payload: SaveSchemaPayload = {
-            schemaId: plan.schemaId || null,
-            type: 'page',
-            settings: {
-                page: {
-                    name: name,
-                    title: name, // Temporary title
-                    html: '', // Empty for now, or preserve? 
-                    // Wait, if editing, we shouldn't wipe HTML.
-                    // We need to fetch existing if schemaId exists.
-                    source: 'ai',
-                    metadata: JSON.stringify({
-                        routingPlan: plan,
-                        // Preserve architecture plan's pageType if possible or set it
-                        architecturePlan: { pageType }
-                    }),
-                }
-            }
-        };
-
-        if (plan.schemaId) {
-            const existing = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, plan.schemaId);
-            if (existing && existing.settings?.page) {
-                payload.settings.page.html = existing.settings.page.html;
-                payload.settings.page.title = existing.settings.page.title;
-                if (existing.settings.page.metadata) {
-                    const meta = JSON.parse(existing.settings.page.metadata);
-                    payload.settings.page.metadata = JSON.stringify({
-                        ...meta,
-                        routingPlan: plan,
-                        architecturePlan: {
-                            ...meta.architecturePlan,
-                            pageType // Ensure pageType is set/updated
-                        }
-                    });
-                }
-            }
-        }
-
-        const saveResp = await this.cmsClient.saveSchema(context.externalCookie, payload);
-        const newSchemaId = saveResp.data.schemaId;
-
-        // Update plan with new schema ID so handle() can access it
-        // We need to cast or ensure plan is mutable/has this property. 
-        // Since we defined the interface, let's just assign it and assume handle uses it.
-        // But wait, plan is RouterDesignerAgentPlan. It has schemaId optional.
-        plan.schemaId = newSchemaId;
-
-        await context.onSchemasSync({
-            task_type: AGENT_NAMES.ROUTER_DESIGNER,
-            schemasId: [newSchemaId]
-        });
-
+        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        await pageManager.saveRoutingPlan(context.schemaId!, plan);
         await context.saveAssistantMessage(`I've designed the routing for your page.`);
     }
 
@@ -156,7 +58,7 @@ export class RouterDesignerAgent implements Agent<RouterDesignerAgentPlan> {
             // Chain to Architect
             return {
                 nextAgent: AGENT_NAMES.ARCHITECT_DESIGNER,
-                nextUserInput: `@${AGENT_NAMES.ARCHITECT_DESIGNER} #${plan.schemaId}: Plan architecture for ${plan.userInput}`
+                nextUserInput: ``//no userInput, next agent can get userInput from context
             };
 
         } catch (error: any) {

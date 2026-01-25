@@ -13,6 +13,7 @@ TAILWIND RULES: Use Tailwind CSS v3 syntax only. DO NOT use deprecated or plugin
 LAYOUT SAFETY: Any element using absolute/inset/top/left/right/bottom MUST have a parent with explicit non-zero height via aspect-[x/y], h-*, or min-h-*. Zero-height containers are not allowed.
 
 DATA BINDING: Use Handlebars {{...}} for dynamic values and triple braces {{{...}}} only for fields containing HTML. For queries with type "single", use the fieldName from architecturePlan.selectedQueries as the root object.
+STRICT HANDLEBARS SYNTAX: DO NOT use JavaScript expressions, function calls, methods (e.g. .toLocaleDateString()), or logic inside {{...}}. Handlebars is logic-less. All data formatting must be done before passing to the template. Only access properties (e.g. {{item.title}}) or use built-in helpers.
 
 REPETITION: For queries with type "list", use {{#each fieldName}} ... {{/each}} where fieldName comes from architecturePlan.selectedQueries. Access item fields with standard Handlebars identifiers.
 

@@ -7,15 +7,15 @@ import { config } from '../config';
 import { AGENT_NAMES } from '@cms/shared';
 
 import { IntentClassifier } from '../models/agents/intent-classifier';
-import { EntityGenerator } from '../models/agents/entity-generator';
+import { EntityGenerator } from '../models/agents/entity-generator-agent';
 
-import { QueryGenerator } from '../models/agents/query-generator';
-import { PageGenerator } from '../models/agents/page-generator';
-import { RouterDesigner } from '../models/planners/router-designer';
-import { PageArchitect } from '../models/planners/page-architect';
+import { QueryGenerator } from '../models/agents/query-generator-agent';
+import { PageGenerator } from '../models/agents/page-generator-agent';
+import { RouterDesigner } from '../models/planners/router-designer-planner';
+import { PageArchitect } from '../models/planners/page-architect-planner';
 import { PageTypePlanner } from '../models/planners/page-type-planner';
-import { HtmlGenerator } from '../models/agents/html-generator';
-import { DataGenerator } from '../models/agents/data-generator';
+import { HtmlGenerator } from '../models/agents/html-generator-agent';
+import { DataGenerator } from '../models/agents/data-generator-agent';
 import { EngagementBarAgent } from '../models/agents/engagement-bar-agent';
 import { RouterDesignerAgent } from '../models/agents/router-designer-agent';
 import { ArchitectDesignerAgent } from '../models/agents/architect-designer-agent';
@@ -101,7 +101,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 'minimal': minimalListPrompt
             };
 
-            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, 'engagement-bar-agent.txt'), 'utf-8').catch(() => '');
+            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.txt`), 'utf-8').catch(() => '');
             const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
 
             // Instantiate Planners
@@ -122,7 +122,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(provider, pageTypePlanner, cmsClient, modelLogger, config.CMS_PUBLIC_URL, templates);
+            const pageGenerator = new PageGenerator(provider, pageTypePlanner, modelLogger, templates);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
             // removed htmlGenerationHandler instantiation
 

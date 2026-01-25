@@ -22,5 +22,6 @@ model AiResponseLog {
   handler   String
   providerName String? // 'openai' | 'gemini' etc.
   response  String
+  schemaId  String?
   timestamp DateTime @default(now())
 }

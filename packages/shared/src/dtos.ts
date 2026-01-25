@@ -156,6 +156,7 @@ export interface AssetListResponse {
 
 export interface TemplateSelectionRequest {
     userInput: string;
+    schemaId?: string;
     pageType: 'list' | 'detail';
     providerName: string;
     templates: {

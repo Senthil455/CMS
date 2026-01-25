@@ -13,7 +13,8 @@ import type { IChatRepository } from '../infrastructures/chat-repository.interfa
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../models/agents/intent-classifier';
-import { SchemaManager } from '../models/cms/schema-manager';
+import { EntityManager } from '../models/cms/entity-manager';
+import { PageManager } from '../models/cms/page-manager';
 
 export class ChatService {
     constructor(
@@ -54,6 +55,41 @@ export class ChatService {
         const message = await this.saveAssistantMessage(userId, content, payload);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
+    }
+
+    private createContext(
+        userId: string,
+        externalCookie: string,
+        providerName: string,
+        taskType: AgentName,
+        onEvent: OnServerToClientEvent,
+        schemaId?: string
+    ): AgentContext {
+        return {
+            taskType,
+            userId,
+            externalCookie,
+            providerName,
+            ...(schemaId ? { schemaId } : {}),
+            saveAssistantMessage: async (content: string, payload?: any) => {
+                return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
+            },
+            saveAiResponseLog: async (handlerName: string, response: string) => {
+                await this.repository.saveAiResponseLog(handlerName, response, providerName, schemaId);
+            },
+            onConfirmSchemaSummary: async (summary: SchemaSummary) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+            },
+            onSchemasSync: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
+            },
+            onTemplateSelectionListToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
+            },
+            onTemplateSelectionDetailToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
+            }
+        };
     }
 
     private async executeAgent(
@@ -112,30 +148,7 @@ export class ChatService {
             if (this.chatHandlers[providerName]?.[taskType]) {
                 this.logger.info('Executing resolved handler');
 
-                const context: AgentContext = {
-                    taskType,
-                    userId,
-                    externalCookie,
-                    providerName,
-                    saveAssistantMessage: async (content: string, payload?: any) => {
-                        return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
-                    },
-                    saveAiResponseLog: async (handlerName: string, response: string) => {
-                        await this.repository.saveAiResponseLog(handlerName, response, providerName);
-                    },
-                    onConfirmSchemaSummary: async (summary: SchemaSummary) => {
-                        onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-                    },
-                    onSchemasSync: async (payload: any) => {
-                        onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
-                    },
-                    onTemplateSelectionListToConfirm: async (payload: any) => {
-                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
-                    },
-                    onTemplateSelectionDetailToConfirm: async (payload: any) => {
-                        onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
-                    }
-                };
+                const context = this.createContext(userId, externalCookie, providerName, taskType, onEvent);
 
                 await this.executeAgent(taskType, content, context);
                 return;
@@ -156,7 +169,7 @@ export class ChatService {
         await this.saveAssistantMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
         try {
-            const schemaManager = new SchemaManager(this.cmsClient, this.logger, externalCookie);
+            const schemaManager = new EntityManager(this.cmsClient, this.logger, externalCookie);
             const schemaIds = await schemaManager.commit(response);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
                 task_type: 'entity_generator',
@@ -170,35 +183,23 @@ export class ChatService {
     }
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+
+        const pageManager = new PageManager(this.cmsClient, this.logger, externalCookie);
+        const schemaId = await pageManager.savePageTypeAndTemplate(
+            response.requestPayload.schemaId,
+            response.requestPayload.pageType,
+            response.selectedTemplate,
+            response.requestPayload.userInput
+        );
+
         const providerName = response.requestPayload.providerName || 'gemini';
         if (this.chatHandlers[providerName]?.[AGENT_NAMES.ROUTER_DESIGNER]) {
-            const context: AgentContext = {
-                taskType: AGENT_NAMES.ROUTER_DESIGNER,
-                userId,
-                externalCookie,
-                providerName,
-                saveAssistantMessage: async (content: string, payload?: any) => {
-                    return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
-                },
-                saveAiResponseLog: async (handlerName: string, response: string) => {
-                    await this.repository.saveAiResponseLog(handlerName, response, providerName);
-                },
-                onConfirmSchemaSummary: async (summary: SchemaSummary) => {
-                    onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-                },
-                onSchemasSync: async (payload: any) => {
-                    onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
-                },
-                onTemplateSelectionListToConfirm: async (payload: any) => {
-                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
-                },
-                onTemplateSelectionDetailToConfirm: async (payload: any) => {
-                    onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
-                }
-            };
+            const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.ROUTER_DESIGNER, onEvent, schemaId);
 
             // Pass the entire response as input, RouterDesignerAgent is updated to handle it
-            await this.executeAgent(AGENT_NAMES.ROUTER_DESIGNER, JSON.stringify(response), context);
+            response.requestPayload.schemaId = schemaId;
+            // response are saved in the database, no need to pass userInput
+            await this.executeAgent(AGENT_NAMES.ROUTER_DESIGNER, '', context);
         } else {
             this.logger.error('RouterDesigner handler not found');
         }
@@ -230,30 +231,7 @@ export class ChatService {
             throw new Error(`No handler found for task type: ${handlerName}`);
         }
 
-        const context: AgentContext = {
-            taskType: handlerName as AgentName,
-            userId,
-            externalCookie,
-            providerName,
-            saveAssistantMessage: async (content: string, payload?: any) => {
-                return this.saveAndEmitAssistantMessage(userId, content, onEvent, payload);
-            },
-            saveAiResponseLog: async (hName: string, resp: string) => {
-                await this.repository.saveAiResponseLog(hName, resp, providerName);
-            },
-            onConfirmSchemaSummary: async (summary: SchemaSummary) => {
-                onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-            },
-            onSchemasSync: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
-            },
-            onTemplateSelectionListToConfirm: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
-            },
-            onTemplateSelectionDetailToConfirm: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
-            }
-        };
+        const context = this.createContext(userId, externalCookie, providerName, handlerName as AgentName, onEvent, log.schemaId);
 
         const plan = JSON.parse(responseContent);
 

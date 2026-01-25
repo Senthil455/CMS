@@ -8,8 +8,7 @@ You must output ONLY a valid JSON object with the following structure:
 {
   "pageName": string, // e.g., "post-list", "post/{postId}"
   "primaryParameter": string | null, // The name of the parameter if the path has one (e.g., "postId")
-  "linkingRules": string[], // How this page connects to others (e.g., "Post title should link to post/{postId}")
-  "routerHints": string // Guidance for the generator regarding routing
+  "linkingRules": string[] // How this page connects to others (e.g., "Post title should link to post/{postId}")
 }
 
 PRIMARY PARAMETER RULES:

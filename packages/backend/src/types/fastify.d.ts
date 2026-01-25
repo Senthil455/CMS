@@ -1,6 +1,7 @@
 import { AuthService } from '../services/auth-service';
 import { ChatService } from '../services/chat-service';
-import { IntentClassifier } from '../models/handlers/intent-classifier';
+import { SocketService } from '../services/socket-service';
+import { IntentClassifier } from '../models/agents/intent-classifier';
 import { AIProvider } from '../infrastructures/ai-provider.interface';
 import { CmsClient } from '../infrastructures/cms-client';
 import type { ServerToClientEvents, ClientToServerEvents, User } from '@cms/shared';
@@ -12,6 +13,7 @@ declare module 'fastify' {
         io: Server<ClientToServerEvents, ServerToClientEvents>;
         chatService: ChatService;
         authService: AuthService;
+        socketService: SocketService;
         intentClassifier: Record<string, IntentClassifier>;
         aiProvider: Record<string, AIProvider>;
         cms: CmsClient;

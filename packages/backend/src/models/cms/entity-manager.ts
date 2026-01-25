@@ -7,7 +7,7 @@ import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { RelationshipModel } from './relationship-model';
 
-export class SchemaManager {
+export class EntityManager {
     constructor(
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,

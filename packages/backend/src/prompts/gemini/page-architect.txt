@@ -6,7 +6,6 @@ OUTPUT FORMAT:
 You must output ONLY a valid JSON object with the following structure:
 
 {
-  "pageType": "list" | "detail" | "dashboard" | "form" | "custom",
   "layout": {
     "hasHeader": boolean,
     "hasSidebar": boolean,

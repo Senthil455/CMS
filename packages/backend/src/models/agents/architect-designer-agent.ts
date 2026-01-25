@@ -4,7 +4,7 @@ import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type Agent, type AgentContext, type AgentResponse, handleAgentError } from './chat-agent';
 import { AGENT_NAMES, type SaveSchemaPayload } from '@cms/shared';
-import { PageArchitect, type PageArchitecturePlan } from '../planners/page-architect';
+import { PageArchitect, type PageArchitecturePlan } from '../planners/page-architect-planner';
 
 export interface ArchitectDesignerAgentPlan extends PageArchitecturePlan {
     userInput: string;
@@ -21,12 +21,9 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
 
     async think(userInput: string, context: AgentContext): Promise<ArchitectDesignerAgentPlan> {
         // Extract schemaId
-        let schemaId = '';
-        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.ARCHITECT_DESIGNER}#([^:]+):`));
-        if (idMatch && idMatch[1]) {
-            schemaId = idMatch[1];
-        } else {
-            throw new Error("Architecture Designer requires a valid schema ID.");
+        const schemaId = context.schemaId;
+        if (!schemaId) {
+            throw new Error("Architecture Designer requires a valid schema ID in context.");
         }
 
         const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
@@ -36,17 +33,22 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
 
         const metadata = JSON.parse(existingSchema.settings.page.metadata);
         const routingPlan = metadata.routingPlan;
+        const actualUserInput = metadata.userInput || userInput;
+
+        if (!routingPlan) {
+            throw new Error("Routing plan not found in page metadata.");
+        }
 
         // Pass pageType from metadata if available to guide architect
         const existingArchitecture = metadata.architecturePlan || {};
 
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
 
-        const architecturePlan = await this.pageArchitect.plan(userInput, context, queries, routingPlan, existingArchitecture);
+        const architecturePlan = await this.pageArchitect.plan(actualUserInput, context, queries, routingPlan, existingArchitecture);
 
         return {
             ...architecturePlan,
-            userInput,
+            userInput: actualUserInput,
             schemaId
         };
     }
@@ -74,11 +76,6 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
 
-        await context.onSchemasSync({
-            task_type: AGENT_NAMES.ARCHITECT_DESIGNER,
-            schemasId: [plan.schemaId]
-        });
-
         await context.saveAssistantMessage(`I've planned the structure and components for your page.`);
     }
 
@@ -91,7 +88,7 @@ export class ArchitectDesignerAgent implements Agent<ArchitectDesignerAgentPlan>
             // Chain to HTML Generator
             return {
                 nextAgent: AGENT_NAMES.HTML_GENERATOR,
-                nextUserInput: `@${AGENT_NAMES.HTML_GENERATOR} #${plan.schemaId}: Generate HTML`
+                nextUserInput: ``
             };
 
         } catch (error: any) {

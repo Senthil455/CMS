@@ -6,6 +6,7 @@ export interface AgentContext {
     externalCookie: string;
     taskType: AgentName;
     providerName: string;
+    schemaId?: string;
     saveAssistantMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     saveAiResponseLog: (handler: string, response: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;

@@ -4,6 +4,7 @@ import type { Planner } from './planner.interface';
 
 export interface PageTypePlan {
     pageType: 'list' | 'detail';
+    schemaId?: string | null;
 }
 
 export class PageTypePlanner implements Planner<PageTypePlan> {
@@ -27,7 +28,7 @@ export class PageTypePlanner implements Planner<PageTypePlan> {
             return response as PageTypePlan;
         } catch (e) {
             // Default to list if unsure
-            return { pageType: 'list' };
+            return { pageType: 'list', schemaId: null };
         }
     }
 }
