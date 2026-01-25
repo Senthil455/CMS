@@ -102,7 +102,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             };
 
             const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.txt`), 'utf-8').catch(() => '');
-            const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.txt'), 'utf-8').catch(() => '');
+            const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
 
             // Instantiate Planners
             const routerDesigner = new RouterDesigner(provider, routerDesignerPrompt);

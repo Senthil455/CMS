@@ -28,8 +28,11 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
         this.logger.info('EngagementBarAgent think started');
 
         // 1. Extract Schema ID
-        const idMatch = userInput.match(/#([^:]+):/);
-        const schemaId = idMatch ? idMatch[1] : null;
+        let schemaId = context.schemaId;
+        if (!schemaId) {
+            const idMatch = userInput.match(/#([^:]+):/);
+            schemaId = idMatch ? idMatch[1] : undefined;
+        }
 
         if (!schemaId) {
             throw new Error("No page schema ID provided. Please provide the ID in the format #schemaId:");
@@ -46,30 +49,22 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
         const pageDto = schema.settings.page;
         const metadata = JSON.parse(schema.settings.page.metadata) as PageMetadata;
 
-        const developerMessage = `
-EXISTING HTML:
-${pageDto.html}
+        const developerMessage = JSON.stringify({
+            existingHtml: pageDto.html,
+            engagementBarSnippet: this.engagementBarSnippet.replaceAll('{{entityName}}', metadata.entityName!)
+        }, null, 2);
 
-ENGAGEMENT BAR SNIPPET TEMPLATE:
-${this.engagementBarSnippet}
-`;
-
-        const newHtml = await this.aiProvider.generate(
+        const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
             userInput
         );
 
-        let cleanedHtml = newHtml;
-        if (typeof newHtml === 'string') {
-            cleanedHtml = newHtml.replace(/```html/g, '').replace(/```/g, '').trim();
-        }
-
         return {
             schemaId,
             pageDto: {
                 ...pageDto,
-                html: cleanedHtml
+                html: res.html
             }
         };
     }
