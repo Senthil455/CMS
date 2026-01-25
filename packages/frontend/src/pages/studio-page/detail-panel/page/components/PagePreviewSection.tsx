@@ -39,16 +39,16 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues }: Pa
 
     const targetHtml = html ?? page.html;
 
-    const renderedHtml = useMemo(() => {
-        if (!pageData || !targetHtml) return targetHtml;
+    const { renderedHtml, renderError } = useMemo(() => {
+        if (!pageData || !targetHtml) return { renderedHtml: targetHtml, renderError: null };
         try {
             debugger;
             const template = Handlebars.compile(targetHtml);
             const result = template(pageData);
-            return result;
+            return { renderedHtml: result, renderError: null };
         } catch (e) {
             console.error('Failed to render Handlebars template', e);
-            return targetHtml;
+            return { renderedHtml: targetHtml, renderError: e instanceof Error ? e.message : String(e) };
         }
     }, [targetHtml, pageData]);
 
@@ -83,8 +83,8 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues }: Pa
                             <span className="text-orange-500 animate-pulse">Data: Loading...</span>
                         )}
                         <span className="w-px h-2 bg-border"></span>
-                        <span className={renderedHtml !== targetHtml ? "text-green-500" : "text-orange-500"}>
-                            Render: {renderedHtml !== targetHtml ? "Success" : "Original HTML"}
+                        <span className={renderError ? "text-red-500" : (renderedHtml !== targetHtml ? "text-green-500" : "text-orange-500")}>
+                            Render: {renderError || (renderedHtml !== targetHtml ? "Success" : "Original HTML")}
                         </span>
                     </div>
                 </div>

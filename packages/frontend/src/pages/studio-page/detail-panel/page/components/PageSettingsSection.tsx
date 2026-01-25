@@ -1,4 +1,4 @@
-import { Layout, FileText, Globe, ExternalLink, Tag, Box, MessageSquare } from 'lucide-react';
+import { Layout, FileText, Globe, ExternalLink, Tag, Box, MessageSquare, Database } from 'lucide-react';
 import { type ParsedPageDto } from '@cms/shared';
 import { config } from '../../../../../config';
 import { DetailItem } from './DetailItem';
@@ -39,6 +39,14 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
                         label="Engagement Bar"
                         value={page.metadata?.enableEngagementBar ? 'Enabled' : 'Disabled'}
                         icon={<MessageSquare className="w-3.5 h-3.5" />}
+                    />
+                )}
+
+                {page.metadata?.entityName && (
+                    <DetailItem
+                        label="Entity"
+                        value={page.metadata.entityName}
+                        icon={<Database className="w-3.5 h-3.5" />}
                     />
                 )}
 

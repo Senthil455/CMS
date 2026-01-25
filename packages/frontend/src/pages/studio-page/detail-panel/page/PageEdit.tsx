@@ -112,6 +112,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
 
                 isSaving={isSaving}
                 onAddEngagementBar={item.schemaId?.includes('detail') || pageForm.html?.includes('detail') || true ? handleAddEngagementBar : undefined}
+
             />
 
             <div className="flex-1 overflow-auto p-6 flex flex-col gap-6">
