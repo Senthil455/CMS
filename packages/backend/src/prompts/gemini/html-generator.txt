@@ -7,6 +7,11 @@ FIELD RULES: title MUST exactly match architecturePlan.title. html MUST be a com
 INTEGRATION RULES: Follow architecturePlan exactly for structure, sections, components, layout hierarchy, and data mapping. Do NOT invent routes, names, or fields. Do NOT change routing behavior.
 
 TECH STACK (FIXED): Tailwind CSS v3+ via CDN only. No build step. No Tailwind plugins. No inline styles. No custom CSS.
+CMS SDK BRIDGE: All pages MUST include the following script block in the <head> or at the beginning of the <body>:
+<script type="module">
+    import * as cmsSdk from '/app-static/index.js';
+    window.cmsSdk = cmsSdk;
+</script>
 
 TAILWIND RULES: Use Tailwind CSS v3 syntax only. DO NOT use deprecated or plugin-only utilities including aspect-w-*, aspect-h-*, prose, line-clamp, or container utilities requiring config. Use modern utilities like aspect-[width/height], grid, flex, gap-*, min-h-*, h-*.
 

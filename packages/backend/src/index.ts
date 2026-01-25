@@ -101,6 +101,14 @@ async function start() {
             wildcard: false,
         });
 
+        // Register Backend Static Files (e.g. common JS)
+        const publicPath = join(__dirname, '../public');
+        await server.register(fastifyStatic, {
+            root: publicPath,
+            prefix: '/app-static/',
+            decorateReply: false,
+        });
+
         console.log("8. Setting Not Found Handler...");
         server.setNotFoundHandler((request, reply) => {
             if (request.url.startsWith('/app')) {

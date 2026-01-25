@@ -26,6 +26,21 @@ export class CmsClient {
         } as User;
     }
 
+    async login(payload: any): Promise<{ cookie: string, user: User }> {
+        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.AUTH.LOGIN}`, payload);
+        const setCookie = resp.headers['set-cookie'];
+        const externalUser = resp.data;
+        return {
+            cookie: setCookie ? setCookie.join('; ') : '',
+            user: {
+                id: externalUser.id,
+                username: externalUser.name || externalUser.email,
+                avatarUrl: this.baseUrl + externalUser.avatarUrl,
+            } as User
+        };
+    }
+
+
     async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
         const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}entity`, {
             headers: {

@@ -17,4 +17,9 @@ export class AuthService {
             return null;
         }
     }
+
+    async login(payload: any): Promise<{ cookie: string, user: User }> {
+        return await this.client.login(payload);
+    }
+
 }
