@@ -82,7 +82,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction }: ExplorerP
 
     const handleUseAIPage = () => {
         setIsAddPageDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.PAGE_GENERATOR} `);
+        onChatAction(`@${AGENT_NAMES.PAGE_PLANNER} `);
     };
 
     const handleManualCreatePage = async (name: string) => {

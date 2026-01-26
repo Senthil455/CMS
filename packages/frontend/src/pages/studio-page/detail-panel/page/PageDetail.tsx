@@ -34,7 +34,7 @@ export function PageDetail({ schema }: PageDetailProps) {
         };
     }, [page]);
 
-    const architecturePlan = parsedPage.metadata.architecturePlan;
+    const architecture = parsedPage.metadata.architecture;
 
     const handleConfirmPublish = async () => {
         try {
@@ -60,8 +60,8 @@ export function PageDetail({ schema }: PageDetailProps) {
 
 
 
-            {architecturePlan?.selectedQueries && (
-                <PageSelectedQueriesSection selectedQueries={architecturePlan.selectedQueries} />
+            {architecture?.selectedQueries && (
+                <PageSelectedQueriesSection selectedQueries={architecture.selectedQueries} />
             )}
 
             <PagePreviewSection schema={schema} />

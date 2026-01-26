@@ -33,7 +33,7 @@ export function PageEditSource({
     // Identify needed params from page name
     // Identify needed params from queries
     const queryParamsList: string[] = [];
-    pageForm.metadata?.architecturePlan?.selectedQueries?.forEach(q => {
+    pageForm.metadata?.architecture?.selectedQueries?.forEach(q => {
         if (q.args) {
             Object.keys(q.args).forEach(arg => {
                 queryParamsList.push(arg);

@@ -1,12 +1,12 @@
 export const AGENT_NAMES = {
     ENTITY_GENERATOR: 'entity_generator',
-    PAGE_GENERATOR: 'page_generator',
+    PAGE_PLANNER: 'page_planner',
     QUERY_GENERATOR: 'query_generator',
     DATA_GENERATOR: 'data_generator',
-    HTML_GENERATOR: 'html_generator',
+    PAGE_BUILDER: 'page_builder',
     ENGAGEMENT_BAR_AGENT: 'engagement_bar_agent',
     ROUTER_DESIGNER: 'router_designer',
-    ARCHITECT_DESIGNER: 'architect_designer',
+    PAGE_ARCHITECT: 'page_architect',
     USER_AVATAR_AGENT: 'user_avatar_agent',
 } as const;
 

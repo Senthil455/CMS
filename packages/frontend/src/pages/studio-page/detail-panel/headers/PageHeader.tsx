@@ -81,14 +81,14 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             }
         >
             <button
-                onClick={() => onChatAction(`@${AGENT_NAMES.PAGE_GENERATOR}#${schemaId}:`)}
+                onClick={() => onChatAction(`@${AGENT_NAMES.PAGE_PLANNER}#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />
                 Ask AI to Modify
             </button>
 
-            {!engagementBarEnabled && metadata.entityName && (
+            {!engagementBarEnabled && metadata.plan?.entityName && (
                 <button
                     onClick={handleAddSocialBar}
                     className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-lg text-xs font-bold transition-all border border-blue-500/20 ml-1"

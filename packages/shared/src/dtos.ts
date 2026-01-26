@@ -157,8 +157,7 @@ export interface AssetListResponse {
 export interface TemplateSelectionRequest {
     userInput: string;
     schemaId?: string;
-    pageType: 'list' | 'detail';
-    entityName?: string;
+    plan: PagePlan;
     providerName: string;
     templates: {
         id: string;
@@ -173,15 +172,8 @@ export interface TemplateSelectionResponse {
     requestPayload: TemplateSelectionRequest;
 }
 
-export interface RoutingPlan {
-    pageName: string;
-    primaryParameter?: string;
-    linkingRules: string[];
-    routerHints: string;
-}
 
-export interface PageArchitecturePlan {
-    pageType: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
+export interface PageArchitecture {
     layout: {
         hasHeader: boolean;
         hasSidebar: boolean;
@@ -204,12 +196,18 @@ export interface PageArchitecturePlan {
 }
 
 export interface PageMetadata {
-    routingPlan?: RoutingPlan;
-    architecturePlan?: PageArchitecturePlan;
+    plan?: PagePlan;
+    architecture?: PageArchitecture;
     userInput?: string;
     templateId?: string;
     enableEngagementBar?: boolean;
     enableUserAvatar?: boolean;
-    pageType?: 'list' | 'detail' | 'dashboard' | 'form' | 'custom';
-    entityName?: string;
+}
+
+export interface PagePlan {
+    pageName: string;
+    entityName: string | null;
+    pageType: 'list' | 'detail';
+    primaryParameter: string | null;
+    linkingRules: string[];
 }

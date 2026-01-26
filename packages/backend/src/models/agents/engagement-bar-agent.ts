@@ -51,7 +51,7 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
 
         const developerMessage = JSON.stringify({
             existingHtml: pageDto.html,
-            engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.entityName!)
+            engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
         }, null, 2);
 
         const res = await this.aiProvider.generate(

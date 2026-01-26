@@ -18,10 +18,10 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
                 <DetailItem label="Page Name" value={page.name} icon={<FileText className="w-3.5 h-3.5" />} />
                 <DetailItem label="Page Title" value={page.title} icon={<Globe className="w-3.5 h-3.5" />} />
 
-                {page.metadata?.pageType && (
+                {page.metadata?.plan?.pageType && (
                     <DetailItem
                         label="Type"
-                        value={page.metadata.pageType}
+                        value={page.metadata.plan.pageType}
                         icon={<Tag className="w-3.5 h-3.5" />}
                     />
                 )}
@@ -34,7 +34,7 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
                     />
                 )}
 
-                {(page.metadata?.pageType === 'detail' || (page.metadata as any)?.enableEngagementBar !== undefined) && (
+                {(page.metadata?.plan?.pageType === 'detail' || (page.metadata as any)?.enableEngagementBar !== undefined) && (
                     <DetailItem
                         label="Engagement Bar"
                         value={page.metadata?.enableEngagementBar ? 'Enabled' : 'Disabled'}
@@ -42,10 +42,10 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
                     />
                 )}
 
-                {page.metadata?.entityName && (
+                {page.metadata?.plan?.entityName && (
                     <DetailItem
                         label="Entity"
-                        value={page.metadata.entityName}
+                        value={page.metadata.plan.entityName}
                         icon={<Database className="w-3.5 h-3.5" />}
                     />
                 )}

@@ -16,7 +16,7 @@ export interface HtmlGeneratorPlan extends HtmlGenerationResponse {
     enableEngagementBar: boolean;
 }
 
-export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
+export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
@@ -45,11 +45,11 @@ export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
         }
 
         const metadata: PageMetadata = JSON.parse(existingPageSchema.settings.page.metadata);
-        const routingPlan = metadata.routingPlan;
-        const architecturePlan = metadata.architecturePlan;
+        const pagePlan = metadata.plan;
+        const architecturePlan = metadata.architecture;
         const originalInput = metadata.userInput || userInput;
 
-        if (!routingPlan || !architecturePlan) {
+        if (!pagePlan || !architecturePlan) {
             throw new Error("Required plans (routing or architecture) not found in page metadata.");
         }
 
@@ -73,7 +73,7 @@ export class HtmlGenerator extends BaseAgent<HtmlGeneratorPlan> {
         }));
 
 
-        const pageType = metadata.pageType;
+        const pageType = pagePlan.pageType;
         let enableEngagementBar = metadata.enableEngagementBar || false;
 
         if (pageType === 'list') {
@@ -88,12 +88,12 @@ ${stylePrompt}
 
         developerMessage += `
 ROUTING PLAN:
-- Path: ${routingPlan.pageName}
-- Parameters: ${routingPlan?.primaryParameter || 'None'}
-- Linking Rules: ${(routingPlan?.linkingRules || []).join('\n  ')}
+- Path: ${pagePlan.pageName}
+- Parameters: ${pagePlan.primaryParameter || 'None'}
+- Linking Rules: ${(pagePlan.linkingRules || []).join('\n  ')}
 
 ARCHITECTURAL PLAN:
-- Page Type: ${metadata.pageType}
+- Page Type: ${pagePlan.pageType}
 - Layout: ${architecturePlan.layout?.structure}
 - Selected Queries: 
 ${JSON.stringify(architecturePlan.selectedQueries, null, 2)}
@@ -142,11 +142,11 @@ ${this.userAvatarSnippet}
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
-        const newSchemaId = await pageManager.savePageHtml(schemaId, plan.html, plan.title);
+        const newSchemaId = await pageManager.saveHtml(schemaId, plan.html, plan.title);
 
         if (newSchemaId) {
             await context.onSchemasSync({
-                task_type: 'page_generator',
+                task_type: AGENT_NAMES.PAGE_PLANNER,
                 schemasId: [newSchemaId]
             });
         }

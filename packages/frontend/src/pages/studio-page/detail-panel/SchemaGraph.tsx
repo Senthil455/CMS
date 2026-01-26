@@ -212,10 +212,10 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
                     const metadataStr = schema.settings.page.metadata;
                     if (metadataStr) {
                         const metadata = JSON.parse(metadataStr);
-                        const selectedQueries = metadata.architecturePlan?.selectedQueries;
 
-                        if (Array.isArray(selectedQueries)) {
-                            selectedQueries.forEach((sq: any) => {
+
+                        if (metadata.architecture?.selectedQueries) {
+                            metadata.architecture.selectedQueries.forEach((sq: any) => {
                                 const queryName = sq.queryName;
                                 if (queryName && queryMap.has(queryName)) {
                                     edges.push({

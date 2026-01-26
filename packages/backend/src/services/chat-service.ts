@@ -187,25 +187,20 @@ export class ChatService {
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
 
         const pageManager = new PageManager(this.cmsClient, this.logger, externalCookie);
-        const schemaId = await pageManager.savePageTypeAndTemplate(
+        const schemaId = await pageManager.savePlanAndUserInput(
             response.requestPayload.schemaId,
-            response.requestPayload.pageType,
+            response.requestPayload.plan,
             response.selectedTemplate,
             response.requestPayload.userInput,
-            response.enableEngagementBar,
-            response.requestPayload.entityName
+            response.enableEngagementBar
         );
 
         const providerName = response.requestPayload.providerName || 'gemini';
-        if (this.chatHandlers[providerName]?.[AGENT_NAMES.ROUTER_DESIGNER]) {
-            const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.ROUTER_DESIGNER, onEvent, schemaId);
-
-            // Pass the entire response as input, RouterDesignerAgent is updated to handle it
-            response.requestPayload.schemaId = schemaId;
-            // response are saved in the database, no need to pass userInput
-            await this.executeAgent(AGENT_NAMES.ROUTER_DESIGNER, '', context);
+        if (this.chatHandlers[providerName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
+            const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.PAGE_ARCHITECT, onEvent, schemaId);
+            await this.executeAgent(AGENT_NAMES.PAGE_ARCHITECT, '', context);
         } else {
-            this.logger.error('RouterDesigner handler not found');
+            this.logger.error('PageArchitect handler not found');
         }
     }
     async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
