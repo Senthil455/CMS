@@ -61,13 +61,13 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 pagePlannerPrompt,
                 htmlGeneratorPrompt,
             ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.txt`), 'utf-8'),
-                loadPrompt('page-architect-agent.txt'),
-                loadPrompt('page-planner-agent.txt'),
-                loadPrompt('page-builder-agent.txt'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.md`), 'utf-8'),
+                loadPrompt('page-architect-agent.md'),
+                loadPrompt('page-planner-agent.md'),
+                loadPrompt('page-builder-agent.md'),
             ]);
 
             const [
@@ -78,12 +78,12 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 minimalListPrompt,
                 minimalDetailPrompt
             ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-list.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-detail.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-list.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-detail.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-list.txt'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-detail.txt'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-detail.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-detail.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-detail.md'), 'utf-8'),
             ]);
 
             const styleMap: Record<string, string> = {
@@ -99,8 +99,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 'minimal': minimalListPrompt
             };
 
-            const userAvatarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/user-avatar-agent.txt`), 'utf-8').catch(() => '');
-            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.txt`), 'utf-8').catch(() => '');
+            const userAvatarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/user-avatar-agent.md`), 'utf-8').catch(() => '');
+            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.md`), 'utf-8').catch(() => '');
             const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
             const userAvatarSnippet = await fs.readFile(path.join(promptsDir, 'components/user-avatar.html'), 'utf-8').catch(() => '');
 

@@ -29,6 +29,9 @@ export const loginDialog = {
                             <button type="button" id="cms-login-cancel" style="flex: 1; padding: 0.5rem; background: #f3f4f6; border: none; border-radius: 6px; color: #374151; font-weight: 500; cursor: pointer;">Cancel</button>
                             <button type="submit" style="flex: 1; padding: 0.5rem; background: #2563eb; border: none; border-radius: 6px; color: white; font-weight: 500; cursor: pointer;">Sign In</button>
                         </div>
+                        <div style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: #6b7280; border-top: 1px solid #f3f4f6; padding-top: 1rem;">
+                            Don't have an account? <a href="/portal" style="color: #2563eb; text-decoration: none; font-weight: 500;">Register here</a>
+                        </div>
                     </form>
                 </div>
             `;

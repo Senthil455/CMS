@@ -6,15 +6,15 @@ export const userApi = {
         if (!response.ok) return null;
         return response.json();
     },
-    async login(username, password) {
+    async login(usernameOrEmail, password) {
         const response = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: username, password }),
+            body: JSON.stringify({ usernameOrEmail, password }),
             credentials: 'include'
         });
         if (!response.ok) throw new Error('Login failed');
-        return response.json();
+        return this.fetchMe();
     }
 };
 

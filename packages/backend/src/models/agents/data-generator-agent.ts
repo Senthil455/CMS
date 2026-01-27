@@ -4,7 +4,7 @@ import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
 
 import { AGENT_NAMES } from '@cms/shared';
-// ... existing interface ...
+
 export interface DataGeneratorResponse {
     entityName: string;
     data: any[];
@@ -28,11 +28,9 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
     async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {
         await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
 
-        // 1. Fetch Schema
         let entities: any[] = [];
         let specificEntityName: string | undefined;
 
-        // Try to parse schemaId from input
         const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.DATA_GENERATOR}#([^:]+):`));
 
         if (idMatch) {
@@ -45,7 +43,6 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
                     entities = [xEntity];
                     await context.saveAgentMessage(`I found the entity "${specificEntityName}". Generating data based on its schema...`);
                 } else {
-                    // Fallback if schema/entity not found
                     entities = await this.cmsClient.getAllXEntity(context.externalCookie);
                 }
             } catch (e) {
@@ -56,7 +53,6 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             entities = await this.cmsClient.getAllXEntity(context.externalCookie);
         }
 
-        // 2. Call AI Agent to generate data
         const response: DataGeneratorResponse = await this.aiProvider.generate(
             this.systemPrompt,
             `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`,
@@ -92,7 +88,6 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
 
         await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
 
-        // 3. Insert data into CMS
         let successCount = 0;
         const idMaps: Record<string, Record<string, any>> = {};
         for (const item of data) {
