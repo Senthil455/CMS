@@ -9,7 +9,7 @@ export interface UserAvatarPlan {
     pageDto: PageDto;
 }
 
-export class UserAvatarAgent extends BaseAgent<UserAvatarPlan> {
+export class UserAvatarGenerator extends BaseAgent<UserAvatarPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
@@ -21,7 +21,7 @@ export class UserAvatarAgent extends BaseAgent<UserAvatarPlan> {
     }
 
     async think(userInput: string, context: AgentContext): Promise<UserAvatarPlan> {
-        this.logger.info('UserAvatarAgent think started');
+        this.logger.info('UserAvatarGenerator think started');
 
         let schemaId = context.schemaId;
         if (!schemaId) {
@@ -82,7 +82,7 @@ export class UserAvatarAgent extends BaseAgent<UserAvatarPlan> {
         await this.cmsClient.saveSchema(context.externalCookie, payload);
         await context.saveAgentMessage(`Successfully added User Avatar to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.USER_AVATAR_AGENT,
+            task_type: AGENT_NAMES.USER_AVATAR_GENERATOR,
             schemasId: [schemaId]
         });
         return null;

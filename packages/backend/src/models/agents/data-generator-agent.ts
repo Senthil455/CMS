@@ -27,6 +27,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
 
     async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {
         await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
+        await context.updateStatus('Fetching latest schemas for data generation...');
 
         let entities: any[] = [];
         let specificEntityName: string | undefined;
@@ -53,6 +54,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             entities = await this.cmsClient.getAllXEntity(context.externalCookie);
         }
 
+        await context.updateStatus('Generating sample data with AI...');
         const response: DataGeneratorResponse = await this.aiProvider.generate(
             this.systemPrompt,
             `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`,
@@ -87,6 +89,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         }
 
         await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
+        await context.updateStatus(`Inserting ${data.length} items into "${entityName}"...`);
 
         let successCount = 0;
         const idMaps: Record<string, Record<string, any>> = {};

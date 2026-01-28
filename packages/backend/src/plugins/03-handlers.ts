@@ -15,8 +15,8 @@ import { PagePlannerAgent } from '../models/agents/page-planner-agent';
 import { PageArchitectAgent } from '../models/agents/page-architect-agent';
 import { PageBuilderAgent } from '../models/agents/page-builder-agent';
 import { DataGenerator } from '../models/agents/data-generator-agent';
-import { EngagementBarAgent } from '../models/agents/engagement-bar-agent';
-import { UserAvatarAgent } from '../models/agents/user-avatar-agent';
+import { EngagementBarGenerator } from '../models/agents/engagement-bar-generator';
+import { UserAvatarGenerator } from '../models/agents/user-avatar-generator';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -109,8 +109,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             // PagePlanner instantiation removed
             // PageArchitect instantiation removed
 
-            const engagementBarAgent = new EngagementBarAgent(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
-            const userAvatarAgent = new UserAvatarAgent(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
+            const engagementBarGenerator = new EngagementBarGenerator(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
+            const userAvatarGenerator = new UserAvatarGenerator(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
 
             const pageArchitectAgent = new PageArchitectAgent(provider, pageArchitectPrompt, cmsClient, modelLogger);
 
@@ -153,8 +153,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
                 [AGENT_NAMES.DATA_GENERATOR]: dataGenerator,
                 [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
-                [AGENT_NAMES.ENGAGEMENT_BAR_AGENT]: engagementBarAgent,
-                [AGENT_NAMES.USER_AVATAR_AGENT]: userAvatarAgent,
+                [AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR]: engagementBarGenerator,
+                [AGENT_NAMES.USER_AVATAR_GENERATOR]: userAvatarGenerator,
 
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
             };

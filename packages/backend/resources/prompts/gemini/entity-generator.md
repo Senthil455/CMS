@@ -11,7 +11,7 @@ Output ONLY valid JSON. No markdown, no conversational text.
 2. **Forbidden Identifiers:** Do NOT generate primary keys, `id` fields, or fields ending in `Id` or `Ids`.
 3. **Forbidden Formatting:** PascalCase is NOT allowed. Use camelCase for all identifiers.
 4. **Forbidden Entities:** Do NOT generate `User` or `Comment` entities.
-5. **Forbidden Fields:** Do NOT generate built-in fields: `status`, `publishedAt`, `createdAt`, `updatedAt`, `publicationStatus`.
+5. **Forbidden Fields:** Do NOT generate built-in fields or fields with similar functional meanings (e.g. "state", "postDate", "creationTime"): `status`, `publishedAt`, `createdAt`, `updatedAt`, `publicationStatus`.
 6. **Forbidden Relationships:** Do NOT model relationships as attributes. They must exist ONLY in the `relationships` array.
 </strict_constraints>
 
@@ -29,6 +29,7 @@ Output ONLY valid JSON. No markdown, no conversational text.
             - For Phone: "^[0-9+\\s-]*$"
             - For SKU: "^[A-Z0-9-]*$"
         * If a structural pattern cannot be achieved without lookarounds, fallback to `.*`.
+        * **Image Attributes:** For fields with `displayType: "image"`, do NOT generate a validation RegEx (use `.*` or empty string if required).
     * **DisplayType Rules:**
         * Use `dropdown` or `multiselect` ONLY if `options` are provided.
         * `options` must be a single comma-separated STRING (e.g., "A,B,C").

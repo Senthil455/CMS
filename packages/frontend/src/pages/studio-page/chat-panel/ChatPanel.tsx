@@ -4,6 +4,7 @@ import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { AiLogsList } from './AiLogsList';
 import { MessageSquare, Database } from 'lucide-react';
+import { StatusBar } from '../../../components/StatusBar';
 
 interface ChatPanelProps {
     messages: ChatMessage[];
@@ -64,8 +65,11 @@ export function ChatPanel({
             </div>
 
             {activeTab === 'chat' && (
-                <div className="p-4 border-t border-border bg-app-surface/50 backdrop-blur-sm">
-                    <ChatInput onSend={onSend} draft={chatDraft} onDraftConsumed={onDraftConsumed} />
+                <div className="border-t border-border bg-app-surface/50 backdrop-blur-sm">
+                    <StatusBar />
+                    <div className="p-4">
+                        <ChatInput onSend={onSend} draft={chatDraft} onDraftConsumed={onDraftConsumed} />
+                    </div>
                 </div>
             )}
         </div>

@@ -3,6 +3,7 @@ export const ENDPOINTS = {
         HISTORY: '/cmsapi/chat/history',
         ENGAGEMENT_BAR: '/cmsapi/chat/engagement-bar',
         USER_AVATAR: '/cmsapi/chat/user-avatar',
+        STATUS: '/cmsapi/chat/status',
     },
     AUTH: {
         LOGIN: '/api/login',

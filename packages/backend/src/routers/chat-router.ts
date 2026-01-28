@@ -19,6 +19,14 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
     });
 
+    fastify.get(ENDPOINTS.CHAT.STATUS, {
+        preHandler: [fastify.authenticate]
+    }, async (request) => {
+        const userId = request.user!.id.toString();
+        const statuses = fastify.statusService.getStatuses(userId);
+        return { success: true, data: { statuses } };
+    });
+
     fastify.post(ENDPOINTS.CHAT.ENGAGEMENT_BAR, {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
@@ -33,7 +41,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             };
 
             // Synthesize the user message that triggers the agent
-            const syntheticMessage = `@${AGENT_NAMES.ENGAGEMENT_BAR_AGENT} #${schemaId}: Add engagement bar code to this page`;
+            const syntheticMessage = `@${AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR} #${schemaId}: Add engagement bar code to this page`;
 
             // Trigger the existing chat pipeline
             // This will run asynchronously in terms of "agent thinking", but we await the initial handling.
@@ -46,10 +54,10 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 onEvent
             );
 
-            return { success: true, message: 'Engagement Bar Agent triggered successfully' };
+            return { success: true, message: 'Engagement Bar Generator triggered successfully' };
         } catch (error) {
             fastify.log.error(error);
-            return reply.status(500).send({ success: false, error: 'Failed to trigger Engagement Bar Agent' });
+            return reply.status(500).send({ success: false, error: 'Failed to trigger Engagement Bar Generator' });
         }
     });
 
@@ -65,7 +73,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 fastify.socketService.emitToUser(userId, event, payload);
             };
 
-            const syntheticMessage = `@${AGENT_NAMES.USER_AVATAR_AGENT} #${schemaId}: Add user avatar to header`;
+            const syntheticMessage = `@${AGENT_NAMES.USER_AVATAR_GENERATOR} #${schemaId}: Add user avatar to header`;
 
             await fastify.chatService.handleUserMessage(
                 userId,
@@ -75,10 +83,10 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 onEvent
             );
 
-            return { success: true, message: 'User Avatar Agent triggered successfully' };
+            return { success: true, message: 'User Avatar Generator triggered successfully' };
         } catch (error) {
             fastify.log.error(error);
-            return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Agent' });
+            return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Generator' });
         }
     });
 };

@@ -30,36 +30,36 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     const handleAddEngagementBar = async () => {
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering Engagement Bar Agent (${providerName})...`, { id: 'engagement-bar' });
+            toast.loading(`Triggering Engagement Bar Generator (${providerName})...`, { id: 'engagement-bar' });
             await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.ENGAGEMENT_BAR}`, {
                 schemaId,
                 providerName
             }, {
                 withCredentials: true
             });
-            toast.success('Engagement Bar Agent triggered. Check chat for progress.', { id: 'engagement-bar' });
-            onChatAction(`@${AGENT_NAMES.ENGAGEMENT_BAR_AGENT} #${schemaId}: checking progress...`);
+            toast.success('Engagement Bar Generator triggered. Check chat for progress.', { id: 'engagement-bar' });
+            onChatAction(`@${AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
-            toast.error('Failed to trigger Engagement Bar Agent', { id: 'engagement-bar' });
+            toast.error('Failed to trigger Engagement Bar Generator', { id: 'engagement-bar' });
         }
     };
 
     const handleAddUserAvatar = async () => {
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering User Avatar Agent (${providerName})...`, { id: 'user-avatar' });
+            toast.loading(`Triggering User Avatar Generator (${providerName})...`, { id: 'user-avatar' });
             await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.USER_AVATAR}`, {
                 schemaId,
                 providerName
             }, {
                 withCredentials: true
             });
-            toast.success('User Avatar Agent triggered. Check chat for progress.', { id: 'user-avatar' });
-            onChatAction(`@${AGENT_NAMES.USER_AVATAR_AGENT} #${schemaId}: checking progress...`);
+            toast.success('User Avatar Generator triggered. Check chat for progress.', { id: 'user-avatar' });
+            onChatAction(`@${AGENT_NAMES.USER_AVATAR_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
-            toast.error('Failed to trigger User Avatar Agent', { id: 'user-avatar' });
+            toast.error('Failed to trigger User Avatar Generator', { id: 'user-avatar' });
         }
     };
 

@@ -9,7 +9,7 @@ export interface EngagementBarPlan {
     pageDto: PageDto;
 }
 
-export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
+export class EngagementBarGenerator extends BaseAgent<EngagementBarPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
@@ -25,7 +25,7 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
     }
 
     async think(userInput: string, context: AgentContext): Promise<EngagementBarPlan> {
-        this.logger.info('EngagementBarAgent think started');
+        this.logger.info('EngagementBarGenerator think started');
 
         // 1. Extract Schema ID
         let schemaId = context.schemaId;
@@ -89,7 +89,7 @@ export class EngagementBarAgent extends BaseAgent<EngagementBarPlan> {
         await this.cmsClient.saveSchema(context.externalCookie, payload);
         await context.saveAgentMessage(`Successfully added Engagement Bar to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.ENGAGEMENT_BAR_AGENT,
+            task_type: AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR,
             schemasId: [schemaId]
         });
         return null;

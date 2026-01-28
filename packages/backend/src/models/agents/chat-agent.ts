@@ -13,6 +13,7 @@ export interface AgentContext {
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
     onTemplateSelectionListToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
     onTemplateSelectionDetailToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
+    updateStatus: (content: string) => Promise<void>;
 }
 
 export interface AgentResponse {

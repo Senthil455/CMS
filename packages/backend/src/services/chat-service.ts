@@ -15,6 +15,7 @@ import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../models/agents/intent-classifier';
 import { EntityManager } from '../models/cms/entity-manager';
 import { PageManager } from '../models/cms/page-manager';
+import { StatusService } from './status-service';
 
 export class ChatService {
     constructor(
@@ -22,6 +23,7 @@ export class ChatService {
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
+        private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
     ) { }
 
@@ -88,6 +90,9 @@ export class ChatService {
             },
             onTemplateSelectionDetailToConfirm: async (payload: any) => {
                 onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
+            },
+            updateStatus: async (content: string) => {
+                this.statusService.updateStatus(userId, content);
             }
         };
     }
@@ -113,8 +118,11 @@ export class ChatService {
             if (response) {
                 this.logger.info({ nextAgent: response.nextAgent }, 'Agent requested chaining');
                 await this.executeAgent(response.nextAgent, response.nextUserInput, agentContext);
+            } else {
+                this.statusService.clearStatus(context.userId);
             }
         } catch (error) {
+            this.statusService.clearStatus(context.userId);
             this.logger.error({ error, taskType }, 'Error executing agent');
             // Error handling is mostly done inside agent.handle via handleAgentError, 
             // but if something bubbles up:

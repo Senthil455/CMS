@@ -38,6 +38,7 @@ export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
         }
 
         // Fetch Schema
+        await context.updateStatus('Fetching page schema and metadata...');
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
             throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
@@ -57,6 +58,7 @@ export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
 
 
         // 3. Context Gathering: Fetch selected Queries and their sample data
+        await context.updateStatus('Gathering data architecture context and samples...');
         const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq) => {
             const queryName = sq.queryName;
             const fieldName = sq.fieldName;
@@ -112,6 +114,7 @@ ${queryDetails.join('\n')}
             }, null, 2)}`;
         }
 
+        await context.updateStatus('Generating HTML content with AI...');
         const aiResponse = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
@@ -137,6 +140,7 @@ ${queryDetails.join('\n')}
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
+        await context.updateStatus('Saving generated HTML to CMS...');
         const newSchemaId = await pageManager.saveHtml(schemaId, plan.html, plan.title);
 
         await context.onSchemasSync({
@@ -150,7 +154,7 @@ ${queryDetails.join('\n')}
 
         if (plan.enableEngagementBar) {
             return {
-                nextAgent: AGENT_NAMES.ENGAGEMENT_BAR_AGENT,
+                nextAgent: AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR,
                 nextUserInput: ``
             };
         }
