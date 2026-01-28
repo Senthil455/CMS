@@ -7,13 +7,22 @@ export const engagementService = {
     getStats(entityName) {
         const recordId = window.location.pathname.split('/').filter(Boolean).pop();
         return engagementApi.getStats(entityName, recordId)
+            .then(data => {
+                // Standardize the shape to match Alpine expectations
+                return {
+                    view: data.view || { count: 0, active: false },
+                    like: data.like || { count: 0, active: false },
+                    share: data.share || { count: 0, active: false },
+                    bookmark: data.bookmark || { count: 0, active: false }
+                };
+            })
             .catch(() => {
                 console.log('Mock: Engagement API not found');
                 return {
                     view: { count: 0, active: false },
                     like: { count: 0, active: false },
                     share: { count: 0, active: false },
-                    bookmark: { active: false }
+                    bookmark: { count: 0, active: false }
                 };
             });
     },
@@ -28,7 +37,7 @@ export const engagementService = {
         const recordId = window.location.pathname.split('/').filter(Boolean).pop();
 
         if (type === 'bookmark') {
-            return this.saveBookmark(entityName, recordId, stats);
+            return this.saveBookmark(entityName, stats);
         }
 
         const s = stats[type];
@@ -41,8 +50,9 @@ export const engagementService = {
         });
     },
 
-    async saveBookmark(entityName) {
+    async saveBookmark(entityName, stats) {
         try {
+            await userService.ensureLogin();
             const recordId = window.location.pathname.split('/').filter(Boolean).pop();
             const folders = await engagementApi.fetchBookmarkFolders(entityName, recordId);
             const result = await bookmarkDialog.show(entityName, recordId, folders);

@@ -33,7 +33,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             };
 
             // Synthesize the user message that triggers the agent
-            const syntheticMessage = `@engagement_bar #${schemaId}: Add engagement bar code to this page`;
+            const syntheticMessage = `@${AGENT_NAMES.ENGAGEMENT_BAR_AGENT} #${schemaId}: Add engagement bar code to this page`;
 
             // Trigger the existing chat pipeline
             // This will run asynchronously in terms of "agent thinking", but we await the initial handling.

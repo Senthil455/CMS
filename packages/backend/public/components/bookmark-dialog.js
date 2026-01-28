@@ -12,7 +12,8 @@ export const bookmarkDialog = {
                 font-family: system-ui, -apple-system, sans-serif;
             `;
 
-            dialog.setAttribute('x-data', JSON.stringify({
+            const dataId = 'cmsBookmark_' + Math.random().toString(36).substr(2, 9);
+            window[dataId] = {
                 folders: folders.map(f => ({ ...f, selected: !!f.selected })),
                 newFolderName: '',
                 async save() {
@@ -26,8 +27,10 @@ export const bookmarkDialog = {
                 },
                 close() {
                     document.body.removeChild(dialog);
+                    delete window[dataId];
                 }
-            }));
+            };
+            dialog.setAttribute('x-data', `window['${dataId}']`);
 
             dialog.innerHTML = `
                 <div class="bg-white p-8 rounded-xl shadow-2xl w-80 transform transition-all">

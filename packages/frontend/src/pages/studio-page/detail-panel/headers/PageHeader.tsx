@@ -27,7 +27,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     const engagementBarEnabled = metadata.enableEngagementBar;
     const userAvatarEnabled = metadata.enableUserAvatar;
 
-    const handleAddSocialBar = async () => {
+    const handleAddEngagementBar = async () => {
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
             toast.loading(`Triggering Engagement Bar Agent (${providerName})...`, { id: 'engagement-bar' });
@@ -90,11 +90,11 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
 
             {!engagementBarEnabled && metadata.plan?.entityName && (
                 <button
-                    onClick={handleAddSocialBar}
+                    onClick={handleAddEngagementBar}
                     className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-lg text-xs font-bold transition-all border border-blue-500/20 ml-1"
                 >
                     <MessageSquarePlus className="w-3.5 h-3.5" />
-                    Add Social Bar
+                    Add Engagement Bar
                 </button>
             )}
 

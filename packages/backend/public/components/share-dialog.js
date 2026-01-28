@@ -12,7 +12,8 @@ export const shareDialog = {
                 font-family: system-ui, -apple-system, sans-serif;
             `;
 
-            dialog.setAttribute('x-data', JSON.stringify({
+            const dataId = 'cmsShare_' + Math.random().toString(36).substr(2, 9);
+            window[dataId] = {
                 url: url,
                 title: title,
                 platforms: [
@@ -31,8 +32,10 @@ export const shareDialog = {
                 },
                 close() {
                     document.body.removeChild(dialog);
+                    delete window[dataId];
                 }
-            }));
+            };
+            dialog.setAttribute('x-data', `window['${dataId}']`);
 
             dialog.innerHTML = `
                 <div class="bg-white p-8 rounded-xl shadow-2xl w-80 transform transition-all">
