@@ -269,7 +269,7 @@ export class CmsClient {
 
                 const __filename = fileURLToPath(import.meta.url);
                 const __dirname = path.dirname(__filename);
-                const examplePicsPath = path.resolve(__dirname, '../../assets', 'example_pics');
+                const examplePicsPath = path.resolve(__dirname, '../../resources/assets', 'example_pics');
                 if (!fs.existsSync(examplePicsPath)) {
                     return;
                 }

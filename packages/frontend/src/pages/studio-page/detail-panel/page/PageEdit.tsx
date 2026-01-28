@@ -49,7 +49,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
         return initialForm as ParsedPageDto;
     });
 
-    const handleSave = async () => {
+    const handleSave = async (exitAfterSave: boolean) => {
         try {
             setIsSaving(true);
             setError(null);
@@ -67,6 +67,9 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
 
             await onSave(payload, true);
             toast.success('Saved successfully');
+            if (exitAfterSave) {
+                onCancel();
+            }
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');

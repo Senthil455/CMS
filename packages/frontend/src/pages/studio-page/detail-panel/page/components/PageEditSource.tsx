@@ -13,7 +13,7 @@ interface PageEditSourceProps {
     item: SchemaDto;
     pageForm: ParsedPageDto;
     onUpdateField: (field: keyof ParsedPageDto, value: any) => void;
-    onSave: () => void;
+    onSave: (exitAfterSave: boolean) => void;
     onCancel: () => void;
     isSaving: boolean;
 }
@@ -26,7 +26,7 @@ export function PageEditSource({
     onCancel,
     isSaving
 }: PageEditSourceProps) {
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(true);
     const [paramValues, setParamValues] = useState<Record<string, string>>({});
 
 
@@ -89,17 +89,9 @@ export function PageEditSource({
                     {isFullScreen && (
                         <>
                             <button
-                                onClick={onCancel}
+                                onClick={() => onSave(false)}
                                 disabled={isSaving}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                            >
-                                <X className="w-3 h-3" />
-                                Cancel
-                            </button>
-                            <button
-                                onClick={onSave}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shadow-sm"
                             >
                                 {isSaving ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -107,6 +99,27 @@ export function PageEditSource({
                                     <Save className="w-3 h-3" />
                                 )}
                                 Save
+                            </button>
+                            <button
+                                onClick={() => onSave(true)}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shadow-sm"
+                            >
+                                {isSaving ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Save className="w-3 h-3 text-white/80" />
+                                )}
+                                Save & Exit
+                            </button>
+                            <div className="w-px h-5 bg-border mx-1" />
+                            <button
+                                onClick={onCancel}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-3 py-1.5 hover:bg-app-muted rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 text-primary-muted hover:text-primary"
+                            >
+                                <X className="w-3 h-3" />
+                                Exit
                             </button>
                         </>
                     )}

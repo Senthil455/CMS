@@ -28,8 +28,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     // Resolve directories
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const promptsDir = path.join(__dirname, '../prompts');
-    const schemasDir = path.join(__dirname, '../schemas');
+    const promptsDir = path.join(__dirname, '../../resources/prompts');
+    const schemasDir = path.join(__dirname, '../../resources/schemas');
 
     // Load common schemas
     const [entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
@@ -114,11 +114,11 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const pageArchitectAgent = new PageArchitectAgent(provider, pageArchitectPrompt, cmsClient, modelLogger);
 
-            const pageBuilderAgent = new PageBuilderAgent(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL, userAvatarSnippet);
+            const pageBuilderAgent = new PageBuilderAgent(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
 
 
-            const dataDir = path.join(__dirname, '../data');
-            const templatesData = await fs.readFile(path.join(dataDir, 'templates.json'), 'utf-8');
+            const dataDir = path.join(__dirname, '../../resources/data');
+            const templatesData = await fs.readFile(path.join(dataDir, 'page-templates.json'), 'utf-8');
             const templates = JSON.parse(templatesData);
 
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,

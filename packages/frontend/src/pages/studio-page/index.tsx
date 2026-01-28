@@ -130,9 +130,7 @@ export default function StudioPage() {
 
         const unsubSync = onSchemasSync((data) => {
             console.log('Schema sync received:', data);
-            if (['query_generator', 'entity_generator', 'page_generator'].includes(data.task_type)) {
-                mutate();
-            }
+            mutate();
         });
 
         return () => {

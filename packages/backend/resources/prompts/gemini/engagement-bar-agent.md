@@ -12,3 +12,6 @@ Output format (JSON only):
 {
 "html": "<html content>"
 }
+
+IMPORTANT: Ensure Alpine.js is present in the <head> of the returned HTML:
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

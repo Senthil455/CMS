@@ -10,6 +10,8 @@ INSTRUCTIONS:
 3. Ensure no existing functionality is broken.
 4. If you see a header where a user profile would normally go, replace it with the `userAvatarSnippet`.
 5. Return the updated HTML as a JSON object with a single key "html".
+6. Ensure Alpine.js is loaded in the page <head> if it's not already there:
+   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 STRICT OUTPUT:
 Return ONLY the JSON object. No markdown, no fences.

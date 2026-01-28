@@ -24,7 +24,6 @@ export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
         private readonly baseUrl: string,
-        private readonly userAvatarSnippet: string,
     ) {
         super("generating your html", logger, aiProvider);
     }
@@ -101,9 +100,6 @@ ${JSON.stringify(architecturePlan.selectedQueries, null, 2)}
 
 DATA ENDPOINTS:
 ${queryDetails.join('\n')}
-
-USER AVATAR SNIPPET (use {{userAvatar}} to inject it):
-${this.userAvatarSnippet}
 `;
 
 
@@ -131,7 +127,6 @@ ${this.userAvatarSnippet}
 
         return {
             ...htmlResponse,
-            html: htmlResponse.html.replace('{{userAvatar}}', this.userAvatarSnippet),
             enableEngagementBar
         };
 
@@ -144,12 +139,10 @@ ${this.userAvatarSnippet}
 
         const newSchemaId = await pageManager.saveHtml(schemaId, plan.html, plan.title);
 
-        if (newSchemaId) {
-            await context.onSchemasSync({
-                task_type: AGENT_NAMES.PAGE_PLANNER,
-                schemasId: [newSchemaId]
-            });
-        }
+        await context.onSchemasSync({
+            task_type: context.agentName,
+            schemasId: [newSchemaId]
+        });
 
         // Completion
         const finalMessage = "I have generated your HTML page, you can find it in CMS.";
