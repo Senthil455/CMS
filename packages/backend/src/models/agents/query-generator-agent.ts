@@ -6,7 +6,7 @@ import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES
 
 export interface QueryGeneratorPlan extends QueryResponse {
     schemaId?: string;
-    existingPageSchema: SchemaDto | null;
+    existingSchema: SchemaDto | null;
 }
 
 export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
@@ -20,17 +20,17 @@ export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
     }
 
     async think(userInput: string, context: AgentContext): Promise<QueryGeneratorPlan> {
-        let existingPageSchema: SchemaDto | null = null;
+        let existingSchema: SchemaDto | null = null;
         let schemaId = '';
 
         // 1. Identification: Check if user input contains #schemaId:
         const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.QUERY_GENERATOR}#([^:]+):`));
         if (idMatch) {
             try {
-                existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
+                existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, idMatch[1] as string);
                 schemaId = idMatch[1] as string;
-                if (existingPageSchema && existingPageSchema.type === 'query') {
-                    const qName = existingPageSchema.name;
+                if (existingSchema && existingSchema.type === 'query') {
+                    const qName = existingSchema.name;
                     await context.saveAgentMessage(`I found the existing query "${qName}". I will fetch the latest schema and help you modify it...`);
                 }
             } catch (e) {
@@ -39,15 +39,13 @@ export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
             }
         }
 
-        const schemas = await this.cmsClient.getAllEntities(context.externalCookie);
-        const schemaContext = schemas.map(s => `Entity: ${s.name}\nAttributes: ${JSON.stringify(s.settings?.entity?.attributes || [])}`).join('\n\n');
+        const sdl = await this.cmsClient.generateSDL(context.externalCookie);
 
-        let developerMessage = `Note: You are generating a CMS Query Schema (JSON).
-Existing schemas:
-${schemaContext}
+        let developerMessage = `## GraphQL SDL Schema
+${sdl}
 `;
-        if (existingPageSchema && existingPageSchema.type === 'query') {
-            developerMessage += `\n\nExisting Query to Modify:\n${JSON.stringify(existingPageSchema.settings.query, null, 2)}`;
+        if (existingSchema && existingSchema.type === 'query') {
+            developerMessage += `\n\nExisting Query to Modify:\n${JSON.stringify(existingSchema.settings.query, null, 2)}`;
         }
 
         const response: QueryResponse = await this.aiProvider.generate(
@@ -59,7 +57,7 @@ ${schemaContext}
         return {
             ...response,
             schemaId,
-            existingPageSchema
+            existingSchema
         };
     }
 
@@ -77,7 +75,7 @@ ${schemaContext}
 
             let targetSchemaId = '';
             // If we are editing, check if name matches
-            if (plan.existingPageSchema && (plan.existingPageSchema.name === name || plan.existingPageSchema.settings?.query?.name === name)) {
+            if (plan.existingSchema && (plan.existingSchema.name === name || plan.existingSchema.settings?.query?.name === name)) {
                 targetSchemaId = plan.schemaId || '';
             }
 
@@ -98,7 +96,7 @@ ${schemaContext}
                 task_type: 'query_generator',
                 schemasId: schemaIds
             });
-            const finalMessage = plan.existingPageSchema
+            const finalMessage = plan.existingSchema
                 ? `I have updated the queries, you can view them in CMS.`
                 : `I have generated the queries, you can find them in CMS.`;
             await context.saveAgentMessage(finalMessage);
