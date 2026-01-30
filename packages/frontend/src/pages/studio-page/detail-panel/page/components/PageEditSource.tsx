@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Code, X, Save, Loader2, Maximize2, Minimize2, Database } from 'lucide-react';
+import { Code, X, Save, Loader2, Maximize2, Minimize2, Database, AlertCircle } from 'lucide-react';
 import useSWR from 'swr';
 import axios from 'axios';
 import JsonView from 'react18-json-view';
@@ -28,6 +28,7 @@ export function PageEditSource({
 }: PageEditSourceProps) {
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [paramValues, setParamValues] = useState<Record<string, string>>({});
+    const [renderError, setRenderError] = useState<string | null>(null);
 
 
     // Identify needed params from page name
@@ -180,13 +181,20 @@ export function PageEditSource({
                 </div>
 
                 {/* Preview Pane */}
-                <div className="flex-1 h-full relative">
+                <div className="flex-1 h-full relative flex flex-col">
                     <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                    {renderError && (
+                        <div className="relative z-10 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg mb-2 shrink-0">
+                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                            <span className="text-xs text-red-600 font-medium truncate">{renderError}</span>
+                        </div>
+                    )}
                     <PagePreviewSection
                         schema={item}
                         html={pageForm.html}
                         hideHeader={true}
                         paramValues={paramValues}
+                        onRenderError={setRenderError}
                     />
                 </div>
             </div>

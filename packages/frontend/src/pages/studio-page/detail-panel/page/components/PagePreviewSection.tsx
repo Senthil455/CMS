@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Globe, Database } from 'lucide-react';
 import useSWR from 'swr';
 import axios from 'axios';
@@ -8,14 +8,22 @@ import 'react18-json-view/src/style.css';
 import { type SchemaDto, ENDPOINTS } from '@cms/shared';
 import { config } from '../../../../../config';
 
+// Register Handlebars helpers for common operations
+Handlebars.registerHelper('gt', (a, b) => a > b);
+Handlebars.registerHelper('lt', (a, b) => a < b);
+Handlebars.registerHelper('eq', (a, b) => a === b);
+Handlebars.registerHelper('and', (...args) => args.slice(0, -1).every(Boolean));
+Handlebars.registerHelper('or', (...args) => args.slice(0, -1).some(Boolean));
+
 interface PagePreviewSectionProps {
     schema: SchemaDto;
     html?: string;
     hideHeader?: boolean;
     paramValues?: Record<string, string>;
+    onRenderError?: (error: string | null) => void;
 }
 
-export function PagePreviewSection({ schema, html, hideHeader, paramValues }: PagePreviewSectionProps) {
+export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRenderError }: PagePreviewSectionProps) {
     const page = schema.settings.page!;
     const [showData, setShowData] = useState(false);
 
@@ -49,6 +57,10 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues }: Pa
             return { renderedHtml: targetHtml, renderError: e instanceof Error ? e.message : String(e) };
         }
     }, [targetHtml, pageData]);
+
+    useEffect(() => {
+        onRenderError?.(renderError);
+    }, [renderError, onRenderError]);
 
     return (
         <section className={`space-y-4 ${hideHeader ? 'h-full flex flex-col' : ''}`}>
