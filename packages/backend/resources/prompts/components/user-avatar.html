@@ -2,10 +2,12 @@
     user: null,
     unreadCount: 0,
     async init() {
+        if (!window.cmsSdk?.userService) return;
         this.user = await window.cmsSdk.userService.fetchMe();
         this.unreadCount = await window.cmsSdk.engagementService.getUnreadCount();
     },
     async handleClick() {
+        if (!window.cmsSdk?.userService) return;
         if (this.user) {
             window.location.href = '/portal';
         } else {

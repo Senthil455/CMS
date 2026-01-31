@@ -174,6 +174,7 @@ export interface TemplateSelectionResponse {
 
 
 export interface PageArchitecture {
+    pageTitle: string;
     layout: {
         hasHeader: boolean;
         hasSidebar: boolean;

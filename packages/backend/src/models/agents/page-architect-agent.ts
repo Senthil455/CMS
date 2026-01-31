@@ -3,7 +3,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
-import { AGENT_NAMES, type SaveSchemaPayload } from '@cms/shared';
+import { AGENT_NAMES } from '@cms/shared';
 import { PageManager } from '../cms/page-manager';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
 // PageArchitect import removed
@@ -108,6 +108,7 @@ ${queryListContext}
             this.logger.error({ error: e, response }, 'Failed to parse PageArchitect response');
             // Fallback plan
             return {
+                pageTitle: '',
                 layout: { hasHeader: true, hasSidebar: false, hasFooter: false, structure: 'Simple container' },
                 selectedQueries: [
                     { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }

@@ -51,7 +51,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                 withCredentials: true
             });
             toast.success('Engagement Bar Generator triggered. Check chat for progress.', { id: 'engagement-bar' });
-            onChatAction(`@${AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
             toast.error('Failed to trigger Engagement Bar Generator', { id: 'engagement-bar' });
@@ -70,7 +69,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                 withCredentials: true
             });
             toast.success('User Avatar Generator triggered. Check chat for progress.', { id: 'user-avatar' });
-            onChatAction(`@${AGENT_NAMES.USER_AVATAR_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
             toast.error('Failed to trigger User Avatar Generator', { id: 'user-avatar' });
@@ -89,7 +87,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                 withCredentials: true
             });
             toast.success('Visit Track Generator triggered. Check chat for progress.', { id: 'visit-track' });
-            onChatAction(`@${AGENT_NAMES.VISIT_TRACK_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
             toast.error('Failed to trigger Visit Track Generator', { id: 'visit-track' });
@@ -108,7 +105,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                 withCredentials: true
             });
             toast.success('Top List Generator triggered. Check chat for progress.', { id: 'top-list' });
-            onChatAction(`@${AGENT_NAMES.TOP_LIST_GENERATOR} #${schemaId}: checking progress...`);
         } catch (error) {
             console.error(error);
             toast.error('Failed to trigger Top List Generator', { id: 'top-list' });

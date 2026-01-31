@@ -13,6 +13,7 @@ You must output ONLY a valid JSON object with this structure:
 
 ```json
 {
+  "pageTitle": "string", // SEO-friendly title with Handlebars (e.g., "{{post.title}} - My Blog")
   "layout": {
     "hasHeader": boolean,
     "hasSidebar": boolean,
@@ -40,6 +41,12 @@ You must output ONLY a valid JSON object with this structure:
 ```
 
 ## Architectural Rules
+
+### Page Title (SEO Best Practices)
+- The `pageTitle` field MUST be a dynamic, SEO-friendly title using Handlebars.
+- **Detail Pages**: Use entity data: `"{{post.title}} - My Blog"` or `"{{product.name}} | My Store"`
+- **List Pages**: Use descriptive static text: `"All Blog Posts - My Blog"` or `"Product Catalog"`
+- The title should be concise, descriptive, and keyword-rich for search engines.
 
 ### Query Selection & Mapping
 - **Relevance**: Only select queries that directly serve the user's request.

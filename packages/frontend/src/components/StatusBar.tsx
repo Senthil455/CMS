@@ -50,7 +50,7 @@ export function StatusBar() {
     // Start polling when any message is received (indicates agent activity)
     useEffect(() => {
         const cleanup = onMessageReceived((message) => {
-            if (message.sender === 'assistant') {
+            if (message.role === 'assistant') {
                 emptyCountRef.current = 0;
                 setIsPolling(true);
             }
@@ -72,13 +72,17 @@ export function StatusBar() {
     const seconds = (duration / 1000).toFixed(1);
 
     return (
-        <div className="bg-blue-600/10 text-blue-600 px-3 py-2 text-[10px] font-bold flex items-center justify-between border-y border-blue-600/10 animate-in fade-in duration-300">
-            <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-                <span className="truncate">Agent: {status}</span>
+        <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-3 text-xs font-bold flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3">
+                <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="truncate">{status}</span>
             </div>
-            <div className="opacity-70 tabular-nums shrink-0 ml-2">
-                *** ({seconds}s)
+            <div className="opacity-80 tabular-nums shrink-0 ml-2 bg-white/20 px-2 py-0.5 rounded">
+                {seconds}s
             </div>
         </div>
     );

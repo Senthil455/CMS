@@ -87,6 +87,7 @@ export class PageManager {
             settings: {
                 page: {
                     ...pageSettings,
+                    title: architecture.pageTitle || pageSettings.title,
                     metadata: JSON.stringify(metadata),
                 }
             }

@@ -44,6 +44,10 @@ Your templates use Handlebars for dynamic content. You MUST follow these strict 
 - Formatting (dates, numbers, etc.) is handled outside the template.
 - Access nested properties with dot notation: `{{item.category.name}}`.
 
+### Page Title Placeholder
+- The `<title>` tag MUST use the placeholder: `<title>---title---</title>`
+- CMS will replace this placeholder with the actual page title at render time.
+
 ## Final Output Protocol
 - Output exactly ONE JSON object with keys: `"title"` and `"html"`.
 - The `title` MUST exactly match the project name or architectural title.

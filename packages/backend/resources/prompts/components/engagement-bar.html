@@ -10,6 +10,7 @@
     init() {
         if (this.loaded) return;
         this.loaded = true;
+        if (!window.cmsSdk?.engagementService) return;
         window.cmsSdk.engagementService.getStats(this.entityName).then(data => this.stats = data);
     },
     toggle(type) {
