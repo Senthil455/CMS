@@ -14,7 +14,6 @@ export class PageManager {
         plan: PagePlan,
         templateId: string,
         userInput: string,
-        enableEngagementBar: boolean = false
     ): Promise<string> {
         let pageSettings: any = {
             name: plan.pageName || `generated-page-${Date.now()}`,
@@ -44,7 +43,6 @@ export class PageManager {
             plan,
             templateId,
             userInput,
-            enableEngagementBar,
         };
 
         const payload: SaveSchemaPayload = {

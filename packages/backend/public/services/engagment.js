@@ -117,6 +117,14 @@ export const engagementService = {
             console.error('Failed to get unread notifications', e);
             return 0;
         }
+    },
+
+    async trackVisit() {
+        try {
+            return await engagementApi.trackVisit();
+        } catch (e) {
+            console.error('Failed to track visit', e);
+        }
     }
 
 };

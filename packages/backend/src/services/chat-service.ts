@@ -199,8 +199,7 @@ export class ChatService {
             response.requestPayload.schemaId,
             response.requestPayload.plan,
             response.selectedTemplate,
-            response.requestPayload.userInput,
-            response.enableEngagementBar
+            response.requestPayload.userInput
         );
 
         const providerName = response.requestPayload.providerName || 'gemini';

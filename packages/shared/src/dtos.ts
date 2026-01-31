@@ -202,6 +202,8 @@ export interface PageMetadata {
     templateId?: string;
     enableEngagementBar?: boolean;
     enableUserAvatar?: boolean;
+    enableVisitTrack?: boolean;
+    enableTopList?: boolean;
 }
 
 export interface PagePlan {

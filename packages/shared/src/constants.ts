@@ -8,6 +8,8 @@ export const AGENT_NAMES = {
     ROUTER_DESIGNER: 'router_designer',
     PAGE_ARCHITECT: 'page_architect',
     USER_AVATAR_GENERATOR: 'user_avatar_generator',
+    VISIT_TRACK_GENERATOR: 'visit_track_generator',
+    TOP_LIST_GENERATOR: 'top_list_generator',
 } as const;
 
 

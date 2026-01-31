@@ -41,5 +41,11 @@ export const engagementApi = {
         const response = await fetch('/api/notifications/unread');
         if (!response.ok) throw new Error('Failed to fetch unread notifications');
         return response.json();
+    },
+
+    async trackVisit() {
+        const response = await fetch(`/api/engagements/visit?url=${encodeURIComponent(window.location.href)}`);
+        if (!response.ok) throw new Error('Failed to track visit');
+        return response.json();
     }
 };

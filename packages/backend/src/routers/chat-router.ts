@@ -89,6 +89,64 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Generator' });
         }
     });
+
+    fastify.post(ENDPOINTS.CHAT.VISIT_TRACK, {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        try {
+            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
+            const userId = request.user!.id.toString();
+            const externalCookie = request.headers.cookie || '';
+
+            const onEvent = (event: string, payload: any) => {
+                fastify.socketService.emitToUser(userId, event, payload);
+            };
+
+            const syntheticMessage = `@${AGENT_NAMES.VISIT_TRACK_GENERATOR} #${schemaId}: Add visit tracking to this page`;
+
+            await fastify.chatService.handleUserMessage(
+                userId,
+                syntheticMessage,
+                externalCookie,
+                providerName || 'gemini',
+                onEvent
+            );
+
+            return { success: true, message: 'Visit Track Generator triggered successfully' };
+        } catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ success: false, error: 'Failed to trigger Visit Track Generator' });
+        }
+    });
+
+    fastify.post(ENDPOINTS.CHAT.TOP_LIST, {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        try {
+            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
+            const userId = request.user!.id.toString();
+            const externalCookie = request.headers.cookie || '';
+
+            const onEvent = (event: string, payload: any) => {
+                fastify.socketService.emitToUser(userId, event, payload);
+            };
+
+            const syntheticMessage = `@${AGENT_NAMES.TOP_LIST_GENERATOR} #${schemaId}: Add top list component to this page`;
+
+            await fastify.chatService.handleUserMessage(
+                userId,
+                syntheticMessage,
+                externalCookie,
+                providerName || 'gemini',
+                onEvent
+            );
+
+            return { success: true, message: 'Top List Generator triggered successfully' };
+        } catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ success: false, error: 'Failed to trigger Top List Generator' });
+        }
+    });
 };
 
 export default chatRoutes;

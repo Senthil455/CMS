@@ -1,0 +1,23 @@
+<!-- Top List Component - displays trending/popular items -->
+<!-- Data is provided via Handlebars: topList array with recordId, title, url, image, subtitle -->
+<div class="border-t border-gray-200 pt-6">
+
+    <h3 class="text-lg font-bold text-gray-900 mb-4">Most Popular</h3>
+
+    <div class="space-y-4">
+        {{#each topList}}
+        <a href="{{this.url}}" class="flex items-start gap-4 group">
+            <div class="flex-1 min-w-0">
+                <h4 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    {{this.title}}</h4>
+                {{#if this.subtitle}}
+                <p class="text-xs text-gray-400 uppercase tracking-wide mt-1">{{this.subtitle}}</p>
+                {{/if}}
+            </div>
+            {{#if this.image}}
+            <img src="{{this.image}}" alt="{{this.title}}" class="w-20 h-14 object-cover rounded flex-shrink-0" />
+            {{/if}}
+        </a>
+        {{/each}}
+    </div>
+</div>

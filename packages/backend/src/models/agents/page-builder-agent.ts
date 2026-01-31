@@ -151,13 +151,6 @@ ${queryDetails.join('\n')}
         // Completion
         const finalMessage = "I have generated your HTML page, you can find it in CMS.";
         await context.saveAgentMessage(finalMessage);
-
-        if (plan.enableEngagementBar) {
-            return {
-                nextAgent: AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR,
-                nextUserInput: ``
-            };
-        }
         return null;
     }
 }
