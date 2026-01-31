@@ -35,5 +35,11 @@ export const engagementApi = {
         });
         if (!response.ok) throw new Error(`Failed to record ${type} activity`);
         return response.json();
+    },
+
+    async getUnreadNotifications() {
+        const response = await fetch('/api/notifications/unread');
+        if (!response.ok) throw new Error('Failed to fetch unread notifications');
+        return response.json();
     }
 };

@@ -4,31 +4,51 @@ CMS is a cutting-edge, open-source Content Management System designed to revolut
 
 ---
 
-## ⚡ Powering Your Workflow with AI
+## ✨ Why CMS?
+
+<table>
+<tr>
+<td align="center" width="33%">
+<h3>🤖 AI-Powered</h3>
+<p>Generate schemas, data, GraphQL queries, and full UI pages using natural language prompts. Let AI handle the tedious work while you focus on creativity.</p>
+</td>
+<td align="center" width="33%">
+<h3>💬 Built-in Engagement</h3>
+<p>Add engagement bars (views, likes, bookmarks, shares) and user avatars to any page with AI prompts. Social features are first-class citizens, not afterthoughts.</p>
+</td>
+<td align="center" width="33%">
+<h3>🚀 Scalable & Performant</h3>
+<p>P95 latency under 200ms, 2,400+ QPS throughput. Handle millions of posts with CDN caching and billions of user activities with horizontal sharding.</p>
+</td>
+</tr>
+</table>
+
+---
+
+## ⚡ What You Can Do with AI
 
 CMS isn't just a place to store content; it's an AI-driven development partner. 
 
 ### 1. Generate Entity (Schema)
-Forget manual table definitions. Simply describe your business domain (e.g., "I need a system to manage a digital library with books, authors, and rentals"), and CMS's AI will:
-- Design the normalized database schema.
-- Establish relationships (Many-to-One, Many-to-Many).
-- Configure appropriate data types (Strings, Numbers, Lookups, Junctions).
+Describe your business domain and AI will design normalized database schemas with relationships and appropriate data types.
 
 ### 2. Generate Data (Seeding)
-Tired of "Lorem Ipsum"? Use AI to generate realistic, high-quality sample data:
-- Populate your database with meaningful records.
-- Preserve relational integrity across entities.
-- Test your UI with data that looks and feels real.
+Use AI to generate realistic, high-quality sample data that preserves relational integrity.
 
 ### 3. Generate Query (API)
-Writing GraphQL can be complex. In CMS, you can:
-- Prompt the AI to build logic: "Give me all books published after 2020 by authors with more than 5 stars."
-- The AI generates the GraphQL query and converts it into a secure, high-performance REST endpoint automatically.
+Prompt the AI: "Give me all books published after 2020 by authors with more than 5 stars." It generates the GraphQL query and converts it into a REST endpoint automatically.
 
 ### 4. Generate Page (UI)
-Go from prompt to page instantly:
-- "Build a landing page for my library that sections books by genre and features a search bar."
-- AI generates the HTML/CSS using semantic structures and bridges it with your data queries.
+Go from prompt to page: "Build a landing page for my library that sections books by genre." AI generates the HTML/CSS and bridges it with your data queries.
+
+### 5. Add Engagement Bar
+Prompt: "Add likes, bookmarks, shares, and view count to my article page." AI integrates interactive social engagement features automatically.
+
+### 6. Add User Avatar
+Prompt: "Show the author's avatar and profile link." AI adds user identity components to your pages.
+
+### 7. View History in Portal
+Access all your generated schemas, queries, and pages in the portal. Compare versions and rollback changes anytime.
 
 ---
 
@@ -109,20 +129,14 @@ graph TD
     E[Portal / Frontend] -->|Consumes APIs| D
 ```
 
-### 1. **cms** (AI Schema & UI Builder)
-The "brain" of the ecosystem. This tool leverages LLMs to architect your data models and design your UI. It translates your natural language requirements into technical configurations that the system understands.
+### Overview of the Components
 
-### 2. **cms** (Backend Engine)
-The core high-performance engine built with **ASP.NET Core (C#)**.
-- **REST & GraphQL**: Automatically exposes APIs for every entity you define.
-- **Normalized Storage**: Optimized for speed (Sqlite, Postgres, SQL Server, MySQL supported).
-- **Scale**: Designed to handle millions of records and high-concurrency environments.
+| Repos             | Overview                                                                | 
+| ----------------- | ----------------------------------------------------------------------- | 
+| Formmatte         | schema + UI builder that produces JSON schema/config  AI                | 
+| cms (backend) | CMS backend with entities, GraphQL/REST, assets, and engagement features | 
+| CMS Admin SDK   | React SDK that talks to the backend, handles admin state and APIs       |
+| CMS Admin   | React admin panel for managing content data                             | 
+| CMS Portal     | User portal for view history, liked items, and bookmarked content       | 
 
-### 3. **CMS Admin** (Management Dashboard)
-A sleek, **React-based** administrative interface.
-- Manage your entities, queries, and pages.
-- Visual editors for relationships and data.
-- Built-in audit logging and publication workflows.
-
----
-
+📖 **[See Wiki for detailed architecture documentation →](../../wiki)**

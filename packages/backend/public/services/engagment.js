@@ -106,6 +106,17 @@ export const engagementService = {
                 console.error('Error sharing:', e);
             }
         }
+    },
+
+    async getUnreadCount() {
+        try {
+            const user = await userService.fetchMe();
+            if (!user) return 0;
+            return await engagementApi.getUnreadNotifications();
+        } catch (e) {
+            console.error('Failed to get unread notifications', e);
+            return 0;
+        }
     }
 
 };

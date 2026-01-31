@@ -11,9 +11,18 @@ export class CmsClient {
     constructor(private readonly baseUrl: string) { }
 
     async getMe(externalCookie: string) {
+        // Filter to only include ASP.NET Identity cookie
+        const authCookie = externalCookie.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('.AspNetCore.Identity.Application='));
+
+        if (!authCookie) {
+            throw new Error('No ASP.NET Identity cookie found');
+        }
+
         const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.AUTH.ME}`, {
             headers: {
-                Cookie: externalCookie
+                Cookie: authCookie
             }
         });
 
