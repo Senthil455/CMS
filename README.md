@@ -75,14 +75,12 @@ Try the live demo at [example.com/app](https://example.com/app).
 Get the project running locally in 4 steps.
 
 ### 1. Clone Repositories
-You'll need both the core CMS and the AI agent.
 ```bash
-git clone https://github.com/Senthil455/CMS
-git clone https://github.com/Senthil455/CMS
+git clone git@github.com/Senthil455/CMS.git
+git clone git@github.com/Senthil455/CMS.git
 ```
 
 ### 2. Start Backend (CMS)
-Run the core CMS with the SQLite demo.
 ```bash
 cd cms/examples/SqliteDemo
 dotnet run
@@ -90,25 +88,24 @@ dotnet run
 _Verify that `http://127.0.0.1:5000` is accessible._
 
 ### 3. Configure Environment (CMS)
-Open a new terminal and set up the AI agent with your Gemini API key.
 ```bash
 cd cms/packages/backend
 cp .env.example .env
 ```
-Edit `.env` and add your key (you can get a free one [here](https://aistudio.google.com/app/apikey)):
+Edit `.env` and add your Gemini API key (get a free one [here](https://aistudio.google.com/app/apikey)):
 ```ini
 GEMINI_API_KEY=your_key_here
 ```
 
 ### 4. Start Development Server
-Run the CMS agent.
 ```bash
 # From cms root
+npm install
 npm run dev
 ```
 Visit **http://127.0.0.1:5173** to start building!
 
-> **Note:** Please use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
+> **Note:** Use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
 
 ### 💡 Try it out
 Once running, try these prompts:
@@ -116,27 +113,55 @@ Once running, try these prompts:
 - "Add sample data for the book entity"
 - "Create a query to display all available books"
 
+📖 **[See Wiki for detailed setup instructions →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Setup.md)**
+
 ---
 
-## 🏗️ Architecture
+## 📚 Documentation
 
-CMS is built on a modern, decoupled architecture designed for performance and flexibility.
+For detailed documentation, please refer to our **[Wiki](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Home.md)** (source of truth):
+
+| Documentation | Description |
+|---------------|-------------|
+| [Setup Guide](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Setup.md) | Development and production environment setup |
+| [Architecture](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Architecture.md) | Component architecture and system design |
+| [Orchestrator Strategy](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Orchestrator-Strategy.md) | Multi-agent pipeline design and debugging approach |
+| [Performance & Scalability](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Performance-Scalability.md) | Benchmarks and scaling strategies |
+
+---
+
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TD
-    A[cms] -->|AI-Generated Schema & UI| B[CMS Ecosystem]
-    C[CMS Admin] -->|Management & Editing| D[cms Backend]
-    E[Portal / Frontend] -->|Consumes APIs| D
+    U1[👨‍💻 Developer] -->|Build Schema & UI| A[cms /app]
+    U2[👔 Admin] -->|Manage Content| C[AdminApp /admin]
+    U3[👤 End User] -->|View & Engage| D[Portal /portal]
+    
+    A --> B[CMS Backend /api]
+    A --> E[AI - Gemini / OpenAI]
+    C --> B
+    D --> B
 ```
 
-### Overview of the Components
+| Component | Description |
+|-----------|-------------|
+| **cms** | AI-powered schema & UI builder |
+| **cms** | High-performance CMS backend (ASP.NET Core) |
+| **AdminApp** | React admin panel for content management |
+| **Portal** | User portal for history, likes, and bookmarks |
 
-| Repos             | Overview                                                                | 
-| ----------------- | ----------------------------------------------------------------------- | 
-| Formmatte         | schema + UI builder that produces JSON schema/config  AI                | 
-| cms (backend) | CMS backend with entities, GraphQL/REST, assets, and engagement features | 
-| CMS Admin SDK   | React SDK that talks to the backend, handles admin state and APIs       |
-| CMS Admin   | React admin panel for managing content data                             | 
-| CMS Portal     | User portal for view history, liked items, and bookmarked content       | 
+📖 **[See Wiki for detailed architecture →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Architecture.md)**
 
-📖 **[See Wiki for detailed architecture documentation →](../../wiki)**
+---
+
+## ⚡ Performance
+
+| Metric | Performance |
+|--------|-------------|
+| **P95 Latency** | < 200ms |
+| **Throughput** | 2,400+ QPS per node |
+| **Complex Queries** | 5-table joins over 1M rows |
+| **Database Support** | SQLite, PostgreSQL, SQL Server, MySQL |
+
+📖 **[See Wiki for performance details →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Performance-Scalability.md)**

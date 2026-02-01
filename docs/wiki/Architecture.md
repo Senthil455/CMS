@@ -1,25 +1,39 @@
 # Architecture
 
-CMS is built on a modern, decoupled architecture designed for performance and flexibility.
+## High-Level Overview
 
 ```mermaid
 graph TD
-    A[cms] -->|AI-Generated Schema & UI| B[CMS Ecosystem]
-    C[CMS Admin] -->|Management & Editing| D[cms Backend]
-    E[Portal / Frontend] -->|Consumes APIs| D
+    %% Users
+    U1[👨‍💻 Developer]
+    U2[👔 Admin]
+    U3[👤 End User]
+
+    %% User Interfaces
+    A[cms - AI Schema Builder /app]
+    C[AdminApp /admin]
+    D[Portal /portal]
+    P[Pages]
+
+    %% Backend Services
+    B[CMS Backend /api]
+    E[AI<br>Gemini / OpenAI]
+
+    %% User → UI
+    U1 -->|Build Schema & UI| A
+    U2 -->|Manage Content| C
+    U3 -->|View & Engage| D
+    U3 -->|Browse Content| P
+
+    %% UI → Backend
+    A --> B
+    A --> E
+    C --> B
+    D --> B
+    P --> B
 ```
 
-## Overview of the Components
 
-| Repos             | Overview                                                                | 
-| ----------------- | ----------------------------------------------------------------------- | 
-| Formmatte         | schema + UI builder that produces JSON schema/config  AI                | 
-| cms (backend) | CMS backend with entities, GraphQL/REST, assets, and engagement features | 
-| CMS Admin SDK   | React SDK that talks to the backend, handles admin state and APIs       |
-| CMS Admin   | React admin panel for managing content data                             | 
-| CMS Portal     | User portal for view history, liked items, and bookmarked content       | 
-
----
 
 ## 1. cms (AI Schema & UI Builder)
 
@@ -30,7 +44,7 @@ The "brain" of the ecosystem. This tool leverages LLMs to architect your data mo
 - **Data Seeding**: Generate realistic sample data with relational integrity
 - **Query Building**: Create GraphQL queries from prompts, auto-convert to REST endpoints
 - **UI Generation**: Generate HTML/CSS pages connected to your data
-- **Engagement Features**: Add likes, shares, views, and user avatars via prompts
+- **Engagement Features**: Add likes, shares, views, toplist, page tracking, and user avatars via prompts
 - **Version History**: Access and rollback all generated content in the portal
 
 ---
@@ -42,7 +56,7 @@ The core high-performance engine built with **ASP.NET Core (C#)**.
 ### Features:
 - **REST & GraphQL**: Automatically exposes APIs for every entity you define
 - **Normalized Storage**: Optimized for speed (Sqlite, Postgres, SQL Server, MySQL supported)
-- **User Engagement**: Built-in likes, bookmarks, shares, views tracking with buffered writes
+- **User Engagement**: Built-in likes, bookmarks, shares, views, toplist, and page tracking with buffered writes
 - **Social Features**: Notifications, comments system, and popularity scoring
 - **Scale**: Designed to handle millions of records and high-concurrency environments
 
@@ -68,20 +82,27 @@ A sleek, **React-based** administrative interface.
 
 ### Features:
 - Manage your content data (CRUD operations)
-- Visual editors for relationships and related data
+- Edit related content inline
+- Manage assets (images, files) with local or cloud storage
 - Built-in audit logging and publication workflows
 
 ---
 
-## 4. CMS Admin SDK
+## 4. Pages (Frontend)
 
-React SDK that talks to the backend, handles admin state and APIs.
+Server-side rendered pages for end users to browse content.
 
-### What it provides:
-- Pre-built React hooks for CMS operations
-- State management for admin workflows
-- API client with authentication handling
-- Type-safe interfaces for all CMS entities
+### How It Works:
+1. **Template Storage**: Handlebars templates are saved to CMS database
+2. **Server Rendering**: CMS backend reads the template, executes the page's query definition to load data, and renders HTML
+3. **Dynamic Hydration**: After the page loads in the browser, Alpine.js fetches and displays dynamic social data (likes, views, etc.)
+
+### Features:
+- **SEO Optimized**: Server-rendered HTML for search engine visibility
+- **Handlebars Templating**: Flexible server-side rendering with Handlebars
+- **Built-in Routing**: Automatic routes based on page configuration
+- **Cached for Performance**: Response caching for fast page loads
+- **Social Features**: Built-in likes, shares, views, and toplist
 
 ---
 
@@ -90,12 +111,6 @@ React SDK that talks to the backend, handles admin state and APIs.
 A personalized portal where users can manage their social engagement and content.
 
 ### Features:
-
-#### History
-Users can view a list of all items they have previously accessed (pages, posts, or other content). Each item is displayed with a clickable link for easy revisiting.
-
-#### Liked Items
-Displays all posts or content the user has liked. Users can browse, unlike content, or click through to view full items.
-
-#### Bookmarked Items
-Users can organize saved content with custom folders for easy categorization. Manage and access bookmarks by folder or as a complete list.
+- **History**: View previously accessed content
+- **Liked Items**: Browse and manage liked content
+- **Bookmarked Items**: Organize saved content with folders

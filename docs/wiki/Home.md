@@ -6,7 +6,9 @@ Welcome to the CMS documentation wiki.
 
 | Page | Description |
 |------|-------------|
+| [Setup](./Setup.md) | Development and production environment setup |
 | [Architecture](./Architecture.md) | Detailed component architecture and system design |
+| [Orchestrator Strategy](./Orchestrator-Strategy.md) | Multi-agent pipeline design and debugging approach |
 | [Performance & Scalability](./Performance-Scalability.md) | Benchmarks, optimization strategies, and scaling guides |
 
 ## 🔗 Quick Links
@@ -17,4 +19,4 @@ Welcome to the CMS documentation wiki.
 
 ## 🚀 Getting Started
 
-See the [Quick Start guide](../../README.md#-quick-start) in the main README.
+See the [Quick Start guide](https://github.com/Senthil455/CMS/README.md#-quick-start) in the main README.
