@@ -12,101 +12,52 @@ This guide covers how to set up cms for both development and production environm
 - PostgreSQL or SQLite
 
 ### 1. Clone Repositories
-
 ```bash
 git clone git@github.com/Senthil455/CMS.git
 git clone git@github.com/Senthil455/CMS.git
 ```
 
-### 2. Setup cms (Node.js)
-
+### 2. Start Backend (CMS)
 ```bash
-cd cms
+cd cms/examples/SqliteDemo
+dotnet run
+```
+_Verify that `http://127.0.0.1:5000` is accessible._
 
-# Install dependencies
-npm install
-
-# Build shared package
-npm run build:shared
-
-# Setup backend
+### 3. Configure Environment (CMS)
+Open a new terminal and set up the AI agent with your Gemini API key.
+```bash
+npm i #install dependencies
 cd packages/backend
 cp .env.example .env
-# Edit .env with your configuration
+```
+Edit `.env` and add your Gemini API key (get a free one [here](https://aistudio.google.com/app/apikey)):
+```ini
+GEMINI_API_KEY=your_key_here
+```
+
+Initialize the database and Prisma client:
+```bash
 npx prisma generate
 npx prisma db push
+```
 
-# Run backend (dev mode)
+### 4. Start Development Server
+```bash
+# From cms root
+npm run build:shared
 npm run dev
 ```
+Visit **http://127.0.0.1:5173** to start building!
 
-> **Note:** Ensure `CMS_BASE_URL` in `.env` points to your CMS backend (default: `http://localhost:5000`).
+> **Note:** Use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
 
-### 3. Setup CMS (.NET)
+### 💡 Try it out
+Once running, try these prompts:
+- "Design entities for a library management system"
+- "Add sample data for the book entity"
+- "Create a query to display all available books"
 
-```bash
-cd cms/server/CMS.Course
-
-# Run with hot reload
-dotnet watch run
-```
-
-### 4. Setup Frontend
-
-```bash
-cd cms/packages/frontend
-# .env.development is pre-configured
-npm run dev
-```
-
-> **Note:** The frontend uses **`.env.development`** (checked in) for API configuration.
-> - **`vite.config.ts`** - Configures proxy routes (`/api`, `/graphql`, `/files`) for dev server
-
-### 5. Access the Application
-
-Visit the AI Schema Builder:
-
-| URL | Description |
-|-----|-------------|
-| `http://127.0.0.1:5173/app` | AI Schema Builder via Vite dev server |
-
-**Default Credentials:**
-- **Username:** `admin@example.com`
-- **Password:** `Admin1!`
-
-> **Note:** Use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly between services.
-
-#### How the Proxy Works
-
-**CMS Proxy (port 5000):**
-
-In development, the CMS backend (port 5000) proxies requests to cms:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Port 5000 (CMS)                  │
-├─────────────────────────────────────────────────────────┤
-│  /cmsapi     → Port 3001 (cms Backend - Node.js)  │
-│  /app-static → Port 3001 (cms Static Assets)      │
-│  /api         → CMS Backend APIs                    │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Vite Proxy (port 5173):**
-
-The frontend Vite dev server also proxies API requests to CMS:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                Port 5173 (Vite Dev Server)              │
-├─────────────────────────────────────────────────────────┤
-│  /api         → Port 5000 (CMS Backend)             │
-│  /graphql     → Port 5000 (CMS GraphQL)             │
-│  /files       → Port 5000 (CMS File Assets)         │
-└─────────────────────────────────────────────────────────┘
-```
-
-This allows you to access everything through either port (5000 or 5173) while each service runs independently during development.
 
 ### Environment Variables
 
