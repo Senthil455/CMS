@@ -11,9 +11,18 @@ export class CmsClient {
     constructor(private readonly baseUrl: string) { }
 
     async getMe(externalCookie: string) {
+        // Filter to only include ASP.NET Identity cookie
+        const authCookie = externalCookie.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('.AspNetCore.Identity.Application='));
+
+        if (!authCookie) {
+            throw new Error('No ASP.NET Identity cookie found');
+        }
+
         const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.AUTH.ME}`, {
             headers: {
-                Cookie: externalCookie
+                Cookie: authCookie
             }
         });
 
@@ -25,6 +34,21 @@ export class CmsClient {
             avatarUrl: this.baseUrl + externalUser.avatarUrl,
         } as User;
     }
+
+    async login(payload: any): Promise<{ cookie: string, user: User }> {
+        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.AUTH.LOGIN}`, payload);
+        const setCookie = resp.headers['set-cookie'];
+        const externalUser = resp.data;
+        return {
+            cookie: setCookie ? setCookie.join('; ') : '',
+            user: {
+                id: externalUser.id,
+                username: externalUser.name || externalUser.email,
+                avatarUrl: this.baseUrl + externalUser.avatarUrl,
+            } as User
+        };
+    }
+
 
     async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
         const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}entity`, {
@@ -254,7 +278,7 @@ export class CmsClient {
 
                 const __filename = fileURLToPath(import.meta.url);
                 const __dirname = path.dirname(__filename);
-                const examplePicsPath = path.resolve(__dirname, '../../assets', 'example_pics');
+                const examplePicsPath = path.resolve(__dirname, '../../resources/assets', 'example_pics');
                 if (!fs.existsSync(examplePicsPath)) {
                     return;
                 }

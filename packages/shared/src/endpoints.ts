@@ -1,6 +1,11 @@
 export const ENDPOINTS = {
     CHAT: {
         HISTORY: '/cmsapi/chat/history',
+        ENGAGEMENT_BAR: '/cmsapi/chat/engagement-bar',
+        USER_AVATAR: '/cmsapi/chat/user-avatar',
+        VISIT_TRACK: '/cmsapi/chat/visit-track',
+        TOP_LIST: '/cmsapi/chat/top-list',
+        STATUS: '/cmsapi/chat/status',
     },
     AUTH: {
         LOGIN: '/api/login',
@@ -8,8 +13,10 @@ export const ENDPOINTS = {
         ME: '/api/me',
     },
     AI: {
-        AGENTS: '/cmsapi/ai/agents',
+        PROVIDERS: '/cmsapi/ai/providers',
         LOGS: '/cmsapi/ai/logs',
+        ACT_ON_LOG: '/cmsapi/ai/logs/:id/act',
+        DELETE_LOG: '/cmsapi/ai/logs/:id',
     },
     SCHEMA: {
         ALL: '/api/schemas?type=',

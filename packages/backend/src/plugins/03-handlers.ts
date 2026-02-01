@@ -4,26 +4,34 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config';
+import { AGENT_NAMES } from '@cms/shared';
 
-import { IntentClassifier } from '../models/handlers/intent-classifier';
-import { EntityGenerator } from '../models/handlers/entity-generator';
+import { IntentClassifier } from '../models/agents/intent-classifier';
+import { EntityGenerator } from '../models/agents/entity-generator-agent';
 
-import { QueryGenerator } from '../models/handlers/query-generator';
-import { PageGenerator } from '../models/handlers/page-generator';
-import { PageArchitect } from '../models/handlers/page-architect';
-import { RouterDesigner } from '../models/handlers/router-designer';
-import { HtmlGenerator } from '../models/handlers/html-generator';
-import { DataGenerator } from '../models/handlers/data-generator';
+import { QueryGenerator } from '../models/agents/query-generator-agent';
+import { PagePlannerAgent } from '../models/agents/page-planner-agent';
+// PageArchitect import removed
+import { PageArchitectAgent } from '../models/agents/page-architect-agent';
+import { PageBuilderAgent } from '../models/agents/page-builder-agent';
+import { DataGenerator } from '../models/agents/data-generator-agent';
+import { EngagementBarGenerator } from '../models/agents/engagement-bar-generator';
+import { UserAvatarGenerator } from '../models/agents/user-avatar-generator';
+import { VisitTrackGenerator } from '../models/agents/visit-track-generator';
+import { TopListGenerator } from '../models/agents/top-list-generator';
+
+// ArchitectDesignerAgent import removed
+// removed HtmlGenerationHandler import
 
 const handlersPlugin: FastifyPluginAsync = async (fastify) => {
-    const agents = fastify.aiAgent;
+    const providers = fastify.aiProvider;
     const cmsClient = fastify.cms;
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
 
     // Resolve directories
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const promptsDir = path.join(__dirname, '../prompts');
-    const schemasDir = path.join(__dirname, '../schemas');
+    const promptsDir = path.join(__dirname, '../../resources/prompts');
+    const schemasDir = path.join(__dirname, '../../resources/schemas');
 
     // Load common schemas
     const [entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
@@ -34,14 +42,14 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     const intentClassifiers: Record<string, IntentClassifier> = {};
 
-    for (const [agentName, agent] of Object.entries(agents)) {
-        const promptSubDir = agentName;
+    for (const [providerName, provider] of Object.entries(providers)) {
+        const promptSubDir = providerName;
         try {
             const loadPrompt = async (fileName: string) => {
                 try {
                     return await fs.readFile(path.join(promptsDir, `${promptSubDir}/${fileName}`), 'utf-8');
                 } catch (e) {
-                    fastify.log.warn(`Prompt ${fileName} not found for agent ${agentName}, using empty string`);
+                    fastify.log.warn(`Prompt ${fileName} not found for provider ${providerName}, using empty string`);
                     return '';
                 }
             };
@@ -52,54 +60,115 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 queryGeneratorPrompt,
                 dataGeneratorPrompt,
                 pageArchitectPrompt,
-                routerDesignerPrompt,
-                htmlGeneratorPrompt
+                pagePlannerPrompt,
+                htmlGeneratorPrompt,
             ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.txt`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.txt`), 'utf-8'),
-                loadPrompt('page-architect.txt'),
-                loadPrompt('router-designer.txt'),
-                loadPrompt('html-generator.txt'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.md`), 'utf-8'),
+                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.md`), 'utf-8'),
+                loadPrompt('page-architect-agent.md'),
+                loadPrompt('page-planner-agent.md'),
+                loadPrompt('page-builder-agent.md'),
             ]);
 
-            const routerDesigner = new RouterDesigner(agent, routerDesignerPrompt);
-            const pageArchitect = new PageArchitect(agent, pageArchitectPrompt);
-            const htmlGenerator = new HtmlGenerator(agent, htmlGeneratorPrompt);
+            const [
+                modernListPrompt,
+                modernDetailPrompt,
+                classicListPrompt,
+                classicDetailPrompt,
+                minimalListPrompt,
+                minimalDetailPrompt
+            ] = await Promise.all([
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-detail.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-detail.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-list.md'), 'utf-8'),
+                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-detail.md'), 'utf-8'),
+            ]);
 
-            const entityGenerator = new EntityGenerator(agent, entityGeneratorPrompt,
+            const styleMap: Record<string, string> = {
+                'modern-list': modernListPrompt,
+                'modern-detail': modernDetailPrompt,
+                'classic-list': classicListPrompt,
+                'classic-detail': classicDetailPrompt,
+                'minimal-list': minimalListPrompt,
+                'minimal-detail': minimalDetailPrompt,
+                // Fallbacks
+                'modern': modernListPrompt,
+                'classic': classicListPrompt,
+                'minimal': minimalListPrompt
+            };
+
+            const userAvatarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/user-avatar-agent.md`), 'utf-8').catch(() => '');
+            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.md`), 'utf-8').catch(() => '');
+            const visitTrackPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/visit-track-agent.md`), 'utf-8').catch(() => '');
+            const topListPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/top-list-agent.md`), 'utf-8').catch(() => '');
+            const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
+            const userAvatarSnippet = await fs.readFile(path.join(promptsDir, 'components/user-avatar.html'), 'utf-8').catch(() => '');
+            const topListSnippet = await fs.readFile(path.join(promptsDir, 'components/top-list.html'), 'utf-8').catch(() => '');
+
+
+            // Instantiate Planners
+            // PagePlanner instantiation removed
+            // PageArchitect instantiation removed
+
+            const engagementBarGenerator = new EngagementBarGenerator(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
+            const userAvatarGenerator = new UserAvatarGenerator(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
+            const visitTrackGenerator = new VisitTrackGenerator(provider, visitTrackPrompt, cmsClient, modelLogger);
+            const topListGenerator = new TopListGenerator(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
+
+            const pageArchitectAgent = new PageArchitectAgent(provider, pageArchitectPrompt, cmsClient, modelLogger);
+
+            const pageBuilderAgent = new PageBuilderAgent(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
+
+
+            const dataDir = path.join(__dirname, '../../resources/data');
+            const templatesData = await fs.readFile(path.join(dataDir, 'page-templates.json'), 'utf-8');
+            const templates = JSON.parse(templatesData);
+
+            const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
-            const queryGenerator = new QueryGenerator(agent, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pageGenerator = new PageGenerator(cmsClient, modelLogger, config.CMS_PUBLIC_URL, pageArchitect, routerDesigner, htmlGenerator);
-            const dataGenerator = new DataGenerator(agent, dataGeneratorPrompt, cmsClient, modelLogger);
+            const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
+            const pagePlannerAgent = new PagePlannerAgent(provider, pagePlannerPrompt, modelLogger, templates, cmsClient);
+            const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
+            // removed htmlGenerationHandler instantiation
 
             const intentClassifier = new IntentClassifier(
-                agent,
+                provider,
                 intentClassifierPrompt
             );
 
-            intentClassifiers[agentName] = intentClassifier;
+            intentClassifiers[providerName] = intentClassifier;
 
             // @ts-ignore
             if (!fastify.chatHandlers) {
                 fastify.decorate('chatHandlers', {});
             }
             // @ts-ignore
-            if (!fastify.chatHandlers[agentName]) {
+            if (!fastify.chatHandlers[providerName]) {
                 // @ts-ignore
-                fastify.chatHandlers[agentName] = {};
+                fastify.chatHandlers[providerName] = {};
             }
 
             // @ts-ignore
-            fastify.chatHandlers[agentName] = {
-                entity_generator: entityGenerator,
-                query_generator: queryGenerator,
-                page_generator: pageGenerator,
-                data_generator: dataGenerator,
+            // @ts-ignore
+            fastify.chatHandlers[providerName] = {
+                [AGENT_NAMES.ENTITY_GENERATOR]: entityGenerator,
+                [AGENT_NAMES.QUERY_GENERATOR]: queryGenerator,
+                [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
+                [AGENT_NAMES.DATA_GENERATOR]: dataGenerator,
+                [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
+                [AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR]: engagementBarGenerator,
+                [AGENT_NAMES.USER_AVATAR_GENERATOR]: userAvatarGenerator,
+                [AGENT_NAMES.VISIT_TRACK_GENERATOR]: visitTrackGenerator,
+                [AGENT_NAMES.TOP_LIST_GENERATOR]: topListGenerator,
+
+                [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
             };
         } catch (error) {
-            fastify.log.warn(`Failed to load prompts for agent "${agentName}": ${(error as Error).message}`);
+            fastify.log.warn(`Failed to load prompts for provider "${providerName}": ${(error as Error).message}`);
         }
     }
 
@@ -108,5 +177,5 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
 export default fp(handlersPlugin, {
     name: 'intentClassifier',
-    dependencies: ['aiAgent', 'cms']
+    dependencies: ['aiProvider', 'cms']
 });

@@ -16,6 +16,7 @@ build/
 .env
 .env.*
 !.env.example
+!packages/frontend/.env.development
 
 # OS
 .DS_Store
@@ -32,3 +33,5 @@ packages/backend/dev.db
 packages/backend/dev.db-journal
 packages/shared/dist/
 packages/frontend/dist/
+publish.sh
+myapp.tar.gz

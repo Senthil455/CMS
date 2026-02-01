@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { type SchemaDto, type SaveSchemaPayload, type PageDto } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
+import { useSocket } from '../../../../hooks/use-socket';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { PageEditHeader } from './components/PageEditHeader';
 import { PageEditSettings } from './components/PageEditSettings';
@@ -31,20 +32,24 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
     const [isPublishing, setIsPublishing] = useState(false);
     const [showPublishConfirm, setShowPublishConfirm] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
     const { publishSchema } = useSchemas();
-    const [pageForm, setPageForm] = useState<PageDto>(() => {
-        return JSON.parse(JSON.stringify(item.settings.page || {
-            name: item.name,
-            title: item.name,
-            query: '',
-            html: '',
-            css: '',
-            components: '',
-            styles: ''
-        }));
+    const { } = useSocket();
+    const [pageForm, setPageForm] = useState<ParsedPageDto>(() => {
+        const initialForm = JSON.parse(JSON.stringify(item.settings.page));
+        if (typeof initialForm.metadata === 'string') {
+            try {
+                initialForm.metadata = JSON.parse(initialForm.metadata);
+            } catch (e) {
+                // If parsing fails for some reason, we might have issue matching ParsedPageDto.metadata type
+                // But for now let's assume it parses or handle empty object fallback
+                initialForm.metadata = {};
+            }
+        }
+        return initialForm as ParsedPageDto;
     });
 
-    const handleSave = async () => {
+    const handleSave = async (exitAfterSave: boolean) => {
         try {
             setIsSaving(true);
             setError(null);
@@ -53,12 +58,18 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                 schemaId: item.schemaId,
                 type: 'page',
                 settings: {
-                    page: pageForm
+                    page: {
+                        ...pageForm,
+                        metadata: JSON.stringify(pageForm.metadata)
+                    }
                 }
             };
 
             await onSave(payload, true);
             toast.success('Saved successfully');
+            if (exitAfterSave) {
+                onCancel();
+            }
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to save changes.');
@@ -81,7 +92,10 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
         }
     };
 
-    const updateField = (field: keyof PageDto, value: any) => {
+
+
+    const updateField = (field: keyof ParsedPageDto, value: any) => {
+
         setPageForm({ ...pageForm, [field]: value });
     };
 

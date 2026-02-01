@@ -1,7 +1,7 @@
+import { useEffect } from 'react';
 import { GraphiQL as GraphiQLReact } from 'graphiql';
 import 'graphiql/style.css';
 import './GraphiQL.css';
-import { config } from '../config';
 
 interface CustomGraphiQLProps {
     key: string;
@@ -9,14 +9,16 @@ interface CustomGraphiQLProps {
     onEditQuery?: (query: string) => void;
     className?: string;
     style?: React.CSSProperties;
+    isFullscreen?: boolean;
+    onToggleFullscreen?: () => void;
 }
 
 const fetcher = async (params: any) => {
-    const res = await fetch(config.CMS_BASE_URL + '/graphql', {
+    const res = await fetch('/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
-        credentials: 'include'
+        // credentials: 'include'
     })
     return res.json()
 }
@@ -31,9 +33,22 @@ const memoryStorage = {
     length: 0,
 };
 
-export default function GraphiQL({ key, defaultQuery, onEditQuery, className, style }: CustomGraphiQLProps) {
+export default function GraphiQL({ key, defaultQuery, onEditQuery, className, style, isFullscreen, onToggleFullscreen }: CustomGraphiQLProps) {
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                onToggleFullscreen?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen, onToggleFullscreen]);
+
     return (
-        <div style={style || { height: '100vh', width: '100vw' }} className={className}>
+        <div
+            style={isFullscreen ? {} : (style || { height: '100vh', width: '100vw' })}
+            className={`${className} ${isFullscreen ? 'graphiql-fullscreen' : ''} relative`}
+        >
             <GraphiQLReact
                 key={key}
                 onEditQuery={(query: string) => {

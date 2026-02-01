@@ -101,6 +101,27 @@ async function start() {
             wildcard: false,
         });
 
+        // Register Backend Static Files (e.g. common JS)
+        const publicPath = join(__dirname, '../public');
+        await server.register(fastifyStatic, {
+            root: publicPath,
+            prefix: '/app-static/',
+            decorateReply: false,
+        });
+
+        // Register Landing Page Static Files
+        const landingPagePath = join(__dirname, '../../../artifacts/landing-page');
+        await server.register(fastifyStatic, {
+            root: landingPagePath,
+            prefix: '/landing/',
+            decorateReply: false,
+        });
+
+        // Serve landing page as home page
+        server.get('/', async (request, reply) => {
+            return reply.sendFile('index.html', landingPagePath);
+        });
+
         console.log("8. Setting Not Found Handler...");
         server.setNotFoundHandler((request, reply) => {
             if (request.url.startsWith('/app')) {

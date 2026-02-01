@@ -57,6 +57,10 @@ export interface PageDto {
     metadata: string;
 }
 
+export interface ParsedPageDto extends Omit<PageDto, 'metadata'> {
+    metadata: PageMetadata;
+}
+
 export interface SchemaDto {
     id: number;
     schemaId: string;
@@ -148,4 +152,65 @@ export interface AssetDto {
 export interface AssetListResponse {
     items: AssetDto[];
     totalRecords: number;
+}
+
+export interface TemplateSelectionRequest {
+    userInput: string;
+    schemaId?: string;
+    plan: PagePlan;
+    providerName: string;
+    templates: {
+        id: string;
+        name: string;
+        description: string;
+    }[];
+}
+
+export interface TemplateSelectionResponse {
+    selectedTemplate: string;
+    enableEngagementBar?: boolean;
+    requestPayload: TemplateSelectionRequest;
+}
+
+
+export interface PageArchitecture {
+    pageTitle: string;
+    layout: {
+        hasHeader: boolean;
+        hasSidebar: boolean;
+        hasFooter: boolean;
+        structure: string;
+    };
+    selectedQueries: Array<{
+        queryName: string;
+        fieldName: string;
+        type: 'single' | 'list';
+        description: string;
+        args: Record<string, 'fromPath' | 'fromQuery'>;
+    }>;
+    components: Array<{
+        name: string;
+        type: string;
+        queriesUsed: string[];
+    }>;
+    architectureHints: string;
+}
+
+export interface PageMetadata {
+    plan?: PagePlan;
+    architecture?: PageArchitecture;
+    userInput?: string;
+    templateId?: string;
+    enableEngagementBar?: boolean;
+    enableUserAvatar?: boolean;
+    enableVisitTrack?: boolean;
+    enableTopList?: boolean;
+}
+
+export interface PagePlan {
+    pageName: string;
+    entityName: string | null;
+    pageType: 'list' | 'detail';
+    primaryParameter: string | null;
+    linkingRules: string[];
 }

@@ -1,10 +1,11 @@
-import { type SchemaDto } from '@cms/shared';
+import { type SchemaDto, type PageMetadata, type ParsedPageDto } from '@cms/shared';
 import { useState, useMemo } from 'react';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { PagePublishSection } from './components/PagePublishSection';
 import { PageSettingsSection } from './components/PageSettingsSection';
-import { ArchitecturePlanSection } from './components/ArchitecturePlanSection';
+
+import { PageSelectedQueriesSection } from './components/PageSelectedQueriesSection';
 import { PagePreviewSection } from './components/PagePreviewSection';
 
 interface PageDetailProps {
@@ -18,17 +19,22 @@ export function PageDetail({ schema }: PageDetailProps) {
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
 
-    const metadata = useMemo(() => {
-        if (!page.metadata) return null;
-        try {
-            return JSON.parse(page.metadata);
-        } catch (e) {
-            console.error('Failed to parse page metadata', e);
-            return null;
+    const parsedPage = useMemo<ParsedPageDto>(() => {
+        let metadata: PageMetadata = {};
+        if (page.metadata) {
+            try {
+                metadata = JSON.parse(page.metadata);
+            } catch (e) {
+                console.error('Failed to parse page metadata', e);
+            }
         }
-    }, [page.metadata]);
+        return {
+            ...page,
+            metadata
+        };
+    }, [page]);
 
-    const architecturePlan = metadata?.architecturePlan;
+    const architecture = parsedPage.metadata.architecture;
 
     const handleConfirmPublish = async () => {
         try {
@@ -50,10 +56,12 @@ export function PageDetail({ schema }: PageDetailProps) {
                 onPublish={() => setIsPublishDialogOpen(true)}
             />
 
-            <PageSettingsSection page={page} />
+            <PageSettingsSection page={parsedPage} />
 
-            {architecturePlan && (
-                <ArchitecturePlanSection architecturePlan={architecturePlan} />
+
+
+            {architecture?.selectedQueries && (
+                <PageSelectedQueriesSection selectedQueries={architecture.selectedQueries} />
             )}
 
             <PagePreviewSection schema={schema} />

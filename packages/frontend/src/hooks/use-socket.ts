@@ -22,8 +22,8 @@ export function useSocket() {
     }, []);
 
     // usage of useCallback is necessary to prevent infinite loops in useEffect dependencies
-    const sendMessage = useCallback((content: string, agentName?: string) => {
-        socketRef.current?.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, { content, agentName });
+    const sendMessage = useCallback((content: string, providerName?: string) => {
+        socketRef.current?.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, { content, providerName });
     }, []);
 
     const onMessageReceived = useCallback((callback: (message: ChatMessage) => void) => {
@@ -51,12 +51,33 @@ export function useSocket() {
         socketRef.current?.emit(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, data);
     }, []);
 
+    const onTemplateSelectionListToConfirm = useCallback((callback: (data: any) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
+        return () => {
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
+        };
+    }, []);
+
+    const onTemplateSelectionDetailToConfirm = useCallback((callback: (data: any) => void) => {
+        socketRef.current?.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
+        return () => {
+            socketRef.current?.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
+        };
+    }, []);
+
+    const sendTemplateSelectionResponse = useCallback((data: any) => {
+        socketRef.current?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
+    }, []);
+
     return {
         isConnected,
         sendMessage,
         sendSchemaResponse,
+        sendTemplateSelectionResponse,
         onMessageReceived,
         onSchemaSummaryToConfirm,
+        onTemplateSelectionListToConfirm,
+        onTemplateSelectionDetailToConfirm,
         onSchemasSync,
     };
 }
