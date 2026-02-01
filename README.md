@@ -27,28 +27,13 @@ CMS is a cutting-edge, open-source Content Management System designed to revolut
 
 ## ⚡ What You Can Do with AI
 
-CMS isn't just a place to store content; it's an AI-driven development partner. 
+CMS acts as your AI-driven development partner. Describe what you want, and it builds it:
 
-### 1. Generate Entity (Schema)
-Describe your business domain and AI will design normalized database schemas with relationships and appropriate data types.
+- **Generate the Full Stack**: Entities (schemas), Seed Data, GraphQL Queries, and UI Pages from natural language.
+- **Add Engagement Instantly**: "Add a like button" or "Show user avatar" simply works.
+- **Manage & Iterate**: View version history and manage artifacts in the visual portal.
 
-### 2. Generate Data (Seeding)
-Use AI to generate realistic, high-quality sample data that preserves relational integrity.
-
-### 3. Generate Query (API)
-Prompt the AI: "Give me all books published after 2020 by authors with more than 5 stars." It generates the GraphQL query and converts it into a REST endpoint automatically.
-
-### 4. Generate Page (UI)
-Go from prompt to page: "Build a landing page for my library that sections books by genre." AI generates the HTML/CSS and bridges it with your data queries.
-
-### 5. Add Engagement Bar
-Prompt: "Add likes, bookmarks, shares, and view count to my article page." AI integrates interactive social engagement features automatically.
-
-### 6. Add User Avatar
-Prompt: "Show the author's avatar and profile link." AI adds user identity components to your pages.
-
-### 7. View History in Portal
-Access all your generated schemas, queries, and pages in the portal. Compare versions and rollback changes anytime.
+📖 **[See Wiki for full capabilities →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Building-a-System.md)**
 
 ---
 
@@ -132,17 +117,7 @@ For detailed documentation, please refer to our **[Wiki](https://github.com/Sent
 
 ## 🏗️ Architecture Overview
 
-```mermaid
-graph TD
-    U1[👨‍💻 Developer] -->|Build Schema & UI| A[cms /app]
-    U2[👔 Admin] -->|Manage Content| C[AdminApp /admin]
-    U3[👤 End User] -->|View & Engage| D[Portal /portal]
-    
-    A --> B[CMS Backend /api]
-    A --> E[AI - Gemini / OpenAI]
-    C --> B
-    D --> B
-```
+
 
 | Component | Description |
 |-----------|-------------|

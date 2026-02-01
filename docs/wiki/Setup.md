@@ -55,12 +55,11 @@ dotnet watch run
 
 ```bash
 cd cms/packages/frontend
-cp .env.example .env
+# .env.development is pre-configured
 npm run dev
 ```
 
-> **Note:** The frontend requires both configurations to work:
-> - **`.env`** - Defines API URLs (`VITE_API_URL`, `VITE_CMS_URL`) for runtime use
+> **Note:** The frontend uses **`.env.development`** (checked in) for API configuration.
 > - **`vite.config.ts`** - Configures proxy routes (`/api`, `/graphql`, `/files`) for dev server
 
 ### 5. Access the Application

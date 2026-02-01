@@ -15,13 +15,39 @@ CMS is designed for speed and scale, rivaling specialized GraphQL engines while 
 
 ## How We Achieve This
 
-### Normalized Data (Not Key-Value)
-Unlike traditional CMS platforms that use flexible but slow key-value storage, CMS uses normalized database tables with proper indexes. This enables fast queries and efficient JOINs.
+### Real Database Fields (Not Key-Value)
+
+**Traditional CMS** stores custom fields as key-value pairs:
+```
+| record_id | field_name | field_value |
+|-----------|------------|-------------|
+| 1         | title      | "Hello"     |
+| 1         | price      | "29.99"     |
+```
+This is flexible but **slow** – you can't build indexes on arbitrary key-value data.
+
+**CMS** creates actual database columns for each field:
+```
+| id | title   | price |
+|----|---------|-------|
+| 1  | "Hello" | 29.99 |
+```
+This allows you to build **indexes** and **compound indexes** on any field, enabling:
+- Fast lookups by any column
+- Efficient filtering and sorting
+- Complex JOINs across related tables
 
 ### Smart Caching
-- Schema definitions cached in memory
-- Query results cached at CDN edge
-- Hybrid cache (local + Redis) for multi-node setups
+
+CMS uses a multi-layer caching strategy to minimize database hits (see [diagram below](#cms-content-cache--replicate)):
+
+| Layer | What's Cached | Benefit |
+|-------|--------------|---------|
+| **CDN Edge** | Rendered pages, API responses | Users get data from nearest server |
+| **App Memory** | Schema definitions, frequent queries | No network call needed |
+| **Redis** | Shared cache for multi-server setups | All servers see the same cached data |
+
+Most requests never reach the database.
 
 ### Write Buffering
 High-volume user activities (likes, views, shares) are buffered in memory and batch-flushed every minute—achieving 19ms P95 at 4,200 QPS.
@@ -30,15 +56,42 @@ High-volume user activities (likes, views, shares) are buffered in memory and ba
 
 ## Scaling Strategy
 
-| Project Size | Approach |
-|--------------|----------|
-| **Small** | Single DB + CDN caching |
-| **Medium** (100K-1M users) | Add Redis + read replicas |
-| **Large** (1M+ users) | Database sharding + multi-region CDN |
+CMS uses **different strategies** for different types of data:
 
-### Content vs Activity Data
-- **CMS Content**: Scales via caching (CDN → App Cache → Redis → DB)
-- **User Activity**: Scales via sharding (userId hash → distributed shards)
+### CMS Content: Cache & Replicate
+
+Content data (articles, products, courses) changes infrequently. Scale with caching and read replicas:
+
+```mermaid
+flowchart LR
+    A[User Request] --> B[CDN Edge]
+    B --> C[App Cache]
+    C --> D[Read Replicas]
+    D --> E[(Primary DB)]
+    E -->|Sync| D
+```
+
+### User Activity: Shard
+
+Activity data (likes, views, bookmarks) is high-volume. Scale by sharding based on user ID:
+
+```mermaid
+flowchart LR
+    A[User Request] --> B{"hash(userId) % N"}
+    B --> C[(Shard 0)]
+    B --> D[(Shard 1)]
+    B --> E[(Shard 2)]
+    B --> F[(Shard N)]
+```
+
+Each shard handles a portion of users. Add more shards as you grow.
+
+### Summary
+
+| Data Type | Strategy | Why |
+|-----------|----------|-----|
+| **CMS Content** | Cache + Replicate | Read-heavy, rarely changes |
+| **User Activity** | Shard by userId | Write-heavy, per-user isolation |
 
 ---
 
