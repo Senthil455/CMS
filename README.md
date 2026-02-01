@@ -93,7 +93,7 @@ npx prisma db push
 ### 4. Start Development Server
 ```bash
 # From cms root
-npm install
+npm run build:shared
 npm run dev
 ```
 Visit **http://127.0.0.1:5173** to start building!
