@@ -90,13 +90,6 @@ npx prisma generate
 npx prisma db push
 ```
 
-**3. Configure Frontend**
-```bash
-cd ../frontend
-cp .env.example .env
-```
-_(No edit needed for default local setup)_
-
 ### 4. Start Development Server
 ```bash
 # From cms root

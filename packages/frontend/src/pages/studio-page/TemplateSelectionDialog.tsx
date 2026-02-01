@@ -21,16 +21,14 @@ export function TemplateSelectionDialog({
     onClose,
     onConfirm,
     templates,
-    pageType
 }: TemplateSelectionDialogProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [enableEngagementBar, setEnableEngagementBar] = useState(false);
 
     if (!isOpen) return null;
 
     const handleConfirm = () => {
         if (selectedId) {
-            onConfirm(selectedId, enableEngagementBar);
+            onConfirm(selectedId, false);
         }
     };
 
