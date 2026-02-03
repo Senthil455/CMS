@@ -5,12 +5,26 @@ export class GeminiProvider implements AIProvider {
     private cacheNames = new Map<string, string>();
 
     constructor(
-        private readonly apiKey: string,
+        private apiKey: string,
         private readonly baseURL: string,
         private readonly model: string,
         private readonly logger: ServiceLogger,
         private readonly useCaching: boolean = false
     ) {
+    }
+
+    setApiKey(key: string) {
+        this.apiKey = key;
+    }
+
+    hasApiKey(): boolean {
+        return !!this.apiKey;
+    }
+
+    getMaskedApiKey(): string | null {
+        if (!this.apiKey) return null;
+        if (this.apiKey.length <= 4) return '***';
+        return `...${this.apiKey.slice(-2)}`;
     }
 
     private async getOrCreateCache(system: string, developer: string): Promise<string | null> {

@@ -96,10 +96,10 @@ export function StudioHeader({ user, logout, isDark, toggleTheme, showExplorer, 
                                     <UserIcon className="w-4 h-4" />
                                     Profile
                                 </button>
-                                <button className="w-full flex items-center gap-3 px-4 py-2 hover:bg-app-muted transition-colors text-sm font-medium">
+                                <Link to="/app/settings" className="w-full flex items-center gap-3 px-4 py-2 hover:bg-app-muted transition-colors text-sm font-medium">
                                     <Settings className="w-4 h-4" />
                                     Settings
-                                </button>
+                                </Link>
                                 <div className="h-px bg-border my-1" />
                                 <button
                                     onClick={() => {

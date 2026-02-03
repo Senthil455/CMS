@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import StudioPage from './pages/studio-page';
 import AiLogsPage from './pages/ai-logs-page';
+import SystemSettingsPage from './pages/system-settings-page';
 
 import LoginPage from './pages/login-page';
 import { useAuth } from './hooks/use-auth';
@@ -71,6 +72,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AiLogsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute>
+                <SystemSettingsPage />
               </ProtectedRoute>
             }
           />
