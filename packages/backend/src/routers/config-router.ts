@@ -6,7 +6,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
     fastify.get('/cmsapi/config/gemini', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const geminiAgent = fastify.aiAgent['gemini'];
+        const geminiAgent = fastify.aiProvider['gemini'];
         if (!geminiAgent) {
             return {
                 success: true,
@@ -41,7 +41,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         const { apiKey } = body_.data;
-        const geminiAgent = fastify.aiAgent['gemini'];
+        const geminiAgent = fastify.aiProvider['gemini'];
 
         if (!geminiAgent) {
             return reply.status(404).send({ error: 'Gemini agent not enabled' });
