@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import StudioPage from './pages/studio-page';
 import AiLogsPage from './pages/ai-logs-page';
@@ -9,7 +9,9 @@ import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isSystemReady, hasUser } = useAuth();
+  console.log({ isSystemReady, hasUser })
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -19,9 +21,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (isSystemReady === false || hasUser === false) {
+    if (location.pathname !== '/app/settings') {
+      return <Navigate to="/app/settings" replace />;
+    }
+    return <>{children}</>;
+  }
+
   if (!user) {
     return <Navigate to="/app/login" replace />;
   }
+
+
 
   return <>{children}</>;
 }

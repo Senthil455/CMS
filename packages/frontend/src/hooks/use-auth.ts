@@ -15,6 +15,11 @@ export function useAuth() {
         }
     );
 
+    const { data: systemReadyData } = useSWR<{ isReady: boolean; hasUser: boolean }>(
+        `${config.CMS_BASE_URL}/api/system/is-ready`,
+        fetcher
+    );
+
     const login = async (usernameOrEmail: string, password: string) => {
         try {
             await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`,
@@ -46,5 +51,7 @@ export function useAuth() {
         isError: !!error,
         login,
         logout,
+        isSystemReady: systemReadyData?.isReady,
+        hasUser: systemReadyData?.hasUser,
     };
 }

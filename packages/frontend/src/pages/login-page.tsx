@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { Loader2, Lock } from 'lucide-react';
@@ -8,8 +8,14 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { login } = useAuth();
+    const { login, isSystemReady } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isSystemReady === false) {
+            navigate('/app/settings');
+        }
+    }, [isSystemReady, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

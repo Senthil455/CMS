@@ -1,72 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
-import { config } from '../../config';
-import { toast } from 'react-hot-toast';
+import { DatabaseSettings } from './components/DatabaseSettings';
+import { AdminSettings } from './components/AdminSettings';
+import { GeminiSettings } from './components/GeminiSettings';
 
 export default function SystemSettingsPage() {
-    const { user, logout } = useAuth();
+    const { user, logout, isSystemReady, hasUser } = useAuth();
+
+    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini'>('database');
     const [isDark, setIsDark] = useState(false);
-    const [apiKey, setApiKey] = useState('');
-    const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
-    const [maskedKey, setMaskedKey] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
 
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle('dark');
     };
 
-    const fetchStatus = async () => {
-        try {
-            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
-                credentials: 'include'
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setIsConfigured(data.data?.configured ?? false);
-                setMaskedKey(data.data?.maskedKey ?? null);
-            }
-        } catch (err) {
-            console.error('Failed to fetch config status', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchStatus();
-    }, []);
-
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!apiKey) return;
-
-        setIsSaving(true);
-        try {
-            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ apiKey }),
-                credentials: 'include'
-            });
-
-            if (res.ok) {
-                toast.success('Gemini API Key updated successfully');
-                setApiKey('');
-                fetchStatus();
-            } else {
-                toast.error('Failed to update API Key');
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Error updating settings');
-        } finally {
-            setIsSaving(false);
+        // If system is already ready, default to Gemini tab, unless explicitly navigating? 
+        // For now, if not ready, force Database tab.
+        if (isSystemReady === false) {
+            setActiveTab('database');
+        } else if (isSystemReady === true && hasUser === false) {
+            setActiveTab('admin');
         }
-    };
+    }, [isSystemReady, hasUser]);
+
 
     return (
         <div className="min-h-screen bg-app flex flex-col transition-colors duration-300">
@@ -82,67 +42,72 @@ export default function SystemSettingsPage() {
             />
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-                <div className="bg-app-surface border border-border rounded-xl p-8 shadow-sm">
-                    <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                        System Settings
-                    </h1>
+                <div className="bg-app-surface border border-border rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-8 pb-0">
+                        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                            System Settings
+                        </h1>
+                        <p className="text-primary-muted mb-8">
+                            Configure your CMS instance, database connection, and AI integrations.
+                        </p>
 
-                    <section className="mb-8">
-                        <h2 className="text-lg font-semibold mb-4 text-primary">Gemini AI Configuration</h2>
-
-                        <div className="flex items-center gap-3 mb-6 p-4 bg-app-muted/50 rounded-lg border border-border">
-                            <span className="text-sm font-medium text-primary-muted">Current Status:</span>
-                            {isLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin text-primary-muted" />
-                            ) : isConfigured ? (
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2 text-green-500 font-medium text-sm">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        <span>Configured & Ready</span>
-                                    </div>
-                                    {maskedKey && (
-                                        <div className="text-xs text-primary-muted font-mono">
-                                            Current Key: <span className="text-primary">{maskedKey}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-2 text-amber-500 font-medium text-sm">
-                                    <XCircle className="w-4 h-4" />
-                                    <span>Not Configured</span>
-                                </div>
-                            )}
-                        </div>
-
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1 text-primary-muted">
-                                    Update Gemini API Key
-                                </label>
-                                <input
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="Enter new API Key to update..."
-                                    className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                />
-                                <p className="text-xs text-primary-muted mt-2">
-                                    This key will be stored in memory and used for AI operations. It will be lost if the server restarts.
+                        {isSystemReady === false && (
+                            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg p-4">
+                                <h3 className="text-red-800 dark:text-red-400 font-semibold flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4" /> System Not Ready
+                                </h3>
+                                <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                                    Please configure the database connection to initialize the system.
                                 </p>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={!apiKey || isSaving}
-                                    className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    Save Configuration
-                                </button>
-                            </div>
-                        </form>
-                    </section>
+                    <div className="border-b border-border">
+                        <div className="flex gap-1 px-8">
+                            <button
+                                onClick={() => setActiveTab('database')}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'database'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-primary-muted hover:text-primary'
+                                    }`}
+                            >
+                                <Database className="w-4 h-4" />
+                                Database
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('admin')}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'admin'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-primary-muted hover:text-primary'
+                                    }`}
+                            >
+                                <Shield className="w-4 h-4" />
+                                Super Admin
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('gemini')}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-primary-muted hover:text-primary'
+                                    }`}
+                            >
+                                <Key className="w-4 h-4" />
+                                Gemini AI
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-8 min-h-[400px]">
+                        {activeTab === 'database' && <DatabaseSettings />}
+                        {activeTab === 'admin' && (
+                            <AdminSettings
+                                isSystemReady={!!isSystemReady}
+                                hasUser={!!hasUser}
+                            />
+                        )}
+                        {activeTab === 'gemini' && <GeminiSettings />}
+                    </div>
                 </div>
             </main>
         </div>
