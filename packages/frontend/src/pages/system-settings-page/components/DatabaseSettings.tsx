@@ -26,10 +26,12 @@ export function DatabaseSettings() {
         filename: 'cms.db',
         host: 'localhost',
         database: 'cms',
-        username: 'postgres',
+        username: 'cmsuser',
         password: '',
-        port: '5432' // Default helper
+        port: '5432'
     });
+    const [masterPassword, setMasterPassword] = useState('');
+    const [repeatMasterPassword, setRepeatMasterPassword] = useState('');
     const [isDbSaving, setIsDbSaving] = useState(false);
 
     const generateConnectionString = () => {
@@ -37,11 +39,11 @@ export function DatabaseSettings() {
             case DatabaseProvider.Sqlite:
                 return `Data Source=${dbParams.filename}`;
             case DatabaseProvider.Postgres:
-                return `Host=${dbParams.host};Database=${dbParams.database};Username=${dbParams.username};Password=${dbParams.password}`;
+                return `Host=${dbParams.host};Port=${dbParams.port};Database=${dbParams.database};Username=${dbParams.username};Password=${dbParams.password}`;
             case DatabaseProvider.Mysql:
-                return `Server=${dbParams.host};Database=${dbParams.database};User=${dbParams.username};Password=${dbParams.password}`;
+                return `Server=${dbParams.host};Port=${dbParams.port};Database=${dbParams.database};User=${dbParams.username};Password=${dbParams.password}`;
             case DatabaseProvider.SqlServer:
-                return `Server=${dbParams.host};Database=${dbParams.database};User Id=${dbParams.username};Password=${dbParams.password};TrustServerCertificate=True;`;
+                return `Server=${dbParams.host},${dbParams.port};Database=${dbParams.database};User Id=${dbParams.username};Password=${dbParams.password};TrustServerCertificate=True;`;
             default:
                 return '';
         }
@@ -49,6 +51,12 @@ export function DatabaseSettings() {
 
     const handleSaveDatabase = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (masterPassword && masterPassword !== repeatMasterPassword) {
+            toast.error('Master Passwords do not match');
+            return;
+        }
+
         setIsDbSaving(true);
         const connectionString = generateConnectionString();
         try {
@@ -57,7 +65,8 @@ export function DatabaseSettings() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     databaseProvider: dbProvider,
-                    connectionString
+                    connectionString,
+                    masterPassword
                 }),
                 credentials: 'include'
             });
@@ -132,6 +141,16 @@ export function DatabaseSettings() {
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium mb-1 text-primary-muted">Port</label>
+                                <input
+                                    type="text"
+                                    value={dbParams.port}
+                                    onChange={(e) => setDbParams({ ...dbParams, port: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    placeholder="5432"
+                                />
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium mb-1 text-primary-muted">Database Name</label>
                                 <input
                                     type="text"
@@ -148,7 +167,7 @@ export function DatabaseSettings() {
                                     value={dbParams.username}
                                     onChange={(e) => setDbParams({ ...dbParams, username: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                    placeholder="db_user"
+                                    placeholder="cmsuser"
                                 />
                             </div>
                             <div>
@@ -164,6 +183,34 @@ export function DatabaseSettings() {
                         </div>
                     </>
                 )}
+            </div>
+
+            <div className="bg-app-muted/30 p-6 rounded-xl border border-border space-y-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-primary-muted">Master Password (Required)</label>
+                    <input
+                        type="password"
+                        value={masterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                        placeholder="Set a master password for recovery and future updates"
+                        required
+                    />
+                    <p className="text-xs text-primary-muted mt-2">
+                        This password is saved in the server's configuration file. You will need it to update settings if the database becomes unreachable.
+                    </p>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-primary-muted">Repeat Master Password</label>
+                    <input
+                        type="password"
+                        value={repeatMasterPassword}
+                        onChange={(e) => setRepeatMasterPassword(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                        placeholder="Repeat master password"
+                        required
+                    />
+                </div>
             </div>
 
             <div className="flex justify-end pt-2">

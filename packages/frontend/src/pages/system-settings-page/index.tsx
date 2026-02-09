@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Database, Shield, Key, AlertTriangle } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
 import { GeminiSettings } from './components/GeminiSettings';
+import { AddSpaSettings } from './components/AddSpaSettings';
 
 export default function SystemSettingsPage() {
     const { user, logout, isSystemReady, hasUser } = useAuth();
 
-    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini'>('database');
+    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa'>('database');
     const [isDark, setIsDark] = useState(false);
 
     const toggleTheme = () => {
@@ -85,16 +86,30 @@ export default function SystemSettingsPage() {
                                 <Shield className="w-4 h-4" />
                                 Super Admin
                             </button>
-                            <button
-                                onClick={() => setActiveTab('gemini')}
-                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-primary-muted hover:text-primary'
-                                    }`}
-                            >
-                                <Key className="w-4 h-4" />
-                                Gemini AI
-                            </button>
+                            {user && (
+                                <>
+                                    <button
+                                        onClick={() => setActiveTab('gemini')}
+                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-primary-muted hover:text-primary'
+                                            }`}
+                                    >
+                                        <Key className="w-4 h-4" />
+                                        Gemini AI
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('spa')}
+                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'spa'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-primary-muted hover:text-primary'
+                                            }`}
+                                    >
+                                        <Box className="w-4 h-4" />
+                                        Add SPA
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -106,7 +121,8 @@ export default function SystemSettingsPage() {
                                 hasUser={!!hasUser}
                             />
                         )}
-                        {activeTab === 'gemini' && <GeminiSettings />}
+                        {user && activeTab === 'gemini' && <GeminiSettings />}
+                        {user && activeTab === 'spa' && <AddSpaSettings />}
                     </div>
                 </div>
             </main>

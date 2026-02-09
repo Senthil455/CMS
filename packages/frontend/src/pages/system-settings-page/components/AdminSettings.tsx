@@ -47,7 +47,7 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
 
             if (res.ok) {
                 toast.success(isRootSetup ? 'Root Admin created successfully' : 'Admin account created successfully');
-                setAdminParams({ username: '', email: '', password: '' });
+                setAdminParams({ username: '', email: '', password: '', repeatPassword: '' });
                 // Redirect to login after successful creation
                 setTimeout(() => window.location.href = '/app/login', 1500);
             } else {

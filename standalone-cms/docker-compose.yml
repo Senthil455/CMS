@@ -2,7 +2,8 @@ services:
   app:
     build:
       context: ../../
-      dockerfile: cms/deploy/Dockerfile
+      dockerfile: cms/standalone-cms/Dockerfile
+    image: cms-app:latest
     ports:
       - "5000:5000" # Nginx Gateway
     environment:
