@@ -1,0 +1,58 @@
+# --- Stage 1: Setup Node.js Middleware ---
+FROM node:24-slim AS node-base
+WORKDIR /app
+
+# Install runtime dependencies for backend (openssl for prisma)
+RUN apt-get update -y && apt-get install -y openssl procps curl && rm -rf /var/lib/apt/lists/*
+
+# 1. Copy package definitions to install dependencies
+COPY CMS/package.json cms/package-lock.json ./
+COPY CMS/packages/shared/package.json ./packages/shared/
+COPY CMS/packages/backend/package.json ./packages/backend/
+COPY CMS/packages/frontend/package.json ./packages/frontend/
+
+# 2. Install PROD dependencies
+RUN npm ci --omit=dev
+
+# 3. Copy pre-built artifacts from LOCAL machine
+COPY CMS/packages/shared/dist ./packages/shared/dist
+# Copy backend artifacts AND source files (for tsx)
+COPY CMS/packages/backend/dist ./packages/backend/dist
+COPY CMS/packages/backend/src ./packages/backend/src
+COPY CMS/packages/backend/resources ./packages/backend/resources
+COPY CMS/packages/backend/prisma ./packages/backend/prisma
+# Generate Prisma Client
+RUN cd packages/backend && npx prisma generate
+
+# Copy frontend artifacts
+COPY CMS/packages/frontend/dist ./packages/frontend/dist
+
+# --- Stage 2: Final Image (Hybrid .NET + Node) ---
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+
+# Install Node.js & Nginx
+RUN apt-get update && apt-get install -y curl nginx procps && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g tsx && \
+    rm -rf /var/lib/apt/lists/*
+
+# Configure Nginx
+COPY CMS/mono-deploy/nginx.conf /etc/nginx/nginx.conf
+
+# Copy Node.js App from node-base
+COPY --from=node-base /app /app
+
+# Copy Pre-built .NET App from LOCAL machine
+COPY CMS/publish ./cms
+# Ensure config files are writable (will be regenerated from env vars at runtime)
+RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json && \
+    touch ./cms/cms.settings.json && chmod 666 ./cms/cms.settings.json
+
+# Copy Entrypoint
+COPY CMS/mono-deploy/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 5000
+ENTRYPOINT ["/app/entrypoint.sh"]

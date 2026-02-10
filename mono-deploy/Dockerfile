@@ -1,5 +1,5 @@
 # --- Stage 1: Build Frontend & Backend ---
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 # Install dependencies (utilizing workspace support)
@@ -7,6 +7,7 @@ COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
 COPY CMS/packages/backend/package.json ./packages/backend/
 COPY CMS/packages/frontend/package.json ./packages/frontend/
+COPY CMS/packages/frontend/tsconfig.json ./packages/frontend/tsconfig.json
 RUN npm install
 
 # Copy Cms source code
@@ -37,7 +38,7 @@ WORKDIR /app
 
 # Install Node.js & Nginx
 RUN apt-get update && apt-get install -y curl nginx procps && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 

@@ -2,12 +2,16 @@ services:
   app:
     build:
       context: ../../
-      dockerfile: cms/standalone-cms/Dockerfile
-    image: cms-app:latest
+      dockerfile: cms/mono-deploy/Dockerfile
+    image: cms-mono-deploy:latest
     ports:
       - "5000:5000" # Nginx Gateway
     environment:
       # --- CMS (.NET) Settings ---
+      - DATABASE_PROVIDER=1 # 0=SQLite, 1=Postgres, 2=SqlServer, 3=MySQL
+      - CONNECTION_STRING=Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;
+      - MASTER_PASSWORD= # Empty - user sets via UI on first startup
+
       - DatabaseProvider=Postgres
       - "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
       - ApiInfo__Url=http://localhost:5000

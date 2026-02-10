@@ -13,7 +13,7 @@ echo "Context: $CONTEXT_ROOT"
 echo "Dockerfile: $SCRIPT_DIR/Dockerfile"
 
 # Build the image
-# We tag it as 'cms-app:latest' by default
-docker build -t cms-app:latest -f "$SCRIPT_DIR/Dockerfile" "$CONTEXT_ROOT"
+# We tag it as 'cms-mono-deploy:latest' by default
+docker build -t cms-mono-deploy:latest -f "$SCRIPT_DIR/Dockerfile" "$CONTEXT_ROOT"
 
-echo "Build complete! Image tagged as 'cms-app:latest'"
+echo "Build complete! Image tagged as 'cms-mono-deploy:latest'"
