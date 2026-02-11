@@ -15,7 +15,7 @@ export function useAuth() {
         }
     );
 
-    const { data: systemReadyData } = useSWR<{ isReady: boolean; hasUser: boolean }>(
+    const { data: systemReadyData } = useSWR<{ databaseReady: boolean; hasMasterPassword: boolean; hasUser: boolean }>(
         `${config.CMS_BASE_URL}/api/system/is-ready`,
         fetcher
     );
@@ -51,7 +51,8 @@ export function useAuth() {
         isError: !!error,
         login,
         logout,
-        isSystemReady: systemReadyData?.isReady,
+        databaseReady: systemReadyData?.databaseReady,
+        hasMasterPassword: systemReadyData?.hasMasterPassword,
         hasUser: systemReadyData?.hasUser,
     };
 }

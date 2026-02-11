@@ -117,22 +117,8 @@ async function start() {
             decorateReply: false,
         });
 
-        // Serve landing page as home page (or redirect to settings if system not ready)
+        // Serve landing page as home page
         server.get('/', async (request, reply) => {
-            try {
-                // Check if CMS system is ready
-                const response = await fetch(`${config.CMS_BASE_URL}/api/system/is-ready`);
-                const data = await response.json() as { isReady: boolean; hasUser: boolean };
-                
-                // If system is not ready, redirect to settings page
-                if (!data.isReady) {
-                    return reply.redirect('/app/settings');
-                }
-            } catch (error) {
-                server.log.warn('Failed to check system readiness, serving landing page anyway', error);
-            }
-            
-            // System is ready or check failed, serve landing page
             return reply.sendFile('index.html', landingPagePath);
         });
 

@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Database, Shield, Key, AlertTriangle, Box } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box, Lock } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
 import { GeminiSettings } from './components/GeminiSettings';
 import { AddSpaSettings } from './components/AddSpaSettings';
+import { MasterPasswordSettings } from './components/MasterPasswordSettings';
 
 export default function SystemSettingsPage() {
-    const { user, logout, isSystemReady, hasUser } = useAuth();
+    const { user, logout, hasMasterPassword, hasUser } = useAuth();
 
-    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa'>('database');
+    const [activeTab, setActiveTab] = useState<'database' | 'masterPassword' | 'admin' | 'gemini' | 'spa'>('masterPassword');
     const [isDark, setIsDark] = useState(false);
 
     const toggleTheme = () => {
@@ -19,14 +20,13 @@ export default function SystemSettingsPage() {
     };
 
     useEffect(() => {
-        // If system is already ready, default to Gemini tab, unless explicitly navigating? 
-        // For now, if not ready, force Database tab.
-        if (isSystemReady === false) {
-            setActiveTab('database');
-        } else if (isSystemReady === true && hasUser === false) {
+        // Auto-select appropriate tab based on system status
+        if (!hasMasterPassword) {
+            setActiveTab('masterPassword');
+        } else if (!hasUser) {
             setActiveTab('admin');
         }
-    }, [isSystemReady, hasUser]);
+    }, [hasMasterPassword, hasUser]);
 
 
     return (
@@ -52,42 +52,63 @@ export default function SystemSettingsPage() {
                             Configure your CMS instance, database connection, and AI integrations.
                         </p>
 
-                        {isSystemReady === false && (
+                        {(!hasMasterPassword || !hasUser) && (
                             <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg p-4">
                                 <h3 className="text-red-800 dark:text-red-400 font-semibold flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4" /> System Not Ready
                                 </h3>
                                 <p className="text-red-700 dark:text-red-300 text-sm mt-1">
-                                    Please configure the database connection to initialize the system.
+                                    Complete the following steps to initialize the system:
                                 </p>
+                                <ul className="text-red-700 dark:text-red-300 text-sm mt-2 ml-4 list-disc space-y-1">
+                                    {!hasMasterPassword && <li>Set master password</li>}
+                                    {!hasUser && <li>Create super admin account</li>}
+                                </ul>
                             </div>
                         )}
                     </div>
 
                     <div className="border-b border-border">
                         <div className="flex gap-1 px-8">
+                            {/* Master Password tab - always visible during setup */}
                             <button
-                                onClick={() => setActiveTab('database')}
-                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'database'
+                                onClick={() => setActiveTab('masterPassword')}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'masterPassword'
                                     ? 'border-primary text-primary'
                                     : 'border-transparent text-primary-muted hover:text-primary'
                                     }`}
                             >
-                                <Database className="w-4 h-4" />
-                                Database
+                                <Lock className="w-4 h-4" />
+                                Master Password
                             </button>
-                            <button
-                                onClick={() => setActiveTab('admin')}
-                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'admin'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-primary-muted hover:text-primary'
-                                    }`}
-                            >
-                                <Shield className="w-4 h-4" />
-                                Super Admin
-                            </button>
+
+                            {/* Super Admin tab - visible when master password is set */}
+                            {hasMasterPassword && (
+                                <button
+                                    onClick={() => setActiveTab('admin')}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'admin'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    <Shield className="w-4 h-4" />
+                                    Super Admin
+                                </button>
+                            )}
+
+                            {/* Database and other tabs - only visible after full setup + login */}
                             {user && (
                                 <>
+                                    <button
+                                        onClick={() => setActiveTab('database')}
+                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'database'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-primary-muted hover:text-primary'
+                                            }`}
+                                    >
+                                        <Database className="w-4 h-4" />
+                                        Database
+                                    </button>
                                     <button
                                         onClick={() => setActiveTab('gemini')}
                                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
@@ -114,13 +135,14 @@ export default function SystemSettingsPage() {
                     </div>
 
                     <div className="p-8 min-h-[400px]">
-                        {activeTab === 'database' && <DatabaseSettings />}
-                        {activeTab === 'admin' && (
+                        {activeTab === 'masterPassword' && <MasterPasswordSettings hasMasterPassword={!!hasMasterPassword} />}
+                        {activeTab === 'admin' && hasMasterPassword && (
                             <AdminSettings
-                                isSystemReady={!!isSystemReady}
+                                isSystemReady={!!hasMasterPassword}
                                 hasUser={!!hasUser}
                             />
                         )}
+                        {user && activeTab === 'database' && <DatabaseSettings />}
                         {user && activeTab === 'gemini' && <GeminiSettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
                     </div>

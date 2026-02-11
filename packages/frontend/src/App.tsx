@@ -9,11 +9,12 @@ import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isSystemReady, hasUser } = useAuth();
-  console.log({ isSystemReady, hasUser })
+  const { user, hasMasterPassword, hasUser } = useAuth();
+  console.log({ hasMasterPassword, hasUser })
   const location = useLocation();
 
-  if (isLoading) {
+  // When system status is still loading, show loading screen
+  if (hasMasterPassword === undefined || hasUser === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-app">
         <Loader2 className="w-10 h-10 animate-spin text-primary-muted" />
@@ -21,18 +22,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isSystemReady === false || hasUser === false) {
+  // When database not ready, master password not set, or no user exists, redirect to settings
+  if (!hasMasterPassword || !hasUser) {
     if (location.pathname !== '/app/settings') {
       return <Navigate to="/app/settings" replace />;
     }
+    // Allow access to settings page for initial setup
     return <>{children}</>;
   }
 
+  // System is fully ready, require authentication
   if (!user) {
     return <Navigate to="/app/login" replace />;
   }
-
-
 
   return <>{children}</>;
 }

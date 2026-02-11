@@ -8,14 +8,15 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { login, isSystemReady } = useAuth();
+    const { login, hasMasterPassword, hasUser } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (isSystemReady === false) {
+        // Redirect to settings if system is not fully ready
+        if (hasMasterPassword === false || hasUser === false) {
             navigate('/app/settings');
         }
-    }, [isSystemReady, navigate]);
+    }, [hasMasterPassword, hasUser, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

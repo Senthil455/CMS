@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Loader2, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, AlertTriangle, Lock } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ interface AdminSettingsProps {
 
 export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
     const [adminParams, setAdminParams] = useState({ username: '', email: '', password: '', repeatPassword: '' });
+    const [masterPassword, setMasterPassword] = useState('');
     const [isAdminSaving, setIsAdminSaving] = useState(false);
 
     const handleSaveAdmin = async (e: React.FormEvent) => {
@@ -18,8 +19,6 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
 
         const isRootSetup = isSystemReady && !hasUser;
 
-        // For root setup, we only strictly need email/password, but username might be nice if the API supported it. 
-        // The API strictly takes email/password.
         if (!adminParams.email || !adminParams.password || (!isRootSetup && !adminParams.username)) {
             toast.error('Please fill in all fields');
             setIsAdminSaving(false);
@@ -32,10 +31,16 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
             return;
         }
 
+        if (!masterPassword) {
+            toast.error('Master password is required to create an admin account');
+            setIsAdminSaving(false);
+            return;
+        }
+
         try {
-            const endpoint = isRootSetup ? '/api/system/setup-super-admin' : `${config.CMS_BASE_URL}/api/register`;
+            const endpoint = isRootSetup ? '/api/system/setup-super-admin' : `/api/register`;
             const payload = isRootSetup
-                ? { email: adminParams.email, password: adminParams.password }
+                ? { email: adminParams.email, password: adminParams.password, masterPassword }
                 : { username: adminParams.username, email: adminParams.email, password: adminParams.password };
 
             const res = await fetch(`${config.CMS_BASE_URL}${endpoint}`, {
@@ -48,6 +53,7 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
             if (res.ok) {
                 toast.success(isRootSetup ? 'Root Admin created successfully' : 'Admin account created successfully');
                 setAdminParams({ username: '', email: '', password: '', repeatPassword: '' });
+                setMasterPassword('');
                 // Redirect to login after successful creation
                 setTimeout(() => window.location.href = '/app/login', 1500);
             } else {
@@ -123,6 +129,24 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
                         className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                         placeholder="••••••••"
                     />
+                </div>
+
+                {/* Master Password verification */}
+                <div className="border-t border-border pt-4">
+                    <label className="block text-sm font-medium mb-1 text-primary-muted flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5" />
+                        Master Password
+                    </label>
+                    <input
+                        type="password"
+                        value={masterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                        placeholder="Enter master password to verify identity"
+                    />
+                    <p className="text-xs text-primary-muted mt-1">
+                        Master password is required to create admin accounts.
+                    </p>
                 </div>
             </div>
 
