@@ -1,23 +1,24 @@
 import { useState } from 'react';
-import { Save, Loader2, AlertTriangle, Lock } from 'lucide-react';
+import { Save, Loader2, AlertTriangle } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../../hooks/use-auth';
 
 interface AdminSettingsProps {
     isSystemReady: boolean;
-    hasUser: boolean;
+    hasSuperAdmin: boolean;
 }
 
-export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
+export function AdminSettings({ isSystemReady, hasSuperAdmin }: AdminSettingsProps) {
     const [adminParams, setAdminParams] = useState({ username: '', email: '', password: '', repeatPassword: '' });
-    const [masterPassword, setMasterPassword] = useState('');
     const [isAdminSaving, setIsAdminSaving] = useState(false);
+    const { checkSystemStatus } = useAuth();
 
     const handleSaveAdmin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsAdminSaving(true);
 
-        const isRootSetup = isSystemReady && !hasUser;
+        const isRootSetup = isSystemReady && !hasSuperAdmin;
 
         if (!adminParams.email || !adminParams.password || (!isRootSetup && !adminParams.username)) {
             toast.error('Please fill in all fields');
@@ -31,16 +32,10 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
             return;
         }
 
-        if (!masterPassword) {
-            toast.error('Master password is required to create an admin account');
-            setIsAdminSaving(false);
-            return;
-        }
-
         try {
             const endpoint = isRootSetup ? '/api/system/setup-super-admin' : `/api/register`;
             const payload = isRootSetup
-                ? { email: adminParams.email, password: adminParams.password, masterPassword }
+                ? { email: adminParams.email, password: adminParams.password }
                 : { username: adminParams.username, email: adminParams.email, password: adminParams.password };
 
             const res = await fetch(`${config.CMS_BASE_URL}${endpoint}`, {
@@ -53,9 +48,13 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
             if (res.ok) {
                 toast.success(isRootSetup ? 'Root Admin created successfully' : 'Admin account created successfully');
                 setAdminParams({ username: '', email: '', password: '', repeatPassword: '' });
-                setMasterPassword('');
-                // Redirect to login after successful creation
-                setTimeout(() => window.location.href = '/app/login', 1500);
+
+                if (isRootSetup) {
+                    // Force refresh system status before redirecting
+                    await checkSystemStatus();
+                    // Small delay to ensure state propagates
+                    setTimeout(() => window.location.href = '/app/login', 500);
+                }
             } else {
                 const data = await res.json();
                 toast.error(data.error || 'Failed to create admin account');
@@ -75,10 +74,10 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
                     <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5" />
                     <div>
                         <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
-                            {isSystemReady && !hasUser ? 'Root User Setup' : 'Admin Account Setup'}
+                            {isSystemReady && !hasSuperAdmin ? 'Root User Setup' : 'Admin Account Setup'}
                         </h4>
                         <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
-                            {isSystemReady && !hasUser
+                            {isSystemReady && !hasSuperAdmin
                                 ? 'System is ready but has no users. Please create the Super Admin account.'
                                 : 'Use this form to create additional admin accounts.'
                             }
@@ -88,7 +87,7 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {!(isSystemReady && !hasUser) && (
+                {!(isSystemReady && !hasSuperAdmin) && (
                     <div>
                         <label className="block text-sm font-medium mb-1 text-primary-muted">Username</label>
                         <input
@@ -131,23 +130,6 @@ export function AdminSettings({ isSystemReady, hasUser }: AdminSettingsProps) {
                     />
                 </div>
 
-                {/* Master Password verification */}
-                <div className="border-t border-border pt-4">
-                    <label className="block text-sm font-medium mb-1 text-primary-muted flex items-center gap-2">
-                        <Lock className="w-3.5 h-3.5" />
-                        Master Password
-                    </label>
-                    <input
-                        type="password"
-                        value={masterPassword}
-                        onChange={(e) => setMasterPassword(e.target.value)}
-                        className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                        placeholder="Enter master password to verify identity"
-                    />
-                    <p className="text-xs text-primary-muted mt-1">
-                        Master password is required to create admin accounts.
-                    </p>
-                </div>
             </div>
 
             <div className="flex justify-end pt-2">

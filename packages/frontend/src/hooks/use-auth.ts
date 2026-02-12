@@ -15,7 +15,7 @@ export function useAuth() {
         }
     );
 
-    const { data: systemReadyData } = useSWR<{ databaseReady: boolean; hasMasterPassword: boolean; hasUser: boolean }>(
+    const { data: systemReadyData, mutate: checkSystemStatus } = useSWR<{ databaseReady: boolean; hasSuperAdmin: boolean }>(
         `${config.CMS_BASE_URL}/api/system/is-ready`,
         fetcher
     );
@@ -27,6 +27,7 @@ export function useAuth() {
                 { withCredentials: true }
             );
 
+            await checkSystemStatus();
             return await mutate();
         } catch (error: any) {
             return error.response?.data || { success: false, error: 'Login failed' };
@@ -51,8 +52,8 @@ export function useAuth() {
         isError: !!error,
         login,
         logout,
+        checkSystemStatus,
         databaseReady: systemReadyData?.databaseReady,
-        hasMasterPassword: systemReadyData?.hasMasterPassword,
-        hasUser: systemReadyData?.hasUser,
+        hasSuperAdmin: systemReadyData?.hasSuperAdmin,
     };
 }

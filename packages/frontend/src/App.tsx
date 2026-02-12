@@ -9,12 +9,12 @@ import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, hasMasterPassword, hasUser } = useAuth();
-  console.log({ hasMasterPassword, hasUser })
+  const { user, hasSuperAdmin } = useAuth();
+  console.log({ hasSuperAdmin })
   const location = useLocation();
 
   // When system status is still loading, show loading screen
-  if (hasMasterPassword === undefined || hasUser === undefined) {
+  if (hasSuperAdmin === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-app">
         <Loader2 className="w-10 h-10 animate-spin text-primary-muted" />
@@ -23,7 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   // When database not ready, master password not set, or no user exists, redirect to settings
-  if (!hasMasterPassword || !hasUser) {
+  if (!hasSuperAdmin) {
     if (location.pathname !== '/app/settings') {
       return <Navigate to="/app/settings" replace />;
     }

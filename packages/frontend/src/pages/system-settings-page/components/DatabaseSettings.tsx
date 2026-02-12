@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Save, Loader2, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Loader2, AlertTriangle } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
@@ -20,11 +20,6 @@ const PROVIDERS = [
 ];
 
 export function DatabaseSettings() {
-    // Master password unlock state
-    const [unlockPassword, setUnlockPassword] = useState('');
-    const [isUnlocked, setIsUnlocked] = useState(false);
-    const [isUnlocking, setIsUnlocking] = useState(false);
-
     // Database Config State
     const [dbProvider, setDbProvider] = useState<DatabaseProviderType>(DatabaseProvider.Sqlite);
     const [dbParams, setDbParams] = useState({
@@ -36,46 +31,32 @@ export function DatabaseSettings() {
         port: '5432'
     });
     const [connectionString, setConnectionString] = useState('');
-    const [masterPassword, setMasterPassword] = useState('');
     const [isDbSaving, setIsDbSaving] = useState(false);
 
-    const handleUnlock = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!unlockPassword) {
-            toast.error('Please enter the master password');
-            return;
-        }
+    // Initial load of config
+    // We can assume this component is only mounted when we want to configure DB or view it.
+    // If DB is ready, connectionString will be populated from API.
+    // If not, it will be empty.
 
-        setIsUnlocking(true);
-        try {
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ masterPassword: unlockPassword }),
-                credentials: 'include'
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setIsUnlocked(true);
-                setMasterPassword(unlockPassword);
-                setUnlockPassword('');
-
-                // Populate form with current config
+    // Fetch current config on mount
+    useEffect(() => {
+        fetch(`${config.CMS_BASE_URL}/api/system/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Failed to fetch config');
+            })
+            .then(data => {
                 setDbProvider(data.databaseProvider ?? DatabaseProvider.Sqlite);
                 setConnectionString(data.connectionString ?? '');
-                toast.success('Database configuration unlocked');
-            } else {
-                const data = await res.json();
-                toast.error(data.error || 'Invalid master password');
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Error verifying master password');
-        } finally {
-            setIsUnlocking(false);
-        }
-    };
+            })
+            .catch(() => {
+                // Ignore error if config doesn't exist yet
+            });
+    }, []);
 
     const generateConnectionString = () => {
         switch (dbProvider) {
@@ -95,8 +76,8 @@ export function DatabaseSettings() {
     const handleSaveDatabase = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!masterPassword) {
-            toast.error('Master password is required to save database configuration');
+        if (connectionString) {
+            toast.error('Database is already configured. To change it, please delete the configuration file on the server.');
             return;
         }
 
@@ -108,8 +89,7 @@ export function DatabaseSettings() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     databaseProvider: dbProvider,
-                    connectionString: newConnectionString,
-                    masterPassword
+                    connectionString: newConnectionString
                 }),
                 credentials: 'include'
             });
@@ -131,35 +111,39 @@ export function DatabaseSettings() {
         }
     };
 
-    // Show locked state if not unlocked
-    if (!isUnlocked) {
+    // If connection string is set, show read-only view
+    if (connectionString) {
         return (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-app-muted flex items-center justify-center mb-4">
-                        <Lock className="w-8 h-8 text-primary-muted" />
+                    <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mb-4">
+                        <Save className="w-8 h-8 text-green-600 dark:text-green-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-primary mb-2">Database Configuration Locked</h3>
+                    <h3 className="text-lg font-semibold text-primary mb-2">Database is Configured</h3>
                     <p className="text-sm text-primary-muted mb-6 max-w-md">
-                        Enter your master password to view and modify the database configuration.
+                        The database connection is currently active.
                     </p>
-                    <form onSubmit={handleUnlock} className="w-full max-w-sm space-y-4">
-                        <input
-                            type="password"
-                            value={unlockPassword}
-                            onChange={(e) => setUnlockPassword(e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-center"
-                            placeholder="Enter master password"
-                        />
-                        <button
-                            type="submit"
-                            disabled={isUnlocking}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-2 bg-primary text-app rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg active:scale-95"
-                        >
-                            {isUnlocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                            Unlock
-                        </button>
-                    </form>
+
+                    <div className="bg-app-muted rounded-lg p-4 w-full max-w-md text-left mb-6">
+                        <label className="block text-xs font-semibold uppercase text-primary-muted mb-1">Current Connection String</label>
+                        <code className="text-sm font-mono text-primary break-all">
+                            {connectionString}
+                        </code>
+                    </div>
+
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 max-w-md text-left">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                            <div>
+                                <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                                    Need to reconfigure?
+                                </h4>
+                                <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+                                    To change the database configuration, you must manually delete the <strong>settings.json</strong> file on your server and restart the application.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -167,13 +151,7 @@ export function DatabaseSettings() {
 
     return (
         <form onSubmit={handleSaveDatabase} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Current connection string (read-only) */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg p-4">
-                <label className="block text-sm font-medium mb-2 text-blue-800 dark:text-blue-400">Current Connection String</label>
-                <code className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-3 py-2 rounded block break-all">
-                    {connectionString || 'Not configured'}
-                </code>
-            </div>
+
 
             <div>
                 <label className="block text-sm font-medium mb-2 text-primary">Database Provider</label>
@@ -269,20 +247,7 @@ export function DatabaseSettings() {
                 )}
             </div>
 
-            {/* Master password for save verification */}
-            <div className="border-t border-border pt-4">
-                <label className="block text-sm font-medium mb-1 text-primary-muted flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5" />
-                    Confirm Master Password to Save
-                </label>
-                <input
-                    type="password"
-                    value={masterPassword}
-                    onChange={(e) => setMasterPassword(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                    placeholder="Enter master password to save changes"
-                />
-            </div>
+
 
             <div className="flex justify-end pt-2">
                 <button

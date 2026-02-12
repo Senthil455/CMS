@@ -47,8 +47,7 @@ COPY --from=node-base /app /app
 # Copy Pre-built .NET App from LOCAL machine
 COPY CMS/publish ./cms
 # Ensure config files are writable (will be regenerated from env vars at runtime)
-RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json && \
-    touch ./cms/cms.settings.json && chmod 666 ./cms/cms.settings.json
+RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json
 
 # Copy Entrypoint
 COPY CMS/mono-deploy/entrypoint.sh /app/entrypoint.sh

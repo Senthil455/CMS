@@ -12,20 +12,22 @@ export FRONTEND_URL=${FRONTEND_URL:-"http://127.0.0.1:3001"}
 # CMS Configuration from Environment Variables
 export DATABASE_PROVIDER=${DATABASE_PROVIDER:-1}  # Default to Postgres
 export CONNECTION_STRING=${CONNECTION_STRING:-"Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;"}
-export MASTER_PASSWORD=${MASTER_PASSWORD:-""}  # Empty by default - user sets via UI
 
-# Generate cms.settings.json from environment variables
-echo "[ENTRYPOINT] Generating cms.settings.json from environment variables..."
-cat > /app/cms/cms.settings.json <<EOF
-{
-  "Cms": {
-    "DatabaseProvider": ${DATABASE_PROVIDER},
-    "ConnectionString": "${CONNECTION_STRING}",
-    "MasterPassword": "${MASTER_PASSWORD}",
-    "Spas": null
-  }
-}
-EOF
+# Use custom config path if set, otherwise default
+CONFIG_PATH=${CMS_CONFIG_PATH:-"/app/cms/cms.settings.json"}
+
+# Generate cms.settings.json from environment variables if not exists
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "[ENTRYPOINT] Writing settings to $CONFIG_PATH..."
+  echo "{\"Cms\":{\"DatabaseProvider\":${DATABASE_PROVIDER},\"ConnectionString\":\"${CONNECTION_STRING}\",\"Spas\":null}}" > "$CONFIG_PATH"
+  echo "[ENTRYPOINT] Write complete. File size:"
+  ls -l "$CONFIG_PATH"
+  cat "$CONFIG_PATH"
+else
+  echo "[ENTRYPOINT] $CONFIG_PATH already exists. Skipping generation."
+  cat "$CONFIG_PATH"
+fi
+
 
 echo "[ENTRYPOINT] CMS configuration:"
 echo "  Database Provider: ${DATABASE_PROVIDER}"
