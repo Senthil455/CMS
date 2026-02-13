@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "publish-to-lib": "node publish_to_lib.cjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@cms/sdk": "*",

@@ -14,7 +14,11 @@ interface UploadStatus {
 
 const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
-export function ChunkUpload() {
+interface ChunkUploadProps {
+    onSuccess?: () => void;
+}
+
+export function ChunkUpload({ onSuccess }: ChunkUploadProps) {
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ progress: 0, status: 'idle' });
     const [file, setFile] = useState<File>();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,10 +28,10 @@ export function ChunkUpload() {
         if (!file) return;
         setFile(file);
 
-        setUploadStatus({ progress: 0, status: 'uploading'});
+        setUploadStatus({ progress: 0, status: 'uploading' });
 
         try {
-            const {data} = await checkChunkStatus(file.name,file.size);
+            const { data } = await checkChunkStatus(file.name, file.size);
 
             if (!data) return;
 
@@ -50,8 +54,11 @@ export function ChunkUpload() {
                     status: 'uploading',
                 });
             }
-            await commitChunk(data.path,file.name);
-            setUploadStatus({ fileId:data.path, progress: 100, status: 'success' });
+            await commitChunk(data.path, file.name);
+            setUploadStatus({ fileId: data.path, progress: 100, status: 'success' });
+            if (onSuccess) {
+                onSuccess();
+            }
         } catch (error) {
             setUploadStatus({
                 progress: 0,
@@ -66,7 +73,7 @@ export function ChunkUpload() {
         if (!file) return;
 
         try {
-            const {data} = await checkChunkStatus(file.name,file.size);
+            const { data } = await checkChunkStatus(file.name, file.size);
             console.log(data);
             // setUploadStatus((prev) => ({ ...prev, progress: status.progress || prev.progress }));
         } catch (error) {

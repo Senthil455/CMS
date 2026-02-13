@@ -1,16 +1,16 @@
-import {encodeDataTableState, useDataTableStateManager} from "../../hooks/useDataTableStateManager";
-import {FetchingStatus} from "../../containers/FetchingStatus";
-import {deleteAsset, useAssets, useGetCmsAssetsUrl} from "../services/asset";
-import {XEntity} from "../../types/xEntity";
-import {AssetField} from "../types/assetUtils";
-import {createConfirm} from "../../hooks/createConfirm";
-import {useCheckError} from "../../hooks/useCheckError";
-import {useLocation, useNavigate} from "react-router-dom";
-import {useEffect, useState} from "react";
-import {CmsComponentConfig} from "../cmsComponentConfig";
-import {toDataTableColumns} from "../../types/attrUtils";
-import {formatter} from "../../types/formatter";
-import {GeneralComponentConfig} from "../../ComponentConfig";
+import { encodeDataTableState, useDataTableStateManager } from "../../hooks/useDataTableStateManager";
+import { FetchingStatus } from "../../containers/FetchingStatus";
+import { deleteAsset, useAssets, useGetCmsAssetsUrl } from "../services/asset";
+import { XEntity } from "../../types/xEntity";
+import { AssetField } from "../types/assetUtils";
+import { createConfirm } from "../../hooks/createConfirm";
+import { useCheckError } from "../../hooks/useCheckError";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { CmsComponentConfig } from "../cmsComponentConfig";
+import { toDataTableColumns } from "../../types/attrUtils";
+import { formatter } from "../../types/formatter";
+import { GeneralComponentConfig } from "../../ComponentConfig";
 
 const displayModeLabels = {
     list: 'List',
@@ -55,9 +55,9 @@ export function useAssetListPage(
     // Data
     const columns = schema?.attributes
         ?.filter(column => column.inList && column.field !== AssetField('linkCount')) ?? [];
-    const stateManager = useDataTableStateManager(schema.name,schema.primaryKey, schema.defaultPageSize, columns, initQs);
+    const stateManager = useDataTableStateManager(schema.name, schema.primaryKey, schema.defaultPageSize, columns, initQs);
     const qs = encodeDataTableState(stateManager.state);
-    const {data, error, isLoading, mutate} = useAssets(qs, true);
+    const { data, error, isLoading, mutate } = useAssets(qs, true);
 
     const assetLabels = componentConfig.assetLabels;
     if (assetLabels) {
@@ -90,8 +90,8 @@ export function useAssetListPage(
     // Refs
     const getCmsAssetUrl = useGetCmsAssetsUrl();
     const navigate = useNavigate();
-    const {confirm, Confirm} = createConfirm("dataItemPage" + schema.name, componentConfig);
-    const {handleErrorOrSuccess, CheckErrorStatus} = useCheckError(componentConfig);
+    const { confirm, Confirm } = createConfirm("dataItemPage" + schema.name, componentConfig);
+    const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
     const LazyDataTable = componentConfig.dataComponents.lazyTable;
     const Icon = componentConfig.etc.icon;
     const GalleryView = componentConfig.dataComponents.galleryView;
@@ -109,12 +109,12 @@ export function useAssetListPage(
 
     const onDelete = async (rowData: any) => {
         confirm(pageConfig.deleteConfirm(rowData[schema.labelAttributeName]), pageConfig.deleteConfirmHeader, async () => {
-            const {error} = await deleteAsset(rowData[AssetField('id')]);
+            const { error } = await deleteAsset(rowData[AssetField('id')]);
             await handleErrorOrSuccess(error, pageConfig.deleteSuccess(rowData[schema.labelAttributeName]), mutate);
         });
     };
 
-    return {displayMode, displayModeOptions, setDisplayMode, AssetListPageMain};
+    return { displayMode, displayModeOptions, setDisplayMode, AssetListPageMain, mutate };
 
     function AssetListPageMain() {
         const tableColumns = columns.map(x =>
@@ -122,13 +122,13 @@ export function useAssetListPage(
         );
 
         const actionTemplate = (rowData: any) => <>
-            <Icon icon={'pi pi-pencil'} onClick={()=>onEdit(rowData)}/>
-            {canDelete(rowData) &&<Icon icon={'pi pi-trash'} onClick={()=>onDelete(rowData)}/>}
+            <Icon icon={'pi pi-pencil'} onClick={() => onEdit(rowData)} />
+            {canDelete(rowData) && <Icon icon={'pi pi-trash'} onClick={() => onDelete(rowData)} />}
         </>
         return (
             <>
-                <CheckErrorStatus key={'AssetList'}/>
-                <FetchingStatus isLoading={isLoading} error={error} componentConfig={componentConfig}/>
+                <CheckErrorStatus key={'AssetList'} />
+                <FetchingStatus isLoading={isLoading} error={error} componentConfig={componentConfig} />
                 <div className="card">
                     {data && columns && displayMode === 'List' && (
                         <LazyDataTable
@@ -155,7 +155,7 @@ export function useAssetListPage(
                         />
                     )}
                 </div>
-                <Confirm/>
+                <Confirm />
             </>
         );
     }

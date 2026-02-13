@@ -77,7 +77,7 @@ export function EntityDetail({ schema, allSchemas, onChatAction }: EntityDetailP
                         </h4>
                         <div className="flex flex-col gap-2">
                             <a
-                                href={`${config.CMS_BASE_URL}/_content/CMS/admin/entities/${entity.name}`}
+                                href={`${config.CMS_BASE_URL}/admin/entities/${entity.name}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-between px-4 py-2.5 bg-primary text-app rounded-lg text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-[0.98]"
@@ -149,7 +149,7 @@ export function EntityDetail({ schema, allSchemas, onChatAction }: EntityDetailP
                                 return neighbors.map(name => (
                                     <a
                                         key={name}
-                                        href={`${config.CMS_BASE_URL}/_content/CMS/admin/entities/${name}`}
+                                        href={`${config.CMS_BASE_URL}/admin/entities/${name}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-2 px-3 py-2 bg-app-muted hover:bg-border text-primary-muted hover:text-primary rounded-lg text-[11px] font-bold transition-all border border-transparent whitespace-nowrap overflow-hidden"

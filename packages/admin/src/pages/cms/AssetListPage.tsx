@@ -1,16 +1,16 @@
-import {SelectButton, SelectButtonChangeEvent} from "primereact/selectbutton";
-import {GlobalStateKeys, useGlobalState, useLanguage} from "../../globalState";
+import { SelectButton, SelectButtonChangeEvent } from "primereact/selectbutton";
+import { GlobalStateKeys, useGlobalState, useLanguage } from "../../globalState";
 import {
     AssetListPageConfig,
     useAssetListPage
 } from "@cms/sdk";
-import {XEntity} from "@cms/sdk";
-import {getDefaultComponentConfig} from "../../getDefaultComponentConfig";
-import {cnComponentConfig} from "../../types/cnComponentConfig";
-import {Button} from "primereact/button";
-import {Dialog} from "primereact/dialog";
-import {useState} from "react";
-import {ChunkUpload} from "./components/ChunkUpload";
+import { XEntity } from "@cms/sdk";
+import { getDefaultComponentConfig } from "../../getDefaultComponentConfig";
+import { cnComponentConfig } from "../../types/cnComponentConfig";
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
+import { useState } from "react";
+import { ChunkUpload } from "./components/ChunkUpload";
 
 const cnPageConfig: AssetListPageConfig = {
     deleteConfirm(label: string | undefined): string {
@@ -19,7 +19,7 @@ const cnPageConfig: AssetListPageConfig = {
     deleteConfirmHeader: "确认",
     deleteSuccess(_: string | undefined): string {
         return "删除成功";
-    }, displayModeLabels: {gallery: "缩略图", list: "列表"}
+    }, displayModeLabels: { gallery: "缩略图", list: "列表" }
 }
 
 const languageConfig = {
@@ -33,11 +33,11 @@ const languageConfig = {
     }
 }
 
-export function AssetListPage({schema, baseRouter}: { schema: XEntity, baseRouter: string }) {
+export function AssetListPage({ schema, baseRouter }: { schema: XEntity, baseRouter: string }) {
     const lan = useLanguage();
     const labels = languageConfig[lan];
 
-    const {displayMode, displayModeOptions, setDisplayMode, AssetListPageMain} =
+    const { displayMode, displayModeOptions, setDisplayMode, AssetListPageMain, mutate } =
         useAssetListPage(
             lan === 'en' ? getDefaultComponentConfig() : cnComponentConfig,
             baseRouter,
@@ -45,23 +45,26 @@ export function AssetListPage({schema, baseRouter}: { schema: XEntity, baseRoute
             lan === 'en' ? undefined : cnPageConfig
         );
 
-    const [_, setHeader] = useGlobalState<string>( GlobalStateKeys.Header, '');
+    const [_, setHeader] = useGlobalState<string>(GlobalStateKeys.Header, '');
     setHeader(labels.header);
-    const [showChunkUpload,setShowChunkUpload] = useState(false)
+    const [showChunkUpload, setShowChunkUpload] = useState(false)
 
     return <>
-        <br/>
+        <br />
         <div className="flex gap-5 justify-between">
             <SelectButton
                 value={displayMode}
                 onChange={(e: SelectButtonChangeEvent) => setDisplayMode(e.value)}
                 options={displayModeOptions}
             />
-            <Button label={labels.chunkedUpload} onClick={() => setShowChunkUpload(true)}/>
+            <Button label={labels.chunkedUpload} onClick={() => setShowChunkUpload(true)} />
         </div>
-        <AssetListPageMain/>
-        <Dialog onHide={()=>setShowChunkUpload(false)} visible={showChunkUpload}>
-            <ChunkUpload/>
+        <AssetListPageMain />
+        <Dialog onHide={() => setShowChunkUpload(false)} visible={showChunkUpload}>
+            <ChunkUpload onSuccess={() => {
+                mutate();
+                setShowChunkUpload(false);
+            }} />
         </Dialog>
     </>
 }

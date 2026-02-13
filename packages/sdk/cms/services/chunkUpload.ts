@@ -10,7 +10,7 @@ export async function uploadChunk(fileId: string, fileName: string, chunkNumber:
     formData.append("fileId", fileId);
     formData.append("fileName", fileName);
     formData.append("chunkNumber", chunkNumber.toString());
-    formData.append("file", chunk);
+    formData.append("file", chunk, fileName);
 
     return catchResponse(() => axios.post(url, formData, {
         headers: { "Content-Type": "multipart/form-data" }
