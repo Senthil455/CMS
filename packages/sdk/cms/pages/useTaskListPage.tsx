@@ -1,5 +1,5 @@
-import {encodeDataTableState, useDataTableStateManager} from "../../hooks/useDataTableStateManager";
-import {FetchingStatus} from "../../containers/FetchingStatus";
+import { encodeDataTableState, useDataTableStateManager } from "../../hooks/useDataTableStateManager";
+import { FetchingStatus } from "../../containers/FetchingStatus";
 import {
     addEmitMessageTask,
     addExportTask,
@@ -9,16 +9,16 @@ import {
     importDemoData,
     useTasks
 } from "../services/task";
-import {useCheckError} from "../../hooks/useCheckError";
-import {SystemTask} from "../types/systemTask";
-import {useState} from "react";
-import {CmsComponentConfig} from "../cmsComponentConfig";
-import {SystemTaskLabels} from "../types/systemTaskUtil";
-import {XEntity} from "../../types/xEntity";
-import {formatter} from "../../types/formatter";
-import {toDataTableColumns} from "../../types/attrUtils";
-import {GeneralComponentConfig} from "../../ComponentConfig";
-import {useForm} from "react-hook-form";
+import { useCheckError } from "../../hooks/useCheckError";
+import { SystemTask } from "../types/systemTask";
+import { useState } from "react";
+import { CmsComponentConfig } from "../cmsComponentConfig";
+import { SystemTaskLabels } from "../types/systemTaskUtil";
+import { XEntity } from "../../types/xEntity";
+import { formatter } from "../../types/formatter";
+import { toDataTableColumns } from "../../types/attrUtils";
+import { GeneralComponentConfig } from "../../ComponentConfig";
+import { useForm } from "react-hook-form";
 
 export interface TaskListPageConfig {
     exportSuccess: string;
@@ -27,7 +27,7 @@ export interface TaskListPageConfig {
     uploadImportDialogHeader: string
     emitMsgDialogHeader: string
     taskLabels: SystemTaskLabels | undefined | null
-    submitEmitMessageLabel:string
+    submitEmitMessageLabel: string
 }
 
 export function getDefaultTaskListPageConfig(): TaskListPageConfig {
@@ -44,32 +44,32 @@ export function getDefaultTaskListPageConfig(): TaskListPageConfig {
 
 export function useTaskListPage(
     componentConfig: CmsComponentConfig & GeneralComponentConfig,
-    schema:  XEntity ,
+    schema: XEntity,
     pageConfig: TaskListPageConfig = getDefaultTaskListPageConfig(),
 ) {
     // Data
     const columns = schema?.attributes?.filter(column => column.inList) ?? [];
-    const stateManager = useDataTableStateManager(schema.name,schema.primaryKey, schema.defaultPageSize, columns, undefined);
-    const {data, error, isLoading, mutate} = useTasks(encodeDataTableState(stateManager.state));
+    const stateManager = useDataTableStateManager(schema.name, schema.primaryKey, schema.defaultPageSize, columns, undefined);
+    const { data, error, isLoading, mutate } = useTasks(encodeDataTableState(stateManager.state));
 
     // State
     const [importDialogVisible, setImportDialogVisible] = useState(false);
     const [emitMsgDialogVisible, setEmitMsgDialogVisible] = useState(false);
 
-    const {register, handleSubmit, control} = useForm();
-    const {handleErrorOrSuccess, CheckErrorStatus} = useCheckError(componentConfig);
+    const { register, handleSubmit } = useForm();
+    const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
     const LazyDataTable = componentConfig.dataComponents.lazyTable;
     const Dialog = componentConfig.etc.dialog;
     const Button = componentConfig.etc.button;
     const Upload = componentConfig.etc.upload;
 
     async function handleAddExportTask() {
-        const {error} = await addExportTask();
+        const { error } = await addExportTask();
         await handleErrorOrSuccess(error, pageConfig.exportSuccess, mutate);
     }
 
     async function handleImportDemoData() {
-        const {error} = await importDemoData();
+        const { error } = await importDemoData();
         await handleErrorOrSuccess(error, pageConfig.importSuccess, mutate);
     }
 
@@ -83,7 +83,7 @@ export function useTaskListPage(
     }
 
     async function handleArchiveExportTask(id: number) {
-        const {error} = await archiveExportTask(id);
+        const { error } = await archiveExportTask(id);
         await handleErrorOrSuccess(error, pageConfig.archiveSuccess, mutate);
     }
 
@@ -91,7 +91,7 @@ export function useTaskListPage(
         setEmitMsgDialogVisible(true);
     }
 
-    async function onAddEmitMessageTask(formData:any){
+    async function onAddEmitMessageTask(formData: any) {
         await addEmitMessageTask(formData);
         setEmitMsgDialogVisible(false);
     }
@@ -101,9 +101,9 @@ export function useTaskListPage(
             return (
                 <>
                     <a href={getExportTaskDownloadFileLink(item.id)}>
-                        <Button label={'Download'} icon={""} type={"button"}/>
+                        <Button label={'Download'} icon={""} type={"button"} />
                     </a>{' '}
-                    <Button label={'Delete File'} onClick={() => handleArchiveExportTask(item.id)} icon={""} type={"button"}/>
+                    <Button label={'Delete File'} onClick={() => handleArchiveExportTask(item.id)} icon={""} type={"button"} />
                 </>
             );
         }
@@ -111,9 +111,9 @@ export function useTaskListPage(
     };
 
     const labels = pageConfig.taskLabels;
-    if (labels){
+    if (labels) {
         columns.forEach((column) => {
-            if (column.field in labels){
+            if (column.field in labels) {
                 column.header = labels[column.field as keyof SystemTaskLabels];
             }
         })
@@ -159,7 +159,7 @@ export function useTaskListPage(
                                 placeholder="Enter Entity name"
                                 {...register("entityName", { required: true })}
                             />
-                            <Button type={'submit'} label={pageConfig.submitEmitMessageLabel}/>
+                            <Button type={'submit'} label={pageConfig.submitEmitMessageLabel} />
                         </div>
                     </form>
                 </Dialog>

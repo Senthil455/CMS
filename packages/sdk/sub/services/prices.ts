@@ -1,10 +1,11 @@
 import useSWR from "swr";
-import {decodeError, fetcher, swrConfig} from "../../utils/apiUtils";
-import {fullSubUrl} from "../config";
-import {Price} from "../types/price";
+import { decodeError, fetcher, swrConfig } from "../../utils/apiUtils";
+import { fullSubUrl } from "../config";
+import { Price } from "../types/price";
+import { ENDPOINTS } from "@cms/shared";
 
-export function useSubscriptionPrices()  {
+export function useSubscriptionPrices() {
     let res = useSWR<Price[]>(
-        fullSubUrl(`/subscriptions/sub_prices`), fetcher, swrConfig);
-    return {...res, error: decodeError(res.error)}
+        fullSubUrl(ENDPOINTS.SUBSCRIPTIONS.PRICES), fetcher, swrConfig);
+    return { ...res, error: decodeError(res.error) }
 }

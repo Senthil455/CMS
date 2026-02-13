@@ -1,5 +1,5 @@
 export const configs = {
-    apiURL: import.meta.env.VITE_REACT_APP_API_URL ?? '/api',
+    apiURL: import.meta.env.VITE_REACT_APP_API_URL ?? '',
     routerPrefix: import.meta.env.VITE_REACT_APP_ROUTER_PREFIX ?? '/admin',
     schemaBuilderRouter: '/app',
 }

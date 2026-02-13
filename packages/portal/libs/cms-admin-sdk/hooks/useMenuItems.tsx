@@ -1,14 +1,14 @@
-import {useTopMenuBar} from "../auth/services/menu";
-import {RoleRoute, UserRoute} from "../auth/AccountRouter";
-import {useAssetEntity} from '../cms/services/asset';
-import {useTaskEntity} from "../cms/services/task";
-import {logout, useUserInfo} from "../auth/services/auth";
-import {UserAccess} from "../auth/types/userAccess";
-import {ChangeAvatarRoute, ChangePasswordRoute} from "../auth/ProfileRouter";
+import { useTopMenuBar } from "../auth/services/menu";
+import { RoleRoute, UserRoute } from "../auth/AccountRouter";
+import { useAssetEntity } from '../cms/services/asset';
+import { useTaskEntity } from "../cms/services/task";
+import { logout, useUserInfo } from "../auth/services/auth";
+import { UserAccess } from "../auth/types/userAccess";
+import { ChangeAvatarRoute, ChangePasswordRoute } from "../auth/ProfileRouter";
 
 //have to pass access to canAccess(), otherwise got 'Do not call Hooks inside conditions or loops.',https://react.dev/warnings/invalid-hook-call-warning
 function canAccess(entityName: string, access?: UserAccess) {
-    return access?.roles.includes('sa') ||
+    return access?.roles?.includes('sa') ||
         access?.readWriteEntities?.includes(entityName)
         || access?.restrictedReadWriteEntities?.includes(entityName)
         || access?.readonlyEntities?.includes(entityName)
@@ -16,7 +16,7 @@ function canAccess(entityName: string, access?: UserAccess) {
 }
 
 export function useEntityMenuItems(entityRouterPrefix: string) {
-    const {data: userAccess} = useUserInfo();
+    const { data: userAccess } = useUserInfo();
     let items = useTopMenuBar();
     const entityPrefix = 'entities'
 
@@ -26,21 +26,21 @@ export function useEntityMenuItems(entityRouterPrefix: string) {
     })
 
     return items.map((x: any) => {
-            const parts = x.url.split('?')[0].split('/');
-            const link = x.url.replaceAll('/' + entityPrefix, entityRouterPrefix);
-            return {
-                key: parts[2],
-                icon: 'pi ' + x.icon,
-                label: x.label,
-                link
-            };
-        }
+        const parts = x.url.split('?')[0].split('/');
+        const link = x.url.replaceAll('/' + entityPrefix, entityRouterPrefix);
+        return {
+            key: parts[2],
+            icon: 'pi ' + x.icon,
+            label: x.label,
+            link
+        };
+    }
     );
 }
 
 export function useAssetMenuItems(entityRouterPrefix: string) {
-    const {data: asset} = useAssetEntity()
-    const {data: userAccess} = useUserInfo();
+    const { data: asset } = useAssetEntity()
+    const { data: userAccess } = useUserInfo();
     if (!canAccess(asset?.name ?? "", userAccess)) return [];
     return asset ? [
         {
@@ -66,8 +66,8 @@ export function useSystemMenuItems(
     schemaBuilderRouter: string,
 ) {
 
-    const {data: task} = useTaskEntity()
-    const {data: userAccess} = useUserInfo();
+    const { data: task } = useTaskEntity()
+    const { data: userAccess } = useUserInfo();
 
     function sysMenu(key: keyof SystemMenuLabels) {
         return key
@@ -105,7 +105,7 @@ export function useSystemMenuItems(
             url: schemaBuilderRouter,
             isExternal: true
         },
-    ].filter(x => userAccess?.allowedMenus.includes(x.key));
+    ].filter(x => userAccess?.allowedMenus?.includes(x.key));
 }
 
 export type UserProfileMenuLabels = {
@@ -119,7 +119,7 @@ export function useUserProfileMenu(profilePrefix: string) {
         return key
     }
 
-    const {mutate} = useUserInfo();
+    const { mutate } = useUserInfo();
     const handleLogout = async () => {
         await logout();
         await mutate();

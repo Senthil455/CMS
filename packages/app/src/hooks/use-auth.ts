@@ -1,44 +1,42 @@
 import useSWR from 'swr';
-import axios from 'axios';
-import { type User, ENDPOINTS, type LoginRequest } from '@cms/shared';
-import { config } from '../config';
-
-const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
+import { type User, type LoginRequest } from '@cms/shared';
+import { getApiClient } from '@cms/sdk';
 
 export function useAuth() {
     const { data, error, mutate } = useSWR<User>(
-        `${config.CMS_BASE_URL}${ENDPOINTS.AUTH.ME}`,
-        fetcher,
+        'api/me',
+        () => getApiClient().getMe(),
         {
             shouldRetryOnError: false,
             revalidateOnFocus: false,
         }
     );
 
-    const { data: systemReadyData, mutate: checkSystemStatus } = useSWR<{ databaseReady: boolean; hasSuperAdmin: boolean }>(
-        `${config.CMS_BASE_URL}/api/system/is-ready`,
-        fetcher
+    const { data: systemReadyData, mutate: checkSystemStatus } = useSWR(
+        'api/system/is-ready',
+        () => getApiClient().getSystemStatus()
     );
 
     const login = async (usernameOrEmail: string, password: string) => {
         try {
-            await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGIN}`,
-                { usernameOrEmail, password } as LoginRequest,
-                { withCredentials: true }
-            );
-
+            await getApiClient().login({ usernameOrEmail, password } as LoginRequest);
             await checkSystemStatus();
             return await mutate();
         } catch (error: any) {
+            // catchClient returns { error, errorDetail } or we use raw client which throws.
+            // getApiClient().login() returns Promise<User> and throws on error (via axios).
+            // cms-client.ts threw logic: if (error.response?.data) throw error.response.data;
+            // But CmsApiClient.login implementation: await this.axios.post(...)
+            // Axios throws. 
+            // CmsApiClient doesn't catch.
+            // So here we catch axios error.
             return error.response?.data || { success: false, error: 'Login failed' };
         }
     };
 
     const logout = async () => {
         try {
-            await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {}, {
-                withCredentials: true
-            });
+            await getApiClient().logout();
         } catch (error) {
             console.error('Logout failed', error);
         }

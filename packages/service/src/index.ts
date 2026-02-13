@@ -10,6 +10,7 @@ import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config';
+import proxy from '@fastify/http-proxy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -146,6 +147,22 @@ async function start() {
         // Register Routers
         await server.register(autoload, {
             dir: join(__dirname, 'routers'),
+        });
+
+        // Register Proxy for /api
+        await server.register(proxy, {
+            upstream: config.CMS_BASE_URL,
+            prefix: '/api/',
+            rewritePrefix: '/api/',
+            http2: false,
+        });
+
+        // Register Proxy for /graphql
+        await server.register(proxy, {
+            upstream: config.CMS_BASE_URL,
+            prefix: '/graphql',
+            rewritePrefix: '/graphql',
+            http2: false,
         });
 
         await server.listen({ port: config.PORT, host: '0.0.0.0' });

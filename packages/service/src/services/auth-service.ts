@@ -12,8 +12,13 @@ export class AuthService {
     async getUserProfile(externalCookie: string): Promise<User | null> {
         try {
             return await this.client.getMe(externalCookie);
-        } catch (error) {
-            this.logger.error({ error }, 'External Profile Error');
+        } catch (error: any) {
+            const errorSummary = {
+                message: error.message,
+                status: error.response?.status,
+                url: error.config?.url
+            };
+            this.logger.error(errorSummary, 'External Profile Error');
             return null;
         }
     }

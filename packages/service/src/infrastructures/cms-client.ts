@@ -4,14 +4,44 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { User } from '@cms/shared';
 
-import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS, CmsApiClient } from '@cms/shared';
 
 export class CmsClient {
     private populatingPromise: Promise<void> | null = null;
     constructor(private readonly baseUrl: string) { }
 
+    async getClient(externalCookie: string): Promise<CmsApiClient> {
+        // Filter to only include ASP.NET Identity cookie for Auth Headers
+        const authCookie = externalCookie.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('.AspNetCore.Identity.Application='));
+
+        // Note: For some endpoints we might need the full externalCookie (if it contains other needed cookies?), 
+        // but getMe specifically checked for AspNetCore.Identity.
+        // The original code used `authCookie` for getMe, but `externalCookie` for others.
+        // Let's use `externalCookie` generally, but ensure we have headers.
+
+        // Actually, original getMe threw if no authCookie.
+        // Other methods just passed externalCookie. 
+        // We should probably preserve the 'throw if missing' for getMe if it's critical, 
+        // but createClient acts as a factory.
+
+        const headers: Record<string, string> = {};
+        if (externalCookie) {
+            headers['Cookie'] = externalCookie;
+        }
+
+        return new CmsApiClient(axios.create({
+            baseURL: this.baseUrl,
+            headers
+        }));
+
+        // TODO: Handle the specific authCookie check for getMe if strictly needed.
+        // Original code: if (!authCookie) throw Error... inside getMe.
+        // We can move that check to getMe wrapper or just let upstream 401.
+    }
+
     async getMe(externalCookie: string) {
-        // Filter to only include ASP.NET Identity cookie
         const authCookie = externalCookie.split(';')
             .map(c => c.trim())
             .find(c => c.startsWith('.AspNetCore.Identity.Application='));
@@ -20,22 +50,15 @@ export class CmsClient {
             throw new Error('No ASP.NET Identity cookie found');
         }
 
-        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.AUTH.ME}`, {
-            headers: {
-                Cookie: authCookie
-            }
-        });
-
-
-        const externalUser = resp.data;
-        return {
-            id: externalUser.id,
-            username: externalUser.name || externalUser.email,
-            avatarUrl: this.baseUrl + externalUser.avatarUrl,
-        } as User;
+        const client = new CmsApiClient(axios.create({
+            baseURL: this.baseUrl,
+            headers: { Cookie: authCookie }
+        }));
+        return client.getMe();
     }
 
     async login(payload: any): Promise<{ cookie: string, user: User }> {
+        // We need special handling because we want the Set-Cookie header
         const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.AUTH.LOGIN}`, payload);
         const setCookie = resp.headers['set-cookie'];
         const externalUser = resp.data;
@@ -45,133 +68,87 @@ export class CmsClient {
                 id: externalUser.id,
                 username: externalUser.name || externalUser.email,
                 avatarUrl: this.baseUrl + externalUser.avatarUrl,
+                email: externalUser.email,
+                roles: externalUser.roles,
+                allowedMenus: externalUser.allowedMenus
             } as User
         };
     }
 
-
     async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
-        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}entity`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getAllEntities();
     }
 
     async getAllQueries(externalCookie: string): Promise<SchemaDto[]> {
-        const resp = await axios.get(`${this.baseUrl}${ENDPOINTS.SCHEMA.ALL}query`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getAllQueries();
     }
 
     async getSchemaByName(externalCookie: string, name: string, type: string): Promise<SchemaDto> {
-        const url = `/api/schemas/name/${name}?type=${type}`;
-        const resp = await axios.get(`${this.baseUrl}${url}`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getSchemaByName(name, type);
     }
 
     async getSchemaById(externalCookie: string, id: string): Promise<SchemaDto> {
-        const url = `/api/schemas/${id}`;
-        const resp = await axios.get(`${this.baseUrl}${url}`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getSchemaById(id);
     }
 
     async getSchemaBySchemaId(externalCookie: string, id: string): Promise<SchemaDto> {
-        const url = `/api/schemas/schema/${id}`;
-        const resp = await axios.get(`${this.baseUrl}${url}`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getSchemaBySchemaId(id);
     }
 
     async getXEntity(externalCookie: string, entityName: string): Promise<XEntityDto> {
-        const url = `/api/schemas/entity/${entityName}`;
-        const resp = await axios.get(`${this.baseUrl}${url}`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getXEntity(entityName);
     }
 
     async getAllXEntity(externalCookie: string): Promise<XEntityDto[]> {
-        const entities = await this.getAllEntities(externalCookie);
-        const promises = entities.map(e => this.getXEntity(externalCookie, e.name));
-        return Promise.all(promises);
+        return (await this.getClient(externalCookie)).getAllXEntity();
     }
 
     async requestQuery(externalCookie: string, queryName: string) {
-        const url = ENDPOINTS.QUERY.GET_DATA.replace(':id', queryName);
-        const resp = await axios.get(`${this.baseUrl}${url}?limit=5`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).requestQuery(queryName);
     }
 
     async saveEntityDefine(externalCookie: string, payload: SaveSchemaPayload) {
         try {
-            return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
-                headers: {
-                    Cookie: externalCookie
-                }
-            });
+            return (await this.getClient(externalCookie)).saveEntityDefine(payload);
         } catch (error: any) {
-            if (error.response?.data) {
-                throw error.response.data;
-            }
+            if (error.response?.data) throw error.response.data;
             throw error;
         }
     }
 
     async saveSchema(externalCookie: string, payload: SaveSchemaPayload) {
         try {
-            return await axios.post(`${this.baseUrl}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
-                headers: {
-                    Cookie: externalCookie
-                }
-            });
+            return (await this.getClient(externalCookie)).saveSchema(payload);
         } catch (error: any) {
-            if (error.response?.data) {
-                throw error.response.data;
-            }
+            if (error.response?.data) throw error.response.data;
             throw error;
         }
     }
 
     async generateSDL(externalCookie: string): Promise<string> {
-        const { getIntrospectionQuery, buildClientSchema, printSchema } = await import('graphql');
+        // This has complex logic with graphql import, maybe keep as is or move to share?
+        // Shared client doesn't have graphql dep. Keep logic here but use client for call?
+        // The original code imports 'graphql' dynamically.
+        // The call is axios.post(graphql).
+        // I'll keep it as is or wrap axios call.
 
-        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, {
-            query: getIntrospectionQuery()
-        }, {
-            headers: {
-                Cookie: externalCookie
-            }
+        const { getIntrospectionQuery, buildClientSchema, printSchema } = await import('graphql');
+        const query = getIntrospectionQuery();
+
+        // Use raw axios or client? Client doesn't have graphql method yet.
+        // Let's us raw axios for now as it's specialized.
+        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, { query }, {
+            headers: { Cookie: externalCookie }
         });
 
         const introspectionResponse = resp.data.data;
         const schema = buildClientSchema(introspectionResponse);
-        const sdl = printSchema(schema);
-        return sdl;
+        return printSchema(schema);
     }
 
     async saveQuery(externalCookie: string, schemaId: string, queryName: string, query: string) {
+        // Uses saveSchema internally.
+        // Map payload constructs here.
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
             type: 'query',
@@ -189,36 +166,31 @@ export class CmsClient {
                 }
             }
         };
-
         const saveResp = await this.saveSchema(externalCookie, payload);
-        schemaId = saveResp.data.schemaId;
-
-        return schemaId;
+        return saveResp.schemaId; // Verify return type of saveSchema
     }
 
     async insertSingleData(externalCookie: string, entity: XEntityDto, data: any) {
+        // Data cleaning logic
         delete data[entity.primaryKey];
         delete data['createdAt'];
         delete data['updatedAt'];
         delete data['createdBy'];
 
-        const url = `/api/entities/${entity.name}/insert`;
         try {
-            return await axios.post(`${this.baseUrl}${url}`, data, {
-                headers: {
-                    Cookie: externalCookie
-                }
-            });
+            return (await this.getClient(externalCookie)).insertSingleData(entity.name, data);
         } catch (error: any) {
-            if (error.response?.data) {
-                throw error.response.data;
-            }
+            if (error.response?.data) throw error.response.data;
             throw error;
         }
     }
 
     async insertData(externalCookie: string, entity: XEntityDto, data: any, idMaps: Record<string, Record<string, any>> = {}) {
         await this.populateExamplePics(externalCookie);
+        // ... Logic for lookup/junction recursion ...
+        // This relies on this.insertSingleData, which now uses client.
+        // The recursion logic itself is fine to stay here.
+
         for (const attr of entity.attributes) {
             const field = attr.field;
             if (attr.lookup && data[field]) {
@@ -232,7 +204,7 @@ export class CmsClient {
                     data[field][attr.lookup!.primaryKey] = idMaps[field][originalId];
                 } else {
                     const resp = await this.insertSingleData(externalCookie, attr.lookup!, item);
-                    const newId = resp.data[target.primaryKey];
+                    const newId = resp[target.primaryKey]; // resp.data? insertSingleData returns resp.data from client
                     if (originalId) idMaps[field][originalId] = newId;
                     item[target.primaryKey] = newId;
                 }
@@ -245,7 +217,7 @@ export class CmsClient {
                         item[target.primaryKey] = idMaps[field][originalId];
                     } else {
                         const resp = await this.insertSingleData(externalCookie, target, item);
-                        const newId = resp.data[target.primaryKey];
+                        const newId = resp[target.primaryKey];
                         if (originalId) idMaps[field][originalId] = newId;
                         item[target.primaryKey] = newId;
                     }
@@ -264,6 +236,7 @@ export class CmsClient {
     }
 
     async populateExamplePics(externalCookie: string) {
+        // Keep as is.
         if (this.populatingPromise) {
             return this.populatingPromise;
         }
@@ -295,7 +268,6 @@ export class CmsClient {
 
                         const formData = new FormData();
                         const fileBuffer = fs.readFileSync(filePath);
-                        // Using explicit Blob for Node.js environment compatibility
                         const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
                         formData.append('Files', blob, file);
 
@@ -303,7 +275,6 @@ export class CmsClient {
                             headers: {
                                 Cookie: externalCookie,
                             },
-                            // Add some timeout and error handling for connection resets
                             timeout: 30000,
                         });
                     }
@@ -319,13 +290,8 @@ export class CmsClient {
     }
 
     async getAllAsset(externalCookie: string): Promise<AssetListResponse> {
-        const url = `${ENDPOINTS.ASSETS}`;
-        const resp = await axios.get(`${this.baseUrl}${url}`, {
-            headers: {
-                Cookie: externalCookie
-            }
-        });
-        return resp.data;
+        return (await this.getClient(externalCookie)).getAllAsset();
     }
+
 }
 

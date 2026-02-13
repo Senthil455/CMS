@@ -1,38 +1,39 @@
 import useSWR from "swr";
 import { fullCmsApiUrl } from "../configs";
-import {catchResponse, decodeError, fetcher, swrConfig } from "../../utils/apiUtils";
+import { catchResponse, decodeError, fetcher, swrConfig } from "../../utils/apiUtils";
 import axios from "axios";
-import {XEntity} from "../../types/xEntity";
-import {ListResponse} from "../../types/listResponse";
+import { XEntity } from "../../types/xEntity";
+import { ListResponse } from "../../types/listResponse";
+import { ENDPOINTS } from "@cms/shared";
 
-export  function useTaskEntity() {
-    let res = useSWR<XEntity>(fullCmsApiUrl(`/tasks/entity`), fetcher,swrConfig);
-    return {...res, error:decodeError(res.error)}
+export function useTaskEntity() {
+    let res = useSWR<XEntity>(fullCmsApiUrl(ENDPOINTS.TASKS.ENTITY), fetcher, swrConfig);
+    return { ...res, error: decodeError(res.error) }
 }
-export  function useTasks(qs:string) {
-    let res = useSWR<ListResponse>(fullCmsApiUrl(`/tasks?${qs}`), fetcher,swrConfig);
-    return {...res, error:decodeError(res.error)}
-}
-
-export  function addExportTask() {
-    return catchResponse(()=>axios.post(fullCmsApiUrl(`/tasks/export`)));
+export function useTasks(qs: string) {
+    let res = useSWR<ListResponse>(fullCmsApiUrl(`${ENDPOINTS.TASKS.ALL}?${qs}`), fetcher, swrConfig);
+    return { ...res, error: decodeError(res.error) }
 }
 
-export  function addEmitMessageTask(data:any) {
-    return catchResponse(()=>axios.post(fullCmsApiUrl(`/tasks/emit`), data));
+export function addExportTask() {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.TASKS.EXPORT)));
 }
 
-export  function importDemoData() {
-    return catchResponse(()=>axios.post(fullCmsApiUrl(`/tasks/import/demo`)));
-}
-export  function archiveExportTask(id:number) {
-    return catchResponse(()=>axios.post(fullCmsApiUrl(`/tasks/export/archive/${id}`),{}));
+export function addEmitMessageTask(data: any) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.TASKS.EMIT), data));
 }
 
-export  function getExportTaskDownloadFileLink(id:number) {
-    return fullCmsApiUrl(`/tasks/export/download/${id}`);
+export function importDemoData() {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.TASKS.IMPORT_DEMO)));
+}
+export function archiveExportTask(id: number) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.TASKS.ARCHIVE.replace(':id', id.toString())), {}));
 }
 
-export  function getAddImportTaskUploadUrl() {
-    return fullCmsApiUrl(`/tasks/import`);
+export function getExportTaskDownloadFileLink(id: number) {
+    return fullCmsApiUrl(ENDPOINTS.TASKS.DOWNLOAD.replace(':id', id.toString()));
+}
+
+export function getAddImportTaskUploadUrl() {
+    return fullCmsApiUrl(ENDPOINTS.TASKS.IMPORT);
 }

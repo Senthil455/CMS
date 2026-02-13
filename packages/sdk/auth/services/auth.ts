@@ -1,47 +1,36 @@
-import axios from "axios";
-import useSWR  from "swr";
-import {catchResponse, fetcher, swrConfig} from "../../utils/apiUtils";
-import {fullAuthApiUrl} from "../configs";
-import {UserAccess} from "../types/userAccess";
-import {ChangePasswordReq} from "../types/changePasswordReq";
-import {RegisterReq} from "../types/registerReq";
-import {LoginReq} from "../types/loginReq";
+import useSWR from "swr";
+import { catchClient, fetcher, swrConfig } from "../../utils/apiUtils";
+import { fullAuthApiUrl, getApiClient } from "../configs";
+import { type UserAccess, type ChangePasswordReq, type RegisterReq, type LoginRequest, ENDPOINTS } from "@cms/shared";
 
 //login
-export async function login(item: LoginReq )  {
-    return catchResponse(() => axios.post(fullAuthApiUrl(`/login`), item));
+export async function login(item: LoginRequest) {
+    return catchClient(() => getApiClient().login(item));
 }
 
 export async function register(item: RegisterReq) {
-    return catchResponse(() => axios.post(fullAuthApiUrl(`/register`), item));
+    return catchClient(() => getApiClient().register(item));
 }
 
 export async function logout() {
-    return catchResponse(() => axios.get(fullAuthApiUrl(`/logout`)));
+    return catchClient(() => getApiClient().logout());
 }
 
-export  function getBackendGithubUrl() {
+export function getBackendGithubUrl() {
     return fullAuthApiUrl(`/ext_login/GitHub/`);
 }
 
 //identity
 export function useUserInfo() {
-    return useSWR<UserAccess>(fullAuthApiUrl(`/me`), fetcher, swrConfig)
+    return useSWR<UserAccess>(fullAuthApiUrl(ENDPOINTS.AUTH.ME), fetcher, swrConfig)
 }
 
 //profile
 export async function changePassword(item: ChangePasswordReq) {
-    return catchResponse(() => axios.post(fullAuthApiUrl(`/profile/password`), item));
+    return catchClient(() => getApiClient().changePassword(item));
 }
 
-export async function uploadAvatar(file:any) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    return catchResponse(() =>
-        axios.post(fullAuthApiUrl(`/profile/avatar`), formData, {
-            headers: {"Content-Type": "multipart/form-data"},
-        })
-    );
+export async function uploadAvatar(file: any) {
+    return catchClient(() => getApiClient().uploadAvatar(file));
 }
 

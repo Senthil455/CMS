@@ -8,5 +8,8 @@ export default defineConfig({
     outDir: '../service/public/portal',
     emptyOutDir: true
   },
-  plugins: [react()]
+  plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
+  }
 })

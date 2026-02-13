@@ -7,5 +7,8 @@ export default defineConfig({
     outDir: '../service/public/admin',
     emptyOutDir: true
   },
-  plugins: [react()]
+  plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
+  }
 })

@@ -1,12 +1,12 @@
-import {LookupContainer} from "./LookupContainer";
-import {TreeSelectContainer} from "./TreeSelectContainer";
-import {XAttr} from "../../types/xEntity";
-import {AssetSelector, AssetSelectorProps} from "./AssetSelector";
-import {AssetMetadataEditor, AssetMetaDataEditorProps} from "./AssetMetaDataEditor";
-import React from "react";
-import {toDatetime, toZonelessStr, utcStrToDatetime} from "../../types/formatter";
-import {CmsComponentConfig} from "../cmsComponentConfig";
-import {GeneralComponentConfig} from "../../ComponentConfig";
+import { LookupContainer } from "./LookupContainer";
+import { TreeSelectContainer } from "./TreeSelectContainer";
+import { XAttr } from "../../types/xEntity";
+import { AssetSelector, AssetSelectorProps } from "./AssetSelector";
+import { AssetMetadataEditor, AssetMetaDataEditorProps } from "./AssetMetaDataEditor";
+
+import { toDatetime, toZonelessStr, utcStrToDatetime } from "../../types/formatter";
+import { CmsComponentConfig } from "../cmsComponentConfig";
+import { GeneralComponentConfig } from "../../ComponentConfig";
 
 export function createInput(
     props: {
@@ -17,14 +17,14 @@ export function createInput(
         register: any,
         uploadUrl: string,
         getFullAssetsURL: (arg: string) => string
-        fullRowClassName:string,
-        partialRowClassName:string
+        fullRowClassName: string,
+        partialRowClassName: string
     },
     config: CmsComponentConfig & GeneralComponentConfig
 ) {
-    const {field, displayType, options} = props.column;
-    const ConfiguredMetadataEditor = (props: AssetMetaDataEditorProps) => <AssetMetadataEditor {...props} componentConfig={config}/>
-    const ConfiguredAssetSelector = (props: AssetSelectorProps) => <AssetSelector {...props} componentConfig={config}/>
+    const { field, displayType, options } = props.column;
+    const ConfiguredMetadataEditor = (props: AssetMetaDataEditorProps) => <AssetMetadataEditor {...props} componentConfig={config} />
+    const ConfiguredAssetSelector = (props: AssetSelectorProps) => <AssetSelector {...props} componentConfig={config} />
 
 
     switch (displayType) {
@@ -34,35 +34,35 @@ export function createInput(
                 className={props.fullRowClassName}
                 addPairLabel={config.addPairLabel}
                 {...props}
-                key={field}/>
+                key={field} />
         case 'editor':
             const EditorInput = config.inputComponents.editor;
             return <EditorInput
                 className={props.fullRowClassName}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'textarea':
             const TextAreaInput = config.inputComponents.textarea;
             return <TextAreaInput
                 className={props.partialRowClassName}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'number':
             const NumberInput = config.inputComponents.number;
             return <NumberInput
                 className={props.partialRowClassName}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'localDatetime':
             const LocalDatetimeInput = config.inputComponents.datetime;
             return <LocalDatetimeInput
                 showTime={true}
                 parseDate={utcStrToDatetime}
-                formatDate={x=>x}
+                formatDate={x => x}
                 className={props.partialRowClassName}
                 inline={false}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'datetime':
             const DatetimeInput = config.inputComponents.datetime;
             return <DatetimeInput
@@ -72,7 +72,7 @@ export function createInput(
                 showTime={true}
                 inline={false}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'date':
             const DateInput = config.inputComponents.datetime;
             return <DateInput
@@ -82,7 +82,7 @@ export function createInput(
                 inline={false}
                 showTime={false}
                 key={field}
-                {...props}/>
+                {...props} />
         case 'image':
             const Image = config.inputComponents.file;
             return <Image
@@ -121,7 +121,7 @@ export function createInput(
                 {...props} />
         case 'lookup':
             return <LookupContainer
-                className={props.partialRowClassName} key={field}{...props} componentConfig={config}/>
+                className={props.partialRowClassName} key={field}{...props} componentConfig={config} />
         case 'multiselect':
             const MultiSelectInput = config.inputComponents.multiSelect;
             return <MultiSelectInput
@@ -133,13 +133,13 @@ export function createInput(
             return <TreeSelectContainer componentConfig={config}
                 className={props.partialRowClassName}
                 key={field}
-                {...props}/>
+                {...props} />
         default:
             const TextInput = config.inputComponents.text;
             return <TextInput
                 className={props.partialRowClassName}
                 key={field}
-                {...props}/>
+                {...props} />
     }
 }
 
