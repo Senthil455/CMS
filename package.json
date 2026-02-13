@@ -6,13 +6,13 @@
         "packages/sdk",
         "packages/admin",
         "packages/portal",
-        "packages/builder"
+        "packages/app"
     ],
     "scripts": {
-        "dev": "concurrently \"npm run dev:service\" \"npm run dev:builder\"",
+        "dev": "concurrently \"npm run dev:service\" \"npm run dev:app\"",
         "dev:service": "npm run dev --workspace=@cms/service",
         "debug:service": "npm run debug --workspace=@cms/service",
-        "dev:builder": "npm run dev --workspace=@cms/builder",
+        "dev:app": "npm run dev --workspace=@cms/app",
         "dev:admin": "npm run dev --workspace=@cms/admin",
         "dev:portal": "npm run dev --workspace=@cms/portal",
         "build:shared": "npm run build --workspace=@cms/shared",

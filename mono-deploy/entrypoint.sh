@@ -4,7 +4,7 @@ set -e
 echo "[ENTRYPOINT] Starting startup sequence..."
 
 # Default Environment Variables
-export DATABASE_URL=${DATABASE_URL:-"file:/app/packages/backend/sessions.db"}
+export DATABASE_URL=${DATABASE_URL:-"file:/app/packages/service/sessions.db"}
 export PORT=${PORT:-"3001"}
 export CMS_BASE_URL=${CMS_BASE_URL:-"http://127.0.0.1:5001"} # Internal .NET port
 export FRONTEND_URL=${FRONTEND_URL:-"http://127.0.0.1:3001"}
@@ -39,7 +39,7 @@ nginx
 
 # Start Node.js (CMS Backend) in background
 echo "[ENTRYPOINT] Starting CMS (Node.js) on port 3001..."
-cd /app/packages/backend
+cd /app/packages/service
 npx prisma db push --accept-data-loss
 tsx src/index.ts &
 

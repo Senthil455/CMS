@@ -15,7 +15,7 @@ You are a senior frontend engineer specialized in building production-ready, hig
 - **SDK Bridge**: Every page MUST include these scripts in the `<head>`:
   ```html
   <script type="module">
-      import * as cmsSdk from '/app-static/index.js';
+      import * as cmsSdk from '/static/index.js';
       window.cmsSdk = cmsSdk;
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

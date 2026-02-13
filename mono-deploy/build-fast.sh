@@ -14,7 +14,7 @@ npm install --silent
 npm run build:shared --silent
 
 # Build Frontend
-npm run build --workspace=@cms/builder --silent
+npm run build --workspace=@cms/app --silent
 
 # Build Backend (Prisma + TSC)
 cd packages/service

@@ -6,7 +6,7 @@ WORKDIR /app
 COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
 COPY CMS/packages/service/package.json ./packages/service/
-COPY CMS/packages/builder/package.json ./packages/builder/
+COPY CMS/packages/app/package.json ./packages/app/
 RUN npm install
 
 # Copy Cms source code
@@ -15,8 +15,8 @@ COPY CMS/ .
 # Build Shared Package
 RUN npm run build:shared
 
-# Build Frontend (outputs to packages/builder/dist)
-RUN cd packages/builder && npm run build
+# Build Frontend (outputs to packages/app/dist)
+RUN cd packages/app && npm run build
 
 # Build Backend
 RUN cd packages/service && cp .env.production .env && npx prisma generate && npm run build

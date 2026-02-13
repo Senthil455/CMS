@@ -93,27 +93,52 @@ async function start() {
             dir: join(__dirname, 'plugins'),
         });
 
-        // Register Static Files
-        const frontendDistPath = join(__dirname, '../../frontend/dist');
+        // Register Static Files for Admin
+        const adminDistPath = join(__dirname, '../public/admin');
         await server.register(fastifyStatic, {
-            root: frontendDistPath,
+            root: adminDistPath,
+            prefix: '/admin/',
+            wildcard: false,
+            // decorateReply: true // Default is true, needed for sendFile to work
+        });
+
+        // Register Static Files for Portal
+        const portalDistPath = join(__dirname, '../public/portal');
+        await server.register(fastifyStatic, {
+            root: portalDistPath,
+            prefix: '/portal/',
+            wildcard: false,
+            decorateReply: false,
+        });
+
+        // Register Static Files for CMS
+        const appDistPath = join(__dirname, '../public/app');
+        await server.register(fastifyStatic, {
+            root: appDistPath,
             prefix: '/app/',
             wildcard: false,
+            decorateReply: false,
         });
 
         // Register Backend Static Files (e.g. common JS)
-        const publicPath = join(__dirname, '../public');
+        const publicPath = join(__dirname, '../public/static');
         await server.register(fastifyStatic, {
             root: publicPath,
-            prefix: '/app-static/',
+            prefix: '/static/',
             decorateReply: false,
         });
 
 
         console.log("8. Setting Not Found Handler...");
         server.setNotFoundHandler((request, reply) => {
+            if (request.url.startsWith('/admin')) {
+                return (reply as any).sendFile('index.html', adminDistPath);
+            }
+            if (request.url.startsWith('/portal')) {
+                return (reply as any).sendFile('index.html', portalDistPath);
+            }
             if (request.url.startsWith('/app')) {
-                return (reply as any).sendFile('index.html');
+                return (reply as any).sendFile('index.html', appDistPath);
             }
             reply.status(404).send({ error: 'Not Found' });
         });
