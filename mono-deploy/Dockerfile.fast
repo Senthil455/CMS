@@ -9,7 +9,7 @@ RUN apt-get update -y && apt-get install -y openssl procps curl && rm -rf /var/l
 COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
 COPY CMS/packages/service/package.json ./packages/service/
-COPY CMS/packages/ui/package.json ./packages/ui/
+COPY CMS/packages/builder/package.json ./packages/builder/
 
 # 2. Install PROD dependencies
 RUN npm ci --omit=dev
@@ -25,7 +25,7 @@ COPY CMS/packages/service/prisma ./packages/service/prisma
 RUN cd packages/service && npx prisma generate
 
 # Copy frontend artifacts
-COPY CMS/packages/ui/dist ./packages/ui/dist
+COPY CMS/packages/builder/dist ./packages/builder/dist
 
 # --- Stage 2: Final Image (Hybrid .NET + Node) ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
