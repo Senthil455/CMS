@@ -14,10 +14,10 @@ npm install --silent
 npm run build:shared --silent
 
 # Build Frontend
-npm run build --workspace=@cms/frontend --silent
+npm run build --workspace=@cms/ui --silent
 
 # Build Backend (Prisma + TSC)
-cd packages/backend
+cd packages/service
 npm install --silent # Ensure local backend deps are simpler to find
 npx prisma generate
 npm run build --silent

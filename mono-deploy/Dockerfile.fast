@@ -8,8 +8,8 @@ RUN apt-get update -y && apt-get install -y openssl procps curl && rm -rf /var/l
 # 1. Copy package definitions to install dependencies
 COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
-COPY CMS/packages/backend/package.json ./packages/backend/
-COPY CMS/packages/frontend/package.json ./packages/frontend/
+COPY CMS/packages/service/package.json ./packages/service/
+COPY CMS/packages/ui/package.json ./packages/ui/
 
 # 2. Install PROD dependencies
 RUN npm ci --omit=dev
@@ -17,15 +17,15 @@ RUN npm ci --omit=dev
 # 3. Copy pre-built artifacts from LOCAL machine
 COPY CMS/packages/shared/dist ./packages/shared/dist
 # Copy backend artifacts AND source files (for tsx)
-COPY CMS/packages/backend/dist ./packages/backend/dist
-COPY CMS/packages/backend/src ./packages/backend/src
-COPY CMS/packages/backend/resources ./packages/backend/resources
-COPY CMS/packages/backend/prisma ./packages/backend/prisma
+COPY CMS/packages/service/dist ./packages/service/dist
+COPY CMS/packages/service/src ./packages/service/src
+COPY CMS/packages/service/resources ./packages/service/resources
+COPY CMS/packages/service/prisma ./packages/service/prisma
 # Generate Prisma Client
-RUN cd packages/backend && npx prisma generate
+RUN cd packages/service && npx prisma generate
 
 # Copy frontend artifacts
-COPY CMS/packages/frontend/dist ./packages/frontend/dist
+COPY CMS/packages/ui/dist ./packages/ui/dist
 
 # --- Stage 2: Final Image (Hybrid .NET + Node) ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

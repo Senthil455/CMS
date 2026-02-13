@@ -94,12 +94,15 @@ environment:
   # Database Configuration
   - DATABASE_PROVIDER=1  # 0=SQLite, 1=Postgres, 2=SqlServer, 3=MySQL
   - CONNECTION_STRING=Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;
-  - MASTER_PASSWORD=  # Empty - set via UI on first startup
-  
+  - CMS_CONFIG_PATH=/config/cms.settings.json
+
   # Node.js Configuration
   - PORT=3001
   - CMS_BASE_URL=http://localhost:5000
   - DATABASE_URL=file:/app/packages/backend/data/sqlite.db
+
+volumes:
+  - cms_config:/config
 ```
 
 ### Database Providers
@@ -248,17 +251,20 @@ CONNECTION_STRING=Host=db;Port=5432;...  # Use 'db', not 'localhost'
    ```
 
 2. **Access system settings:**
-   - Navigate to `http://localhost:5000/app/system-settings`
+   - Navigate to `http://localhost:5000/app/settings`
+   - The system will automatically check database connectivity.
 
-3. **Set master password:**
-   - Database is pre-configured from environment variables
-   - Set a master password for future configuration changes
-   - Click "Save & Restart Server"
+3. **Create first admin:**
+   - Since the database is pre-configured via environment variables, you will be redirected to create the Super Admin.
+   - Enter your email and password.
+   - Click "Create Admin".
+   - Log in and start using CMS.
 
-4. **Create first admin:**
-   - Navigate to "Super Admin" tab
-   - Create your first admin account
-   - Log in and start using CMS
+4. **Reconfiguration (if needed):**
+   - If you need to change the database connection later:
+     - Delete the persistent config file: `docker exec -it <container> rm /config/cms.settings.json`
+     - Restart the container.
+     - The app will re-enter setup mode (or regenerate config from env vars).
 
 ---
 

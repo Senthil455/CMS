@@ -61,7 +61,10 @@ railway up
 ```bash
 DATABASE_PROVIDER=1
 CONNECTION_STRING=Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=${{POSTGRES_PASSWORD}}
+CMS_CONFIG_PATH=/app/config/cms.settings.json
 ```
+
+**Note:** Ensure you mount a volume at `/app/config` (or your chosen path) to persist settings.
 
 ---
 
@@ -320,15 +323,14 @@ And platform is configured to route to port 5000.
 After deployment:
 
 1. **Access System Settings:**
-   - Navigate to `https://your-app.railway.app/app/system-settings`
+   - Navigate to `https://your-app.railway.app/app/settings`
+   - The system will check database connectivity.
 
-2. **Set Master Password:**
-   - Database is pre-configured from environment variables
-   - Set a master password for future configuration changes
-
-3. **Create First Admin:**
-   - Navigate to "Super Admin" tab
-   - Create your first admin account
+2. **Create First Admin:**
+   - Since the database is pre-configured via environment variables, you will be redirected to create the Super Admin.
+   - Enter your email and password.
+   - Click "Create Admin".
+   - Log in and start using CMS.
 
 4. **Start Building:**
    - Use AI to generate entities

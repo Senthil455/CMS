@@ -1,0 +1,3 @@
+[submodule "libs/cms-admin-sdk"]
+	path = libs/cms-admin-sdk
+	url = git@github.com:Cms/CMS Admin SDK.git

@@ -23,13 +23,13 @@ services:
       - NODE_ENV=production
       - CMS_BASE_URL=http://localhost:5000
       - FRONTEND_URL=http://localhost:5000/app
-      - DATABASE_URL=file:/app/packages/backend/data/sqlite.db
+      - DATABASE_URL=file:/app/packages/service/data/sqlite.db
 
     depends_on:
       - db
     restart: unless-stopped
     volumes:
-      - sqlite_data:/app/packages/backend/data
+      - sqlite_data:/app/packages/service/data
       - cms_config:/config
 
   db:

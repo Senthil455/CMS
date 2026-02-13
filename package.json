@@ -2,13 +2,18 @@
     "name": "cms",
     "private": true,
     "workspaces": [
-        "packages/*"
+        "packages/*",
+        "packages/sdk",
+        "packages/admin",
+        "packages/portal"
     ],
     "scripts": {
-        "dev": "concurrently \"npm run debug:backend\" \"npm run dev:frontend\"",
-        "dev:backend": "npm run dev --workspace=@cms/backend",
-        "debug:backend": "npm run debug --workspace=@cms/backend",
-        "dev:frontend": "npm run dev --workspace=@cms/frontend",
+        "dev": "concurrently \"npm run dev:service\" \"npm run dev:ui\"",
+        "dev:service": "npm run dev --workspace=@cms/service",
+        "debug:service": "npm run debug --workspace=@cms/service",
+        "dev:ui": "npm run dev --workspace=@cms/ui",
+        "dev:admin": "npm run dev --workspace=@cms/admin",
+        "dev:portal": "npm run dev --workspace=@cms/portal",
         "build:shared": "npm run build --workspace=@cms/shared",
         "install:all": "npm install"
     },

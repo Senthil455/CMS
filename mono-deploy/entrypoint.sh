@@ -32,7 +32,6 @@ fi
 echo "[ENTRYPOINT] CMS configuration:"
 echo "  Database Provider: ${DATABASE_PROVIDER}"
 echo "  Connection String: ${CONNECTION_STRING}"
-echo "  Master Password: $([ -z "$MASTER_PASSWORD" ] && echo '(empty - will be set via UI)' || echo '(set)')"
 
 # Start Nginx
 echo "[ENTRYPOINT] Starting Nginx..."

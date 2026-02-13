@@ -5,8 +5,8 @@ WORKDIR /app
 # Install dependencies (utilizing workspace support)
 COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
-COPY CMS/packages/backend/package.json ./packages/backend/
-COPY CMS/packages/frontend/package.json ./packages/frontend/
+COPY CMS/packages/service/package.json ./packages/service/
+COPY CMS/packages/ui/package.json ./packages/ui/
 RUN npm install
 
 # Copy Cms source code
@@ -15,11 +15,11 @@ COPY CMS/ .
 # Build Shared Package
 RUN npm run build:shared
 
-# Build Frontend (outputs to packages/frontend/dist)
-RUN cd packages/frontend && npm run build
+# Build Frontend (outputs to packages/ui/dist)
+RUN cd packages/ui && npm run build
 
 # Build Backend
-RUN cd packages/backend && cp .env.production .env && npx prisma generate && npm run build
+RUN cd packages/service && cp .env.production .env && npx prisma generate && npm run build
 
 # --- Stage 2: Build CMS (.NET 8) ---
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-builder
