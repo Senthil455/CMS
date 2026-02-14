@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y curl nginx procps && \
 
 # Configure Nginx
 COPY CMS/mono-deploy/nginx.conf /etc/nginx/nginx.conf
+COPY CMS/mono-deploy/404.html /usr/share/nginx/html/404.html
 
 # Copy Node.js App from node-base
 COPY --from=node-base /app /app

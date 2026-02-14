@@ -60,6 +60,7 @@ export { useAuditLogDetailPage } from "./auditLog/pages/useAuditLogDetailPage";
 //menu and layout
 export type { SystemMenuLabels } from "./hooks/useMenuItems"
 export { useUserProfileMenu, useAssetMenuItems, useEntityMenuItems, useSystemMenuItems } from "./hooks/useMenuItems";
+export { useTopMenuBar } from "./auth/services/menu";
 export { EntityRouter } from "./cms/EntityRouter";
 
 export { AccountRouter } from "./auth/AccountRouter";

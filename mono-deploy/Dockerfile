@@ -43,7 +43,8 @@ RUN apt-get update && apt-get install -y curl nginx procps && \
     rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
-COPY CMS/standalone-cms/nginx.conf /etc/nginx/nginx.conf
+COPY CMS/mono-deploy/nginx.conf /etc/nginx/nginx.conf
+COPY CMS/mono-deploy/404.html /usr/share/nginx/html/404.html
 
 # Copy Built Node.js App
 COPY --from=builder /app /app

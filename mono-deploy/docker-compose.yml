@@ -5,7 +5,7 @@ services:
       dockerfile: cms/mono-deploy/Dockerfile
     image: cms-mono-deploy:latest
     ports:
-      - "5000:5000" # Nginx Gateway
+      - "${APP_PORT:-5000}:5000" # Nginx Gateway
     environment:
       # --- CMS (.NET) Settings ---
       - DATABASE_PROVIDER=1 # 0=SQLite, 1=Postgres, 2=SqlServer, 3=MySQL
@@ -16,21 +16,21 @@ services:
       - "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
       - ApiInfo__Url=http://localhost:5000
       - ASPNETCORE_URLS=http://+:5000
-      - CMS_CONFIG_PATH=/config/cms.settings.json
+      - CMS_CONFIG_PATH=/data/config/cms.settings.json
+      - CMS_STORE_PATH=/data/files
 
       # --- CMS (Node.js) Settings ---
       - PORT=3001
       - NODE_ENV=production
       - CMS_BASE_URL=http://localhost:5000
       - FRONTEND_URL=http://localhost:5000/app
-      - DATABASE_URL=file:/app/packages/service/data/sqlite.db
+      - DATABASE_URL=file:/data/app/sqlite.db
 
     depends_on:
       - db
     restart: unless-stopped
     volumes:
-      - sqlite_data:/app/packages/service/data
-      - cms_config:/config
+      - cms_data:/data
 
   db:
     image: postgres:15
@@ -41,10 +41,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     restart: unless-stopped
 
 volumes:
   postgres_data:
-  sqlite_data:
-  cms_config:
+  cms_data:
