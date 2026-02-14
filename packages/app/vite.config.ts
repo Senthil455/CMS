@@ -8,7 +8,7 @@ import monacoEditorPlugin from 'vite-plugin-monaco-editor'
 export default defineConfig({
   base: '/app/',
   build: {
-    outDir: '../service/public/app',
+    outDir: 'dist',
     emptyOutDir: true
   },
   plugins: [

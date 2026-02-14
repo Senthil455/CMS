@@ -78,11 +78,19 @@ export function StudioHeader({ user, logout, isDark, toggleTheme, showExplorer, 
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             className="relative group cursor-pointer active:scale-95 transition-transform flex items-center gap-1"
                         >
-                            <img
-                                src={user.avatarUrl}
-                                alt={user.username}
-                                className="w-10 h-10 rounded-xl object-cover ring-2 ring-border group-hover:ring-primary/50 transition-all shadow-md"
-                            />
+                            {user.avatarUrl ? (
+                                <img
+                                    src={user.avatarUrl}
+                                    alt={user.username}
+                                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-border group-hover:ring-primary/50 transition-all shadow-md"
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-muted flex items-center justify-center text-white ring-2 ring-border group-hover:ring-primary/50 transition-all shadow-md">
+                                    <span className="text-sm font-bold">
+                                        {(user.name || user.username || user.email || '?').substring(0, 2).toUpperCase()}
+                                    </span>
+                                </div>
+                            )}
                             <ChevronDown className={`w-4 h-4 text-primary-muted transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
 

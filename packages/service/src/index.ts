@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config';
 import proxy from '@fastify/http-proxy';
+import { createReadStream } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -95,29 +96,26 @@ async function start() {
         });
 
         // Register Static Files for Admin
-        const adminDistPath = join(__dirname, '../public/admin');
+        const adminDistPath = join(__dirname, '../../admin/dist');
         await server.register(fastifyStatic, {
             root: adminDistPath,
             prefix: '/admin/',
-            wildcard: false,
             // decorateReply: true // Default is true, needed for sendFile to work
         });
 
         // Register Static Files for Portal
-        const portalDistPath = join(__dirname, '../public/portal');
+        const portalDistPath = join(__dirname, '../../portal/dist');
         await server.register(fastifyStatic, {
             root: portalDistPath,
             prefix: '/portal/',
-            wildcard: false,
             decorateReply: false,
         });
 
         // Register Static Files for CMS
-        const appDistPath = join(__dirname, '../public/app');
+        const appDistPath = join(__dirname, '../../app/dist');
         await server.register(fastifyStatic, {
             root: appDistPath,
             prefix: '/app/',
-            wildcard: false,
             decorateReply: false,
         });
 
@@ -133,13 +131,16 @@ async function start() {
         console.log("8. Setting Not Found Handler...");
         server.setNotFoundHandler((request, reply) => {
             if (request.url.startsWith('/admin')) {
-                return (reply as any).sendFile('index.html', adminDistPath);
+                reply.type('text/html');
+                return reply.send(createReadStream(join(adminDistPath, 'index.html')));
             }
             if (request.url.startsWith('/portal')) {
-                return (reply as any).sendFile('index.html', portalDistPath);
+                reply.type('text/html');
+                return reply.send(createReadStream(join(portalDistPath, 'index.html')));
             }
             if (request.url.startsWith('/app')) {
-                return (reply as any).sendFile('index.html', appDistPath);
+                reply.type('text/html');
+                return reply.send(createReadStream(join(appDistPath, 'index.html')));
             }
             reply.status(404).send({ error: 'Not Found' });
         });
