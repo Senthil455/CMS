@@ -11,7 +11,7 @@ import { config } from '../config';
 
 const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.log.info('Starting services plugin...');
-    const prisma = new PrismaClient();
+    const prisma = fastify.prisma;
 
     const serviceLogger = fastify.log.child({ component: 'SERVICE' }, { level: config.LOG_LEVEL_SERVICE });
 
@@ -35,13 +35,9 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.decorate('authService', authService);
     fastify.decorate('socketService', socketService);
     fastify.decorate('statusService', statusService);
-
-    fastify.addHook('onClose', async () => {
-        await prisma.$disconnect();
-    });
 };
 
 export default fp(servicesPlugin, {
     name: 'services',
-    dependencies: ['intentClassifier', 'cms']
+    dependencies: ['intentClassifier', 'cms', 'prisma']
 });

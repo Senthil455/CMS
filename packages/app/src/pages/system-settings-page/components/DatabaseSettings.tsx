@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Loader2, AlertTriangle } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
@@ -30,17 +30,12 @@ export function DatabaseSettings() {
         password: '',
         port: '5432'
     });
-    const [connectionString, setConnectionString] = useState('');
-    const [isDbSaving, setIsDbSaving] = useState(false);
 
-    // Initial load of config
-    // We can assume this component is only mounted when we want to configure DB or view it.
-    // If DB is ready, connectionString will be populated from API.
-    // If not, it will be empty.
+    const [isDbSaving, setIsDbSaving] = useState(false);
 
     // Fetch current config on mount
     useEffect(() => {
-        fetch(`${config.CMS_BASE_URL}/api/system/config`, {
+        fetch(`${config.CMS_BASE_URL}/api/system/setup-database`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
@@ -51,7 +46,6 @@ export function DatabaseSettings() {
             })
             .then(data => {
                 setDbProvider(data.databaseProvider ?? DatabaseProvider.Sqlite);
-                setConnectionString(data.connectionString ?? '');
             })
             .catch(() => {
                 // Ignore error if config doesn't exist yet
@@ -76,16 +70,13 @@ export function DatabaseSettings() {
     const handleSaveDatabase = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (connectionString) {
-            toast.error('Database is already configured. To change it, please delete the configuration file on the server.');
-            return;
-        }
+
 
         setIsDbSaving(true);
         const newConnectionString = generateConnectionString();
         try {
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/config/database`, {
-                method: 'PUT',
+            const res = await fetch(`${config.CMS_BASE_URL}/api/system/setup-database`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     databaseProvider: dbProvider,
@@ -111,43 +102,7 @@ export function DatabaseSettings() {
         }
     };
 
-    // If connection string is set, show read-only view
-    if (connectionString) {
-        return (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mb-4">
-                        <Save className="w-8 h-8 text-green-600 dark:text-green-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-primary mb-2">Database is Configured</h3>
-                    <p className="text-sm text-primary-muted mb-6 max-w-md">
-                        The database connection is currently active.
-                    </p>
 
-                    <div className="bg-app-muted rounded-lg p-4 w-full max-w-md text-left mb-6">
-                        <label className="block text-xs font-semibold uppercase text-primary-muted mb-1">Current Connection String</label>
-                        <code className="text-sm font-mono text-primary break-all">
-                            {connectionString}
-                        </code>
-                    </div>
-
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 max-w-md text-left">
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
-                            <div>
-                                <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
-                                    Need to reconfigure?
-                                </h4>
-                                <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
-                                    To change the database configuration, you must manually delete the <strong>settings.json</strong> file on your server and restart the application.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <form onSubmit={handleSaveDatabase} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">

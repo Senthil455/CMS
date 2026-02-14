@@ -25,3 +25,8 @@ model AiResponseLog {
   schemaId  String?
   timestamp DateTime @default(now())
 }
+
+model SystemSetting {
+  key   String @id
+  value String
+}

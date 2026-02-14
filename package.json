@@ -16,6 +16,7 @@
         "dev:admin": "npm run dev --workspace=@cms/admin",
         "dev:portal": "npm run dev --workspace=@cms/portal",
         "build:shared": "npm run build --workspace=@cms/shared",
+        "build:all": "npm run build --workspaces --if-present",
         "install:all": "npm install"
     },
     "devDependencies": {

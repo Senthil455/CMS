@@ -48,8 +48,41 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         if (geminiAgent.setApiKey) {
+            // Save to database
+            await fastify.prisma.systemSetting.upsert({
+                where: { key: 'GEMINI_API_KEY' },
+                update: { value: apiKey },
+                create: { key: 'GEMINI_API_KEY', value: apiKey }
+            });
+
+            // Update in-memory
             geminiAgent.setApiKey(apiKey);
-            fastify.log.info('Gemini API Key updated via API');
+            fastify.log.info('Gemini API Key updated via API and saved to DB');
+            return { success: true };
+        } else {
+            return reply.status(501).send({ error: 'Gemini agent does not support runtime configuration' });
+        }
+    });
+
+    // DELETE /cmsapi/config/gemini - Delete key
+    fastify.delete('/cmsapi/config/gemini', {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        const geminiAgent = fastify.aiProvider['gemini'];
+
+        if (!geminiAgent) {
+            return reply.status(404).send({ error: 'Gemini agent not enabled' });
+        }
+
+        if (geminiAgent.setApiKey) {
+            // Remove from database
+            await fastify.prisma.systemSetting.deleteMany({
+                where: { key: 'GEMINI_API_KEY' }
+            });
+
+            // Reset in-memory (empty string or revert to env if desired, but here we clear it to match user intent)
+            geminiAgent.setApiKey('');
+            fastify.log.info('Gemini API Key deleted via API');
             return { success: true };
         } else {
             return reply.status(501).send({ error: 'Gemini agent does not support runtime configuration' });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Database, Shield, Key, AlertTriangle, Box } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Database, Shield, Key, AlertTriangle, Box, ArrowLeft } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
@@ -10,6 +11,7 @@ import { AddSpaSettings } from './components/AddSpaSettings';
 
 export default function SystemSettingsPage() {
     const { user, logout, hasSuperAdmin, databaseReady } = useAuth();
+    const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa'>('admin');
     const [isDark, setIsDark] = useState(false);
@@ -25,8 +27,10 @@ export default function SystemSettingsPage() {
             setActiveTab('database');
         } else if (!hasSuperAdmin) {
             setActiveTab('admin');
+        } else if (user) {
+            setActiveTab('gemini');
         }
-    }, [hasSuperAdmin, databaseReady]);
+    }, [hasSuperAdmin, databaseReady, user]);
 
 
     return (
@@ -45,9 +49,18 @@ export default function SystemSettingsPage() {
             <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
                 <div className="bg-app-surface border border-border rounded-xl shadow-sm overflow-hidden">
                     <div className="p-8 pb-0">
-                        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                            System Settings
-                        </h1>
+                        <div className="flex items-center gap-4 mb-2">
+                            <button
+                                onClick={() => navigate('/app')}
+                                className="p-2 hover:bg-app-muted rounded-lg transition-colors text-primary-muted hover:text-primary"
+                                title="Back to Studio"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <h1 className="text-2xl font-bold flex items-center gap-2">
+                                System Settings
+                            </h1>
+                        </div>
                         <p className="text-primary-muted mb-8">
                             Configure your CMS instance, database connection, and AI integrations.
                         </p>
@@ -70,8 +83,8 @@ export default function SystemSettingsPage() {
 
                     <div className="border-b border-border">
                         <div className="flex gap-1 px-8">
-                            {/* Super Admin tab - visible when database is ready */}
-                            {(databaseReady) && (
+                            {/* Super Admin tab - visible ONLY when super admin is missing */}
+                            {(!hasSuperAdmin) && (
                                 <button
                                     onClick={() => setActiveTab('admin')}
                                     className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'admin'
@@ -84,19 +97,22 @@ export default function SystemSettingsPage() {
                                 </button>
                             )}
 
-                            {/* Database and other tabs - Database always visible if not ready or logged in */}
-                            {(user || !databaseReady) && (
+                            {/* Database tab - visible ONLY when database is NOT ready */}
+                            {(!databaseReady) && (
+                                <button
+                                    onClick={() => setActiveTab('database')}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'database'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-primary-muted hover:text-primary'
+                                        }`}
+                                >
+                                    <Database className="w-4 h-4" />
+                                    Database
+                                </button>
+                            )}
+
+                            {(user) && (
                                 <>
-                                    <button
-                                        onClick={() => setActiveTab('database')}
-                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'database'
-                                            ? 'border-primary text-primary'
-                                            : 'border-transparent text-primary-muted hover:text-primary'
-                                            }`}
-                                    >
-                                        <Database className="w-4 h-4" />
-                                        Database
-                                    </button>
                                     <button
                                         onClick={() => setActiveTab('gemini')}
                                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
@@ -123,13 +139,13 @@ export default function SystemSettingsPage() {
                     </div>
 
                     <div className="p-8 min-h-[400px]">
-                        {activeTab === 'admin' && (
+                        {activeTab === 'admin' && !hasSuperAdmin && (
                             <AdminSettings
                                 isSystemReady={databaseReady ?? false}
                                 hasSuperAdmin={!!hasSuperAdmin}
                             />
                         )}
-                        {(user || !databaseReady) && activeTab === 'database' && <DatabaseSettings />}
+                        {activeTab === 'database' && !databaseReady && <DatabaseSettings />}
                         {user && activeTab === 'gemini' && <GeminiSettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
                     </div>

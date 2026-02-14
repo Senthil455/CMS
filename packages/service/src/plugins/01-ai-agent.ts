@@ -11,6 +11,11 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
 
+    const geminiKeySetting = await fastify.prisma.systemSetting.findUnique({
+        where: { key: 'GEMINI_API_KEY' }
+    });
+    const geminiKey = geminiKeySetting?.value || config.GEMINI_API_KEY || '';
+
     const providers: Record<string, AIProvider> = {
         openai: new OpenAIProvider(
             config.OPENAI_API_KEY || '',
@@ -20,7 +25,7 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
         ),
 
         gemini: new GeminiProvider(
-            config.GEMINI_API_KEY || '',
+            geminiKey,
             config.GEMINI_API_URL,
             config.GEMINI_MODEL,
             infraLogger,
@@ -32,5 +37,6 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
 };
 
 export default fp(aiAgentPlugin, {
-    name: 'aiProvider'
+    name: 'aiProvider',
+    dependencies: ['prisma']
 });

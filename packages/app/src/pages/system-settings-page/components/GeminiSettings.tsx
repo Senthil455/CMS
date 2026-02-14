@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Save, Loader2, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ export function GeminiSettings() {
     const [maskedKey, setMaskedKey] = useState<string | null>(null);
     const [isGeminiLoading, setIsGeminiLoading] = useState(false);
     const [isGeminiSaving, setIsGeminiSaving] = useState(false);
+    const [isGeminiDeleting, setIsGeminiDeleting] = useState(false);
 
     const fetchGeminiStatus = async () => {
         setIsGeminiLoading(true);
@@ -61,6 +62,30 @@ export function GeminiSettings() {
         }
     };
 
+    const handleDeleteGemini = async () => {
+        if (!confirm('Are you sure you want to delete the API Key? AI features will stop working.')) return;
+
+        setIsGeminiDeleting(true);
+        try {
+            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                toast.success('Gemini API Key deleted successfully');
+                fetchGeminiStatus();
+            } else {
+                toast.error('Failed to delete API Key');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error deleting settings');
+        } finally {
+            setIsGeminiDeleting(false);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-3 p-4 bg-app-muted/50 rounded-lg border border-border">
@@ -99,12 +124,20 @@ export function GeminiSettings() {
                         placeholder="Enter new API Key..."
                         className="w-full px-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                     />
-                    <p className="text-xs text-primary-muted mt-2">
-                        This key will be stored in memory and used for AI operations.
-                    </p>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-3">
+                    {isGeminiConfigured && (
+                        <button
+                            type="button"
+                            onClick={handleDeleteGemini}
+                            disabled={isGeminiDeleting}
+                            className="flex items-center gap-2 px-6 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm active:scale-95"
+                        >
+                            {isGeminiDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            Delete API Key
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={!apiKey || isGeminiSaving}
