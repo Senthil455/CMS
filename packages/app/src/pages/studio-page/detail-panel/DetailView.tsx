@@ -79,7 +79,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
             <div className={`flex-1 overflow-auto p-6 ${item.type === 'query' ? 'flex flex-col' : ''}`}>
                 <div className={`space-y-8 ${item.type === 'page' ? 'w-full' : 'max-w-5xl'} ${item.type === 'query' ? 'flex-1 h-full' : ''}`}>
                     {item.type === 'entity' && entity && (
-                        <EntityDetail schema={item} allSchemas={schemas} onChatAction={onChatAction} />
+                        <EntityDetail schema={item} allSchemas={schemas} />
                     )}
 
                     {item.type === 'query' && item.settings.query && (

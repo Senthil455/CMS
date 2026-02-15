@@ -1,6 +1,7 @@
-import { Trash2, Edit2, Database, Sparkles } from 'lucide-react';
+import { Trash2, Edit2, Database, Sparkles, Table } from 'lucide-react';
 import { type EntityDto, AGENT_NAMES } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
+import { config } from '../../../../config';
 
 interface EntityHeaderProps {
     entity: EntityDto;
@@ -12,6 +13,7 @@ interface EntityHeaderProps {
 }
 
 export function EntityHeader({ entity, schemaId, publicationStatus, onDelete, onEdit, onChatAction }: EntityHeaderProps) {
+
     return (
         <HeaderLayout
             title={entity.name}
@@ -29,12 +31,31 @@ export function EntityHeader({ entity, schemaId, publicationStatus, onDelete, on
                 </button>
             }
         >
+            <a
+                href={`${config.CMS_BASE_URL}/admin/entities/${entity.name}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-all border border-primary/20"
+                title={`Manage ${entity.name} Data`}
+            >
+                <Table className="w-3.5 h-3.5" />
+                Manage Data
+            </a>
+
+            <button
+                onClick={() => onChatAction(`@${AGENT_NAMES.DATA_GENERATOR}#${schemaId}: generate data for ${entity.name}`)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
+            >
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                Sample Data
+            </button>
+
             <button
                 onClick={() => onChatAction(`@${AGENT_NAMES.ENTITY_GENERATOR}#${schemaId}:`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />
-                Ask AI to Modify
+                Ask AI
             </button>
 
             <div className="flex bg-app-muted p-0.5 rounded-lg ml-1">
