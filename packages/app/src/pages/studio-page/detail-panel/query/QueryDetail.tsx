@@ -89,7 +89,7 @@ export function QueryDetail({ schema }: QueryDetailProps) {
                 <h3 className="text-base font-semibold">Variables</h3>
                 {query.variables && query.variables.length > 0 ? (
                     <div className="space-y-3">
-                        {query.variables.map((v: any, i: number) => (
+                        {query.variables.filter((v: any) => v.name !== 'sandbox').map((v: any, i: number) => (
                             <div key={i} className="flex flex-col gap-1.5 p-3 bg-muted/20 border border-border rounded-lg transition-all hover:bg-muted/30">
                                 <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-bold text-primary-muted uppercase tracking-wider font-mono">

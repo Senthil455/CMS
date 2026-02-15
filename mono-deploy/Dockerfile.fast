@@ -20,6 +20,7 @@ COPY CMS/packages/shared/dist ./packages/shared/dist
 COPY CMS/packages/service/dist ./packages/service/dist
 COPY CMS/packages/service/src ./packages/service/src
 COPY CMS/packages/service/resources ./packages/service/resources
+COPY CMS/packages/service/public ./packages/service/public
 COPY CMS/packages/service/prisma ./packages/service/prisma
 # Generate Prisma Client
 RUN cd packages/service && npx prisma generate

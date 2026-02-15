@@ -16,8 +16,7 @@ services:
       - "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
       - ApiInfo__Url=http://localhost:5000
       - ASPNETCORE_URLS=http://+:5000
-      - CMS_CONFIG_PATH=/data/config/cms.settings.json
-      - CMS_STORE_PATH=/data/files
+      - CMS_DATA_PATH=/data
 
       # --- CMS (Node.js) Settings ---
       - PORT=3001

@@ -14,7 +14,11 @@ export DATABASE_PROVIDER=${DATABASE_PROVIDER:-1}  # Default to Postgres
 export CONNECTION_STRING=${CONNECTION_STRING:-"Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;"}
 
 # Use custom config path if set, otherwise default
-CONFIG_PATH=${CMS_CONFIG_PATH:-"/app/cms/cms.settings.json"}
+if [ -n "$CMS_DATA_PATH" ]; then
+  CONFIG_PATH="$CMS_DATA_PATH/config/cms.settings.json"
+else
+  CONFIG_PATH="/app/cms/cms.settings.json"
+fi
 
 # Generate cms.settings.json from environment variables if not exists
 if [ ! -f "$CONFIG_PATH" ]; then
