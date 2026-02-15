@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Save, Loader2 } from 'lucide-react';
-import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
 const DatabaseProvider = {
@@ -35,7 +34,7 @@ export function DatabaseSettings() {
 
     // Fetch current config on mount
     useEffect(() => {
-        fetch(`${config.CMS_BASE_URL}/api/system/setup-database`, {
+        fetch(`${''}/api/system/setup-database`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
@@ -75,7 +74,7 @@ export function DatabaseSettings() {
         setIsDbSaving(true);
         const newConnectionString = generateConnectionString();
         try {
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/setup-database`, {
+            const res = await fetch(`${''}/api/system/setup-database`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

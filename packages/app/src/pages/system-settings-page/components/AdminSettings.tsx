@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Save, Loader2, AlertTriangle } from 'lucide-react';
-import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../hooks/use-auth';
 
@@ -38,7 +37,7 @@ export function AdminSettings({ isSystemReady, hasSuperAdmin }: AdminSettingsPro
                 ? { email: adminParams.email, password: adminParams.password }
                 : { username: adminParams.username, email: adminParams.email, password: adminParams.password };
 
-            const res = await fetch(`${config.CMS_BASE_URL}${endpoint}`, {
+            const res = await fetch(`${''}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

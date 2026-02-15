@@ -1,13 +1,12 @@
 import useSWR from 'swr';
 import axios from 'axios';
 import { ENDPOINTS, type SchemaDto, type SaveSchemaPayload } from '@cms/shared';
-import { config } from '../config';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
 
 export function useSchemaHistory(schemaId: string | null) {
     const { data, error, isLoading } = useSWR<SchemaDto[]>(
-        schemaId ? `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.HISTORY.replace(':schemaId', schemaId)}` : null,
+        schemaId ? `${''}${ENDPOINTS.SCHEMA.HISTORY.replace(':schemaId', schemaId)}` : null,
         fetcher,
         {
             shouldRetryOnError: false,
@@ -24,7 +23,7 @@ export function useSchemaHistory(schemaId: string | null) {
 
 export function useSchemas() {
     const { data, error, isLoading, mutate } = useSWR<SchemaDto[]>(
-        `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.ALL}`,
+        `${''}${ENDPOINTS.SCHEMA.ALL}`,
         fetcher,
         {
             shouldRetryOnError: false,
@@ -33,7 +32,7 @@ export function useSchemas() {
     );
 
     const saveSchema = async (payload: SaveSchemaPayload) => {
-        const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
+        const resp = await axios.post(`${''}${ENDPOINTS.SCHEMA.SAVE}`, payload, {
             withCredentials: true
         });
         if (resp.status === 200) {
@@ -49,7 +48,7 @@ export function useSchemas() {
         // Ideally we follow the payload structure. The user said "save entity define expect schemaDto". 
         // SaveSchemaPayload essentially wraps EntityDto.
         // Let's pass the payload directly as the user requested.
-        const resp = await axios.post(`${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
+        const resp = await axios.post(`${''}${ENDPOINTS.SCHEMA.DEFINE}`, payload, {
             withCredentials: true
         });
         if (resp.status === 200 || resp.status === 201) {
@@ -63,7 +62,7 @@ export function useSchemas() {
     const deleteSchema = async (id: number) => {
         // Replace :id parameter manually since it's simple
         const endpoint = ENDPOINTS.SCHEMA.DELETE.replace(':id', id.toString());
-        const url = `${config.CMS_BASE_URL}${endpoint}`;
+        const url = `${''}${endpoint}`;
 
         await axios.delete(url, {
             withCredentials: true
@@ -72,7 +71,7 @@ export function useSchemas() {
     };
 
     const publishSchema = async (id: number, schemaId: string) => {
-        const url = `${config.CMS_BASE_URL}${ENDPOINTS.SCHEMA.PUBLISH}`;
+        const url = `${''}${ENDPOINTS.SCHEMA.PUBLISH}`;
         const resp = await axios.post(url, { id: id.toString(), schemaId }, {
             withCredentials: true
         });

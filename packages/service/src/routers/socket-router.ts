@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { type Socket } from 'socket.io';
 import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent } from '@cms/shared';
+import { formatError } from '../utils/error-formatter';
 
 import { config } from '../config';
 
@@ -21,7 +22,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                     const providerName = data.providerName || config.AI_PROVIDER;
                     await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, providerName, onEvent);
                 } catch (error) {
-                    console.error('Error handling message:', error);
+                    console.error('Error handling message:', formatError(error));
                 }
             });
 
@@ -29,7 +30,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 try {
                     await fastify.chatService.handleSchemaSummaryResponse(userId, data, socket.data.externalCookie, onEvent);
                 } catch (error) {
-                    console.error('Error handling schema summary response:', error);
+                    console.error('Error handling schema summary response:', formatError(error));
                 }
             });
 
@@ -37,7 +38,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 try {
                     await fastify.chatService.handleTemplateSelectionResponse(userId, data, socket.data.externalCookie, onEvent);
                 } catch (error) {
-                    console.error('Error handling template selection response:', error);
+                    console.error('Error handling template selection response:', formatError(error));
                 }
             });
 

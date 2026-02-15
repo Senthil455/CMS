@@ -1,6 +1,5 @@
 import { Layout, Globe, ExternalLink, Database } from 'lucide-react';
 import { type ParsedPageDto } from '@cms/shared';
-import { config } from '../../../../../config';
 import { DetailItem } from './DetailItem';
 
 interface PageSettingsSectionProps {
@@ -28,8 +27,8 @@ export function PageSettingsSection({ page }: PageSettingsSectionProps) {
 
             <DetailItem
                 label="URL"
-                value={`${config.CMS_BASE_URL}/${page.name}`}
-                href={`${config.CMS_BASE_URL}/${page.name}?version=${Date.now()}`}
+                value={`${''}/${page.name}`}
+                href={`${''}/${page.name}?version=${Date.now()}`}
                 icon={<ExternalLink className="w-3 h-3" />}
                 isLink
             />

@@ -1,7 +1,6 @@
 import { Trash2, Edit2, Database, Sparkles, Table } from 'lucide-react';
 import { type EntityDto, AGENT_NAMES } from '@cms/shared';
 import { HeaderLayout } from './HeaderLayout';
-import { config } from '../../../../config';
 
 interface EntityHeaderProps {
     entity: EntityDto;
@@ -32,7 +31,7 @@ export function EntityHeader({ entity, schemaId, publicationStatus, onDelete, on
             }
         >
             <a
-                href={`${config.CMS_BASE_URL}/admin/entities/${entity.name}`}
+                href={`${''}/admin/entities/${entity.name}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-all border border-primary/20"

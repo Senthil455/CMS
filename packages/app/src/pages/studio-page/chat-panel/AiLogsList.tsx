@@ -5,7 +5,6 @@ import { Loader2, Database, Calendar, Cpu, Clock, Copy, Check, Play, Trash2 } fr
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
 import { ENDPOINTS } from '@cms/shared';
-import { config } from '../../../config';
 import toast from 'react-hot-toast';
 
 const fetcher = (url: string) => axios.get(url, { withCredentials: true }).then(res => res.data);
@@ -18,7 +17,7 @@ interface AiLog {
 }
 
 export function AiLogsList() {
-    const { data, error, isLoading, mutate } = useSWR(`${config.API_BASE_URL}${ENDPOINTS.AI.LOGS}`, fetcher);
+    const { data, error, isLoading, mutate } = useSWR(`${''}${ENDPOINTS.AI.LOGS}`, fetcher);
     const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
     const [copied, setCopied] = useState<number | null>(null);
     const [actingLogId, setActingLogId] = useState<number | null>(null);
@@ -40,7 +39,7 @@ export function AiLogsList() {
         try {
             setActingLogId(log.id);
             await axios.post(
-                `${config.API_BASE_URL}${ENDPOINTS.AI.ACT_ON_LOG.replace(':id', log.id.toString())}`,
+                `${''}${ENDPOINTS.AI.ACT_ON_LOG.replace(':id', log.id.toString())}`,
                 { continuePipeline },
                 { withCredentials: true }
             );
@@ -132,7 +131,7 @@ export function AiLogsList() {
                                         if (!confirm('Are you sure you want to delete this log?')) return;
                                         try {
                                             await axios.delete(
-                                                `${config.API_BASE_URL}${ENDPOINTS.AI.DELETE_LOG.replace(':id', log.id.toString())}`,
+                                                `${''}${ENDPOINTS.AI.DELETE_LOG.replace(':id', log.id.toString())}`,
                                                 { withCredentials: true }
                                             );
                                             toast.success('Log deleted');

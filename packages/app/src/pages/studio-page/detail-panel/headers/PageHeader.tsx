@@ -3,7 +3,6 @@ import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus, UserCircle, Chevron
 import { type PageDto, AGENT_NAMES, type PageMetadata, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { config } from '../../../../config';
 import { HeaderLayout } from './HeaderLayout';
 
 interface PageHeaderProps {
@@ -44,7 +43,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
             toast.loading(`Triggering Engagement Bar Generator (${providerName})...`, { id: 'engagement-bar' });
-            await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.ENGAGEMENT_BAR}`, {
+            await axios.post(`${''}${ENDPOINTS.CHAT.ENGAGEMENT_BAR}`, {
                 schemaId,
                 providerName
             }, {
@@ -62,7 +61,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
             toast.loading(`Triggering User Avatar Generator (${providerName})...`, { id: 'user-avatar' });
-            await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.USER_AVATAR}`, {
+            await axios.post(`${''}${ENDPOINTS.CHAT.USER_AVATAR}`, {
                 schemaId,
                 providerName
             }, {
@@ -80,7 +79,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
             toast.loading(`Triggering Visit Track Generator (${providerName})...`, { id: 'visit-track' });
-            await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.VISIT_TRACK}`, {
+            await axios.post(`${''}${ENDPOINTS.CHAT.VISIT_TRACK}`, {
                 schemaId,
                 providerName
             }, {
@@ -98,7 +97,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
             toast.loading(`Triggering Top List Generator (${providerName})...`, { id: 'top-list' });
-            await axios.post(`${config.API_BASE_URL}${ENDPOINTS.CHAT.TOP_LIST}`, {
+            await axios.post(`${''}${ENDPOINTS.CHAT.TOP_LIST}`, {
                 schemaId,
                 providerName
             }, {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Save, Loader2, Upload, FileText, Folder, Trash2, Archive, FolderOpen } from 'lucide-react';
-import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 import JSZip from 'jszip';
 
@@ -23,7 +22,7 @@ export function AddSpaSettings() {
     const fetchSpas = async () => {
         setIsLoadingSpas(true);
         try {
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/spas`, {
+            const res = await fetch(`${''}/api/system/spas`, {
                 credentials: 'include'
             });
             if (res.ok) {
@@ -56,7 +55,7 @@ export function AddSpaSettings() {
         if (!confirm(`Are you sure you want to delete the SPA at ${spaPath}?`)) return;
 
         try {
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/spas?path=${encodeURIComponent(spaPath)}`, {
+            const res = await fetch(`${''}/api/system/spas?path=${encodeURIComponent(spaPath)}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -125,7 +124,7 @@ export function AddSpaSettings() {
             formData.append('path', path);
             formData.append('dir', dir);
 
-            const res = await fetch(`${config.CMS_BASE_URL}/api/system/add-spa`, {
+            const res = await fetch(`${''}/api/system/add-spa`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'

@@ -7,7 +7,6 @@ import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
 import { type SchemaDto, type ParsedPageDto, ENDPOINTS } from '@cms/shared';
 import { PagePreviewSection } from './PagePreviewSection';
-import { config } from '../../../../../config';
 
 interface PageEditSourceProps {
     item: SchemaDto;
@@ -46,7 +45,7 @@ export function PageEditSource({
 
     const { data: pageData } = useSWR(
         item.schemaId ? [
-            `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}`,
+            `${''}${ENDPOINTS.QUERY.PAGE_DATA}`,
             item.schemaId,
             paramValues
         ] : null,

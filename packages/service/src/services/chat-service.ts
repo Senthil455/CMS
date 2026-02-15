@@ -16,6 +16,7 @@ import { IntentClassifier } from '../models/agents/intent-classifier';
 import { EntityManager } from '../models/cms/entity-manager';
 import { PageManager } from '../models/cms/page-manager';
 import { StatusService } from './status-service';
+import { formatError } from '../utils/error-formatter';
 
 export class ChatService {
     constructor(
@@ -123,7 +124,7 @@ export class ChatService {
             }
         } catch (error) {
             this.statusService.clearStatus(context.userId);
-            this.logger.error({ error, taskType }, 'Error executing agent');
+            this.logger.error({ error: formatError(error), taskType }, 'Error executing agent');
             // Error handling is mostly done inside agent.handle via handleAgentError, 
             // but if something bubbles up:
         }
@@ -187,7 +188,7 @@ export class ChatService {
             });
             await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
         } catch (error) {
-            this.logger.error({ error }, 'Failed to commit schema changes');
+            this.logger.error({ error: formatError(error) }, 'Failed to commit schema changes');
             await this.saveAndEmitAgentMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
         }
     }

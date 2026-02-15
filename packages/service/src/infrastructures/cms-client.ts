@@ -42,17 +42,10 @@ export class CmsClient {
     }
 
     async getMe(externalCookie: string) {
-        const authCookie = externalCookie.split(';')
-            .map(c => c.trim())
-            .find(c => c.startsWith('.AspNetCore.Identity.Application='));
-
-        if (!authCookie) {
-            throw new Error('No ASP.NET Identity cookie found');
-        }
-
+        // We use externalCookie directly to ensure all parts of potentially chunked Identity cookies (C1, C2...) are sent.
         const client = new CmsApiClient(axios.create({
             baseURL: this.baseUrl,
-            headers: { Cookie: authCookie }
+            headers: { Cookie: externalCookie }
         }));
         return client.getMe();
     }

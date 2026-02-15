@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { ENDPOINTS, SOCKET_EVENTS, AGENT_NAMES } from '@cms/shared';
+import { formatError } from '../utils/error-formatter';
 
 const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.HISTORY, {
@@ -14,7 +15,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             );
             return { success: true, data: history };
         } catch (error) {
-            fastify.log.error(error);
+            fastify.log.error(formatError(error));
             return reply.status(500).send({ success: false, error: 'Failed to fetch history' });
         }
     });
@@ -56,7 +57,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
             return { success: true, message: 'Engagement Bar Generator triggered successfully' };
         } catch (error) {
-            fastify.log.error(error);
+            fastify.log.error(formatError(error));
             return reply.status(500).send({ success: false, error: 'Failed to trigger Engagement Bar Generator' });
         }
     });
@@ -85,7 +86,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
             return { success: true, message: 'User Avatar Generator triggered successfully' };
         } catch (error) {
-            fastify.log.error(error);
+            fastify.log.error(formatError(error));
             return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Generator' });
         }
     });
@@ -114,7 +115,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
             return { success: true, message: 'Visit Track Generator triggered successfully' };
         } catch (error) {
-            fastify.log.error(error);
+            fastify.log.error(formatError(error));
             return reply.status(500).send({ success: false, error: 'Failed to trigger Visit Track Generator' });
         }
     });
@@ -143,7 +144,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
             return { success: true, message: 'Top List Generator triggered successfully' };
         } catch (error) {
-            fastify.log.error(error);
+            fastify.log.error(formatError(error));
             return reply.status(500).send({ success: false, error: 'Failed to trigger Top List Generator' });
         }
     });

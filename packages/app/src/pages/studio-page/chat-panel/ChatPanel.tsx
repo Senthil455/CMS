@@ -6,7 +6,6 @@ import { ChatInput } from './ChatInput';
 import { AiLogsList } from './AiLogsList';
 import { MessageSquare, Database, AlertTriangle, Settings, Loader2 } from 'lucide-react';
 import { StatusBar } from '../../../components/StatusBar';
-import { config } from '../../../config';
 
 interface ChatPanelProps {
     messages: ChatMessage[];
@@ -35,7 +34,7 @@ export function ChatPanel({
     useEffect(() => {
         const checkConfig = async () => {
             try {
-                const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
+                const res = await fetch(`${''}/cmsapi/config/gemini`, {
                     credentials: 'include'
                 });
                 if (res.ok) {

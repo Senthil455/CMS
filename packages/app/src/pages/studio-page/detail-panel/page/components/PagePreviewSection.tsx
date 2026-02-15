@@ -6,7 +6,6 @@ import Handlebars from 'handlebars';
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
 import { type SchemaDto, ENDPOINTS } from '@cms/shared';
-import { config } from '../../../../../config';
 
 // Register Handlebars helpers for common operations
 Handlebars.registerHelper('gt', (a, b) => a > b);
@@ -29,7 +28,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
 
     const { data: pageData } = useSWR(
         schema.schemaId ? [
-            `${config.CMS_BASE_URL}${ENDPOINTS.QUERY.PAGE_DATA}`,
+            `${''}${ENDPOINTS.QUERY.PAGE_DATA}`,
             schema.schemaId,
             paramValues
         ] : null,

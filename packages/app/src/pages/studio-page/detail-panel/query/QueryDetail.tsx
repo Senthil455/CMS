@@ -1,7 +1,6 @@
 import { type SchemaDto } from '@cms/shared';
 import { Info, UploadCloud, Play } from 'lucide-react';
 import { useState } from 'react';
-import { config } from '../../../../config';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { EndpointPreview } from './EndpointPreview';
@@ -13,8 +12,8 @@ interface QueryDetailProps {
 
 export function QueryDetail({ schema }: QueryDetailProps) {
     const query = schema.settings.query!;
-    const listUrl = `${config.CMS_BASE_URL}/api/queries/${query.name}`;
-    const singleUrl = `${config.CMS_BASE_URL}/api/queries/${query.name}/single`;
+    const listUrl = `${''}/api/queries/${query.name}`;
+    const singleUrl = `${''}/api/queries/${query.name}/single`;
 
     const [variableValues, setVariableValues] = useState<Record<string, string>>({});
     const [paginationValues, setPaginationValues] = useState({

@@ -5,6 +5,9 @@ import monacoEditorPlugin from 'vite-plugin-monaco-editor'
 
 
 // https://vite.dev/config/
+const CMS_TARGET = 'http://127.0.0.1:5000';
+const APP_TARGET = 'http://127.0.0.1:3001';
+
 export default defineConfig({
   base: '/app/',
   build: {
@@ -29,15 +32,28 @@ export default defineConfig({
     host: '127.0.0.1',
     proxy: {
       '/files': {
-        target: 'http://127.0.0.1:8000',
+        target: CMS_TARGET,
         changeOrigin: true,
       },
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: CMS_TARGET,
         changeOrigin: true,
       },
       '/graphql': {
-        target: 'http://127.0.0.1:8000',
+        target: CMS_TARGET,
+        changeOrigin: true,
+      },
+      '/cmsapi': {
+        target: APP_TARGET,
+        changeOrigin: true,
+        ws: true,
+      },
+      '/admin': {
+        target: APP_TARGET,
+        changeOrigin: true,
+      },
+      '/portal': {
+        target: APP_TARGET,
         changeOrigin: true,
       },
     },

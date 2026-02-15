@@ -1,7 +1,6 @@
 import { type SchemaDto } from '@cms/shared';
 import { Table, Share2, UploadCloud, Lock } from 'lucide-react';
 import { useState } from 'react';
-import { config } from '../../../../config';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { ApiTester } from './ApiTester';
@@ -101,7 +100,7 @@ export function EntityDetail({ schema, allSchemas }: EntityDetailProps) {
                             return neighbors.map(name => (
                                 <a
                                     key={name}
-                                    href={`${config.CMS_BASE_URL}/admin/entities/${name}`}
+                                    href={`${''}/admin/entities/${name}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-2 py-1 bg-app-muted hover:bg-border text-primary-muted hover:text-primary rounded text-[10px] font-bold transition-all border border-transparent whitespace-nowrap"
@@ -126,13 +125,13 @@ export function EntityDetail({ schema, allSchemas }: EntityDetailProps) {
                             <div className="text-[9px] uppercase font-bold text-primary-muted/70">Read</div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <span className="text-green-600 font-bold select-none w-10">GET</span>
-                                <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}`}</span>
+                                <span className="text-primary break-all">{`${''}/api/entities/${entity.name}`}</span>
                                 <span className="text-primary-muted text-[9px] ml-auto whitespace-nowrap hidden sm:inline">List all</span>
                                 <ApiTester entity={entity} mode="list" />
                             </div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <span className="text-green-600 font-bold select-none w-10">GET</span>
-                                <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/<id>`}</span>
+                                <span className="text-primary break-all">{`${''}/api/entities/${entity.name}/<id>`}</span>
                                 <span className="text-primary-muted text-[9px] ml-auto whitespace-nowrap hidden sm:inline">Get one</span>
                                 <ApiTester entity={entity} mode="get" />
                             </div>
@@ -142,19 +141,19 @@ export function EntityDetail({ schema, allSchemas }: EntityDetailProps) {
                             <div className="text-[9px] uppercase font-bold text-primary-muted/70">Write</div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <span className="text-blue-600 font-bold select-none w-10">POST</span>
-                                <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/insert`}</span>
+                                <span className="text-primary break-all">{`${''}/api/entities/${entity.name}/insert`}</span>
                                 <span className="text-primary-muted text-[9px] ml-auto whitespace-nowrap hidden sm:inline">Create</span>
                                 <ApiTester entity={entity} mode="insert" />
                             </div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <span className="text-blue-600 font-bold select-none w-10">POST</span>
-                                <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/update`}</span>
+                                <span className="text-primary break-all">{`${''}/api/entities/${entity.name}/update`}</span>
                                 <span className="text-primary-muted text-[9px] ml-auto whitespace-nowrap hidden sm:inline">Update</span>
                                 <ApiTester entity={entity} mode="update" />
                             </div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <span className="text-blue-600 font-bold select-none w-10">POST</span>
-                                <span className="text-primary break-all">{`${config.CMS_BASE_URL}/api/entities/${entity.name}/delete`}</span>
+                                <span className="text-primary break-all">{`${''}/api/entities/${entity.name}/delete`}</span>
                                 <span className="text-primary-muted text-[9px] ml-auto whitespace-nowrap hidden sm:inline">Delete</span>
                                 <ApiTester entity={entity} mode="delete" />
                             </div>

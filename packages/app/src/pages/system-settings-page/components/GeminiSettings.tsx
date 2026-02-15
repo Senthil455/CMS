@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Save, Loader2, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
-import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
 
 export function GeminiSettings() {
@@ -15,7 +14,7 @@ export function GeminiSettings() {
     const fetchGeminiStatus = async () => {
         setIsGeminiLoading(true);
         try {
-            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
+            const res = await fetch(`${''}/cmsapi/config/gemini`, {
                 credentials: 'include'
             });
             if (res.ok) {
@@ -40,7 +39,7 @@ export function GeminiSettings() {
 
         setIsGeminiSaving(true);
         try {
-            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
+            const res = await fetch(`${''}/cmsapi/config/gemini`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ apiKey }),
@@ -67,7 +66,7 @@ export function GeminiSettings() {
 
         setIsGeminiDeleting(true);
         try {
-            const res = await fetch(`${config.API_BASE_URL}/cmsapi/config/gemini`, {
+            const res = await fetch(`${''}/cmsapi/config/gemini`, {
                 method: 'DELETE',
                 credentials: 'include'
             });

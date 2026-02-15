@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { ENDPOINTS } from '@cms/shared';
-import { config } from '../config';
 import { useSocket } from '../hooks/use-socket';
 
 export function StatusBar() {
@@ -14,7 +13,7 @@ export function StatusBar() {
 
     const fetchStatus = useCallback(async () => {
         try {
-            const response = await axios.get(`${config.API_BASE_URL}${ENDPOINTS.CHAT.STATUS}`, {
+            const response = await axios.get(`${''}${ENDPOINTS.CHAT.STATUS}`, {
                 withCredentials: true
             });
 
@@ -23,6 +22,9 @@ export function StatusBar() {
                 const latest = statuses.length > 0 ? statuses[statuses.length - 1] : null;
 
                 if (latest) {
+                    // If we found a status, ensure we are polling
+                    setIsPolling(true);
+
                     emptyCountRef.current = 0;
                     if (latest !== lastStatusRef.current) {
                         setStatus(latest);
@@ -47,6 +49,11 @@ export function StatusBar() {
         }
     }, []);
 
+    // Initial check on mount to see if there's any active status
+    useEffect(() => {
+        fetchStatus();
+    }, [fetchStatus]);
+
     // Start polling when any message is received (indicates agent activity)
     useEffect(() => {
         const cleanup = onMessageReceived((message) => {
@@ -62,7 +69,6 @@ export function StatusBar() {
     useEffect(() => {
         if (!isPolling) return;
 
-        fetchStatus(); // Fetch immediately
         const interval = setInterval(fetchStatus, 500);
         return () => clearInterval(interval);
     }, [isPolling, fetchStatus]);

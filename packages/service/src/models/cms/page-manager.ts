@@ -60,7 +60,8 @@ export class PageManager {
         };
 
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
-        const newSchemaId = saveResp.data.schemaId;
+        const newSchemaId = saveResp.schemaId;
+
         this.logger.info({ schemaId: newSchemaId }, 'Successfully saved plan and user input via PageManager');
         return newSchemaId;
     }
@@ -118,7 +119,8 @@ export class PageManager {
         };
 
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
-        const newSchemaId = saveResp.data.schemaId;
+        const newSchemaId = saveResp.schemaId;
+
         this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page HTML via PageManager');
         return newSchemaId;
     }

@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import useSWRInfinite from 'swr/infinite';
 import axios from 'axios';
 import { type ChatMessage, ENDPOINTS, type ApiResponse } from '@cms/shared';
-import { config } from '../config';
 
 const fetcher = (url: string) =>
     axios.get(url, { withCredentials: true })
@@ -18,11 +17,11 @@ export function useChatHistory() {
         if (previousPageData && (previousPageData.data === undefined || previousPageData.data.length === 0)) return null;
 
         // first page, we don't have `beforeId`
-        if (pageIndex === 0) return `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=10`;
+        if (pageIndex === 0) return `${''}${ENDPOINTS.CHAT.HISTORY}?limit=10`;
 
         // add `beforeId` to the query, using the last id of the previous page
         const lastMessage = previousPageData.data![previousPageData.data!.length - 1];
-        return `${config.API_BASE_URL}${ENDPOINTS.CHAT.HISTORY}?limit=10&beforeId=${lastMessage.id}`;
+        return `${''}${ENDPOINTS.CHAT.HISTORY}?limit=10&beforeId=${lastMessage.id}`;
     };
 
     const { data, error, size, setSize, mutate, isValidating } = useSWRInfinite<ApiResponse<ChatMessage[]>>(

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Play, Loader2, ChevronRight, ChevronDown } from 'lucide-react';
-import { config } from '../../../../config';
 import { type EntityDto } from '@cms/shared';
 
 interface ApiTesterProps {
@@ -105,7 +104,7 @@ export function ApiTester({ entity, mode }: ApiTesterProps) {
         setIsLoading(true);
         setResponse(null);
         try {
-            let url = `${config.CMS_BASE_URL}/api/entities/${entity.name}`;
+            let url = `${''}/api/entities/${entity.name}`;
             const options: RequestInit = {
                 headers: {
                     'Content-Type': 'application/json',
