@@ -17,7 +17,7 @@ export async function logout() {
 }
 
 export function getBackendGithubUrl() {
-    return fullAuthApiUrl(`/ext_login/GitHub/`);
+    return fullAuthApiUrl(`/api/ext_login/GitHub/`);
 }
 
 //identity

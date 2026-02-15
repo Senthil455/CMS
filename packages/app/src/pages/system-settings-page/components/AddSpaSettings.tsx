@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Save, Loader2, Upload, FileText, Folder, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Loader2, Upload, FileText, Folder, Trash2, Archive, FolderOpen } from 'lucide-react';
 import { config } from '../../../config';
 import { toast } from 'react-hot-toast';
+import JSZip from 'jszip';
 
 interface SpaDefinition {
     path: string;
@@ -9,12 +10,15 @@ interface SpaDefinition {
 }
 
 export function AddSpaSettings() {
+    const [mode, setMode] = useState<'zip' | 'folder'>('folder');
     const [file, setFile] = useState<File | null>(null);
+    const [folderFiles, setFolderFiles] = useState<File[]>([]);
     const [path, setPath] = useState('');
     const [dir, setDir] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [spas, setSpas] = useState<SpaDefinition[]>([]);
     const [isLoadingSpas, setIsLoadingSpas] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchSpas = async () => {
         setIsLoadingSpas(true);
@@ -39,8 +43,12 @@ export function AddSpaSettings() {
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+            if (mode === 'zip') {
+                setFile(e.target.files[0]);
+            } else {
+                setFolderFiles(Array.from(e.target.files));
+            }
         }
     };
 
@@ -68,18 +76,55 @@ export function AddSpaSettings() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!file || !path || !dir) {
-            toast.error('Please fill in all fields and select a file');
+        if (mode === 'zip' && !file) {
+            toast.error('Please select a .zip file');
+            return;
+        }
+
+        if (mode === 'folder' && folderFiles.length === 0) {
+            toast.error('Please select a folder');
+            return;
+        }
+
+        if (!path || !dir) {
+            toast.error('Please fill in path and directory name');
             return;
         }
 
         setIsSaving(true);
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('path', path);
-        formData.append('dir', dir);
 
         try {
+            if (mode === 'folder') {
+                toast.loading('Zipping folder...', { id: 'zipping' });
+                const zip = new JSZip();
+
+                // Add files to zip
+                folderFiles.forEach((f: any) => {
+                    // webkitRelativePath contains the path within the selected folder
+                    const relativePath = f.webkitRelativePath || f.name;
+                    // Remove the root folder name if it exists (e.g. "dist/index.html" -> "index.html")
+                    const parts = relativePath.split('/');
+                    const cleanPath = parts.slice(1).join('/');
+
+                    if (cleanPath) {
+                        zip.file(cleanPath, f);
+                    } else {
+                        // Fallback if parts.slice(1) is empty (e.g. single file upload disguised as folder?)
+                        zip.file(f.name, f);
+                    }
+                });
+
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                formData.append('file', zipBlob, `${dir}.zip`);
+                toast.success('Folder zipped successfully', { id: 'zipping' });
+            } else {
+                formData.append('file', file!);
+            }
+
+            formData.append('path', path);
+            formData.append('dir', dir);
+
             const res = await fetch(`${config.CMS_BASE_URL}/api/system/add-spa`, {
                 method: 'POST',
                 body: formData,
@@ -89,6 +134,7 @@ export function AddSpaSettings() {
             if (res.ok) {
                 toast.success('SPA added successfully');
                 setFile(null);
+                setFolderFiles([]);
                 setPath('');
                 setDir('');
                 fetchSpas();
@@ -158,7 +204,26 @@ export function AddSpaSettings() {
             <div className="border-t border-border my-8"></div>
 
             {/* Add SPA Form */}
-            <h3 className="text-lg font-semibold mb-4 text-primary">Deploy New SPA</h3>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-primary">Deploy New SPA</h3>
+                <div className="flex items-center bg-app-muted/50 p-1 rounded-lg border border-border">
+                    <button
+                        onClick={() => { setMode('zip'); setFile(null); setFolderFiles([]); }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'zip' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
+                    >
+                        <Archive className="w-3 h-3" />
+                        ZIP File
+                    </button>
+                    <button
+                        onClick={() => { setMode('folder'); setFile(null); setFolderFiles([]); }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'folder' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
+                    >
+                        <FolderOpen className="w-3 h-3" />
+                        Folder
+                    </button>
+                </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium mb-1 text-primary-muted">SPA Path (URL Prefix)</label>
@@ -195,27 +260,41 @@ export function AddSpaSettings() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-2 text-primary-muted">SPA Zip File</label>
+                    <label className="block text-sm font-medium mb-2 text-primary-muted">
+                        {mode === 'zip' ? 'SPA Zip File' : 'SPA Build Folder'}
+                    </label>
                     <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors bg-app-muted/30">
                         <input
                             type="file"
-                            accept=".zip"
+                            accept={mode === 'zip' ? ".zip" : undefined}
+                            // @ts-ignore
+                            webkitdirectory={mode === 'folder' ? "" : undefined}
+                            // @ts-ignore
+                            directory={mode === 'folder' ? "" : undefined}
+                            multiple={mode === 'folder'}
                             onChange={handleFileChange}
                             className="hidden"
                             id="spa-file-upload"
+                            ref={fileInputRef}
                         />
                         <label
                             htmlFor="spa-file-upload"
                             className="cursor-pointer flex flex-col items-center gap-2"
                         >
                             <div className="p-3 bg-app rounded-full shadow-sm">
-                                <Upload className="w-6 h-6 text-primary" />
+                                {mode === 'zip' ? <Upload className="w-6 h-6 text-primary" /> : <FolderOpen className="w-6 h-6 text-primary" />}
                             </div>
                             <span className="text-sm font-medium text-primary">
-                                {file ? file.name : 'Click to upload .zip file'}
+                                {mode === 'zip'
+                                    ? (file ? file.name : 'Click to upload .zip file')
+                                    : (folderFiles.length > 0 ? `Selected folder with ${folderFiles.length} files` : 'Click to select build folder')
+                                }
                             </span>
                             <span className="text-xs text-primary-muted">
-                                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'Upload your SPA build artifacts'}
+                                {mode === 'zip'
+                                    ? (file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'Upload your SPA build artifacts')
+                                    : 'Typically your "dist" or "build" directory'
+                                }
                             </span>
                         </label>
                     </div>
@@ -228,7 +307,7 @@ export function AddSpaSettings() {
                         className="flex items-center gap-2 px-6 py-2 bg-primary text-app rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg active:scale-95"
                     >
                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Deploy SPA
+                        {mode === 'folder' && isSaving ? 'Zipping & Deploying...' : 'Deploy SPA'}
                     </button>
                 </div>
             </form>
