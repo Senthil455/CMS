@@ -10,18 +10,13 @@ export class IntentClassifier {
     ) { }
 
     async resolve(userInput: string): Promise<AgentName | null> {
-        try {
-            const response = await this.aiProvider.generate(this.systemPrompt, '', userInput);
+        const response = await this.aiProvider.generate(this.systemPrompt, '', userInput);
 
-            if (response && typeof response === 'object') {
-                const { agentName, taskType } = response;
-                return (agentName || taskType) as AgentName;
-            }
-
-            return null;
-        } catch (error) {
-            console.error('Error resolving command:', error);
-            return null;
+        if (response && typeof response === 'object') {
+            const { agentName, taskType } = response;
+            return (agentName || taskType) as AgentName;
         }
+
+        return null;
     }
 }

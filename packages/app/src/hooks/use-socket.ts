@@ -1,72 +1,62 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { io, type Socket } from 'socket.io-client';
-import { SOCKET_EVENTS, type ChatMessage, type ServerToClientEvents, type ClientToServerEvents, type SchemaSummary, type SystemMessagePayload } from '@cms/shared';
+import { useCallback } from 'react';
+import { SOCKET_EVENTS, type ChatMessage, type SchemaSummary, type SystemMessagePayload } from '@cms/shared';
+import { useSocketContext } from '../context/socket-provider';
 
 export function useSocket() {
-    const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
-
-    useEffect(() => {
-        socketRef.current = io('', {
-            path: '/cmsapi/socket.io',
-            withCredentials: true,
-        });
-
-        socketRef.current.on('connect', () => setIsConnected(true));
-        socketRef.current.on('disconnect', () => setIsConnected(false));
-
-        return () => {
-            socketRef.current?.disconnect();
-        };
-    }, []);
+    const { socket, isConnected } = useSocketContext();
 
     // usage of useCallback is necessary to prevent infinite loops in useEffect dependencies
     const sendMessage = useCallback((content: string, providerName?: string) => {
-        socketRef.current?.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, { content, providerName });
-    }, []);
+        socket?.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, { content, providerName });
+    }, [socket]);
 
     const onMessageReceived = useCallback((callback: (message: ChatMessage) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
+            socket.off(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, callback);
         };
-    }, []);
+    }, [socket]);
 
     const onSchemaSummaryToConfirm = useCallback((callback: (data: SchemaSummary) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, callback);
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, callback);
+            socket.off(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, callback);
         };
-    }, []);
+    }, [socket]);
 
     const onSchemasSync = useCallback((callback: (data: SystemMessagePayload) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
+            socket.off(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, callback);
         };
-    }, []);
+    }, [socket]);
 
     const sendSchemaResponse = useCallback((data: SchemaSummary) => {
-        socketRef.current?.emit(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, data);
-    }, []);
+        socket?.emit(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, data);
+    }, [socket]);
 
     const onTemplateSelectionListToConfirm = useCallback((callback: (data: any) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
+            socket.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, callback);
         };
-    }, []);
+    }, [socket]);
 
     const onTemplateSelectionDetailToConfirm = useCallback((callback: (data: any) => void) => {
-        socketRef.current?.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
         return () => {
-            socketRef.current?.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
+            socket.off(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, callback);
         };
-    }, []);
+    }, [socket]);
 
     const sendTemplateSelectionResponse = useCallback((data: any) => {
-        socketRef.current?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
-    }, []);
+        socket?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
+    }, [socket]);
 
     return {
         isConnected,

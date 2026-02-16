@@ -22,9 +22,7 @@ export function StatusBar() {
                 const latest = statuses.length > 0 ? statuses[statuses.length - 1] : null;
 
                 if (latest) {
-                    // If we found a status, ensure we are polling
                     setIsPolling(true);
-
                     emptyCountRef.current = 0;
                     if (latest !== lastStatusRef.current) {
                         setStatus(latest);
@@ -34,7 +32,6 @@ export function StatusBar() {
                         setDuration(prev => prev + 500);
                     }
                 } else {
-                    // Stop polling after 3 consecutive empty responses
                     emptyCountRef.current++;
                     if (emptyCountRef.current >= 3) {
                         setIsPolling(false);
@@ -44,51 +41,49 @@ export function StatusBar() {
                     }
                 }
             }
-        } catch (error) {
-            // Silently ignore polling errors
+        } catch (error: any) {
+            // Don't stop polling on error, maybe backend recovers
         }
     }, []);
 
-    // Initial check on mount to see if there's any active status
     useEffect(() => {
         fetchStatus();
     }, [fetchStatus]);
 
-    // Start polling when any message is received (indicates agent activity)
     useEffect(() => {
-        const cleanup = onMessageReceived((message) => {
-            if (message.role === 'assistant') {
-                emptyCountRef.current = 0;
-                setIsPolling(true);
-            }
+        const cleanup = onMessageReceived(() => {
+            emptyCountRef.current = 0;
+            setIsPolling(true);
         });
         return cleanup;
     }, [onMessageReceived]);
 
-    // Polling interval - only runs when isPolling is true
     useEffect(() => {
         if (!isPolling) return;
-
         const interval = setInterval(fetchStatus, 500);
         return () => clearInterval(interval);
     }, [isPolling, fetchStatus]);
 
-    if (!status) return null;
-
     const seconds = (duration / 1000).toFixed(1);
 
     return (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-3 text-xs font-bold flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-3">
-                <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="flex flex-col gap-2 p-2 bg-gray-100 border-t border-gray-200">
+            <div className={`transition-all duration-300 ${status ? 'opacity-100 translate-y-0 scale-100' : 'opacity-40 grayscale translate-y-1 scale-[0.98]'}`}>
+                <div className={`${status ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-500'} text-white px-4 py-3 text-xs font-bold flex items-center justify-between shadow-lg rounded-md border border-white/10`}>
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                            <div className={`w-2 h-2 bg-white rounded-full ${status ? 'animate-bounce shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'opacity-50'}`} style={{ animationDelay: '0ms' }} />
+                            <div className={`w-2 h-2 bg-white rounded-full ${status ? 'animate-bounce shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'opacity-50'}`} style={{ animationDelay: '150ms' }} />
+                            <div className={`w-2 h-2 bg-white rounded-full ${status ? 'animate-bounce shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'opacity-50'}`} style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="truncate">{status ?? (isPolling ? 'Agent is working...' : 'Ready for next command')}</span>
+                    </div>
+                    {status && (
+                        <div className="opacity-90 tabular-nums shrink-0 ml-2 bg-white/20 px-2.5 py-1 rounded-full text-[10px] ring-1 ring-white/30 backdrop-blur-sm">
+                            {seconds}s
+                        </div>
+                    )}
                 </div>
-                <span className="truncate">{status}</span>
-            </div>
-            <div className="opacity-80 tabular-nums shrink-0 ml-2 bg-white/20 px-2 py-0.5 rounded">
-                {seconds}s
             </div>
         </div>
     );

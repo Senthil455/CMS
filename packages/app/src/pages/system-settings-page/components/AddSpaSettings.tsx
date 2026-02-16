@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Loader2, Upload, FileText, Folder, Trash2, Archive, FolderOpen } from 'lucide-react';
+import { Save, Loader2, Upload, FileText, Folder, Trash2, Archive, FolderOpen, Pencil, X, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import JSZip from 'jszip';
 
@@ -17,6 +17,9 @@ export function AddSpaSettings() {
     const [isSaving, setIsSaving] = useState(false);
     const [spas, setSpas] = useState<SpaDefinition[]>([]);
     const [isLoadingSpas, setIsLoadingSpas] = useState(true);
+    const [editingSpa, setEditingSpa] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchSpas = async () => {
@@ -72,6 +75,53 @@ export function AddSpaSettings() {
         }
     };
 
+    const handleStartEdit = (spa: SpaDefinition) => {
+        setEditingSpa(spa.path);
+        setEditValue(spa.path);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingSpa(null);
+        setEditValue('');
+    };
+
+    const handleSaveEdit = async (oldPath: string) => {
+        if (!editValue.trim()) {
+            toast.error('Path cannot be empty');
+            return;
+        }
+        if (editValue === oldPath) {
+            handleCancelEdit();
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const res = await fetch(
+                `${''}/api/system/spas?oldPath=${encodeURIComponent(oldPath)}&newPath=${encodeURIComponent(editValue)}`,
+                {
+                    method: 'PUT',
+                    credentials: 'include'
+                }
+            );
+
+            if (res.ok) {
+                toast.success('SPA path updated successfully');
+                setEditingSpa(null);
+                setEditValue('');
+                fetchSpas();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.detail || data.error || 'Failed to update SPA path');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error updating SPA path');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -98,18 +148,14 @@ export function AddSpaSettings() {
                 toast.loading('Zipping folder...', { id: 'zipping' });
                 const zip = new JSZip();
 
-                // Add files to zip
                 folderFiles.forEach((f: any) => {
-                    // webkitRelativePath contains the path within the selected folder
                     const relativePath = f.webkitRelativePath || f.name;
-                    // Remove the root folder name if it exists (e.g. "dist/index.html" -> "index.html")
                     const parts = relativePath.split('/');
                     const cleanPath = parts.slice(1).join('/');
 
                     if (cleanPath) {
                         zip.file(cleanPath, f);
                     } else {
-                        // Fallback if parts.slice(1) is empty (e.g. single file upload disguised as folder?)
                         zip.file(f.name, f);
                     }
                 });
@@ -167,11 +213,45 @@ export function AddSpaSettings() {
                     <div className="space-y-3">
                         {spas.map((spa) => (
                             <div key={spa.path} className="flex items-center justify-between p-4 bg-app-surface border border-border rounded-lg shadow-sm hover:border-primary/20 transition-all">
-                                <div>
-                                    <div className="flex items-center gap-2 font-medium text-primary">
-                                        <FileText className="w-4 h-4" />
-                                        {spa.path}
-                                    </div>
+                                <div className="flex-1 min-w-0">
+                                    {editingSpa === spa.path ? (
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-primary shrink-0" />
+                                            <input
+                                                type="text"
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleSaveEdit(spa.path);
+                                                    if (e.key === 'Escape') handleCancelEdit();
+                                                }}
+                                                className="flex-1 px-2 py-1 rounded-md bg-app border border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-medium text-primary"
+                                                autoFocus
+                                                disabled={isUpdating}
+                                            />
+                                            <button
+                                                onClick={() => handleSaveEdit(spa.path)}
+                                                disabled={isUpdating}
+                                                className="p-1.5 rounded-md text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                                                title="Save"
+                                            >
+                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                            </button>
+                                            <button
+                                                onClick={handleCancelEdit}
+                                                disabled={isUpdating}
+                                                className="p-1.5 rounded-md text-primary-muted hover:bg-app-muted transition-colors disabled:opacity-50"
+                                                title="Cancel"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 font-medium text-primary">
+                                            <FileText className="w-4 h-4" />
+                                            {spa.path}
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-xs text-primary-muted mt-1">
                                         <Folder className="w-3 h-3" />
                                         {spa.directory}
@@ -186,6 +266,15 @@ export function AddSpaSettings() {
                                     >
                                         Open
                                     </a>
+                                    {editingSpa !== spa.path && (
+                                        <button
+                                            onClick={() => handleStartEdit(spa)}
+                                            className="text-primary-muted p-2 rounded-md hover:bg-app-muted transition-colors"
+                                            title="Edit SPA Path"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => handleDelete(spa.path)}
                                         className="text-red-500 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -310,6 +399,6 @@ export function AddSpaSettings() {
                     </button>
                 </div>
             </form>
-        </div>
+        </div >
     );
 }

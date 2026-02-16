@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import StudioPage from './pages/studio-page';
 import AiLogsPage from './pages/ai-logs-page';
 import SystemSettingsPage from './pages/system-settings-page';
+import { SocketProvider } from './context/socket-provider';
 import { setAuthApiBaseUrl } from '@cms/sdk';
 
 setAuthApiBaseUrl('');
@@ -46,65 +47,68 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" />
-      <Routes>
-        <Route path="/app">
-          <Route path="login" element={<LoginPage />} />
-          <Route
-            path=""
-            element={
-              <ProtectedRoute>
-                <StudioPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="overview"
-            element={
-              <ProtectedRoute>
-                <StudioPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path=":type/:id"
-            element={
-              <ProtectedRoute>
-                <StudioPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path=":type/:id/edit"
-            element={
-              <ProtectedRoute>
-                <StudioPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="ai-logs"
-            element={
-              <ProtectedRoute>
-                <AiLogsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <ProtectedRoute>
-                <SystemSettingsPage />
-              </ProtectedRoute>
-            }
-          />
+    <SocketProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <Routes>
+          {/* ... existing routes ... */}
+          <Route path="/app">
+            <Route path="login" element={<LoginPage />} />
+            <Route
+              path=""
+              element={
+                <ProtectedRoute>
+                  <StudioPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="overview"
+              element={
+                <ProtectedRoute>
+                  <StudioPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path=":type/:id"
+              element={
+                <ProtectedRoute>
+                  <StudioPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path=":type/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <StudioPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="ai-logs"
+              element={
+                <ProtectedRoute>
+                  <AiLogsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute>
+                  <SystemSettingsPage />
+                </ProtectedRoute>
+              }
+            />
 
-        </Route>
-        <Route path="/" element={<Navigate to="/app" replace />} />
-        <Route path="*" element={<Navigate to="/app" replace />} />
-      </Routes>
-    </BrowserRouter>
+          </Route>
+          <Route path="/" element={<Navigate to="/app" replace />} />
+          <Route path="*" element={<Navigate to="/app" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </SocketProvider>
   );
 }
 

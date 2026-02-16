@@ -1,5 +1,6 @@
 import type { AIProvider } from './ai-provider.interface';
 import type { ServiceLogger } from '../types/logger';
+import { UserVisibleError } from '../utils/user-visible-error';
 
 export class GeminiProvider implements AIProvider {
     private cacheNames = new Map<string, string>();
@@ -112,7 +113,15 @@ export class GeminiProvider implements AIProvider {
 
             if (!resp.ok) {
                 const text = await resp.text();
-                throw new Error(`Gemini API error ${resp.status}: ${text}`);
+                let shortMsg = `Gemini API error ${resp.status}`;
+                try {
+                    const errObj = JSON.parse(text);
+                    const msg = errObj?.error?.message?.split('\n')[0] || '';
+                    const retryDetail = errObj?.error?.details?.find((d: any) => d.retryDelay);
+                    const retryDelay = retryDetail?.retryDelay || '';
+                    shortMsg = `Gemini ${resp.status}: ${msg}${retryDelay ? ` (retry in ${retryDelay})` : ''}`;
+                } catch { /* use shortMsg as-is */ }
+                throw new Error(shortMsg);
             }
 
             const data = await resp.json();
@@ -137,6 +146,10 @@ export class GeminiProvider implements AIProvider {
                 durationMs: Date.now() - start,
                 error: error?.message ?? error
             }, 'Gemini generate failed');
+
+            // This might throw UserVisibleError
+            this.transformError(error);
+
             throw error;
         }
     }
@@ -155,6 +168,7 @@ export class GeminiProvider implements AIProvider {
                 // If parsing fails, just use the original message or a cleaner fallback
                 errorMessage = 'You exceeded your current AI quota. Please wait a few seconds and try again.';
             }
+            throw new UserVisibleError(errorMessage);
         } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
         }

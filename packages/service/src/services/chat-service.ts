@@ -17,6 +17,7 @@ import { EntityManager } from '../models/cms/entity-manager';
 import { PageManager } from '../models/cms/page-manager';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
+import { UserVisibleError } from '../utils/user-visible-error';
 
 export class ChatService {
     constructor(
@@ -136,38 +137,49 @@ export class ChatService {
         externalCookie: string,
         providerName: string,
         onEvent: OnServerToClientEvent): Promise<void> {
-        // 1. Save and notify user message
-        const userMessage = await this.saveUserMessage(userId, content);
-        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
+        try {
+            // 1. Save and notify user message
+            const userMessage = await this.saveUserMessage(userId, content);
+            onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
-        // 2. Intent Classifier
-        let agent: AgentName | null = null;
+            // 2. Intent Classifier
+            let agent: AgentName | null = null;
 
-        if (content.trim().startsWith('@')) {
-            // Check for explicit trigger (e.g. "@entity_generator")
-            const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
-            if (explicitTrigger) {
-                agent = explicitTrigger;
-            }
-        }
-
-        if (!agent) {
-            agent = await this.intentClassifier[providerName]!.resolve(content);
-        }
-
-        if (agent) {
-            if (this.chatHandlers[providerName]?.[agent]) {
-                this.logger.info('Executing resolved handler');
-
-                const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
-
-                await this.executeAgent(agent, content, context);
-                return;
+            if (content.trim().startsWith('@')) {
+                // Check for explicit trigger (e.g. "@entity_generator")
+                const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
+                if (explicitTrigger) {
+                    agent = explicitTrigger;
+                }
             }
 
-            // Fallback or default behavior if no command resolved
-            const aiMessage = await this.saveAgentMessage(userId, "I'm not sure how to help with that. Could you try rephrasing? (Tip: I can help you list, add, edit, or delete entities, or create new ones!)");
-            onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
+            if (!agent) {
+                agent = await this.intentClassifier[providerName]!.resolve(content);
+            }
+
+            if (agent) {
+                if (this.chatHandlers[providerName]?.[agent]) {
+                    this.logger.info('Executing resolved handler');
+
+                    const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
+
+                    await this.executeAgent(agent, content, context);
+                    return;
+                }
+
+                // Fallback or default behavior if no command resolved
+                const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
+                const aiMessage = await this.saveAgentMessage(userId, helpMessage);
+                onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
+            }
+        } catch (error) {
+            this.logger.error({ error: formatError(error) }, 'Error handling user message');
+
+            if (error instanceof UserVisibleError) {
+                await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
+            } else {
+                await this.saveAndEmitAgentMessage(userId, 'I encountered an error while processing your request. Please try again later.', onEvent);
+            }
         }
     }
 
