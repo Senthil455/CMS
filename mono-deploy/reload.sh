@@ -9,6 +9,8 @@ cd "$SCRIPT_DIR"
 
 echo "Reloading 'app' service..."
 
+export APP_PORT=8001
+
 # Stop the specific container if it exists
 docker compose stop app
 

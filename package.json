@@ -17,10 +17,12 @@
         "dev:portal": "npm run dev --workspace=@cms/portal",
         "build:shared": "npm run build --workspace=@cms/shared",
         "build:all": "npm run build --workspaces --if-present",
-        "install:all": "npm install"
+        "install:all": "npm install",
+        "setup": "npm run build:shared && npm run db:init --workspace=@cms/service"
     },
     "devDependencies": {
-        "concurrently": "^9.2.1"
+        "concurrently": "^9.2.1",
+        "cross-env": "^10.1.0"
     },
     "dependencies": {
         "@fastify/static": "^9.0.0"

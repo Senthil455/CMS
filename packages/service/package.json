@@ -7,7 +7,8 @@
     "debug": "tsx watch --inspect src/index.ts",
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:init": "cross-env DATABASE_URL=file:./dev.db prisma generate && cross-env DATABASE_URL=file:./dev.db prisma db push"
   },
   "dependencies": {
     "@fastify/autoload": "^5.8.2",
@@ -37,6 +38,7 @@
     "@types/cookie": "^0.6.0",
     "@types/node": "^22.10.1",
     "@vitest/ui": "^4.0.16",
+    "cross-env": "^10.1.0",
     "prisma": "6.2.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",

@@ -34,8 +34,8 @@ COPY CMS/packages/portal/dist ./packages/portal/dist
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
-# Install Node.js & Nginx
-RUN apt-get update && apt-get install -y curl nginx procps && \
+# Start Node.js & Nginx
+RUN apt-get update && apt-get install -y curl nginx procps dos2unix && \
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g tsx && \
@@ -55,7 +55,7 @@ RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json
 
 # Copy Entrypoint
 COPY CMS/mono-deploy/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 5000
 ENTRYPOINT ["/app/entrypoint.sh"]

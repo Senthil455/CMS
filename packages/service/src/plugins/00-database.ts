@@ -3,8 +3,16 @@ import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { PrismaClient } from '@prisma/client';
 
+import { config } from '../config';
+
 const databasePlugin: FastifyPluginAsync = async (fastify) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: config.DATABASE_URL,
+            },
+        },
+    });
 
     try {
         await prisma.$connect();
