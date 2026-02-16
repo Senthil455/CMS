@@ -58,7 +58,7 @@ export function AuthBanner() {
             >
                 <KeyRound className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">Authentication</span>
-                <span className="text-[10px] text-amber-600/70 dark:text-amber-500/70 ml-1">— Check status & guest login</span>
+                <span className="text-[10px] text-amber-600/70 dark:text-amber-500/70 ml-1">— Auth status, login, register & logout</span>
                 {isExpanded
                     ? <ChevronDown className="w-3 h-3 text-amber-600 ml-auto shrink-0" />
                     : <ChevronRight className="w-3 h-3 text-amber-600 ml-auto shrink-0" />
@@ -73,10 +73,27 @@ export function AuthBanner() {
                         url={`${origin}/api/me`}
                     />
                     <CopyableSnippet
+                        label="Login with credentials"
+                        method="POST"
+                        url={`${origin}/api/login`}
+                        body={JSON.stringify({ usernameOrEmail: "your_username_or_email", password: "your_password" }, null, 2)}
+                    />
+                    <CopyableSnippet
                         label="Guest login (no registration needed)"
                         method="POST"
                         url={`${origin}/api/login`}
                         body={JSON.stringify({ usernameOrEmail: "__guest_", password: "aaa" }, null, 2)}
+                    />
+                    <CopyableSnippet
+                        label="Register a new account"
+                        method="POST"
+                        url={`${origin}/api/register`}
+                        body={JSON.stringify({ userName: "your_username", email: "you@example.com", password: "YourPassword1!" }, null, 2)}
+                    />
+                    <CopyableSnippet
+                        label="Logout"
+                        method="GET"
+                        url={`${origin}/api/logout`}
                     />
                 </div>
             )}

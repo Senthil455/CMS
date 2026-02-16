@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import {getBackendGithubUrl, login, useUserInfo} from "../services/auth";
-import {RegisterRoute} from "../AuthRouter";
+import { getBackendGithubUrl, login, useUserInfo } from "../services/auth";
+import { RegisterRoute } from "../AuthRouter";
 
 export interface LoginPageConfig {
     loginFailedError: string;
@@ -29,7 +29,7 @@ export const useLoginPage = (
     async function handleLogin() {
         const res = await login({ usernameOrEmail, password });
         if (res.error) {
-            setError(config.loginFailedError);
+            setError(res.errorDetail?.title || config.loginFailedError);
         } else {
             await mutate();
             if (ref) {
@@ -38,9 +38,9 @@ export const useLoginPage = (
         }
     }
 
-    async function handleGitHubLogin ()  {
+    async function handleGitHubLogin() {
         try {
-            window.location.href = getBackendGithubUrl()+"?returnUrl=" + window.location.href;
+            window.location.href = getBackendGithubUrl() + "?returnUrl=" + window.location.href;
         } catch (error) {
             console.error('GitHub login failed:', error);
         }

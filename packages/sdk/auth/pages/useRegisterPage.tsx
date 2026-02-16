@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { register } from "../services/auth";
-import {LoginRoute} from "../AuthRouter";
+import { LoginRoute } from "../AuthRouter";
 
 export interface RegisterPageConfig {
     passwordMismatchError: string;
@@ -35,6 +35,8 @@ export const useRegisterPage = (
         if (error) {
             if (error.errors) {
                 setErrors(Object.values(error.errors).map((x: any) => x[0]));
+            } else if (error.title) {
+                setErrors([error.title]);
             } else {
                 setErrors([config.registerFailedError]);
             }
