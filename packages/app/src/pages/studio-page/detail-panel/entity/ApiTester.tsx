@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Loader2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Play, Loader2, ChevronRight, ChevronDown, Copy, Check } from 'lucide-react';
 import { type EntityDto } from '@cms/shared';
 
 interface ApiTesterProps {
@@ -14,6 +14,7 @@ export function ApiTester({ entity, mode }: ApiTesterProps) {
     const [recordId, setRecordId] = useState('1');
     const [isLoading, setIsLoading] = useState(false);
     const [response, setResponse] = useState<{ status: number; body: any } | null>(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         setResponse(null);
@@ -100,27 +101,51 @@ export function ApiTester({ entity, mode }: ApiTesterProps) {
         setIsExpanded(!isExpanded);
     };
 
+    const getRequestInfo = () => {
+        let url = `${window.location.origin}/api/entities/${entity.name}`;
+        let method = 'GET';
+        let payload = '';
+
+        if (mode === 'list') {
+            url += `?${queryParams}`;
+            method = 'GET';
+        } else if (mode === 'get') {
+            url += `/${recordId}`;
+            method = 'GET';
+        } else {
+            url += `/${mode}`;
+            method = 'POST';
+            payload = jsonBody;
+        }
+
+        return { url, method, payload };
+    };
+
+    const handleCopy = async () => {
+        const { url, method, payload } = getRequestInfo();
+        const responseText = response
+            ? (typeof response.body === 'string' ? response.body : JSON.stringify(response.body, null, 2))
+            : '';
+        const text = `URL: ${url}\nMethod: ${method}\nPayload:\n${payload || ''}\nResponse:\n${responseText}`;
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     const handleExecute = async () => {
         setIsLoading(true);
         setResponse(null);
         try {
-            let url = `${''}/api/entities/${entity.name}`;
+            const { url, method, payload } = getRequestInfo();
             const options: RequestInit = {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
             };
 
-            if (mode === 'list') {
-                url += `?${queryParams}`;
-                options.method = 'GET';
-            } else if (mode === 'get') {
-                url += `/${recordId}`;
-                options.method = 'GET';
-            } else {
-                url += `/${mode}`;
-                options.method = 'POST';
-                options.body = jsonBody;
+            if (payload) {
+                options.body = payload;
             }
 
             const res = await fetch(url, options);
@@ -209,6 +234,13 @@ export function ApiTester({ entity, mode }: ApiTesterProps) {
                         >
                             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                             Execute
+                        </button>
+                        <button
+                            onClick={handleCopy}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-xs font-bold transition-all"
+                        >
+                            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copied ? 'Copied!' : 'Copy'}
                         </button>
                     </div>
 

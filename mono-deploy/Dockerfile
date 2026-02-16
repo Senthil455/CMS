@@ -30,7 +30,7 @@ WORKDIR /src
 COPY CMS/ ./
 
 # Publish the specific project
-RUN dotnet publish server/CMS.App/CMS.App.csproj -c Release -o /app/publish
+RUN dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o /app/publish
 
 # --- Stage 3: Final Runtime ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
@@ -55,7 +55,7 @@ COPY --from=dotnet-builder /app/publish ./cms
 RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json
 
 # Copy Entrypoint
-COPY CMS/standalone-cms/entrypoint.sh /app/entrypoint.sh
+COPY CMS/mono-deploy/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose Nginx Port

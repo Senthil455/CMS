@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { ApiTester } from './ApiTester';
+import { AuthBanner } from './AuthBanner';
 
 interface EntityDetailProps {
     schema: SchemaDto;
@@ -120,6 +121,7 @@ export function EntityDetail({ schema, allSchemas }: EntityDetailProps) {
                     <p className="text-[10px] text-primary-muted mb-2">
                         Use these endpoints to manage <strong>{entity.name}</strong> records.
                     </p>
+                    <AuthBanner />
                     <div className="space-y-2 text-[11px] font-mono bg-app-muted/50 p-3 rounded-lg border border-border/50">
                         <div className="space-y-1">
                             <div className="text-[9px] uppercase font-bold text-primary-muted/70">Read</div>

@@ -55,7 +55,7 @@ cd /app/cms
 while true; do
   echo "[LOOP] Starting .NET process..."
   # Run in foreground of this sub-shell, but wait for it
-  dotnet CMS.App.dll --urls "http://127.0.0.1:5001" || true
+  dotnet CMS.MonoApp.dll --urls "http://127.0.0.1:5001" || true
   
   echo "[LOOP] .NET process exited. Restarting in 1 second..."
   sleep 1

@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Shield, Key, AlertTriangle, Box, ArrowLeft } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box, ArrowLeft, Globe } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
 import { GeminiSettings } from './components/GeminiSettings';
 import { AddSpaSettings } from './components/AddSpaSettings';
+import { CorsSettings } from './components/CorsSettings';
 
 
 export default function SystemSettingsPage() {
     const { user, logout, hasSuperAdmin, databaseReady } = useAuth();
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa'>('admin');
+    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa' | 'cors'>('admin');
     const [isDark, setIsDark] = useState(false);
 
     const toggleTheme = () => {
@@ -133,6 +134,16 @@ export default function SystemSettingsPage() {
                                         <Box className="w-4 h-4" />
                                         Add SPA
                                     </button>
+                                    <button
+                                        onClick={() => setActiveTab('cors')}
+                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'cors'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-primary-muted hover:text-primary'
+                                            }`}
+                                    >
+                                        <Globe className="w-4 h-4" />
+                                        CORS
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -148,6 +159,7 @@ export default function SystemSettingsPage() {
                         {activeTab === 'database' && !databaseReady && <DatabaseSettings />}
                         {user && activeTab === 'gemini' && <GeminiSettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
+                        {user && activeTab === 'cors' && <CorsSettings />}
                     </div>
                 </div>
             </main>

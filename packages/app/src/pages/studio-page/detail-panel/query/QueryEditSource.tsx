@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { type QueryDto, type SchemaDto } from '@cms/shared';
-import { Code, Maximize2, Minimize2 } from 'lucide-react';
+import { Code, Maximize2, Minimize2, Save } from 'lucide-react';
 import GraphiQL from '../../../../components/GraphiQL';
 
 interface QueryEditSourceProps {
     item: SchemaDto;
     queryForm: QueryDto;
     updateField: (field: keyof QueryDto, value: any) => void;
+    onSave: () => Promise<void>;
 }
 
-export function QueryEditSource({ item, queryForm, updateField }: QueryEditSourceProps) {
+export function QueryEditSource({ item, queryForm, updateField, onSave }: QueryEditSourceProps) {
     const [isFullscreen, setIsFullscreen] = useState(true);
 
     const toggleFullscreen = () => {
@@ -45,13 +46,25 @@ export function QueryEditSource({ item, queryForm, updateField }: QueryEditSourc
                     style={{ height: '100%', width: '100%' }}
                 />
                 {isFullscreen && (
-                    <button
-                        onClick={toggleFullscreen}
-                        className="fullscreen-toggle"
-                        title="Exit Fullscreen"
-                    >
-                        <Minimize2 className="w-4 h-4" />
-                    </button>
+                    <div className="fixed top-4 right-4 flex items-center gap-2 z-[10000] p-1.5 bg-black/50 backdrop-blur-sm rounded-lg border border-white/10 shadow-xl">
+                        <button
+                            onClick={() => onSave()}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-xs font-bold transition-all shadow-sm"
+                            title="Save Changes"
+                        >
+                            <Save className="w-3.5 h-3.5" />
+                            Save
+                        </button>
+                        <div className="w-px h-4 bg-white/20 mx-1"></div>
+                        <button
+                            onClick={toggleFullscreen}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md text-xs font-bold transition-all"
+                            title="Exit Fullscreen"
+                        >
+                            <Minimize2 className="w-3.5 h-3.5" />
+                            Exit Full Screen
+                        </button>
+                    </div>
                 )}
             </div>
         </section>

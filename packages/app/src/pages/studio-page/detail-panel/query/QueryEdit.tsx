@@ -157,7 +157,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
                     )}
 
                     {activeTab === 'code' && (
-                        <QueryEditSource item={item} queryForm={queryForm} updateField={updateField} />
+                        <QueryEditSource item={item} queryForm={queryForm} updateField={updateField} onSave={handleSave} />
                     )}
                 </div>
             </div>

@@ -28,7 +28,7 @@ echo "🚀 Building CMS (.NET) locally..."
 cd "$REPO_ROOT/CMS"
 # Clean previous publish to avoid stale files
 rm -rf publish
-dotnet publish server/CMS.App/CMS.App.csproj -c Release -o ./publish
+dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o ./publish
 
 echo "🐳 Building Docker Image (Fast Mode)..."
 cd "$SCRIPT_DIR"
