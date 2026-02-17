@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { CONFIG } from '../config'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader2, Info, TrendingUp, Award, Calendar, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -81,7 +80,7 @@ export default function Trends() {
                     days.map(async (day) => {
                         const encoded = encodeURIComponent(day.dateStr)
                         const res = await fetch(
-                            `${CONFIG.API_BASE_URL}/api/entities/score?offset=0&limit=1&date[dateIs]=${encoded}&sort[id]=-1`,
+                            `/api/entities/score?offset=0&limit=1&date[dateIs]=${encoded}&sort[id]=-1`,
                             { credentials: 'include' }
                         )
                         if (res.ok) {
@@ -107,10 +106,10 @@ export default function Trends() {
                 // Fetch all logs for the past 7 days to build habit breakdown
                 const sevenDaysAgo = new Date()
                 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
-                const fromStr = encodeURIComponent(`${sevenDaysAgo.getMonth() + 1}/${sevenDaysAgo.getDate()}/${sevenDaysAgo.getFullYear()}`)
-                const toStr = encodeURIComponent(days[days.length - 1].dateStr)
+                // const fromStr = encodeURIComponent(`${sevenDaysAgo.getMonth() + 1}/${sevenDaysAgo.getDate()}/${sevenDaysAgo.getFullYear()}`)
+                // const toStr = encodeURIComponent(days[days.length - 1].dateStr)
                 const logsRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/log?offset=0&limit=100&sort[id]=-1`,
+                    `/api/entities/log?offset=0&limit=100&sort[id]=-1`,
                     { credentials: 'include' }
                 )
 
@@ -133,7 +132,7 @@ export default function Trends() {
                     await Promise.all(
                         uniqueIds.map(async (id) => {
                             const res = await fetch(
-                                `${CONFIG.API_BASE_URL}/api/queries/habitTemplateById/single?id=${id}`,
+                                `/api/queries/habitTemplateById/single?id=${id}`,
                                 { credentials: 'include' }
                             )
                             if (res.ok) {
@@ -146,7 +145,7 @@ export default function Trends() {
                         name: templateCounts[id].name,
                         totalLogs: templateCounts[id].count,
                         unit: templateMap[id]?.unit || '',
-                        imageUrl: templateMap[id]?.image?.url ? `${CONFIG.API_BASE_URL}${templateMap[id].image!.url}` : undefined,
+                        imageUrl: templateMap[id]?.image?.url ? `${templateMap[id].image!.url}` : undefined,
                     })).sort((a, b) => b.totalLogs - a.totalLogs)
 
                     setHabitBreakdown(breakdown)

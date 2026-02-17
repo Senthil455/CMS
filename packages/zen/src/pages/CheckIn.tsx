@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { CONFIG } from '../config'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader2, Info, CheckCircle2, Target, Plus, Minus, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -77,7 +76,7 @@ export default function CheckIn() {
             try {
                 // Fetch goals
                 const response = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
+                    `/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (!response.ok) {
@@ -92,7 +91,7 @@ export default function CheckIn() {
                 await Promise.all(
                     uniqueIds.map(async (id) => {
                         const res = await fetch(
-                            `${CONFIG.API_BASE_URL}/api/queries/habitTemplateById/single?id=${id}`,
+                            `/api/queries/habitTemplateById/single?id=${id}`,
                             { credentials: 'include' }
                         )
                         if (res.ok) {
@@ -107,7 +106,7 @@ export default function CheckIn() {
                 const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
                 const encodedDate = encodeURIComponent(todayStr)
                 const logsRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/log?offset=0&limit=20&date[dateIs]=${encodedDate}&sort[id]=-1`,
+                    `/api/entities/log?offset=0&limit=20&date[dateIs]=${encodedDate}&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (logsRes.ok) {
@@ -135,7 +134,7 @@ export default function CheckIn() {
 
                 // Fetch today's existing score record
                 const scoreRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/score?offset=0&limit=1&date[dateIs]=${encodedDate}&sort[id]=-1`,
+                    `/api/entities/score?offset=0&limit=1&date[dateIs]=${encodedDate}&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (scoreRes.ok) {
@@ -171,7 +170,7 @@ export default function CheckIn() {
         try {
             if (existing) {
                 // Update existing log
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/log/update`, {
+                const res = await fetch(`/api/entities/log/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -193,7 +192,7 @@ export default function CheckIn() {
                 }))
             } else {
                 // Insert new log
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/log/insert`, {
+                const res = await fetch(`/api/entities/log/insert`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -258,7 +257,7 @@ export default function CheckIn() {
 
             if (existingScore) {
                 // Update
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/score/update`, {
+                const res = await fetch(`/api/entities/score/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -278,7 +277,7 @@ export default function CheckIn() {
                 }
             } else {
                 // Insert
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/score/insert`, {
+                const res = await fetch(`/api/entities/score/insert`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -391,7 +390,7 @@ export default function CheckIn() {
                                         overflow: 'hidden',
                                     }}>
                                         <img
-                                            src={`${CONFIG.API_BASE_URL}${tmpl.image.url}`}
+                                            src={`${tmpl.image.url}`}
                                             alt={tmpl.name}
                                             style={{
                                                 width: '100%', height: '100%',

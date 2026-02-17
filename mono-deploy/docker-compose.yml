@@ -14,15 +14,12 @@ services:
 
       - DatabaseProvider=Postgres
       - "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
-      - ApiInfo__Url=http://localhost:5000
-      - ASPNETCORE_URLS=http://+:5000
       - CMS_DATA_PATH=/data
 
       # --- CMS (Node.js) Settings ---
       - PORT=3001
       - NODE_ENV=production
-      - CMS_BASE_URL=http://localhost:5000
-      - FRONTEND_URL=http://localhost:5000/app
+      - CMS_BASE_URL=http://127.0.0.1:5001 # Internal URL to reach .NET (matches entrypoint.sh)
       - DATABASE_URL=file:/data/app/sqlite.db
 
     depends_on:

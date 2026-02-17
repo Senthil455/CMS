@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { CONFIG } from '../config'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader2, Info, Sparkles, Sun, Edit3, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -70,7 +69,7 @@ export default function Dashboard() {
             try {
                 // Fetch goals
                 const goalsRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
+                    `/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (!goalsRes.ok) throw new Error('Failed to fetch goals')
@@ -82,7 +81,7 @@ export default function Dashboard() {
                 await Promise.all(
                     uniqueIds.map(async (id) => {
                         const res = await fetch(
-                            `${CONFIG.API_BASE_URL}/api/queries/habitTemplateById/single?id=${id}`,
+                            `/api/queries/habitTemplateById/single?id=${id}`,
                             { credentials: 'include' }
                         )
                         if (res.ok) {
@@ -96,7 +95,7 @@ export default function Dashboard() {
                 const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
                 const encodedDate = encodeURIComponent(todayStr)
                 const logsRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/log?offset=0&limit=20&date[dateIs]=${encodedDate}&sort[id]=-1`,
+                    `/api/entities/log?offset=0&limit=20&date[dateIs]=${encodedDate}&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 const logsData: LogsResponse = logsRes.ok ? await logsRes.json() : { items: [], totalRecords: 0 }
@@ -118,7 +117,7 @@ export default function Dashboard() {
                         templateWeight: tmpl?.weight || 0,
                         targetValue: goal.targetValue,
                         actualValue: logByTemplate[goal.habitTemplate.id] ?? 0,
-                        imageUrl: tmpl?.image?.url ? `${CONFIG.API_BASE_URL}${tmpl.image.url}` : undefined,
+                        imageUrl: tmpl?.image?.url ? `${tmpl.image.url}` : undefined,
                     }
                 })
 
@@ -126,7 +125,7 @@ export default function Dashboard() {
 
                 // Fetch today's score record
                 const scoreRes = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/score?offset=0&limit=1&date[dateIs]=${encodedDate}&sort[id]=-1`,
+                    `/api/entities/score?offset=0&limit=1&date[dateIs]=${encodedDate}&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (scoreRes.ok) {
@@ -179,7 +178,7 @@ export default function Dashboard() {
         setSavedFeeling(false)
         try {
             if (existingScore) {
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/score/update`, {
+                const res = await fetch(`/api/entities/score/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -199,7 +198,7 @@ export default function Dashboard() {
                     setSavedFeeling(true)
                 }
             } else {
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/score/insert`, {
+                const res = await fetch(`/api/entities/score/insert`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',

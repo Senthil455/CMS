@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { CONFIG } from '../config';
 import { Loader2, Plus, Info, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -34,7 +33,7 @@ export default function Explore() {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/api/queries/habitTemplateList?limit=10&offset=0`);
+                const response = await fetch(`/api/queries/habitTemplateList?limit=10&offset=0`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch templates');
                 }
@@ -53,7 +52,7 @@ export default function Explore() {
     const handleAdd = async (template: HabitTemplate) => {
         setAddingId(template.id);
         try {
-            const res = await fetch(`${CONFIG.API_BASE_URL}/api/entities/goal/insert`, {
+            const res = await fetch(`/api/entities/goal/insert`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -153,7 +152,7 @@ export default function Explore() {
                                     overflow: 'hidden', position: 'relative',
                                 }}>
                                     <img
-                                        src={`${CONFIG.API_BASE_URL}${template.image.url}`}
+                                        src={`${template.image.url}`}
                                         alt={template.name}
                                         style={{
                                             width: '100%', height: '100%',

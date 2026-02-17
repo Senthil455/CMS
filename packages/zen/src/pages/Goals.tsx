@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { CONFIG } from '../config'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader2, Info, Settings2, Target } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -48,7 +47,7 @@ export default function Goals() {
         const fetchGoals = async () => {
             try {
                 const response = await fetch(
-                    `${CONFIG.API_BASE_URL}/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
+                    `/api/entities/goal?offset=0&limit=20&sort[id]=-1`,
                     { credentials: 'include' }
                 )
                 if (!response.ok) {
@@ -64,7 +63,7 @@ export default function Goals() {
                 await Promise.all(
                     uniqueIds.map(async (id) => {
                         const res = await fetch(
-                            `${CONFIG.API_BASE_URL}/api/queries/habitTemplateById/single?id=${id}`,
+                            `/api/queries/habitTemplateById/single?id=${id}`,
                             { credentials: 'include' }
                         )
                         if (res.ok) {
@@ -171,7 +170,7 @@ export default function Goals() {
                                         overflow: 'hidden',
                                     }}>
                                         <img
-                                            src={`${CONFIG.API_BASE_URL}${tmpl.image.url}`}
+                                            src={`${tmpl.image.url}`}
                                             alt={tmpl.name}
                                             style={{
                                                 width: '100%', height: '100%',

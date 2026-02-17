@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { CONFIG } from '../config'
 
 interface UserInfo {
     id: string
@@ -37,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isGuest, setIsGuest] = useState(false)
 
     const fetchMe = useCallback(async () => {
-        const meRes = await fetch(`${CONFIG.API_BASE_URL}/api/me`, {
+        const meRes = await fetch(`/api/me`, {
             credentials: 'include',
         })
         if (meRes.ok) {
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
 
                 // Fallback: guest login
-                const loginRes = await fetch(`${CONFIG.API_BASE_URL}/api/login`, {
+                const loginRes = await fetch(`/api/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -87,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(async (usernameOrEmail: string, password: string) => {
         try {
-            const res = await fetch(`${CONFIG.API_BASE_URL}/api/login`, {
+            const res = await fetch(`/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -107,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const register = useCallback(async (userName: string, email: string, password: string) => {
         try {
-            const res = await fetch(`${CONFIG.API_BASE_URL}/api/register`, {
+            const res = await fetch(`/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -130,11 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
-            await fetch(`${CONFIG.API_BASE_URL}/api/logout`, { credentials: 'include' })
+            await fetch(`/api/logout`, { credentials: 'include' })
         } catch { }
         // Re-login as guest
         try {
-            await fetch(`${CONFIG.API_BASE_URL}/api/login`, {
+            await fetch(`/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
