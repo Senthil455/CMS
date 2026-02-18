@@ -57,7 +57,7 @@ Try the live demo at [example.com/app](https://example.com/app).
 
 ## 🚀 Quick Start
 
-Get the project running locally in 4 steps.
+Get the project running locally in 5 steps.
 
 ### 1. Clone Repositories
 ```bash
@@ -67,38 +67,30 @@ git clone git@github.com/Senthil455/CMS.git
 
 ### 2. Start Backend (CMS)
 ```bash
-cd cms/examples/SqliteDemo
+cd cms/server/CMS.MonoApp
 dotnet run
 ```
 _Verify that `http://127.0.0.1:5000` is accessible._
 
-### 3. Configure Environment (CMS)
-Open a new terminal and set up the AI agent with your Gemini API key.
+### 3. Start CMS Service
+Open a new terminal:
 ```bash
-npm i #install dependencies
-cd packages/backend
-cp .env.example .env
-```
-Edit `.env` and add your Gemini API key (get a free one [here](https://aistudio.google.com/app/apikey)):
-```ini
-GEMINI_API_KEY=your_key_here
+cd cms
+npm i
+npm run build:all
+npm run dev:service
 ```
 
-Initialize the database and Prisma client:
-```bash
-npx prisma generate
-npx prisma db push
-```
+### 4. Initial Setup
+Visit **http://localhost:3001/app** — before the system is ready, you'll be guided through a setup page:
 
-### 4. Start Development Server
-```bash
-# From cms root
-npm run build:shared
-npm run dev
-```
-Visit **http://127.0.0.1:5173** to start building!
+1. **Setup Database Connection** — choose your database provider and configure the connection string.
+2. **Create Super Admin** — add an initial super admin user account.
+3. **Restart Backend** — after completing steps 1 and 2, the backend will quit. Follow [Step 2](#2-start-backend-cms) to restart it. _(In a Docker deployment, the container will auto-restart.)_
+4. **Setup Gemini API Key** — configure your Gemini API key for AI features.
 
-> **Note:** Use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
+Once setup is complete, visit **http://localhost:3001/app** to start building!
+
 
 ### 💡 Try it out
 Once running, try these prompts:

@@ -26,11 +26,15 @@ RUN cd packages/service && cp .env.production .env && npx prisma generate && npm
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-builder
 WORKDIR /src
 
+# Expose target architecture for .NET RID mapping
+ARG TARGETARCH
+
 # Copy CMS source
 COPY CMS/ ./
 
-# Publish the specific project
-RUN dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o /app/publish
+# Publish with the correct RID based on target platform
+RUN if [ "$TARGETARCH" = "arm64" ]; then RID=linux-arm64; else RID=linux-x64; fi && \
+    dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -r $RID --self-contained false -o /app/publish
 
 # --- Stage 3: Final Runtime ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
