@@ -57,6 +57,9 @@ interface LogsResponse {
     totalRecords: number
 }
 
+const now = new Date()
+const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
+
 export default function CheckIn() {
     const { isReady } = useAuth()
     const [goals, setGoals] = useState<Goal[]>([])
@@ -102,8 +105,6 @@ export default function CheckIn() {
                 setTemplates(templateMap)
 
                 // Fetch today's log records
-                const now = new Date()
-                const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
                 const encodedDate = encodeURIComponent(todayStr)
                 const logsRes = await fetch(
                     `/api/entities/log?offset=0&limit=20&date[dateIs]=${encodedDate}&sort[id]=-1`,
@@ -176,10 +177,10 @@ export default function CheckIn() {
                     credentials: 'include',
                     body: JSON.stringify({
                         id: existing.logId,
-                        date: new Date().toISOString(),
+                        date: todayStr,
                         actualValue: currentValue,
                         publicationStatus: 'published',
-                        publishedAt: new Date().toISOString(),
+                        publishedAt: todayStr,
                         habitTemplate: { id: goal.habitTemplate.id },
                         updatedAt: existing.updatedAt,
                     }),
@@ -197,7 +198,7 @@ export default function CheckIn() {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        date: new Date().toISOString(),
+                        date: todayStr,
                         actualValue: currentValue,
                         publicationStatus: 'published',
                         publishedAt: new Date().toISOString(),
@@ -263,12 +264,12 @@ export default function CheckIn() {
                     credentials: 'include',
                     body: JSON.stringify({
                         id: existingScore.id,
-                        date: new Date().toISOString(),
+                        date: todayStr,
                         totalScore,
                         level,
                         summaryMessage,
                         publicationStatus: 'published',
-                        publishedAt: new Date().toISOString(),
+                        publishedAt: todayStr,
                         updatedAt: existingScore.updatedAt,
                     }),
                 })
