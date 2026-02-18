@@ -8,41 +8,37 @@ interface SpaDefinition {
     directory: string;
 }
 
-export function AddSpaSettings() {
+// --- Shared Upload Form Component ---
+function SpaUploadForm({
+    onUploaded,
+    initialPath,
+    initialDir,
+    showPathFields,
+    submitLabel,
+    compact,
+}: {
+    onUploaded: () => void;
+    initialPath?: string;
+    initialDir?: string;
+    showPathFields?: boolean;
+    submitLabel?: string;
+    compact?: boolean;
+}) {
     const [mode, setMode] = useState<'zip' | 'folder'>('folder');
     const [file, setFile] = useState<File | null>(null);
     const [folderFiles, setFolderFiles] = useState<File[]>([]);
-    const [path, setPath] = useState('');
-    const [dir, setDir] = useState('');
+    const [path, setPath] = useState(initialPath ?? '');
+    const [dir, setDir] = useState(initialDir ?? '');
     const [isSaving, setIsSaving] = useState(false);
-    const [spas, setSpas] = useState<SpaDefinition[]>([]);
-    const [isLoadingSpas, setIsLoadingSpas] = useState(true);
-    const [editingSpa, setEditingSpa] = useState<string | null>(null);
-    const [editValue, setEditValue] = useState('');
-    const [isUpdating, setIsUpdating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const fetchSpas = async () => {
-        setIsLoadingSpas(true);
-        try {
-            const res = await fetch(`${''}/api/system/spas`, {
-                credentials: 'include'
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSpas(data);
-            }
-        } catch (err) {
-            console.error('Failed to fetch SPAs', err);
-            toast.error('Failed to load installed SPAs');
-        } finally {
-            setIsLoadingSpas(false);
-        }
+    // Reset file input when mode changes
+    const switchMode = (newMode: 'zip' | 'folder') => {
+        setMode(newMode);
+        setFile(null);
+        setFolderFiles([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
-
-    useEffect(() => {
-        fetchSpas();
-    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -54,74 +50,6 @@ export function AddSpaSettings() {
         }
     };
 
-    const handleDelete = async (spaPath: string) => {
-        if (!confirm(`Are you sure you want to delete the SPA at ${spaPath}?`)) return;
-
-        try {
-            const res = await fetch(`${''}/api/system/spas?path=${encodeURIComponent(spaPath)}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-
-            if (res.ok) {
-                toast.success('SPA deleted successfully');
-                fetchSpas();
-            } else {
-                toast.error('Failed to delete SPA');
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Error deleting SPA');
-        }
-    };
-
-    const handleStartEdit = (spa: SpaDefinition) => {
-        setEditingSpa(spa.path);
-        setEditValue(spa.path);
-    };
-
-    const handleCancelEdit = () => {
-        setEditingSpa(null);
-        setEditValue('');
-    };
-
-    const handleSaveEdit = async (oldPath: string) => {
-        if (!editValue.trim()) {
-            toast.error('Path cannot be empty');
-            return;
-        }
-        if (editValue === oldPath) {
-            handleCancelEdit();
-            return;
-        }
-
-        setIsUpdating(true);
-        try {
-            const res = await fetch(
-                `${''}/api/system/spas?oldPath=${encodeURIComponent(oldPath)}&newPath=${encodeURIComponent(editValue)}`,
-                {
-                    method: 'PUT',
-                    credentials: 'include'
-                }
-            );
-
-            if (res.ok) {
-                toast.success('SPA path updated successfully');
-                setEditingSpa(null);
-                setEditValue('');
-                fetchSpas();
-            } else {
-                const data = await res.json().catch(() => ({}));
-                toast.error(data.detail || data.error || 'Failed to update SPA path');
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Error updating SPA path');
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -129,13 +57,11 @@ export function AddSpaSettings() {
             toast.error('Please select a .zip file');
             return;
         }
-
         if (mode === 'folder' && folderFiles.length === 0) {
             toast.error('Please select a folder');
             return;
         }
-
-        if (!path || !dir) {
+        if (showPathFields && (!path || !dir)) {
             toast.error('Please fill in path and directory name');
             return;
         }
@@ -152,7 +78,6 @@ export function AddSpaSettings() {
                     const relativePath = f.webkitRelativePath || f.name;
                     const parts = relativePath.split('/');
                     const cleanPath = parts.slice(1).join('/');
-
                     if (cleanPath) {
                         zip.file(cleanPath, f);
                     } else {
@@ -170,29 +95,238 @@ export function AddSpaSettings() {
             formData.append('path', path);
             formData.append('dir', dir);
 
-            const res = await fetch(`${''}/api/system/add-spa`, {
+            const res = await fetch('/api/system/add-spa', {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
             });
 
             if (res.ok) {
-                toast.success('SPA added successfully');
+                toast.success(showPathFields ? 'SPA deployed successfully' : 'SPA files updated successfully');
                 setFile(null);
                 setFolderFiles([]);
-                setPath('');
-                setDir('');
-                fetchSpas();
+                if (showPathFields) {
+                    setPath('');
+                    setDir('');
+                }
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                onUploaded();
             } else {
                 const data = await res.json().catch(() => ({}));
-                toast.error(data.error || 'Failed to add SPA');
+                toast.error(data.error || 'Failed to deploy SPA');
             }
         } catch (err) {
             console.error(err);
-            toast.error('Error adding SPA');
+            toast.error('Error deploying SPA');
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const inputId = `spa-upload-${initialPath ?? 'new'}-${mode}`;
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Mode Toggle */}
+            <div className={`flex items-center ${compact ? 'justify-start' : 'justify-between'}`}>
+                {!compact && <span className="text-sm font-medium text-primary-muted">Upload Source</span>}
+                <div className="flex items-center bg-app-muted/50 p-1 rounded-lg border border-border">
+                    <button
+                        type="button"
+                        onClick={() => switchMode('zip')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'zip' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
+                    >
+                        <Archive className="w-3 h-3" />
+                        ZIP File
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => switchMode('folder')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'folder' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
+                    >
+                        <FolderOpen className="w-3 h-3" />
+                        Folder
+                    </button>
+                </div>
+            </div>
+
+            {/* Path & Dir Fields (new SPA only) */}
+            {showPathFields && (
+                <>
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-primary-muted">SPA Path (URL Prefix)</label>
+                        <div className="relative">
+                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-muted" />
+                            <input
+                                type="text"
+                                value={path}
+                                onChange={(e) => setPath(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                placeholder="/my-app"
+                            />
+                        </div>
+                        <p className="text-xs text-primary-muted mt-1">The URL path where the SPA will be served (e.g., /dashboard).</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-primary-muted">Server Directory</label>
+                        <div className="relative">
+                            <Folder className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-muted" />
+                            <input
+                                type="text"
+                                value={dir}
+                                onChange={(e) => setDir(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                placeholder="my_app_v1"
+                            />
+                        </div>
+                        <p className="text-xs text-primary-muted mt-1">The directory name on the server where files will be extracted.</p>
+                    </div>
+                </>
+            )}
+
+            {/* File Picker */}
+            <div>
+                <div className={`border-2 border-dashed border-border rounded-xl ${compact ? 'p-4' : 'p-8'} text-center hover:border-primary/50 transition-colors bg-app-muted/30`}>
+                    <input
+                        key={`${inputId}-${mode}`}
+                        type="file"
+                        accept={mode === 'zip' ? ".zip" : undefined}
+                        // @ts-ignore
+                        webkitdirectory={mode === 'folder' ? "" : undefined}
+                        // @ts-ignore
+                        directory={mode === 'folder' ? "" : undefined}
+                        multiple={mode === 'folder'}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id={inputId}
+                        ref={fileInputRef}
+                    />
+                    <label
+                        htmlFor={inputId}
+                        className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                        <div className={`${compact ? 'p-2' : 'p-3'} bg-app rounded-full shadow-sm`}>
+                            {mode === 'zip' ? <Upload className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-primary`} /> : <FolderOpen className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-primary`} />}
+                        </div>
+                        <span className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-primary`}>
+                            {mode === 'zip'
+                                ? (file ? file.name : 'Click to upload .zip file')
+                                : (folderFiles.length > 0 ? `Selected folder with ${folderFiles.length} files` : 'Click to select build folder')
+                            }
+                        </span>
+                        {!compact && (
+                            <span className="text-xs text-primary-muted">
+                                {mode === 'zip'
+                                    ? (file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'Upload your SPA build artifacts')
+                                    : 'Typically your "dist" or "build" directory'
+                                }
+                            </span>
+                        )}
+                    </label>
+                </div>
+            </div>
+
+            {/* Submit */}
+            <div className="flex justify-end">
+                <button
+                    type="submit"
+                    disabled={isSaving}
+                    className={`flex items-center gap-2 ${compact ? 'px-4 py-1.5 text-sm' : 'px-6 py-2'} bg-primary text-app rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg active:scale-95`}
+                >
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {mode === 'folder' && isSaving ? 'Zipping & Deploying...' : (submitLabel ?? 'Deploy SPA')}
+                </button>
+            </div>
+        </form>
+    );
+}
+
+// --- Main Component ---
+export function AddSpaSettings() {
+    const [spas, setSpas] = useState<SpaDefinition[]>([]);
+    const [isLoadingSpas, setIsLoadingSpas] = useState(true);
+    const [editingSpa, setEditingSpa] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [reuploadingSpa, setReuploadingSpa] = useState<string | null>(null);
+
+    const fetchSpas = async () => {
+        setIsLoadingSpas(true);
+        try {
+            const res = await fetch('/api/system/spas', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setSpas(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch SPAs', err);
+            toast.error('Failed to load installed SPAs');
+        } finally {
+            setIsLoadingSpas(false);
+        }
+    };
+
+    useEffect(() => { fetchSpas(); }, []);
+
+    const handleDelete = async (spaPath: string) => {
+        if (!confirm(`Are you sure you want to delete the SPA at ${spaPath}?`)) return;
+        try {
+            const res = await fetch(`/api/system/spas?path=${encodeURIComponent(spaPath)}`, {
+                method: 'DELETE', credentials: 'include'
+            });
+            if (res.ok) {
+                toast.success('SPA deleted successfully');
+                fetchSpas();
+            } else {
+                toast.error('Failed to delete SPA');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error deleting SPA');
+        }
+    };
+
+    const handleStartEdit = (spa: SpaDefinition) => {
+        setEditingSpa(spa.path);
+        setEditValue(spa.path);
+        setReuploadingSpa(null);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingSpa(null);
+        setEditValue('');
+    };
+
+    const handleSaveEdit = async (oldPath: string) => {
+        if (!editValue.trim()) { toast.error('Path cannot be empty'); return; }
+        if (editValue === oldPath) { handleCancelEdit(); return; }
+
+        setIsUpdating(true);
+        try {
+            const res = await fetch(
+                `/api/system/spas?oldPath=${encodeURIComponent(oldPath)}&newPath=${encodeURIComponent(editValue)}`,
+                { method: 'PUT', credentials: 'include' }
+            );
+            if (res.ok) {
+                toast.success('SPA path updated successfully');
+                setEditingSpa(null);
+                setEditValue('');
+                fetchSpas();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.detail || data.error || 'Failed to update SPA path');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error updating SPA path');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const toggleReupload = (spa: SpaDefinition) => {
+        setReuploadingSpa(reuploadingSpa === spa.path ? null : spa.path);
+        setEditingSpa(null);
     };
 
     return (
@@ -212,77 +346,109 @@ export function AddSpaSettings() {
                 ) : (
                     <div className="space-y-3">
                         {spas.map((spa) => (
-                            <div key={spa.path} className="flex items-center justify-between p-4 bg-app-surface border border-border rounded-lg shadow-sm hover:border-primary/20 transition-all">
-                                <div className="flex-1 min-w-0">
-                                    {editingSpa === spa.path ? (
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="w-4 h-4 text-primary shrink-0" />
-                                            <input
-                                                type="text"
-                                                value={editValue}
-                                                onChange={(e) => setEditValue(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleSaveEdit(spa.path);
-                                                    if (e.key === 'Escape') handleCancelEdit();
-                                                }}
-                                                className="flex-1 px-2 py-1 rounded-md bg-app border border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-medium text-primary"
-                                                autoFocus
-                                                disabled={isUpdating}
-                                            />
-                                            <button
-                                                onClick={() => handleSaveEdit(spa.path)}
-                                                disabled={isUpdating}
-                                                className="p-1.5 rounded-md text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
-                                                title="Save"
-                                            >
-                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                                            </button>
-                                            <button
-                                                onClick={handleCancelEdit}
-                                                disabled={isUpdating}
-                                                className="p-1.5 rounded-md text-primary-muted hover:bg-app-muted transition-colors disabled:opacity-50"
-                                                title="Cancel"
-                                            >
+                            <div key={spa.path}>
+                                <div className="flex items-center justify-between p-4 bg-app-surface border border-border rounded-lg shadow-sm hover:border-primary/20 transition-all">
+                                    <div className="flex-1 min-w-0">
+                                        {editingSpa === spa.path ? (
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-primary shrink-0" />
+                                                <input
+                                                    type="text"
+                                                    value={editValue}
+                                                    onChange={(e) => setEditValue(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleSaveEdit(spa.path);
+                                                        if (e.key === 'Escape') handleCancelEdit();
+                                                    }}
+                                                    className="flex-1 px-2 py-1 rounded-md bg-app border border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-medium text-primary"
+                                                    autoFocus
+                                                    disabled={isUpdating}
+                                                />
+                                                <button
+                                                    onClick={() => handleSaveEdit(spa.path)}
+                                                    disabled={isUpdating}
+                                                    className="p-1.5 rounded-md text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                                                    title="Save"
+                                                >
+                                                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    disabled={isUpdating}
+                                                    className="p-1.5 rounded-md text-primary-muted hover:bg-app-muted transition-colors disabled:opacity-50"
+                                                    title="Cancel"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 font-medium text-primary">
+                                                <FileText className="w-4 h-4" />
+                                                {spa.path}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-xs text-primary-muted mt-1">
+                                            <Folder className="w-3 h-3" />
+                                            {spa.directory}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <a
+                                            href={spa.path}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                        >
+                                            Open
+                                        </a>
+                                        {editingSpa !== spa.path && (
+                                            <>
+                                                <button
+                                                    onClick={() => toggleReupload(spa)}
+                                                    className={`text-primary-muted p-2 rounded-md hover:bg-app-muted transition-colors ${reuploadingSpa === spa.path ? 'bg-app-muted text-primary' : ''}`}
+                                                    title="Re-upload SPA Files"
+                                                >
+                                                    <Upload className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStartEdit(spa)}
+                                                    className="text-primary-muted p-2 rounded-md hover:bg-app-muted transition-colors"
+                                                    title="Edit SPA Path"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                        <button
+                                            onClick={() => handleDelete(spa.path)}
+                                            className="text-red-500 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            title="Delete SPA"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Inline re-upload form */}
+                                {reuploadingSpa === spa.path && (
+                                    <div className="mt-2 ml-4 p-4 border border-border rounded-lg bg-app-muted/30">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-sm font-medium text-primary-muted">
+                                                Re-upload files for <span className="font-semibold text-primary">{spa.path}</span>
+                                            </span>
+                                            <button onClick={() => setReuploadingSpa(null)} className="p-1 text-primary-muted hover:text-primary rounded-md hover:bg-app-muted transition-colors">
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 font-medium text-primary">
-                                            <FileText className="w-4 h-4" />
-                                            {spa.path}
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-2 text-xs text-primary-muted mt-1">
-                                        <Folder className="w-3 h-3" />
-                                        {spa.directory}
+                                        <SpaUploadForm
+                                            onUploaded={() => { setReuploadingSpa(null); fetchSpas(); }}
+                                            initialPath={spa.path}
+                                            initialDir={spa.directory}
+                                            showPathFields={false}
+                                            submitLabel="Update Files"
+                                            compact
+                                        />
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <a
-                                        href={spa.path}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                                    >
-                                        Open
-                                    </a>
-                                    {editingSpa !== spa.path && (
-                                        <button
-                                            onClick={() => handleStartEdit(spa)}
-                                            className="text-primary-muted p-2 rounded-md hover:bg-app-muted transition-colors"
-                                            title="Edit SPA Path"
-                                        >
-                                            <Pencil className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleDelete(spa.path)}
-                                        className="text-red-500 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                        title="Delete SPA"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -292,113 +458,11 @@ export function AddSpaSettings() {
             <div className="border-t border-border my-8"></div>
 
             {/* Add SPA Form */}
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-primary">Deploy New SPA</h3>
-                <div className="flex items-center bg-app-muted/50 p-1 rounded-lg border border-border">
-                    <button
-                        onClick={() => { setMode('zip'); setFile(null); setFolderFiles([]); }}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'zip' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
-                    >
-                        <Archive className="w-3 h-3" />
-                        ZIP File
-                    </button>
-                    <button
-                        onClick={() => { setMode('folder'); setFile(null); setFolderFiles([]); }}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'folder' ? 'bg-app shadow-sm text-primary' : 'text-primary-muted hover:text-primary'}`}
-                    >
-                        <FolderOpen className="w-3 h-3" />
-                        Folder
-                    </button>
-                </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-primary-muted">SPA Path (URL Prefix)</label>
-                    <div className="relative">
-                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-muted" />
-                        <input
-                            type="text"
-                            value={path}
-                            onChange={(e) => setPath(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                            placeholder="/my-app"
-                        />
-                    </div>
-                    <p className="text-xs text-primary-muted mt-1">
-                        The URL path where the SPA will be served (e.g., /dashboard).
-                    </p>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-primary-muted">Server Directory</label>
-                    <div className="relative">
-                        <Folder className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-muted" />
-                        <input
-                            type="text"
-                            value={dir}
-                            onChange={(e) => setDir(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg bg-app border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                            placeholder="my_app_v1"
-                        />
-                    </div>
-                    <p className="text-xs text-primary-muted mt-1">
-                        The directory name on the server where files will be extracted.
-                    </p>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-2 text-primary-muted">
-                        {mode === 'zip' ? 'SPA Zip File' : 'SPA Build Folder'}
-                    </label>
-                    <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors bg-app-muted/30">
-                        <input
-                            type="file"
-                            accept={mode === 'zip' ? ".zip" : undefined}
-                            // @ts-ignore
-                            webkitdirectory={mode === 'folder' ? "" : undefined}
-                            // @ts-ignore
-                            directory={mode === 'folder' ? "" : undefined}
-                            multiple={mode === 'folder'}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            id="spa-file-upload"
-                            ref={fileInputRef}
-                        />
-                        <label
-                            htmlFor="spa-file-upload"
-                            className="cursor-pointer flex flex-col items-center gap-2"
-                        >
-                            <div className="p-3 bg-app rounded-full shadow-sm">
-                                {mode === 'zip' ? <Upload className="w-6 h-6 text-primary" /> : <FolderOpen className="w-6 h-6 text-primary" />}
-                            </div>
-                            <span className="text-sm font-medium text-primary">
-                                {mode === 'zip'
-                                    ? (file ? file.name : 'Click to upload .zip file')
-                                    : (folderFiles.length > 0 ? `Selected folder with ${folderFiles.length} files` : 'Click to select build folder')
-                                }
-                            </span>
-                            <span className="text-xs text-primary-muted">
-                                {mode === 'zip'
-                                    ? (file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'Upload your SPA build artifacts')
-                                    : 'Typically your "dist" or "build" directory'
-                                }
-                            </span>
-                        </label>
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2 bg-primary text-app rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg active:scale-95"
-                    >
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {mode === 'folder' && isSaving ? 'Zipping & Deploying...' : 'Deploy SPA'}
-                    </button>
-                </div>
-            </form>
-        </div >
+            <h3 className="text-lg font-semibold text-primary mb-4">Deploy New SPA</h3>
+            <SpaUploadForm
+                onUploaded={fetchSpas}
+                showPathFields
+            />
+        </div>
     );
 }
