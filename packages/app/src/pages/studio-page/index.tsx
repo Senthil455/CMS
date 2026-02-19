@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/use-auth';
 import { useChatHistory } from '../../hooks/use-chat-history';
 import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
+import { useSocketContext } from '../../context/socket-provider';
+import { Loader2 } from 'lucide-react';
 import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './explorer-panel/Explorer';
@@ -21,6 +23,7 @@ export default function StudioPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { hasConnectedOnce } = useSocketContext();
 
     const { entities, queries, pages, saveSchema, mutate } = useSchemas();
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
@@ -189,6 +192,13 @@ export default function StudioPage() {
                 showChat={showChat}
                 onToggleChat={() => setShowChat(!showChat)}
             />
+
+            {!hasConnectedOnce && (
+                <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-center gap-2 text-amber-700 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>CMS is starting up… please wait a moment.</span>
+                </div>
+            )}
 
             <div className="flex flex-1 overflow-hidden">
                 {showExplorer && (
