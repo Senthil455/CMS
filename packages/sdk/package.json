@@ -11,9 +11,11 @@
     },
     "peerDependencies": {
         "react": "^19.0.0",
-        "react-router-dom": "^6.0.0"
+        "react-router-dom": "^6.0.0",
+        "react-hook-form": "^7.0.0"
     },
     "devDependencies": {
-        "typescript": "latest"
+        "typescript": "latest",
+        "@types/qs": "^6.9.15"
     }
 }

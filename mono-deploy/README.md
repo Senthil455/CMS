@@ -150,7 +150,7 @@ docker-compose logs -f
 docker buildx create --use
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t your-registry/cms-mono-deploy:latest \
+  -t senthil455/cms-mono:latest \
   -f Dockerfile \
   --push \
   ../..
@@ -159,7 +159,7 @@ docker buildx build \
 **2. Deploy to server:**
 ```bash
 # Pull image
-docker pull your-registry/cms-mono-deploy:latest
+docker pull senthil455/cms-mono:latest
 
 # Run with docker-compose
 docker-compose up -d

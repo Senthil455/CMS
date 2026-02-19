@@ -32,7 +32,7 @@ dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o ./publish
 
 echo "🐳 Building Docker Image (Fast Mode)..."
 cd "$SCRIPT_DIR"
-docker build -t cms-mono-deploy:latest -f Dockerfile.fast "$REPO_ROOT"
+docker build -t cms-mono-deploy:latest -f Dockerfile "$REPO_ROOT"
 
 echo "✅ Build complete! Image: cms-mono-deploy:latest"
 echo "👉 Run ./reload.sh to restart the container."

@@ -1,0 +1,42 @@
+services:
+  app:
+    image: senthil455/cms-mono:latest
+    ports:
+      - "${APP_PORT:-5000}:5000" # Nginx Gateway
+    environment:
+      # --- CMS (.NET) Settings ---
+      - DATABASE_PROVIDER=1 # 0=SQLite, 1=Postgres, 2=SqlServer, 3=MySQL
+      - CONNECTION_STRING=Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;
+      - MASTER_PASSWORD= # Empty - user sets via UI on first startup
+
+      - DatabaseProvider=Postgres
+      - "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
+      - CMS_DATA_PATH=/data
+
+      # --- CMS (Node.js) Settings ---
+      - PORT=3001
+      - NODE_ENV=production
+      - CMS_BASE_URL=http://127.0.0.1:5001 # Internal URL to reach .NET (matches entrypoint.sh)
+      - DATABASE_URL=file:/data/app/sqlite.db
+
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - cms_data:/data
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  cms_data:

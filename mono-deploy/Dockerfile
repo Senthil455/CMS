@@ -10,19 +10,24 @@ COPY CMS/package.json cms/package-lock.json ./
 COPY CMS/packages/shared/package.json ./packages/shared/
 COPY CMS/packages/service/package.json ./packages/service/
 COPY CMS/packages/app/package.json ./packages/app/
+# Also copy SDK which is a dependency now
+COPY CMS/packages/sdk/package.json ./packages/sdk/
 
 # 2. Install PROD dependencies
-RUN npm ci --omit=dev
+# Note: In multi-arch, we might need to be careful with native modules, but pure JS deps are fine.
+# If implicit 'npm ci' fails due to platform specifics of lockfile, we use 'npm install'
+RUN npm install --omit=dev
 
 # 3. Copy pre-built artifacts from LOCAL machine
 COPY CMS/packages/shared/dist ./packages/shared/dist
-# Copy backend artifacts AND source files (for tsx)
+# Copy backend artifacts AND source files (for tsx if needed, though we should run compiled js)
 COPY CMS/packages/service/dist ./packages/service/dist
 COPY CMS/packages/service/src ./packages/service/src
 COPY CMS/packages/service/resources ./packages/service/resources
 COPY CMS/packages/service/public ./packages/service/public
 COPY CMS/packages/service/prisma ./packages/service/prisma
-# Generate Prisma Client
+
+# Generate Prisma Client (needs to run on target arch)
 RUN cd packages/service && npx prisma generate
 
 # Copy frontend artifacts
@@ -49,8 +54,9 @@ COPY CMS/mono-deploy/404.html /usr/share/nginx/html/404.html
 COPY --from=node-base /app /app
 
 # Copy Pre-built .NET App from LOCAL machine
+# .NET Publish output is portable if not self-contained
 COPY CMS/publish ./cms
-# Ensure config files are writable (will be regenerated from env vars at runtime)
+# Ensure config files are writable
 RUN touch ./cms/appsettings.json && chmod 666 ./cms/appsettings.json
 
 # Copy Entrypoint
