@@ -4,7 +4,7 @@ import { type ChatMessage } from '@cms/shared';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { AiLogsList } from './AiLogsList';
-import { MessageSquare, Database, AlertTriangle, Settings, Loader2 } from 'lucide-react';
+import { MessageSquare, Database, AlertTriangle, Settings, Loader2, PanelRightClose } from 'lucide-react';
 import { StatusBar } from '../../../components/StatusBar';
 
 interface ChatPanelProps {
@@ -16,6 +16,7 @@ interface ChatPanelProps {
     onSend: (content: string, providerName: string) => void;
     chatDraft?: string | null;
     onDraftConsumed?: () => void;
+    onClose: () => void;
 }
 
 export function ChatPanel({
@@ -26,7 +27,8 @@ export function ChatPanel({
     onLoadMore,
     onSend,
     chatDraft,
-    onDraftConsumed
+    onDraftConsumed,
+    onClose
 }: ChatPanelProps) {
     const [activeTab, setActiveTab] = useState<'chat' | 'logs'>('chat');
     const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
@@ -50,7 +52,7 @@ export function ChatPanel({
 
     return (
         <div className="w-96 shrink-0 flex flex-col h-full bg-app-surface border-l border-border relative">
-            <div className="p-3 border-b border-border flex items-center justify-between bg-app-surface">
+            <div className="p-3 border-b border-border flex items-center justify-between bg-app-surface gap-3">
                 <div className="flex bg-app-muted rounded-lg p-1 w-full">
                     <button
                         onClick={() => setActiveTab('chat')}
@@ -67,6 +69,13 @@ export function ChatPanel({
                         Logs
                     </button>
                 </div>
+                <button
+                    onClick={onClose}
+                    className="p-2 hover:bg-app-muted rounded-md text-primary-muted hover:text-primary transition-colors shrink-0"
+                    title="Hide Chat"
+                >
+                    <PanelRightClose className="w-4 h-4" />
+                </button>
             </div>
 
             <div className="flex-1 overflow-hidden relative flex flex-col">

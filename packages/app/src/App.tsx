@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import StudioPage from './pages/studio-page';
-import AiLogsPage from './pages/ai-logs-page';
+
 import SystemSettingsPage from './pages/system-settings-page';
 import { SocketProvider } from './context/socket-provider';
 import { setAuthApiBaseUrl } from '@cms/sdk';
@@ -85,14 +85,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="ai-logs"
-              element={
-                <ProtectedRoute>
-                  <AiLogsPage />
-                </ProtectedRoute>
-              }
-            />
+
             <Route
               path="settings"
               element={

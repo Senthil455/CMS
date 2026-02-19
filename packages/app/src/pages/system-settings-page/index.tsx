@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Shield, Key, AlertTriangle, Box, ArrowLeft, Globe } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box, Globe, X } from 'lucide-react';
 import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
@@ -49,15 +49,15 @@ export default function SystemSettingsPage() {
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
                 <div className="bg-app-surface border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-8 pb-0">
+                    <div className="p-8 pb-0 relative">
+                        <button
+                            onClick={() => navigate('/app')}
+                            className="absolute top-4 right-4 p-2 hover:bg-app-muted rounded-lg transition-colors text-primary-muted hover:text-primary"
+                            title="Close Settings"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                         <div className="flex items-center gap-4 mb-2">
-                            <button
-                                onClick={() => navigate('/app')}
-                                className="p-2 hover:bg-app-muted rounded-lg transition-colors text-primary-muted hover:text-primary"
-                                title="Back to Studio"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 System Settings
                             </h1>

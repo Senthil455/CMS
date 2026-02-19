@@ -183,8 +183,6 @@ export default function StudioPage() {
     return (
         <div className="flex flex-col h-screen bg-app transition-colors duration-300 overflow-hidden">
             <StudioHeader
-                user={user}
-                logout={logout}
                 isDark={isDark}
                 toggleTheme={toggleTheme}
                 showExplorer={showExplorer}
@@ -217,6 +215,9 @@ export default function StudioPage() {
                         onSelectItem={handleSelectItem}
                         selectedItem={selectedItem}
                         onChatAction={handleChatAction}
+                        onClose={() => setShowExplorer(false)}
+                        user={user}
+                        logout={logout}
                     />
                 )}
 
@@ -276,6 +277,7 @@ export default function StudioPage() {
                         onSend={handleSend}
                         chatDraft={chatDraft}
                         onDraftConsumed={() => setChatDraft(null)}
+                        onClose={() => setShowChat(false)}
                     />
                 )}
             </div>
