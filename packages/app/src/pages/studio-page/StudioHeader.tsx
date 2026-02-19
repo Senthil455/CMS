@@ -37,12 +37,12 @@ export function StudioHeader({ user, logout, isDark, toggleTheme, showExplorer, 
                 >
                     <PanelLeft className="w-5 h-5 text-primary-muted hover:text-primary transition-colors" />
                 </button>
-                <div className="flex items-center gap-2">
+                <Link to="/app" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center">
                         <Save className="text-white dark:text-black w-5 h-5" />
                     </div>
                     <h1 className="text-xl font-bold tracking-tight">Cms SchemaGen AI</h1>
-                </div>
+                </Link>
             </div>
 
             <div className="flex items-center gap-4">

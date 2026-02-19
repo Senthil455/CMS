@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
+import { useSocketContext } from '../context/socket-provider';
 import { Loader2, Lock } from 'lucide-react';
 
 export default function LoginPage() {
@@ -9,6 +10,7 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { login, hasSuperAdmin } = useAuth();
+    const { refreshConnection } = useSocketContext();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -30,6 +32,7 @@ export default function LoginPage() {
             if (!result) {
                 setError('Login failed');
             } else {
+                refreshConnection();
                 navigate('/app');
             }
         } catch (err) {

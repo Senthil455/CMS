@@ -13,8 +13,8 @@ CMS is a cutting-edge, open-source Content Management System designed to revolut
 <p>Generate schemas, data, GraphQL queries, and full UI pages using natural language prompts. Let AI handle the tedious work while you focus on creativity.</p>
 </td>
 <td align="center" width="33%">
-<h3>💬 Built-in Engagement</h3>
-<p>Add engagement bars (views, likes, bookmarks, shares) and user avatars to any page with AI prompts. Social features are first-class citizens, not afterthoughts.</p>
+<h3>🎨 Frontend-Friendly</h3>
+<p>No .NET or backend experience needed. Run CMS with Docker, build your app with React and AI — that's it.</p>
 </td>
 <td align="center" width="33%">
 <h3>🚀 Scalable & Performant</h3>
@@ -55,41 +55,27 @@ Try the live demo at [example.com/app](https://example.com/app).
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Docker)
 
-Get the project running locally in 5 steps.
+The easiest way to get CMS running. **No backend setup, no .NET, no database installation required.**
 
-### 1. Clone Repositories
+Pull and run from [Docker Hub](https://hub.docker.com/r/senthil455/cms-mono):
+
 ```bash
-git clone git@github.com/Senthil455/CMS.git
-git clone git@github.com/Senthil455/CMS.git
+docker run -d \
+  --name cms \
+  -p 5000:5000 \
+  -v cms_data:/data \
+  -e DATABASE_PROVIDER=0 \
+  -e "CONNECTION_STRING=Data Source=/data/cms.db" \
+  senthil455/cms-mono:latest
 ```
 
-### 2. Start Backend (CMS)
-```bash
-cd cms/server/CMS.MonoApp
-dotnet run
-```
-_Verify that `http://127.0.0.1:5000` is accessible._
+Then open **http://localhost:5000/app** in your browser and follow the setup wizard.
 
-### 3. Start CMS Service
-Open a new terminal:
-```bash
-cd cms
-npm i
-npm run build:all
-npm run dev:service
-```
+> **📌 That's it!** You have a fully functional AI-powered CMS. Start building your app with React, Vite, or any frontend framework.
 
-### 4. Initial Setup
-Visit **http://localhost:3001/app** — before the system is ready, you'll be guided through a setup page:
-
-1. **Setup Database Connection** — choose your database provider and configure the connection string.
-2. **Create Super Admin** — add an initial super admin user account.
-3. **Restart Backend** — after completing steps 1 and 2, the backend will quit. Follow [Step 2](#2-start-backend-cms) to restart it. _(In a Docker deployment, the container will auto-restart.)_
-4. **Setup Gemini API Key** — configure your Gemini API key for AI features.
-
-Once setup is complete, visit **http://localhost:3001/app** to start building!
+For production deployment with PostgreSQL, see the [Docker Hub page](https://hub.docker.com/r/senthil455/cms-mono) for a full `docker-compose.yml` example.
 
 
 ### 💡 Try it out
@@ -98,7 +84,25 @@ Once running, try these prompts:
 - "Add sample data for the book entity"
 - "Create a query to display all available books"
 
-📖 **[See Wiki for detailed setup instructions →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Setup.md)**
+🛠️ **Want to contribute or run from source?** See the [Development Setup Guide →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Setup.md)
+
+---
+
+## 🎨 For Frontend Developers
+
+**You don't need .NET or any backend experience to use CMS.** Just run the Docker image and start building your frontend with the tools you already know:
+
+- Use **React + Vite** to build your app
+- Use **AI (e.g., Antigravity, Cursor)** to generate schemas, queries, and pages
+- CMS provides the backend, APIs, and admin panel — all running inside Docker
+
+📖 **[See the Vite + React + Antigravity example →](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Vite-React-Antigravity-Example)**
+
+### 🏗️ Built with CMS
+
+| App | Description |
+|-----|-------------|
+| **[Zen Health Tracker](https://zen.example.com/)** | A full health tracking app built in hours using CMS + AI coding agent — zero manual coding. |
 
 ---
 

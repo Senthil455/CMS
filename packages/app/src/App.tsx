@@ -14,7 +14,6 @@ import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, hasSuperAdmin } = useAuth();
-  console.log({ hasSuperAdmin })
   const location = useLocation();
 
   // When system status is still loading, show loading screen

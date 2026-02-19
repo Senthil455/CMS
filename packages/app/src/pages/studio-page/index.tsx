@@ -23,7 +23,7 @@ export default function StudioPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { hasConnectedOnce } = useSocketContext();
+    const { hasConnectedOnce, isConnected, connectError } = useSocketContext();
 
     const { entities, queries, pages, saveSchema, mutate } = useSchemas();
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
@@ -196,7 +196,18 @@ export default function StudioPage() {
             {!hasConnectedOnce && (
                 <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-center gap-2 text-amber-700 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>CMS is starting up… please wait a moment.</span>
+                    <span>CMS is starting up… please wait a moment. (v1.1)</span>
+                </div>
+            )}
+
+            {hasConnectedOnce && !isConnected && (
+                <div className="bg-red-50 border-b border-red-200 px-4 py-2.5 flex items-center justify-center gap-2 text-red-700 text-sm">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span>
+                        {connectError
+                            ? `Connection failed: ${connectError}`
+                            : 'Connection lost — reconnecting…'}
+                    </span>
                 </div>
             )}
 
