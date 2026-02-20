@@ -24,7 +24,7 @@ dotnet run
 ```
 _Verify that `http://127.0.0.1:5000` is accessible._
 
-### 2. Start Development Server
+### 3. Start Development Server
 ```bash
 # From cms root
 npm run setup
@@ -33,6 +33,7 @@ npm run dev
 Visit **http://127.0.0.1:5173** to start building!
 
 > **Note:** Use `127.0.0.1` instead of `localhost` to ensure cookies are shared correctly.
+> **Note:** During setup, cms backend needs to be manually restarted to load new configuration.
 
 ### 💡 Try it out
 Once running, try these prompts:
