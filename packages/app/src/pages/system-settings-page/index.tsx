@@ -11,7 +11,7 @@ import { CorsSettings } from './components/CorsSettings';
 
 
 export default function SystemSettingsPage() {
-    const { user, logout, hasSuperAdmin, databaseReady } = useAuth();
+    const { user, hasSuperAdmin, databaseReady } = useAuth();
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa' | 'cors'>('admin');
@@ -37,8 +37,6 @@ export default function SystemSettingsPage() {
     return (
         <div className="min-h-screen bg-app flex flex-col transition-colors duration-300">
             <StudioHeader
-                user={user}
-                logout={logout}
                 isDark={isDark}
                 toggleTheme={toggleTheme}
                 showExplorer={false}

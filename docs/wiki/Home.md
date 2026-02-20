@@ -20,6 +20,7 @@ Welcome to the CMS documentation wiki.
 | [Engagement Features](./Engagement-Features.md) | Likes, shares, bookmarks, views, toplist, tracking |
 | [Contributing](./Contributing.md) | Extending CMS with new components |
 | [Performance & Scalability](./Performance-Scalability.md) | Benchmarks, optimization strategies, and scaling guides |
+| [Vite, React, and AI](./Vite-React-Antigravity-Example.md) | Building frontends over CMS with AI agents |
 
 ### 👤 Who Should Read What?
 
@@ -33,6 +34,7 @@ Welcome to the CMS documentation wiki.
 | Engagement Features | Full-Stack Devs, Product Managers |
 | Contributing | Contributors, Plugin Developers |
 | Performance & Scalability | DevOps, Performance Engineers |
+| Vite, React, and AI | Frontend Devs |
 
 ## 🔗 Quick Links
 
