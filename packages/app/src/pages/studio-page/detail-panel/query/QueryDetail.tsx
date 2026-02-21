@@ -11,7 +11,7 @@ interface QueryDetailProps {
 
 
 export function QueryDetail({ schema }: QueryDetailProps) {
-    const query = schema.settings.query!;
+    const query = schema.settings?.query!;
     const listUrl = `${''}/api/queries/${query.name}`;
     const singleUrl = `${''}/api/queries/${query.name}/single`;
 

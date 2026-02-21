@@ -23,7 +23,7 @@ interface PagePreviewSectionProps {
 }
 
 export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRenderError }: PagePreviewSectionProps) {
-    const page = schema.settings.page!;
+    const page = schema.settings?.page!;
     const [showData, setShowData] = useState(false);
 
     const { data: pageData } = useSWR(

@@ -38,6 +38,10 @@ echo "[ENTRYPOINT] CMS configuration:"
 echo "  Database Provider: ${DATABASE_PROVIDER}"
 echo "  Connection String: ${CONNECTION_STRING}"
 
+# Set Max Request Size for Nginx
+MAX_REQUEST_SIZE=${CMS_MAX_REQUEST_SIZE:-50000000}
+sed -i "s/__MAX_REQUEST_SIZE__/${MAX_REQUEST_SIZE}/g" /etc/nginx/nginx.conf
+
 # Start Nginx
 echo "[ENTRYPOINT] Starting Nginx..."
 nginx

@@ -13,7 +13,7 @@ interface PageDetailProps {
 }
 
 export function PageDetail({ schema }: PageDetailProps) {
-    const page = schema.settings.page!;
+    const page = schema.settings?.page!;
 
     const { publishSchema } = useSchemas();
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);

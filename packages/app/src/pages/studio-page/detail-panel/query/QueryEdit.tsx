@@ -35,7 +35,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
     };
 
     const [error, setError] = useState<string | null>(null);
-    const [queryForm, setQueryForm] = useState<QueryDto>(item.settings.query!);
+    const [queryForm, setQueryForm] = useState<QueryDto>(item.settings?.query!);
 
     const handleSave = async () => {
         try {

@@ -126,6 +126,7 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
 
         // 1. Create Nodes
         schemas.forEach((schema) => {
+            if (!schema.settings) return;
             if (schema.type === 'entity' && schema.settings.entity) {
                 nodes.push({
                     id: schema.name,
@@ -156,6 +157,7 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
 
         // 2. Create Edges
         schemas.forEach((schema) => {
+            if (!schema.settings) return;
             if (schema.type === 'entity' && schema.settings.entity) {
                 schema.settings.entity.attributes.forEach((attr) => {
                     const isRelation = ['lookup', 'collection', 'junction'].includes(attr.dataType);

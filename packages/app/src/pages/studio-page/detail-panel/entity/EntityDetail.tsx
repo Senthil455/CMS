@@ -22,7 +22,7 @@ const SYSTEM_FIELDS = new Set([
 ]);
 
 export function EntityDetail({ schema, allSchemas }: EntityDetailProps) {
-    const entity = schema.settings.entity!;
+    const entity = schema.settings?.entity!;
 
     const { publishSchema } = useSchemas();
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
