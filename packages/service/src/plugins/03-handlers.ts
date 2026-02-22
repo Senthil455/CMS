@@ -7,18 +7,18 @@ import { config } from '../config';
 import { AGENT_NAMES } from '@cms/shared';
 
 import { IntentClassifier } from '../models/agents/intent-classifier';
-import { EntityGenerator } from '../models/agents/entity-generator-agent';
+import { EntityGenerator } from '../models/agents/entity-designer';
 
-import { QueryGenerator } from '../models/agents/query-generator-agent';
-import { PagePlannerAgent } from '../models/agents/page-planner-agent';
+import { QueryGenerator } from '../models/agents/query-builder';
+import { PagePlanner } from '../models/agents/page-planner';
 // PageArchitect import removed
-import { PageArchitectAgent } from '../models/agents/page-architect-agent';
-import { PageBuilderAgent } from '../models/agents/page-builder-agent';
-import { DataGenerator } from '../models/agents/data-generator-agent';
-import { EngagementBarGenerator } from '../models/agents/engagement-bar-generator';
-import { UserAvatarGenerator } from '../models/agents/user-avatar-generator';
-import { VisitTrackGenerator } from '../models/agents/visit-track-generator';
-import { TopListGenerator } from '../models/agents/top-list-generator';
+import { PageArchitect } from '../models/agents/page-architect';
+import { PageBuilder } from '../models/agents/page-builder';
+import { DataGenerator } from '../models/agents/data-synthesizer';
+import { EngagementBarBuilder } from '../models/agents/engagement-bar-builder';
+import { UserAvatarBuilder } from '../models/agents/user-avatar-builder';
+import { VisitTracker } from '../models/agents/visit-tracker';
+import { TopListBuilder } from '../models/agents/top-list-builder';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -67,9 +67,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.md`), 'utf-8'),
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.md`), 'utf-8'),
                 fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.md`), 'utf-8'),
-                loadPrompt('page-architect-agent.md'),
-                loadPrompt('page-planner-agent.md'),
-                loadPrompt('page-builder-agent.md'),
+                loadPrompt('page-architect.md'),
+                loadPrompt('page-planner.md'),
+                loadPrompt('page-builder.md'),
             ]);
 
             const [
@@ -114,14 +114,14 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             // PagePlanner instantiation removed
             // PageArchitect instantiation removed
 
-            const engagementBarGenerator = new EngagementBarGenerator(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
-            const userAvatarGenerator = new UserAvatarGenerator(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
-            const visitTrackGenerator = new VisitTrackGenerator(provider, visitTrackPrompt, cmsClient, modelLogger);
-            const topListGenerator = new TopListGenerator(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
+            const engagementBarGenerator = new EngagementBarBuilder(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
+            const userAvatarGenerator = new UserAvatarBuilder(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
+            const visitTrackGenerator = new VisitTracker(provider, visitTrackPrompt, cmsClient, modelLogger);
+            const topListGenerator = new TopListBuilder(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
 
-            const pageArchitectAgent = new PageArchitectAgent(provider, pageArchitectPrompt, cmsClient, modelLogger);
+            const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger);
 
-            const pageBuilderAgent = new PageBuilderAgent(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
+            const pageBuilderAgent = new PageBuilder(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
 
 
             const dataDir = path.join(__dirname, '../../resources/data');
@@ -131,7 +131,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pagePlannerAgent = new PagePlannerAgent(provider, pagePlannerPrompt, modelLogger, templates, cmsClient);
+            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, templates, cmsClient);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
             // removed htmlGenerationHandler instantiation
 
@@ -155,15 +155,15 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             // @ts-ignore
             // @ts-ignore
             fastify.chatHandlers[providerName] = {
-                [AGENT_NAMES.ENTITY_GENERATOR]: entityGenerator,
-                [AGENT_NAMES.QUERY_GENERATOR]: queryGenerator,
+                [AGENT_NAMES.ENTITY_DESIGNER]: entityGenerator,
+                [AGENT_NAMES.QUERY_BUILDER]: queryGenerator,
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
-                [AGENT_NAMES.DATA_GENERATOR]: dataGenerator,
+                [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
                 [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
-                [AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR]: engagementBarGenerator,
-                [AGENT_NAMES.USER_AVATAR_GENERATOR]: userAvatarGenerator,
-                [AGENT_NAMES.VISIT_TRACK_GENERATOR]: visitTrackGenerator,
-                [AGENT_NAMES.TOP_LIST_GENERATOR]: topListGenerator,
+                [AGENT_NAMES.ENGAGEMENT_BAR_BUILDER]: engagementBarGenerator,
+                [AGENT_NAMES.USER_AVATAR_BUILDER]: userAvatarGenerator,
+                [AGENT_NAMES.VISIT_TRACKER]: visitTrackGenerator,
+                [AGENT_NAMES.TOP_LIST_BUILDER]: topListGenerator,
 
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
             };

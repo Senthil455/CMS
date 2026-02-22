@@ -1,15 +1,14 @@
 export const AGENT_NAMES = {
-    ENTITY_GENERATOR: 'entity_generator',
+    ENTITY_DESIGNER: 'entity_designer',
     PAGE_PLANNER: 'page_planner',
-    QUERY_GENERATOR: 'query_generator',
-    DATA_GENERATOR: 'data_generator',
+    QUERY_BUILDER: 'query_builder',
+    DATA_SYNTHESIZER: 'data_synthesizer',
     PAGE_BUILDER: 'page_builder',
-    ENGAGEMENT_BAR_GENERATOR: 'engagement_bar_generator',
-    ROUTER_DESIGNER: 'router_designer',
+    ENGAGEMENT_BAR_BUILDER: 'engagement_bar_builder',
     PAGE_ARCHITECT: 'page_architect',
-    USER_AVATAR_GENERATOR: 'user_avatar_generator',
-    VISIT_TRACK_GENERATOR: 'visit_track_generator',
-    TOP_LIST_GENERATOR: 'top_list_generator',
+    USER_AVATAR_BUILDER: 'user_avatar_builder',
+    VISIT_TRACKER: 'visit_tracker',
+    TOP_LIST_BUILDER: 'top_list_builder',
 } as const;
 
 

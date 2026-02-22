@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
@@ -52,7 +52,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
 
     async think(userInput: string, context: AgentContext): Promise<EntityGeneratorPlan> {
         let existingContext = '';
-        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.ENTITY_GENERATOR}#([^:]+):`));
+        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.ENTITY_DESIGNER}#([^:]+):`));
 
         if (idMatch) {
             const schemaId = idMatch[1] as string;

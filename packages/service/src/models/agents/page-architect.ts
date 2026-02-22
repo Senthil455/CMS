@@ -2,7 +2,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageManager } from '../cms/page-manager';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -13,7 +13,7 @@ export interface ArchitectDesignerAgentPlan extends PageArchitecture {
     schemaId: string;
 }
 
-export class PageArchitectAgent extends BaseAgent<ArchitectDesignerAgentPlan> {
+export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly architectSystemPrompt: string, // Replaces PageArchitect

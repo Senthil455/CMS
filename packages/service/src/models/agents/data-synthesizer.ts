@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -32,7 +32,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         let entities: any[] = [];
         let specificEntityName: string | undefined;
 
-        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.DATA_GENERATOR}#([^:]+):`));
+        const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.DATA_SYNTHESIZER}#([^:]+):`));
 
         if (idMatch) {
             const schemaId = idMatch[1];

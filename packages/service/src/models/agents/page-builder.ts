@@ -2,7 +2,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type TemplateSelectionResponse, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { PageManager } from '../cms/page-manager';
 
 
@@ -15,7 +15,7 @@ export interface PageBuilderPlan extends PageBuilderResponse {
     enableEngagementBar: boolean;
 }
 
-export class PageBuilderAgent extends BaseAgent<PageBuilderPlan> {
+export class PageBuilder extends BaseAgent<PageBuilderPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,

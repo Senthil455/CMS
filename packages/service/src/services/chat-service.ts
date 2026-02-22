@@ -7,7 +7,7 @@ import {
     AGENT_NAMES,
     type AgentName
 } from '@cms/shared';
-import type { Agent, AgentContext } from '../models/agents/chat-agent';
+import type { Agent, AgentContext } from '../models/agents/chat-assistant';
 
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
@@ -146,7 +146,7 @@ export class ChatService {
             let agent: AgentName | null = null;
 
             if (content.trim().startsWith('@')) {
-                // Check for explicit trigger (e.g. "@entity_generator")
+                // Check for explicit trigger (e.g. "@entity_designer")
                 const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
                 if (explicitTrigger) {
                     agent = explicitTrigger;
@@ -195,7 +195,7 @@ export class ChatService {
             const schemaManager = new EntityManager(this.cmsClient, this.logger, externalCookie);
             const schemaIds = await schemaManager.commit(response);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-                task_type: 'entity_generator',
+                task_type: 'entity_designer',
                 schemasId: schemaIds
             });
             await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);

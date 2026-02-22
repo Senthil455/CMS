@@ -56,7 +56,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, us
 
     const handleUseAI = () => {
         setIsAddEntityDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.ENTITY_GENERATOR} `);
+        onChatAction(`@${AGENT_NAMES.ENTITY_DESIGNER} `);
     };
 
     const handleManualCreateEntity = async (name: string) => {
@@ -138,7 +138,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, us
 
     const handleUseAIQuery = () => {
         setIsAddQueryDialogOpen(false);
-        onChatAction(`@${AGENT_NAMES.QUERY_GENERATOR} `);
+        onChatAction(`@${AGENT_NAMES.QUERY_BUILDER} `);
     };
 
     const handleManualCreateQuery = async (name: string) => {

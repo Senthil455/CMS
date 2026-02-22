@@ -42,7 +42,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             };
 
             // Synthesize the user message that triggers the agent
-            const syntheticMessage = `@${AGENT_NAMES.ENGAGEMENT_BAR_GENERATOR} #${schemaId}: Add engagement bar code to this page`;
+            const syntheticMessage = `@${AGENT_NAMES.ENGAGEMENT_BAR_BUILDER} #${schemaId}: Add engagement bar code to this page`;
 
             // Trigger the existing chat pipeline
             // This will run asynchronously in terms of "agent thinking", but we await the initial handling.
@@ -74,7 +74,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 fastify.socketService.emitToUser(userId, event, payload);
             };
 
-            const syntheticMessage = `@${AGENT_NAMES.USER_AVATAR_GENERATOR} #${schemaId}: Add user avatar to header`;
+            const syntheticMessage = `@${AGENT_NAMES.USER_AVATAR_BUILDER} #${schemaId}: Add user avatar to header`;
 
             await fastify.chatService.handleUserMessage(
                 userId,
@@ -103,7 +103,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 fastify.socketService.emitToUser(userId, event, payload);
             };
 
-            const syntheticMessage = `@${AGENT_NAMES.VISIT_TRACK_GENERATOR} #${schemaId}: Add visit tracking to this page`;
+            const syntheticMessage = `@${AGENT_NAMES.VISIT_TRACKER} #${schemaId}: Add visit tracking to this page`;
 
             await fastify.chatService.handleUserMessage(
                 userId,
@@ -132,7 +132,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 fastify.socketService.emitToUser(userId, event, payload);
             };
 
-            const syntheticMessage = `@${AGENT_NAMES.TOP_LIST_GENERATOR} #${schemaId}: Add top list component to this page`;
+            const syntheticMessage = `@${AGENT_NAMES.TOP_LIST_BUILDER} #${schemaId}: Add top list component to this page`;
 
             await fastify.chatService.handleUserMessage(
                 userId,
