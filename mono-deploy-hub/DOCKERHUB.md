@@ -35,6 +35,20 @@ Then open **http://localhost:5000/app** in your browser.
 
 > **Note:** Data is persisted in a Docker volume (`cms_data`). Your content survives container restarts.
 
+### Ephemeral Mode (No Persistence)
+
+You can also start CMS without a volume if your Docker host provider doesn't allow volumes for free users:
+
+```bash
+docker run -d \
+  --name cms \
+  -p 5000:5000 \
+  senthil455/cms-mono:latest
+```
+
+> [!CAUTION]
+> Data is **ephemeral**. Every time the container restarts, all your data will be **lost**.
+
 ---
 
 ## 2. Production — Docker Compose with PostgreSQL
@@ -126,4 +140,4 @@ Open **http://localhost:5000/app** and follow the setup wizard.
 ## Links
 
 - **GitHub:** [https://github.com/Senthil455/CMS](https://github.com/Senthil455/CMS)
-- **Documentation:** [https://example.com](https://example.com)
+- **Documentation:** [https://github.com/Senthil455/CMS/tree/main/docs/wiki](https://github.com/Senthil455/CMS/tree/main/docs/wiki)
