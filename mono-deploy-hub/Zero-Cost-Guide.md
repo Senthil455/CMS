@@ -53,18 +53,110 @@ For those who want more control and a robust Virtual Private Server (VPS), Oracl
 - **OS:** Choose **Rocky Linux** or Ubuntu.
 
 ### 4.3 Environment Setup
-Connect to your instance via SSH and install the essentials:
-```bash
-# Install Docker
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-sudo yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-sudo systemctl start docker
 
-# Install Nginx (for SSL and Reverse Proxy)
-sudo yum install nginx -y
+Here is the cleaned version (removed sections 6 and 7), formatted so you can copy directly:
+
+---
+
+# Install & Setup Nginx on Rocky Linux
+
+## 1. Update System (Recommended)
+
+```bash
+sudo dnf update -y
+```
+
+---
+
+## 2. Install Nginx
+
+```bash
+sudo dnf install nginx -y
+```
+
+Verify installation:
+
+```bash
+nginx -v
+```
+
+---
+
+## 3. Start and Enable Nginx
+
+Start service:
+
+```bash
 sudo systemctl start nginx
 ```
+
+Enable on boot:
+
+```bash
+sudo systemctl enable nginx
+```
+
+Check status:
+
+```bash
+sudo systemctl status nginx
+```
+
+---
+
+## 4. Disable SELinux (If Blocking Access)
+
+### Temporarily disable (until reboot):
+
+```bash
+sudo setenforce 0
+```
+
+Check status:
+
+```bash
+getenforce
+```
+
+---
+
+### Permanently disable:
+
+Edit configuration file:
+
+```bash
+sudo vi /etc/selinux/config
+```
+
+Change:
+
+```
+SELINUX=enforcing
+```
+
+To:
+
+```
+SELINUX=disabled
+```
+
+Reboot:
+
+```bash
+sudo reboot
+```
+
+---
+
+## 5. Verify Installation
+
+Open browser:
+
+```
+http://your_server_ip
+```
+
+You should see the Nginx welcome page.
 
 ### 4.4 Deploy with Docker
 Create a `docker-compose.yml` file on your server to run your chosen solution (using CMS `cms-mono` as an example):
