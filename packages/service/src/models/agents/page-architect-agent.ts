@@ -2,7 +2,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageManager } from '../cms/page-manager';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -95,7 +95,8 @@ ${queryListContext}
         const response = await this.aiProvider.generate(
             this.architectSystemPrompt,
             developerMessage,
-            userInput
+            userInput,
+            parseModelFromProvider(context.providerName)
         );
 
         // Expecting JSON response as specified in prompt
@@ -109,11 +110,12 @@ ${queryListContext}
             // Fallback plan
             return {
                 pageTitle: '',
-                layout: { hasHeader: true, hasSidebar: false, hasFooter: false, structure: 'Simple container' },
+                sections: [
+                    { preset: '12', columns: [{ span: 12, id: 'main-content' }] }
+                ],
                 selectedQueries: [
                     { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
                 ],
-                components: [],
                 architectureHints: 'Generate a basic layout'
             };
         }

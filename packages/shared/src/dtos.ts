@@ -175,12 +175,13 @@ export interface TemplateSelectionResponse {
 
 export interface PageArchitecture {
     pageTitle: string;
-    layout: {
-        hasHeader: boolean;
-        hasSidebar: boolean;
-        hasFooter: boolean;
-        structure: string;
-    };
+    sections: Array<{
+        preset: string;
+        columns: Array<{
+            span: number;
+            id: string;
+        }>;
+    }>;
     selectedQueries: Array<{
         queryName: string;
         fieldName: string;
@@ -188,17 +189,13 @@ export interface PageArchitecture {
         description: string;
         args: Record<string, 'fromPath' | 'fromQuery'>;
     }>;
-    components: Array<{
-        name: string;
-        type: string;
-        queriesUsed: string[];
-    }>;
     architectureHints: string;
 }
 
 export interface PageMetadata {
     plan?: PagePlan;
     architecture?: PageArchitecture;
+    layoutJson?: any;
     userInput?: string;
     templateId?: string;
     enableEngagementBar?: boolean;

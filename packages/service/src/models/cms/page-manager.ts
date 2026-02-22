@@ -98,6 +98,42 @@ export class PageManager {
         this.logger.info({ schemaId }, 'Successfully saved architecture via PageManager');
     }
 
+    async saveLayout(schemaId: string, layoutJson: any, title?: string): Promise<string> {
+        const schema = await this.cmsClient.getSchemaBySchemaId(this.externalCookie, schemaId);
+        if (!schema || !schema.settings.page) {
+            throw new Error(`Page with schemaId ${schemaId} not found`);
+        }
+
+        const pageSettings = schema.settings.page;
+        let metadata: any = {};
+        try {
+            metadata = pageSettings.metadata ? JSON.parse(pageSettings.metadata) : {};
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
+        }
+
+        metadata.layoutJson = layoutJson;
+
+        const payload: SaveSchemaPayload = {
+            schemaId: schemaId,
+            type: 'page',
+            settings: {
+                page: {
+                    ...pageSettings,
+                    title: title || pageSettings.title,
+                    metadata: JSON.stringify(metadata),
+                    source: 'ai'
+                }
+            }
+        };
+
+        const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
+        const newSchemaId = saveResp.schemaId;
+
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page layout JSON via PageManager');
+        return newSchemaId;
+    }
+
     async saveHtml(schemaId: string, html: string, title?: string): Promise<string> {
         const schema = await this.cmsClient.getSchemaBySchemaId(this.externalCookie, schemaId);
         if (!schema || !schema.settings.page) {

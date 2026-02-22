@@ -28,8 +28,8 @@ export class GeminiProvider implements AIProvider {
         return `...${this.apiKey.slice(-2)}`;
     }
 
-    private async getOrCreateCache(system: string, developer: string): Promise<string | null> {
-        const cacheKey = `${system}\n\n${developer}`;
+    private async getOrCreateCache(system: string, developer: string, currentModel: string): Promise<string | null> {
+        const cacheKey = `${currentModel}\n${system}\n\n${developer}`;
         if (this.cacheNames.has(cacheKey)) {
             return this.cacheNames.get(cacheKey)!;
         }
@@ -38,7 +38,7 @@ export class GeminiProvider implements AIProvider {
             this.logger.info('Creating new Gemini context cache...');
             const endpoint = `${this.baseURL}/v1beta/cachedContents?key=${this.apiKey}`;
             const body = {
-                model: `models/${this.model}`,
+                model: `models/${currentModel}`,
                 system_instruction: {
                     parts: [{ text: cacheKey }]
                 },
@@ -71,16 +71,17 @@ export class GeminiProvider implements AIProvider {
         return null;
     }
 
-    async generate(system: string, developer: string, user: string): Promise<any> {
+    async generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any> {
         const start = Date.now();
+        const currentModel = modelOverride || this.model;
 
         try {
             let cacheName: string | null = null;
             if (this.useCaching) {
-                cacheName = await this.getOrCreateCache(system, developer);
+                cacheName = await this.getOrCreateCache(system, developer, currentModel);
             }
 
-            const endpoint = `${this.baseURL}/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+            const endpoint = `${this.baseURL}/v1beta/models/${currentModel}:generateContent?key=${this.apiKey}`;
 
             const body: any = {
                 contents: [
@@ -103,7 +104,7 @@ export class GeminiProvider implements AIProvider {
                 };
             }
 
-            this.logger.debug({ model: this.model, cached: !!cacheName }, 'GeminiProvider generating content');
+            this.logger.debug({ model: currentModel, cached: !!cacheName }, 'GeminiProvider generating content');
 
             const resp = await fetch(endpoint, {
                 method: 'POST',
@@ -142,7 +143,7 @@ export class GeminiProvider implements AIProvider {
 
         } catch (error: any) {
             this.logger.error({
-                model: this.model,
+                model: currentModel,
                 durationMs: Date.now() - start,
                 error: error?.message ?? error
             }, 'Gemini generate failed');

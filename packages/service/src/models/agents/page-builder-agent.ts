@@ -2,21 +2,20 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type TemplateSelectionResponse, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
 import { PageManager } from '../cms/page-manager';
 
 
-export interface HtmlGenerationResponse {
-    name: string;
+export interface PageBuilderResponse {
     title: string;
-    html: string;
+    layoutJson: any;
 }
 
-export interface HtmlGeneratorPlan extends HtmlGenerationResponse {
+export interface PageBuilderPlan extends PageBuilderResponse {
     enableEngagementBar: boolean;
 }
 
-export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
+export class PageBuilderAgent extends BaseAgent<PageBuilderPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
@@ -29,12 +28,12 @@ export class PageBuilderAgent extends BaseAgent<HtmlGeneratorPlan> {
     }
 
 
-    async think(userInput: string, context: AgentContext): Promise<HtmlGeneratorPlan> {
-        this.logger.info('HtmlGenerator think started');
+    async think(userInput: string, context: AgentContext): Promise<PageBuilderPlan> {
+        this.logger.info('PageBuilder think started');
 
         const schemaId = context.schemaId;
         if (!schemaId) {
-            throw new Error("HtmlGenerator requires a valid schema ID in context.");
+            throw new Error("PageBuilder requires a valid schema ID in context.");
         }
 
         // Fetch Schema
@@ -95,7 +94,7 @@ ROUTING PLAN:
 
 ARCHITECTURAL PLAN:
 - Page Type: ${pagePlan.pageType}
-- Layout: ${architecturePlan.layout?.structure}
+- Sections: ${JSON.stringify(architecturePlan.sections, null, 2)}
 - Selected Queries: 
 ${JSON.stringify(architecturePlan.selectedQueries, null, 2)}
 - Hints: ${architecturePlan.architectureHints}
@@ -105,43 +104,45 @@ ${queryDetails.join('\n')}
 `;
 
 
-        if (existingPageSchema.settings.page.html) {
-            const p = existingPageSchema.settings.page;
-            developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
-                name: p.name,
-                title: p.title,
-                html: p.html
-            }, null, 2)}`;
+        if (existingPageSchema.settings.page.metadata) {
+            const m = JSON.parse(existingPageSchema.settings.page.metadata);
+            if (m.layoutJson) {
+                developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
+                    title: existingPageSchema.settings.page.title,
+                    layoutJson: m.layoutJson
+                }, null, 2)}`;
+            }
         }
 
-        await context.updateStatus('Generating HTML content with AI...');
+        await context.updateStatus('Generating Layout JSON components with AI...');
         const aiResponse = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
-            originalInput
+            originalInput,
+            parseModelFromProvider(context.providerName)
         );
 
-        let htmlResponse: HtmlGenerationResponse;
+        let builderResponse: PageBuilderResponse;
         if (typeof aiResponse === 'string') {
-            htmlResponse = JSON.parse(aiResponse);
+            builderResponse = JSON.parse(aiResponse);
         } else {
-            htmlResponse = aiResponse as HtmlGenerationResponse;
+            builderResponse = aiResponse as PageBuilderResponse;
         }
 
         return {
-            ...htmlResponse,
+            ...builderResponse,
             enableEngagementBar
         };
 
     }
 
-    async act(plan: HtmlGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentResponse | null> {
         const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
-        await context.updateStatus('Saving generated HTML to CMS...');
-        const newSchemaId = await pageManager.saveHtml(schemaId, plan.html, plan.title);
+        await context.updateStatus('Saving generated Components JSON to CMS...');
+        const newSchemaId = await pageManager.saveLayout(schemaId, plan.layoutJson, plan.title);
 
         await context.onSchemasSync({
             task_type: context.agentName,
@@ -149,7 +150,7 @@ ${queryDetails.join('\n')}
         });
 
         // Completion
-        const finalMessage = "I have generated your HTML page, you can find it in CMS.";
+        const finalMessage = "I have generated your Page Layout, you can find it in CMS.";
         await context.saveAgentMessage(finalMessage);
         return null;
     }

@@ -5,7 +5,7 @@ import { StudioHeader } from '../studio-page/StudioHeader';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
-import { GeminiSettings } from './components/GeminiSettings';
+import { AISettings } from './components/AISettings';
 import { AddSpaSettings } from './components/AddSpaSettings';
 import { CorsSettings } from './components/CorsSettings';
 
@@ -14,7 +14,7 @@ export default function SystemSettingsPage() {
     const { user, hasSuperAdmin, databaseReady } = useAuth();
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'gemini' | 'spa' | 'cors'>('admin');
+    const [activeTab, setActiveTab] = useState<'database' | 'admin' | 'ai' | 'spa' | 'cors'>('admin');
     const [isDark, setIsDark] = useState(false);
 
     const toggleTheme = () => {
@@ -29,7 +29,7 @@ export default function SystemSettingsPage() {
         } else if (!hasSuperAdmin) {
             setActiveTab('admin');
         } else if (user) {
-            setActiveTab('gemini');
+            setActiveTab('ai');
         }
     }, [hasSuperAdmin, databaseReady, user]);
 
@@ -113,14 +113,14 @@ export default function SystemSettingsPage() {
                             {(user) && (
                                 <>
                                     <button
-                                        onClick={() => setActiveTab('gemini')}
-                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'gemini'
+                                        onClick={() => setActiveTab('ai')}
+                                        className={`px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ai'
                                             ? 'border-primary text-primary'
                                             : 'border-transparent text-primary-muted hover:text-primary'
                                             }`}
                                     >
                                         <Key className="w-4 h-4" />
-                                        Gemini AI
+                                        AI Providers
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('spa')}
@@ -155,7 +155,7 @@ export default function SystemSettingsPage() {
                             />
                         )}
                         {activeTab === 'database' && !databaseReady && <DatabaseSettings />}
-                        {user && activeTab === 'gemini' && <GeminiSettings />}
+                        {user && activeTab === 'ai' && <AISettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
                         {user && activeTab === 'cors' && <CorsSettings />}
                     </div>

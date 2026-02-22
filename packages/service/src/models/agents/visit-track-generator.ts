@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
 import { AGENT_NAMES, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
 
 export interface VisitTrackPlan {
@@ -50,7 +50,8 @@ export class VisitTrackGenerator extends BaseAgent<VisitTrackPlan> {
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
-            userInput
+            userInput,
+            parseModelFromProvider(context.providerName)
         );
 
         return {

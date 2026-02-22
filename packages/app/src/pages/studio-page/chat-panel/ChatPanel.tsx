@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { type ChatMessage } from '@cms/shared';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { AiLogsList } from './AiLogsList';
 import { MessageSquare, Database, AlertTriangle, Settings, Loader2, PanelRightClose } from 'lucide-react';
 import { StatusBar } from '../../../components/StatusBar';
+import { Link } from 'react-router-dom';
 
 interface ChatPanelProps {
     messages: ChatMessage[];
@@ -33,20 +33,34 @@ export function ChatPanel({
     const [activeTab, setActiveTab] = useState<'chat' | 'logs'>('chat');
     const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
 
-    useEffect(() => {
-        const checkConfig = async () => {
-            try {
-                const res = await fetch(`${''}/cmsapi/config/gemini`, {
-                    credentials: 'include'
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setIsConfigured(data.data?.configured ?? false);
-                }
-            } catch (err) {
-                console.error('Failed to check AI config', err);
+    const checkConfig = async () => {
+        try {
+            // Check if at least either Gemini or OpenAI is configured
+            const [geminiRes, openaiRes] = await Promise.all([
+                fetch(`${''}/cmsapi/config/gemini`, { credentials: 'include' }).catch(() => null),
+                fetch(`${''}/cmsapi/config/openai`, { credentials: 'include' }).catch(() => null)
+            ]);
+
+            let hasConfig = false;
+
+            if (geminiRes?.ok) {
+                const data = await geminiRes.json();
+                if (data.data?.configured) hasConfig = true;
             }
-        };
+
+            if (openaiRes?.ok) {
+                const data = await openaiRes.json();
+                if (data.data?.configured) hasConfig = true;
+            }
+
+            setIsConfigured(hasConfig);
+        } catch (err) {
+            console.error('Failed to check AI config', err);
+            setIsConfigured(false);
+        }
+    };
+
+    useEffect(() => {
         checkConfig();
     }, []);
 
@@ -93,7 +107,7 @@ export function ChatPanel({
             </div>
 
             {activeTab === 'chat' && (
-                <div className="border-t border-border bg-app-surface/50 backdrop-blur-sm">
+                <div className="border-t border-border bg-app-surface/50 backdrop-blur-sm relative z-10">
                     <StatusBar />
                     <div className="p-4">
                         {isConfigured === null ? (

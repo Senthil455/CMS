@@ -65,6 +65,10 @@ export abstract class BaseAgent<T> implements Agent<T> {
     }
 }
 
+export function parseModelFromProvider(providerName: string): string | undefined {
+    const match = providerName.match(/\(([^)]+)\)$/);
+    return match ? match[1] : undefined;
+}
 export async function handleAgentError(error: any, context: AgentContext, logger: any, actionDescription: string, provider?: AIProvider) {
     logger.error({ error, stack: error?.stack }, `Error in ${context.agentName} handle`);
 

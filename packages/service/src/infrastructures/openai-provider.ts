@@ -3,26 +3,46 @@ import type { AIProvider, AgentMessage } from './ai-provider.interface';
 import type { ServiceLogger } from '../types/logger';
 
 export class OpenAIProvider implements AIProvider {
-    private readonly openai: OpenAI;
+    private openai: OpenAI;
 
     constructor(
-        apiKey: string,
-        baseURL: string,
+        private apiKey: string,
+        private readonly baseURL: string,
         private readonly model: string,
         private readonly logger: ServiceLogger
     ) {
         this.openai = new OpenAI({
-            apiKey,
-            baseURL
+            apiKey: this.apiKey,
+            baseURL: this.baseURL
         });
     }
 
-    async generate(system: string, developer: string, user: string): Promise<any> {
+    setApiKey(key: string) {
+        this.apiKey = key;
+        this.openai = new OpenAI({
+            apiKey: this.apiKey,
+            baseURL: this.baseURL
+        });
+    }
+
+    hasApiKey(): boolean {
+        return !!this.apiKey;
+    }
+
+    getMaskedApiKey(): string | null {
+        if (!this.apiKey) return null;
+        if (this.apiKey.length <= 4) return '***';
+        return `...${this.apiKey.slice(-4)}`;
+    }
+
+    async generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any> {
         try {
             this.logger.info('OpenAIProvider generating from roles using SDK');
 
+            const modelToUse = modelOverride || this.model;
+
             const response = await this.openai.chat.completions.create({
-                model: this.model,
+                model: modelToUse,
                 messages: [
                     { role: 'system', content: system },
                     { role: 'developer', content: developer } as any,

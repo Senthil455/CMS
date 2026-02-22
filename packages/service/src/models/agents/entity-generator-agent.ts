@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent } from './chat-agent';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-agent';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../cms/entity-model';
 import { RelationshipModel } from '../cms/relationship-model';
@@ -29,7 +29,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         super("generating your schema", logger, aiProvider);
     }
 
-    async create(userInput: string, existingContext?: string): Promise<EntityGeneratorResponse> {
+    async create(userInput: string, existingContext?: string, context?: AgentContext): Promise<EntityGeneratorResponse> {
         let schemasText = [
             { name: 'entity', content: this.entitySchema },
             { name: 'attribute', content: this.attributeSchema },
@@ -43,7 +43,8 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         const response = await this.aiProvider.generate(
             this.systemPrompt,
             schemasText,
-            userInput
+            userInput,
+            parseModelFromProvider(context?.providerName || '')
         );
 
         return response;
@@ -76,7 +77,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         }
 
         await context.updateStatus('Analyzing requirements and generating schema...');
-        const resp = await this.create(userInput, existingContext);
+        const resp = await this.create(userInput, existingContext, context);
 
         return {
             ...resp,
