@@ -142,6 +142,9 @@ export class ChatService {
             const userMessage = await this.saveUserMessage(userId, content);
             onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
+            // Extract base provider from "provider (model)" format
+            const baseProviderName = providerName.split(' ')[0] || providerName;
+
             // 2. Intent Classifier
             let agent: AgentName | null = null;
 
@@ -154,11 +157,11 @@ export class ChatService {
             }
 
             if (!agent) {
-                agent = await this.intentClassifier[providerName]!.resolve(content);
+                agent = await this.intentClassifier[baseProviderName]!.resolve(content);
             }
 
             if (agent) {
-                if (this.chatHandlers[providerName]?.[agent]) {
+                if (this.chatHandlers[baseProviderName]?.[agent]) {
                     this.logger.info('Executing resolved handler');
 
                     const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);

@@ -63,10 +63,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 pagePlannerPrompt,
                 htmlGeneratorPrompt,
             ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/entity-generator.md`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/intent-classifier.md`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/query-generator.md`), 'utf-8'),
-                fs.readFile(path.join(promptsDir, `${promptSubDir}/data-generator.md`), 'utf-8'),
+                loadPrompt('entity-designer.md'),
+                loadPrompt('intent-classifier.md'),
+                loadPrompt('query-builder.md'),
+                loadPrompt('data-synthesizer.md'),
                 loadPrompt('page-architect.md'),
                 loadPrompt('page-planner.md'),
                 loadPrompt('page-builder.md'),
@@ -101,10 +101,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 'minimal': minimalListPrompt
             };
 
-            const userAvatarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/user-avatar-agent.md`), 'utf-8').catch(() => '');
-            const engagementBarPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/engagement-bar-agent.md`), 'utf-8').catch(() => '');
-            const visitTrackPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/visit-track-agent.md`), 'utf-8').catch(() => '');
-            const topListPrompt = await fs.readFile(path.join(promptsDir, `${promptSubDir}/top-list-agent.md`), 'utf-8').catch(() => '');
+            const userAvatarPrompt = await loadPrompt('page-user-avatar-builder.md');
+            const engagementBarPrompt = await loadPrompt('page-engagement-bar-builder.md');
+            const visitTrackPrompt = await loadPrompt('page-visit-tracker.md');
+            const topListPrompt = await loadPrompt('page-top-list-builder.md');
             const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
             const userAvatarSnippet = await fs.readFile(path.join(promptsDir, 'components/user-avatar.html'), 'utf-8').catch(() => '');
             const topListSnippet = await fs.readFile(path.join(promptsDir, 'components/top-list.html'), 'utf-8').catch(() => '');

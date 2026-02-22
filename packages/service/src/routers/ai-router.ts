@@ -16,10 +16,9 @@ const aiRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         if (agents.includes('openai')) {
-            combinations.push('openai (gpt-4o)');
-            combinations.push('openai (gpt-4o-mini)');
-            combinations.push('openai (o1-mini)');
-            combinations.push('openai (o3-mini)');
+            combinations.push('openai (gpt-5.2)');
+            combinations.push('openai (gpt-5-mini)');
+            combinations.push('openai (gpt-5-nano)');
         }
 
         return { success: true, data: combinations };
