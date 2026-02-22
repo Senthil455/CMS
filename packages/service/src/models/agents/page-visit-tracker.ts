@@ -2,27 +2,27 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
-import { AGENT_NAMES, type PageDto, type SaveSchemaPayload, type PageMetadata } from '@cms/shared';
+import { AGENT_NAMES, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
 
-export interface UserAvatarPlan {
+export interface VisitTrackPlan {
     schemaId: string;
     pageDto: PageDto;
 }
 
-export class UserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
+export class PageVisitTracker extends BaseAgent<VisitTrackPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
-        private readonly userAvatarSnippet: string,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super("adding user avatar", logger, aiProvider);
+        super("adding visit tracking", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<UserAvatarPlan> {
-        this.logger.info('UserAvatarBuilder think started');
+    async think(userInput: string, context: AgentContext): Promise<VisitTrackPlan> {
+        this.logger.info('PageVisitTracker think started');
 
+        // 1. Extract Schema ID
         let schemaId = context.schemaId;
         if (!schemaId) {
             const idMatch = userInput.match(/#([^:]+):/);
@@ -33,8 +33,9 @@ export class UserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
             throw new Error("No page schema ID provided. Please provide the ID in the format #schemaId:");
         }
 
-        await context.saveAgentMessage(`Accessing page (ID: ${schemaId}) to add user avatar...`);
+        await context.saveAgentMessage(`I am correctly connected. Accessing page (ID: ${schemaId})...`);
 
+        // 2. Fetch Page
         const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!schema || schema.type !== 'page' || !schema.settings.page) {
             throw new Error(`Page schema not found or invalid type for ID: ${schemaId}`);
@@ -43,8 +44,7 @@ export class UserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
         const pageDto = schema.settings.page;
 
         const developerMessage = JSON.stringify({
-            existingHtml: pageDto.html,
-            userAvatarSnippet: this.userAvatarSnippet
+            existingHtml: pageDto.html
         }, null, 2);
 
         const res = await this.aiProvider.generate(
@@ -63,11 +63,11 @@ export class UserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
         };
     }
 
-    async act(plan: UserAvatarPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: VisitTrackPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
         const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
-        metadata.enableUserAvatar = true;
+        metadata.enableVisitTrack = true;
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -81,9 +81,9 @@ export class UserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
         };
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
-        await context.saveAgentMessage(`Successfully added User Avatar to page "${pageDto.name}".`);
+        await context.saveAgentMessage(`Successfully added visit tracking to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.USER_AVATAR_BUILDER,
+            task_type: AGENT_NAMES.PAGE_VISIT_TRACKER,
             schemasId: [schemaId]
         });
         return null;

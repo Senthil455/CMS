@@ -4,28 +4,28 @@ import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { AGENT_NAMES, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
 
-export interface EngagementBarPlan {
+export interface TopListPlan {
     schemaId: string;
     pageDto: PageDto;
 }
 
-export class EngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
+export class PageTopListBuilder extends BaseAgent<TopListPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
-        private readonly engagementBarSnippet: string,
+        private readonly topListSnippet: string,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super("adding engagement bar", logger, aiProvider);
+        super("adding top list", logger, aiProvider);
     }
 
     public getSnippet(): string {
-        return this.engagementBarSnippet;
+        return this.topListSnippet;
     }
 
-    async think(userInput: string, context: AgentContext): Promise<EngagementBarPlan> {
-        this.logger.info('EngagementBarBuilder think started');
+    async think(userInput: string, context: AgentContext): Promise<TopListPlan> {
+        this.logger.info('PageTopListBuilder think started');
 
         // 1. Extract Schema ID
         let schemaId = context.schemaId;
@@ -51,7 +51,7 @@ export class EngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
 
         const developerMessage = JSON.stringify({
             existingHtml: pageDto.html,
-            engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
+            topListSnippet: this.topListSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
         }, null, 2);
 
         const res = await this.aiProvider.generate(
@@ -70,11 +70,11 @@ export class EngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
         };
     }
 
-    async act(plan: EngagementBarPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: TopListPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
         const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
-        metadata.enableEngagementBar = true;
+        metadata.enableTopList = true;
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -88,9 +88,9 @@ export class EngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
         };
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
-        await context.saveAgentMessage(`Successfully added Engagement Bar to page "${pageDto.name}".`);
+        await context.saveAgentMessage(`Successfully added Top List component to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.ENGAGEMENT_BAR_BUILDER,
+            task_type: AGENT_NAMES.PAGE_TOP_LIST_BUILDER,
             schemasId: [schemaId]
         });
         return null;

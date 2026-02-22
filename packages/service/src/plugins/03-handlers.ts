@@ -15,10 +15,10 @@ import { PagePlanner } from '../models/agents/page-planner';
 import { PageArchitect } from '../models/agents/page-architect';
 import { PageBuilder } from '../models/agents/page-builder';
 import { DataGenerator } from '../models/agents/data-synthesizer';
-import { EngagementBarBuilder } from '../models/agents/engagement-bar-builder';
-import { UserAvatarBuilder } from '../models/agents/user-avatar-builder';
-import { VisitTracker } from '../models/agents/visit-tracker';
-import { TopListBuilder } from '../models/agents/top-list-builder';
+import { PageEngagementBarBuilder } from '../models/agents/page-engagement-bar-builder';
+import { PageUserAvatarBuilder } from '../models/agents/page-user-avatar-builder';
+import { PageVisitTracker } from '../models/agents/page-visit-tracker';
+import { PageTopListBuilder } from '../models/agents/page-top-list-builder';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -114,10 +114,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             // PagePlanner instantiation removed
             // PageArchitect instantiation removed
 
-            const engagementBarGenerator = new EngagementBarBuilder(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
-            const userAvatarGenerator = new UserAvatarBuilder(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
-            const visitTrackGenerator = new VisitTracker(provider, visitTrackPrompt, cmsClient, modelLogger);
-            const topListGenerator = new TopListBuilder(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
+            const engagementBarGenerator = new PageEngagementBarBuilder(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
+            const userAvatarGenerator = new PageUserAvatarBuilder(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
+            const visitTrackGenerator = new PageVisitTracker(provider, visitTrackPrompt, cmsClient, modelLogger);
+            const topListGenerator = new PageTopListBuilder(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
 
             const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger);
 
@@ -160,10 +160,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
                 [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
                 [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
-                [AGENT_NAMES.ENGAGEMENT_BAR_BUILDER]: engagementBarGenerator,
-                [AGENT_NAMES.USER_AVATAR_BUILDER]: userAvatarGenerator,
-                [AGENT_NAMES.VISIT_TRACKER]: visitTrackGenerator,
-                [AGENT_NAMES.TOP_LIST_BUILDER]: topListGenerator,
+                [AGENT_NAMES.PAGE_ENGAGEMENT_BAR_BUILDER]: engagementBarGenerator,
+                [AGENT_NAMES.PAGE_USER_AVATAR_BUILDER]: userAvatarGenerator,
+                [AGENT_NAMES.PAGE_VISIT_TRACKER]: visitTrackGenerator,
+                [AGENT_NAMES.PAGE_TOP_LIST_BUILDER]: topListGenerator,
 
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
             };

@@ -4,23 +4,28 @@ import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { AGENT_NAMES, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
 
-export interface VisitTrackPlan {
+export interface EngagementBarPlan {
     schemaId: string;
     pageDto: PageDto;
 }
 
-export class VisitTracker extends BaseAgent<VisitTrackPlan> {
+export class PageEngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
+        private readonly engagementBarSnippet: string,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super("adding visit tracking", logger, aiProvider);
+        super("adding engagement bar", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<VisitTrackPlan> {
-        this.logger.info('VisitTracker think started');
+    public getSnippet(): string {
+        return this.engagementBarSnippet;
+    }
+
+    async think(userInput: string, context: AgentContext): Promise<EngagementBarPlan> {
+        this.logger.info('PageEngagementBarBuilder think started');
 
         // 1. Extract Schema ID
         let schemaId = context.schemaId;
@@ -42,9 +47,11 @@ export class VisitTracker extends BaseAgent<VisitTrackPlan> {
         }
 
         const pageDto = schema.settings.page;
+        const metadata = JSON.parse(schema.settings.page.metadata) as PageMetadata;
 
         const developerMessage = JSON.stringify({
-            existingHtml: pageDto.html
+            existingHtml: pageDto.html,
+            engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
         }, null, 2);
 
         const res = await this.aiProvider.generate(
@@ -63,11 +70,11 @@ export class VisitTracker extends BaseAgent<VisitTrackPlan> {
         };
     }
 
-    async act(plan: VisitTrackPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: EngagementBarPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
         const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
-        metadata.enableVisitTrack = true;
+        metadata.enableEngagementBar = true;
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -81,9 +88,9 @@ export class VisitTracker extends BaseAgent<VisitTrackPlan> {
         };
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
-        await context.saveAgentMessage(`Successfully added visit tracking to page "${pageDto.name}".`);
+        await context.saveAgentMessage(`Successfully added Engagement Bar to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.VISIT_TRACKER,
+            task_type: AGENT_NAMES.PAGE_ENGAGEMENT_BAR_BUILDER,
             schemasId: [schemaId]
         });
         return null;
