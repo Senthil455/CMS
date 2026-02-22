@@ -21,7 +21,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     let metadata: PageMetadata = {};
     try {
         if (page.metadata) {
-            metadata = JSON.parse(page.metadata);
+            metadata = page.metadata;
         }
     } catch {
         // ignore

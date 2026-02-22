@@ -3,8 +3,8 @@ import { type SchemaDto } from '@cms/shared';
 
 interface PageEditHeaderProps {
     item: SchemaDto;
-    activeTab: 'settings' | 'code';
-    onTabChange: (tab: 'settings' | 'code') => void;
+    activeTab: 'settings' | 'layout';
+    onTabChange: (tab: 'settings' | 'layout') => void;
     onSave: (exitAfterSave: boolean) => void;
     onCancel: () => void;
     isSaving: boolean;
@@ -47,10 +47,10 @@ export function PageEditHeader({
                     Settings
                 </button>
                 <button
-                    onClick={() => onTabChange('code')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'code' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
+                    onClick={() => onTabChange('layout')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'layout' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
                 >
-                    Source Code
+                    Layout Editor
                 </button>
             </div>
 

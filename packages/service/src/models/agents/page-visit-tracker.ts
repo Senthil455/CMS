@@ -66,7 +66,7 @@ export class PageVisitTracker extends BaseAgent<VisitTrackPlan> {
     async act(plan: VisitTrackPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
-        const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
+        const metadata = pageDto.metadata as PageMetadata;
         metadata.enableVisitTrack = true;
 
         const payload: SaveSchemaPayload = {
@@ -75,7 +75,7 @@ export class PageVisitTracker extends BaseAgent<VisitTrackPlan> {
             settings: {
                 page: {
                     ...pageDto,
-                    metadata: JSON.stringify(metadata)
+                    metadata: metadata
                 }
             }
         };

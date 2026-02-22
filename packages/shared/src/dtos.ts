@@ -54,12 +54,10 @@ export interface PageDto {
     title: string;
     html: string;
     source: string;
-    metadata: string;
-}
-
-export interface ParsedPageDto extends Omit<PageDto, 'metadata'> {
     metadata: PageMetadata;
 }
+
+export type ParsedPageDto = PageDto;
 
 export interface SchemaDto {
     id: number;

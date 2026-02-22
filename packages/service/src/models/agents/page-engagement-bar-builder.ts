@@ -47,7 +47,7 @@ export class PageEngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
         }
 
         const pageDto = schema.settings.page;
-        const metadata = JSON.parse(schema.settings.page.metadata) as PageMetadata;
+        const metadata = schema.settings.page.metadata as PageMetadata;
 
         const developerMessage = JSON.stringify({
             existingHtml: pageDto.html,
@@ -73,7 +73,7 @@ export class PageEngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
     async act(plan: EngagementBarPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
-        const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
+        const metadata = pageDto.metadata as PageMetadata;
         metadata.enableEngagementBar = true;
 
         const payload: SaveSchemaPayload = {
@@ -82,7 +82,7 @@ export class PageEngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
             settings: {
                 page: {
                     ...pageDto,
-                    metadata: JSON.stringify(metadata)
+                    metadata: metadata
                 }
             }
         };

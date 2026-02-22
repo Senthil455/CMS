@@ -35,7 +35,7 @@ export default function StudioPage() {
     const [showChat, setShowChat] = useState(true);
 
     const isEditing = location.pathname.endsWith('/edit');
-    const editTab = (searchParams.get('tab') as 'settings' | 'code') || 'settings';
+    const editTab = searchParams.get('tab') || 'settings';
 
     const selectedItem = useMemo(() => {
         if (!type || !id) return null;
@@ -236,7 +236,7 @@ export default function StudioPage() {
                         {selectedItem.type === 'query' && (
                             <QueryEdit
                                 item={selectedItem}
-                                initialTab={editTab}
+                                initialTab={editTab as 'settings' | 'code'}
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
@@ -245,7 +245,7 @@ export default function StudioPage() {
                         {selectedItem.type === 'page' && (
                             <PageEdit
                                 item={selectedItem}
-                                initialTab={editTab}
+                                initialTab={editTab as 'settings' | 'layout'}
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}

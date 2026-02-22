@@ -211,9 +211,8 @@ export function SchemaGraph({ schemas, onNodeClick }: SchemaGraphProps) {
                 }
             } else if (schema.type === 'page' && schema.settings.page) {
                 try {
-                    const metadataStr = schema.settings.page.metadata;
-                    if (metadataStr) {
-                        const metadata = JSON.parse(metadataStr);
+                    const metadata = schema.settings.page.metadata;
+                    if (metadata) {
 
 
                         if (metadata.architecture?.selectedQueries) {

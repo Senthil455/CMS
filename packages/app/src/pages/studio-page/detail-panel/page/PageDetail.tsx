@@ -22,11 +22,7 @@ export function PageDetail({ schema }: PageDetailProps) {
     const parsedPage = useMemo<ParsedPageDto>(() => {
         let metadata: PageMetadata = {};
         if (page.metadata) {
-            try {
-                metadata = JSON.parse(page.metadata);
-            } catch (e) {
-                console.error('Failed to parse page metadata', e);
-            }
+            metadata = page.metadata;
         }
         return {
             ...page,

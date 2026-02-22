@@ -114,7 +114,7 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, us
                         title: name,
                         source: 'ai',
                         html: '',
-                        metadata: ''
+                        metadata: {}
                     }
                 }
             });

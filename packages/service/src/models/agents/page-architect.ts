@@ -35,7 +35,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
             throw new Error("Schema not found or missing metadata for architecture planning.");
         }
 
-        const metadata = JSON.parse(existingSchema.settings.page.metadata);
+        const metadata = existingSchema.settings.page.metadata;
         const routingPlan = metadata.plan;
         const actualUserInput = metadata.userInput || userInput;
 

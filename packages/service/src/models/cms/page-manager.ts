@@ -1,6 +1,7 @@
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import type { SaveSchemaPayload, TemplateSelectionResponse, PagePlan } from '@cms/shared';
+import { LayoutCompiler, HTML_BLOCKS, type LayoutJson } from '@cms/shared';
 
 export class PageManager {
     constructor(
@@ -54,7 +55,7 @@ export class PageManager {
                     title: pageSettings.title,
                     html: pageSettings.html,
                     source: pageSettings.source,
-                    metadata: JSON.stringify(updatedMetadata),
+                    metadata: updatedMetadata,
                 }
             }
         };
@@ -75,7 +76,7 @@ export class PageManager {
         const pageSettings = schema.settings.page;
         let metadata: any = {};
         try {
-            metadata = pageSettings.metadata ? JSON.parse(pageSettings.metadata) : {};
+            metadata = pageSettings.metadata ? pageSettings.metadata : {};
         } catch (e) {
             this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
         }
@@ -89,7 +90,7 @@ export class PageManager {
                 page: {
                     ...pageSettings,
                     title: architecture.pageTitle || pageSettings.title,
-                    metadata: JSON.stringify(metadata),
+                    metadata: metadata,
                 }
             }
         };
@@ -107,12 +108,31 @@ export class PageManager {
         const pageSettings = schema.settings.page;
         let metadata: any = {};
         try {
-            metadata = pageSettings.metadata ? JSON.parse(pageSettings.metadata) : {};
+            metadata = pageSettings.metadata ? pageSettings.metadata : {};
         } catch (e) {
             this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
         }
 
         metadata.layoutJson = layoutJson;
+
+        let compiledHtml = pageSettings.html;
+        try {
+            const layout = layoutJson as LayoutJson;
+            const componentsMap: Record<string, { html: string; props?: any }> = {};
+            if (layout && layout.sections) {
+                layout.sections.forEach(section => {
+                    section.columns.forEach(col => {
+                        col.blocks.forEach(block => {
+                            const template = HTML_BLOCKS[block.type] || '';
+                            componentsMap[block.id] = { html: template, props: {} };
+                        });
+                    });
+                });
+                compiledHtml = LayoutCompiler.compile(layout, componentsMap);
+            }
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from AI layout components');
+        }
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -121,7 +141,8 @@ export class PageManager {
                 page: {
                     ...pageSettings,
                     title: title || pageSettings.title,
-                    metadata: JSON.stringify(metadata),
+                    html: compiledHtml,
+                    metadata: metadata,
                     source: 'ai'
                 }
             }

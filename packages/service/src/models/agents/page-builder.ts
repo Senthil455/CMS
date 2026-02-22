@@ -43,7 +43,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
             throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
         }
 
-        const metadata: PageMetadata = JSON.parse(existingPageSchema.settings.page.metadata);
+        const metadata: PageMetadata = existingPageSchema.settings.page.metadata;
         const pagePlan = metadata.plan;
         const architecturePlan = metadata.architecture;
         const originalInput = metadata.userInput || userInput;
@@ -105,7 +105,7 @@ ${queryDetails.join('\n')}
 
 
         if (existingPageSchema.settings.page.metadata) {
-            const m = JSON.parse(existingPageSchema.settings.page.metadata);
+            const m = existingPageSchema.settings.page.metadata;
             if (m.layoutJson) {
                 developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
                     title: existingPageSchema.settings.page.title,

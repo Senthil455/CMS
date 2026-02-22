@@ -28,9 +28,9 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             try {
                 const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
                 if (schema && schema.settings.page && schema.settings.page.metadata) {
-                    const metadata = JSON.parse(schema.settings.page.metadata);
-                    if (metadata.pagePlan) {
-                        existingPagePlan = metadata.pagePlan;
+                    const metadata = schema.settings.page.metadata;
+                    if (metadata.plan) {
+                        existingPagePlan = metadata.plan;
                     }
                 }
             } catch (e) {

@@ -66,7 +66,7 @@ export class PageUserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
     async act(plan: UserAvatarPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
-        const metadata = JSON.parse(pageDto.metadata) as PageMetadata;
+        const metadata = pageDto.metadata as PageMetadata;
         metadata.enableUserAvatar = true;
 
         const payload: SaveSchemaPayload = {
@@ -75,7 +75,7 @@ export class PageUserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
             settings: {
                 page: {
                     ...pageDto,
-                    metadata: JSON.stringify(metadata)
+                    metadata: metadata
                 }
             }
         };
