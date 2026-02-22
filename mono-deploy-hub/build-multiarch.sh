@@ -5,8 +5,9 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 REPO_ROOT="$SCRIPT_DIR/../.."
 
-# Docker Hub image name (override with IMAGE_NAME env var)
-IMAGE_NAME="${IMAGE_NAME:-senthil455/cms-mono:latest}"
+# Docker Hub image repo and tag
+IMAGE_REPO="${IMAGE_REPO:-senthil455/cms-mono}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 # Target platforms (override with PLATFORMS env var)
 PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
@@ -37,10 +38,11 @@ rm -rf publish
 dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o ./publish
 
 echo "🐳 Building multi-platform Docker image..."
-echo "   Image:     $IMAGE_NAME"
-echo "   Platforms: $PLATFORMS"
-echo "   Context:   $REPO_ROOT"
-echo "   Dockerfile: $SCRIPT_DIR/Dockerfile"
+echo "   Repository: $IMAGE_REPO"
+echo "   Tag:        $IMAGE_TAG"
+echo "   Platforms:  $PLATFORMS"
+echo "   Context:    $REPO_ROOT"
+echo "   Dockerfile: $SCRIPT_DIR/../mono-deploy-local/Dockerfile"
 
 # Ensure buildx builder exists
 BUILDER_NAME="cms-multiarch"
@@ -53,12 +55,24 @@ fi
 
 # Build and push multi-platform image
 cd "$SCRIPT_DIR"
-docker buildx build \
-    --platform "$PLATFORMS" \
-    -t "$IMAGE_NAME" \
-    -f "Dockerfile" \
-    --push \
-    "$REPO_ROOT"
 
-echo "✅ Build complete! Image pushed: $IMAGE_NAME"
+if [ "$IMAGE_TAG" != "latest" ]; then
+    echo "📦 Tagging as both $IMAGE_TAG and latest"
+    docker buildx build \
+        --platform "$PLATFORMS" \
+        -t "$IMAGE_REPO:$IMAGE_TAG" \
+        -t "$IMAGE_REPO:latest" \
+        -f "../mono-deploy-local/Dockerfile" \
+        --push \
+        "$REPO_ROOT"
+else
+    docker buildx build \
+        --platform "$PLATFORMS" \
+        -t "$IMAGE_REPO:latest" \
+        -f "../mono-deploy-local/Dockerfile" \
+        --push \
+        "$REPO_ROOT"
+fi
+
+echo "✅ Build complete! Image pushed to: $IMAGE_REPO:$IMAGE_TAG"
 echo "   Platforms: $PLATFORMS"
