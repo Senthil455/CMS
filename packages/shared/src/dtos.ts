@@ -192,10 +192,37 @@ export interface PageArchitecture {
     architectureHints: string;
 }
 
+export interface ComponentInstruction {
+    id: string;
+    instruction: string;
+    queriesToUse: string[];
+}
+
+export interface LayoutBlock {
+    id: string;
+    type: string;
+}
+
+export interface LayoutColumn {
+    span: number;
+    blocks: LayoutBlock[];
+}
+
+export interface LayoutSection {
+    preset: string;
+    columns: LayoutColumn[];
+}
+
+export interface LayoutJson {
+    sections: LayoutSection[];
+}
+
 export interface PageMetadata {
     plan?: PagePlan;
     architecture?: PageArchitecture;
-    layoutJson?: any;
+    layoutJson?: LayoutJson;
+    componentInstructions?: ComponentInstruction[];
+    components?: Record<string, { html: string; props?: any }>;
     userInput?: string;
     templateId?: string;
     enableEngagementBar?: boolean;
