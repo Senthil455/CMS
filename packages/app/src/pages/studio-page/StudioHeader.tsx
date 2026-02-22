@@ -1,4 +1,4 @@
-import { Save, Sun, Moon, Settings, FolderTree, MessageSquare } from 'lucide-react';
+import { Save, Sun, Moon, Settings, FolderTree, MessageSquare, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface StudioHeaderProps {
@@ -24,6 +24,13 @@ export function StudioHeader({ isDark, toggleTheme, showExplorer, onToggleExplor
             </div>
 
             <div className="flex items-center gap-4">
+                <a
+                    href="/admin"
+                    className="p-2 hover:bg-app-muted rounded-full transition-colors border border-transparent hover:border-border text-primary-muted hover:text-primary"
+                    title="Admin"
+                >
+                    <LayoutDashboard className="w-5 h-5" />
+                </a>
                 <button
                     onClick={onToggleExplorer}
                     className={`p-2 hover:bg-app-muted rounded-full transition-colors border border-transparent hover:border-border ${!showExplorer ? 'bg-app-muted border-border' : ''}`}
