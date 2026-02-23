@@ -54,10 +54,13 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             entities = await this.cmsClient.getAllXEntity(context.externalCookie);
         }
 
+        const devMsg = `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`;
+        this.setLastPrompts(this.systemPrompt, devMsg, userInput);
+
         await context.updateStatus('Generating sample data with AI...');
         const response: DataGeneratorResponse = await this.aiProvider.generate(
             this.systemPrompt,
-            `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`,
+            devMsg,
             userInput,
             parseModelFromProvider(context.providerName)
         );

@@ -81,6 +81,8 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
         }
 
+        this.setLastPrompts(this.plannerSystemPrompt, developerMessage, userInput);
+
         const response = await this.aiProvider.generate(
             this.plannerSystemPrompt,
             developerMessage,

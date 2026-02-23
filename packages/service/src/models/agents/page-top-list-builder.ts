@@ -54,6 +54,8 @@ export class PageTopListBuilder extends BaseAgent<TopListPlan> {
             topListSnippet: this.topListSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
         }, null, 2);
 
+        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,

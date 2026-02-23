@@ -47,6 +47,8 @@ export class PageUserAvatarBuilder extends BaseAgent<UserAvatarPlan> {
             userAvatarSnippet: this.userAvatarSnippet
         }, null, 2);
 
+        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,

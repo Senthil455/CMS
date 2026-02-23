@@ -8,7 +8,7 @@ export interface AgentContext {
     providerName: string;
     schemaId?: string;
     saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
-    saveAiResponseLog: (handler: string, response: string) => Promise<void>;
+    saveAiResponseLog: (handler: string, response: string, input?: string) => Promise<void>;
     onConfirmSchemaSummary: (summary: SchemaSummary) => Promise<void>;
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
     onTemplateSelectionListToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
@@ -36,6 +36,13 @@ export abstract class BaseAgent<T> implements Agent<T> {
         protected readonly aiProvider: AIProvider
     ) { }
 
+    // Agents should set this during think() to capture the full prompt
+    protected lastPrompts: { systemPrompt?: string; developerMessage?: string; userInput?: string } = {};
+
+    protected setLastPrompts(systemPrompt: string, developerMessage: string, userInput: string) {
+        this.lastPrompts = { systemPrompt, developerMessage, userInput };
+    }
+
     // Abstract methods that subclasses must implement
     abstract think(userInput: string, context: AgentContext): Promise<T>;
     abstract act(plan: T, context: AgentContext): Promise<AgentResponse | null>;
@@ -46,9 +53,17 @@ export abstract class BaseAgent<T> implements Agent<T> {
         try {
             const plan = await this.think(userInput, context);
 
+            // Build the full prompt log from what the agent captured
+            const inputLog = JSON.stringify({
+                systemPrompt: this.lastPrompts.systemPrompt || '',
+                developerMessage: this.lastPrompts.developerMessage || '',
+                userInput: this.lastPrompts.userInput || userInput,
+            });
+
             await context.saveAiResponseLog(
                 context.agentName,
-                JSON.stringify({ ...plan, taskType: context.agentName })
+                JSON.stringify({ ...plan, taskType: context.agentName }),
+                inputLog
             );
 
             return await this.act(plan, context);

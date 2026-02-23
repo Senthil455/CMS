@@ -139,6 +139,8 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id].html}`;
             }
 
+            this.setLastPrompts(this.systemPrompt, developerMessage, originalInput);
+
             const aiResponse = await this.aiProvider.generate(
                 this.systemPrompt,
                 developerMessage,

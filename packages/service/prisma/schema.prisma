@@ -21,6 +21,7 @@ model AiResponseLog {
   id        Int      @id @default(autoincrement())
   handler   String
   providerName String? // 'openai' | 'gemini' etc.
+  input     String?  // Full prompt (system + developer + user)
   response  String
   schemaId  String?
   timestamp DateTime @default(now())

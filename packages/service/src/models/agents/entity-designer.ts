@@ -40,6 +40,8 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
             schemasText += `\n\n${existingContext}`;
         }
 
+        this.setLastPrompts(this.systemPrompt, schemasText, userInput);
+
         const response = await this.aiProvider.generate(
             this.systemPrompt,
             schemasText,

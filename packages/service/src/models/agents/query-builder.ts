@@ -48,6 +48,8 @@ ${sdl}
             developerMessage += `\n\nExisting Query to Modify:\n${JSON.stringify(existingSchema.settings.query, null, 2)}`;
         }
 
+        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+
         const response: QueryResponse = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,

@@ -78,8 +78,8 @@ export class ChatService {
             saveAgentMessage: async (content: string, payload?: any) => {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
             },
-            saveAiResponseLog: async (handlerName: string, response: string) => {
-                await this.repository.saveAiResponseLog(handlerName, response, providerName, schemaId);
+            saveAiResponseLog: async (handlerName: string, response: string, input?: string) => {
+                await this.repository.saveAiResponseLog(handlerName, response, providerName, schemaId, input);
             },
             onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                 onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);

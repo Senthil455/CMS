@@ -47,6 +47,8 @@ export class PageVisitTracker extends BaseAgent<VisitTrackPlan> {
             existingHtml: pageDto.html
         }, null, 2);
 
+        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,

@@ -54,6 +54,8 @@ export class PageEngagementBarBuilder extends BaseAgent<EngagementBarPlan> {
             engagementBarSnippet: this.engagementBarSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
         }, null, 2);
 
+        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,

@@ -97,6 +97,8 @@ ${queryListContext}
 
         developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
 
+        this.setLastPrompts(this.architectSystemPrompt, developerMessage, userInput);
+
         const response = await this.aiProvider.generate(
             this.architectSystemPrompt,
             developerMessage,
