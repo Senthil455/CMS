@@ -104,6 +104,8 @@ ${queryListContext}
 
         this.setLastPrompts(this.architectSystemPrompt, developerMessage, userInput);
 
+        await context.saveAgentMessage(`Designing page architecture...`);
+
         const response = await this.aiProvider.generate(
             this.architectSystemPrompt,
             developerMessage,

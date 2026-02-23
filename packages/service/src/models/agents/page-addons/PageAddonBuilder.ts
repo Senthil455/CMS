@@ -2,11 +2,13 @@ import type { AIProvider } from '../../../infrastructures/ai-provider.interface'
 import type { CmsClient } from '../../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
-import { type AgentName, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
+import { type AgentName, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 
 export interface AddonPlan {
     schemaId: string;
     pageDto: PageDto;
+    layoutJson: LayoutJson;
+    newComponent: { id: string; html: string };
 }
 
 export class PageAddonBuilder extends BaseAgent<AddonPlan> {
@@ -46,15 +48,21 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         const pageDto = schema.settings.page;
         const metadata = schema.settings.page.metadata as PageMetadata;
 
-        // 3. Build developer message
-        const developerMessage: Record<string, string> = {
-            existingHtml: pageDto.html,
+        // 3. Build developer message with layoutJson + component IDs (no HTML)
+        const existingLayoutJson = metadata.layoutJson || { sections: [] };
+        const existingComponentIds = metadata.components ? Object.keys(metadata.components) : [];
+
+        const developerMessage: Record<string, any> = {
+            existingLayoutJson,
+            existingComponentIds,
         };
 
         if (this.snippet) {
             const entityName = metadata.plan?.entityName || '';
             developerMessage[`${this.addonDef.id}Snippet`] = this.snippet.replace(/{{entityName}}/g, entityName);
         }
+
+        await context.saveAgentMessage(`Planning layout for ${this.addonDef.label}...`);
 
         this.setLastPrompts(this.systemPrompt, JSON.stringify(developerMessage, null, 2), userInput);
 
@@ -65,21 +73,46 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             parseModelFromProvider(context.providerName)
         );
 
+        // Parse response: { layoutJson, component: { id, html } }
+        let parsed: { layoutJson: LayoutJson; component: { id: string; html: string } };
+        if (typeof res === 'string') {
+            parsed = JSON.parse(res);
+        } else {
+            parsed = res as any;
+        }
+
         return {
             schemaId,
-            pageDto: {
-                ...pageDto,
-                html: res.html
-            }
+            pageDto,
+            layoutJson: parsed.layoutJson,
+            newComponent: parsed.component,
         };
     }
 
     async act(plan: AddonPlan, context: AgentContext): Promise<AgentResponse | null> {
-        const { schemaId, pageDto } = plan;
+        const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         const metadata = pageDto.metadata as PageMetadata;
+
         // Set the metadata flag dynamically
         (metadata as any)[this.addonDef.metadataFlag] = true;
+
+        // Replace layoutJson
+        metadata.layoutJson = layoutJson;
+
+        // Append the new component to existing components
+        if (!metadata.components) {
+            metadata.components = {};
+        }
+        metadata.components[newComponent.id] = { html: newComponent.html };
+
+        // Recompile HTML from layout + all components
+        let compiledHtml = pageDto.html;
+        try {
+            compiledHtml = LayoutCompiler.compile(layoutJson, metadata.components, pageDto.title);
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from layout + components');
+        }
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -87,6 +120,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             settings: {
                 page: {
                     ...pageDto,
+                    html: compiledHtml,
                     metadata: metadata
                 }
             }
