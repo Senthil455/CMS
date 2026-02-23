@@ -188,6 +188,7 @@ export interface PageArchitecture {
         args: Record<string, 'fromPath' | 'fromQuery'>;
     }>;
     architectureHints: string;
+    componentInstructions?: ComponentInstruction[];
 }
 
 export interface ComponentInstruction {

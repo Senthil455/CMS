@@ -181,4 +181,87 @@ export class PageManager {
         this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page HTML via PageManager');
         return newSchemaId;
     }
+
+    async saveComponentInstructions(schemaId: string, componentInstructions: any[]): Promise<void> {
+        const schema = await this.cmsClient.getSchemaBySchemaId(this.externalCookie, schemaId);
+        if (!schema || !schema.settings.page) {
+            throw new Error(`Page with schemaId ${schemaId} not found`);
+        }
+
+        const pageSettings = schema.settings.page;
+        let metadata: any = {};
+        try {
+            metadata = pageSettings.metadata ? pageSettings.metadata : {};
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
+        }
+
+        metadata.componentInstructions = componentInstructions;
+
+        const payload: SaveSchemaPayload = {
+            schemaId: schemaId,
+            type: 'page',
+            settings: {
+                page: {
+                    ...pageSettings,
+                    metadata: metadata,
+                }
+            }
+        };
+
+        await this.cmsClient.saveSchema(this.externalCookie, payload);
+        this.logger.info({ schemaId }, 'Successfully saved component instructions via PageManager');
+    }
+
+    async saveComponents(
+        schemaId: string,
+        layoutJson: LayoutJson,
+        components: Record<string, { html: string; props?: any }>,
+        title?: string
+    ): Promise<string> {
+        const schema = await this.cmsClient.getSchemaBySchemaId(this.externalCookie, schemaId);
+        if (!schema || !schema.settings.page) {
+            throw new Error(`Page with schemaId ${schemaId} not found`);
+        }
+
+        const pageSettings = schema.settings.page;
+        let metadata: any = {};
+        try {
+            metadata = pageSettings.metadata ? pageSettings.metadata : {};
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
+        }
+
+        metadata.layoutJson = layoutJson;
+        metadata.components = components;
+
+        // Compile final HTML from layout + components
+        let compiledHtml = pageSettings.html;
+        try {
+            compiledHtml = LayoutCompiler.compile(layoutJson, components);
+        } catch (e) {
+            this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from AI-generated components');
+        }
+
+        const payload: SaveSchemaPayload = {
+            schemaId: schemaId,
+            type: 'page',
+            settings: {
+                page: {
+                    ...pageSettings,
+                    title: title || pageSettings.title,
+                    html: compiledHtml,
+                    metadata: metadata,
+                    source: 'ai'
+                }
+            }
+        };
+
+        const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
+        const newSchemaId = saveResp.schemaId;
+
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved AI-generated components and compiled HTML via PageManager');
+        return newSchemaId;
+    }
 }
+

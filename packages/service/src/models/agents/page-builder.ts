@@ -1,17 +1,19 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
-import { type PageMetadata, type SaveSchemaPayload, type TemplateSelectionResponse, AGENT_NAMES } from '@cms/shared';
+import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { PageManager } from '../cms/page-manager';
 
 
-export interface PageBuilderResponse {
-    title: string;
-    layoutJson: any;
+export interface ComponentHtmlResponse {
+    html: string;
 }
 
-export interface PageBuilderPlan extends PageBuilderResponse {
+export interface PageBuilderPlan {
+    title: string;
+    layoutJson: LayoutJson;
+    components: Record<string, { html: string; props?: any }>;
     enableEngagementBar: boolean;
 }
 
@@ -47,93 +49,123 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
         const pagePlan = metadata.plan;
         const architecturePlan = metadata.architecture;
         const originalInput = metadata.userInput || userInput;
+        const componentInstructions = metadata.componentInstructions || architecturePlan?.componentInstructions || [];
 
         if (!pagePlan || !architecturePlan) {
             throw new Error("Required plans (routing or architecture) not found in page metadata.");
         }
 
+        if (componentInstructions.length === 0) {
+            throw new Error("No component instructions found in page metadata. The architect must generate componentInstructions.");
+        }
+
         const templateStyle = metadata.templateId || 'modern';
-
-
-
-        // 3. Context Gathering: Fetch selected Queries and their sample data
-        await context.updateStatus('Gathering data architecture context and samples...');
-        const queryDetails = await Promise.all(architecturePlan.selectedQueries.map(async (sq) => {
-            const queryName = sq.queryName;
-            const fieldName = sq.fieldName;
-            try {
-                const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
-                return `QUERY: ${queryName} -> FIELD: ${fieldName}
-                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
-                    REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`;
-            } catch (e) {
-                return `QUERY: ${queryName} -> FIELD: ${fieldName}
-                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`;
-            }
-        }));
-
-
         const pageType = pagePlan.pageType;
         let enableEngagementBar = metadata.enableEngagementBar || false;
 
         if (pageType === 'list') {
             enableEngagementBar = false;
         }
+
         const styleKey = `${templateStyle}-${pageType}`;
         const stylePrompt = this.styleMap[styleKey] || this.styleMap[`modern-${pageType}`] || this.styleMap[templateStyle] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
 
-        let developerMessage = `
-${stylePrompt}
-`;
-
-        developerMessage += `
-ROUTING PLAN:
-- Path: ${pagePlan.pageName}
-- Parameters: ${pagePlan.primaryParameter || 'None'}
-- Linking Rules: ${(pagePlan.linkingRules || []).join('\n  ')}
-
-ARCHITECTURAL PLAN:
-- Page Type: ${pagePlan.pageType}
-- Sections: ${JSON.stringify(architecturePlan.sections, null, 2)}
-- Selected Queries: 
-${JSON.stringify(architecturePlan.selectedQueries, null, 2)}
-- Hints: ${architecturePlan.architectureHints}
-
-DATA ENDPOINTS:
-${queryDetails.join('\n')}
-`;
-
-
-        if (existingPageSchema.settings.page.metadata) {
-            const m = existingPageSchema.settings.page.metadata;
-            if (m.layoutJson) {
-                developerMessage += `\n\nEXISTING PAGE CONTENT:\n${JSON.stringify({
-                    title: existingPageSchema.settings.page.title,
-                    layoutJson: m.layoutJson
-                }, null, 2)}`;
+        // Gather query endpoint details and sample data
+        await context.updateStatus('Gathering data architecture context and samples...');
+        const queryDetailsMap = new Map<string, string>();
+        for (const sq of architecturePlan.selectedQueries) {
+            const queryName = sq.queryName;
+            const fieldName = sq.fieldName;
+            try {
+                const sampleData = await this.cmsClient.requestQuery(context.externalCookie, queryName);
+                queryDetailsMap.set(queryName, `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName} 
+                    REFERENCE RESPONSE SHAPE (DO NOT OUTPUT): ${JSON.stringify(sampleData)}`);
+            } catch (e) {
+                queryDetailsMap.set(queryName, `QUERY: ${queryName} -> FIELD: ${fieldName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${queryName}`);
             }
         }
 
-        await context.updateStatus('Generating Layout JSON components with AI...');
-        const aiResponse = await this.aiProvider.generate(
-            this.systemPrompt,
-            developerMessage,
-            originalInput,
-            parseModelFromProvider(context.providerName)
-        );
-
-        let builderResponse: PageBuilderResponse;
-        if (typeof aiResponse === 'string') {
-            builderResponse = JSON.parse(aiResponse);
+        // Build layout from architecture sections, or use existing layoutJson
+        let layoutJson: LayoutJson;
+        if (metadata.layoutJson && metadata.layoutJson.sections) {
+            layoutJson = metadata.layoutJson;
         } else {
-            builderResponse = aiResponse as PageBuilderResponse;
+            const sections = architecturePlan.sections || [];
+            layoutJson = {
+                sections: sections.map(section => ({
+                    preset: section.preset,
+                    columns: (section.columns || []).map(col => ({
+                        span: col.span,
+                        blocks: [{ id: col.id, type: 'ai-generated' }]
+                    }))
+                }))
+            };
+        }
+
+        // Generate HTML for each component sequentially
+        const components: Record<string, { html: string; props?: any }> = {};
+
+        for (let i = 0; i < componentInstructions.length; i++) {
+            const instruction = componentInstructions[i];
+            await context.updateStatus(`Generating component ${i + 1}/${componentInstructions.length}: ${instruction.id}...`);
+
+            // Build query context for this specific component
+            const relevantQueryDetails = instruction.queriesToUse
+                .map(qName => queryDetailsMap.get(qName) || `QUERY: ${qName} (no details available)`)
+                .join('\n');
+
+            let developerMessage = `
+${stylePrompt}
+
+COMPONENT ID: ${instruction.id}
+COMPONENT INSTRUCTION: ${instruction.instruction}
+
+OVERALL PAGE CONTEXT:
+- Page Type: ${pageType}
+- Page Title: ${architecturePlan.pageTitle}
+- Route: ${pagePlan.pageName}
+- Parameters: ${pagePlan.primaryParameter || 'None'}
+
+DATA ENDPOINTS FOR THIS COMPONENT:
+${relevantQueryDetails}
+
+ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
+`;
+
+            // If there are existing components for this ID, include them for refinement
+            if (metadata.components && metadata.components[instruction.id]) {
+                developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id].html}`;
+            }
+
+            const aiResponse = await this.aiProvider.generate(
+                this.systemPrompt,
+                developerMessage,
+                originalInput,
+                parseModelFromProvider(context.providerName)
+            );
+
+            let componentResponse: ComponentHtmlResponse;
+            if (typeof aiResponse === 'string') {
+                componentResponse = JSON.parse(aiResponse);
+            } else {
+                componentResponse = aiResponse as ComponentHtmlResponse;
+            }
+
+            components[instruction.id] = {
+                html: componentResponse.html,
+            };
+
+            this.logger.info({ componentId: instruction.id }, `Generated component ${i + 1}/${componentInstructions.length}`);
         }
 
         return {
-            ...builderResponse,
+            title: architecturePlan.pageTitle,
+            layoutJson,
+            components,
             enableEngagementBar
         };
-
     }
 
     async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentResponse | null> {
@@ -141,8 +173,8 @@ ${queryDetails.join('\n')}
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
-        await context.updateStatus('Saving generated Components JSON to CMS...');
-        const newSchemaId = await pageManager.saveLayout(schemaId, plan.layoutJson, plan.title);
+        await context.updateStatus('Compiling layout and components into final HTML...');
+        const newSchemaId = await pageManager.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title);
 
         await context.onSchemasSync({
             task_type: context.agentName,
@@ -150,7 +182,8 @@ ${queryDetails.join('\n')}
         });
 
         // Completion
-        const finalMessage = "I have generated your Page Layout, you can find it in CMS.";
+        const componentCount = Object.keys(plan.components).length;
+        const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in CMS.`;
         await context.saveAgentMessage(finalMessage);
         return null;
     }

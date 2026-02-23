@@ -61,6 +61,11 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
         await pageManager.saveArchitecture(plan.schemaId, plan);
 
+        // Also save componentInstructions into metadata at the top level
+        if (plan.componentInstructions && plan.componentInstructions.length > 0) {
+            await pageManager.saveComponentInstructions(plan.schemaId, plan.componentInstructions);
+        }
+
         await context.saveAgentMessage(`I've planned the structure and components for your page.`);
 
         // Chain to HTML Generator
