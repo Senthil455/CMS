@@ -139,6 +139,18 @@ export class ChatService {
         providerName: string,
         onEvent: OnServerToClientEvent): Promise<void> {
         try {
+            // Check for replay command: @replay <logId> [--continue]
+            const replayMatch = content.trim().match(/^@replay\s+(\d+)(\s+--continue)?$/i);
+            if (replayMatch) {
+                const logId = parseInt(replayMatch[1]!);
+                const continuePipeline = !!replayMatch[2];
+                // Save user message so it appears in chat
+                const userMessage = await this.saveUserMessage(userId, content);
+                onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
+                await this.actOnLog(logId, userId, externalCookie, onEvent, continuePipeline);
+                return;
+            }
+
             // 1. Save and notify user message
             const userMessage = await this.saveUserMessage(userId, content);
             onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
@@ -210,22 +222,30 @@ export class ChatService {
     }
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+        try {
+            const pageManager = new PageManager(this.cmsClient, this.logger, externalCookie);
+            const schemaId = await pageManager.savePlanAndUserInput(
+                response.requestPayload.schemaId,
+                response.requestPayload.plan,
+                response.selectedTemplate,
+                response.requestPayload.userInput
+            );
 
-        const pageManager = new PageManager(this.cmsClient, this.logger, externalCookie);
-        const schemaId = await pageManager.savePlanAndUserInput(
-            response.requestPayload.schemaId,
-            response.requestPayload.plan,
-            response.selectedTemplate,
-            response.requestPayload.userInput
-        );
-
-        const providerName = response.requestPayload.providerName || 'gemini';
-        const baseProviderName = providerName.split(' ')[0] || providerName;
-        if (this.chatHandlers[baseProviderName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
-            const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.PAGE_ARCHITECT, onEvent, schemaId);
-            await this.executeAgent(AGENT_NAMES.PAGE_ARCHITECT, '', context);
-        } else {
-            this.logger.error('PageArchitect handler not found');
+            const providerName = response.requestPayload.providerName || 'gemini';
+            const baseProviderName = providerName.split(' ')[0] || providerName;
+            if (this.chatHandlers[baseProviderName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
+                const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.PAGE_ARCHITECT, onEvent, schemaId);
+                await this.executeAgent(AGENT_NAMES.PAGE_ARCHITECT, '', context);
+            } else {
+                this.logger.error('PageArchitect handler not found');
+                await this.saveAndEmitAgentMessage(userId, 'PageArchitect handler not found. Please check your AI provider configuration.', onEvent);
+            }
+        } catch (error: any) {
+            this.logger.error({ error: formatError(error) }, 'Error handling template selection response');
+            const userMessage = error?.response?.data?.title
+                ? `Error: ${error.response.data.title}`
+                : 'I encountered an error while setting up the page. Please check the logs and try again.';
+            await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
         }
     }
     async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {

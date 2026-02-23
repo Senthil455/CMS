@@ -16,11 +16,10 @@ interface AiLog {
     timestamp: string;
 }
 
-export function AiLogsList({ onSwitchToChat }: { onSwitchToChat?: () => void }) {
+export function AiLogsList({ onSwitchToChat, onSend }: { onSwitchToChat?: () => void; onSend?: (message: string, providerName: string) => void }) {
     const { data, error, isLoading, mutate } = useSWR(`${''}${ENDPOINTS.AI.LOGS}`, fetcher);
     const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
     const [copied, setCopied] = useState<number | null>(null);
-    const [actingLogId, setActingLogId] = useState<number | null>(null);
 
     const logs: AiLog[] = data?.data || [];
 
@@ -35,24 +34,13 @@ export function AiLogsList({ onSwitchToChat }: { onSwitchToChat?: () => void }) 
         setTimeout(() => setCopied(null), 2000);
     };
 
-    const handleAct = async (log: AiLog, continuePipeline: boolean = false) => {
-        try {
-            setActingLogId(log.id);
-            await axios.post(
-                `${''}${ENDPOINTS.AI.ACT_ON_LOG.replace(':id', log.id.toString())}`,
-                { continuePipeline },
-                { withCredentials: true }
-            );
-            toast.success('Action triggered');
-            if (continuePipeline && onSwitchToChat) {
-                onSwitchToChat();
-            }
-        } catch (e) {
-            console.error('Failed to act on log', e);
-            toast.error('Failed to trigger action');
-        } finally {
-            setActingLogId(null);
-        }
+    const handleAct = (log: AiLog, continuePipeline: boolean = false) => {
+        if (!onSend) return;
+        const command = continuePipeline
+            ? `@replay ${log.id} --continue`
+            : `@replay ${log.id}`;
+        onSend(command, 'gemini');
+        onSwitchToChat?.();
     };
 
     if (isLoading) {
@@ -108,18 +96,16 @@ export function AiLogsList({ onSwitchToChat }: { onSwitchToChat?: () => void }) 
                             <div className="flex gap-2 mb-3">
                                 <button
                                     onClick={() => handleAct(log, false)}
-                                    disabled={actingLogId === log.id}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95"
                                 >
-                                    {actingLogId === log.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                                    <Play className="w-3.5 h-3.5" />
                                     Act
                                 </button>
                                 <button
                                     onClick={() => handleAct(log, true)}
-                                    disabled={actingLogId === log.id}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95"
                                 >
-                                    {actingLogId === log.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                                    <Play className="w-3.5 h-3.5" />
                                     Act & Continue
                                 </button>
                                 <button

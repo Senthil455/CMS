@@ -102,7 +102,7 @@ export function ChatPanel({
                         onLoadMore={onLoadMore}
                     />
                 ) : (
-                    <AiLogsList onSwitchToChat={() => setActiveTab('chat')} />
+                    <AiLogsList onSwitchToChat={() => setActiveTab('chat')} onSend={onSend} />
                 )}
             </div>
 

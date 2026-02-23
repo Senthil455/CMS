@@ -19,8 +19,7 @@ interface ExplorerProps {
 
 export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, user, logout }: ExplorerProps) {
     const navigate = useNavigate();
-    const { entities, queries, pages: allPages, isLoading, saveSchema, defineEntity } = useSchemas();
-    const pages = allPages.filter(p => (p.settings.page?.source === 'ai'));
+    const { entities, queries, pages, isLoading, saveSchema, defineEntity } = useSchemas();
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         entities: true,
         queries: true,
