@@ -16,9 +16,14 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     });
     const geminiKey = geminiKeySetting?.value || config.GEMINI_API_KEY || '';
 
+    const openaiKeySetting = await fastify.prisma.systemSetting.findUnique({
+        where: { key: 'OPENAI_API_KEY' }
+    });
+    const openaiKey = openaiKeySetting?.value || config.OPENAI_API_KEY || '';
+
     const providers: Record<string, AIProvider> = {
         openai: new OpenAIProvider(
-            config.OPENAI_API_KEY || '',
+            openaiKey,
             config.OPENAI_API_URL,
             config.OPENAI_MODEL,
             infraLogger

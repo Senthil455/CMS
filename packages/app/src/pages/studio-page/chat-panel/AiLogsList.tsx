@@ -16,7 +16,7 @@ interface AiLog {
     timestamp: string;
 }
 
-export function AiLogsList() {
+export function AiLogsList({ onSwitchToChat }: { onSwitchToChat?: () => void }) {
     const { data, error, isLoading, mutate } = useSWR(`${''}${ENDPOINTS.AI.LOGS}`, fetcher);
     const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
     const [copied, setCopied] = useState<number | null>(null);
@@ -44,6 +44,9 @@ export function AiLogsList() {
                 { withCredentials: true }
             );
             toast.success('Action triggered');
+            if (continuePipeline && onSwitchToChat) {
+                onSwitchToChat();
+            }
         } catch (e) {
             console.error('Failed to act on log', e);
             toast.error('Failed to trigger action');

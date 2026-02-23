@@ -17,7 +17,7 @@ const envSchema = z.object({
     GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
     GEMINI_USE_CACHING: z.string().transform(v => v === 'true').default('false'),
     OPENAI_API_KEY: z.string().optional(),
-    OPENAI_API_URL: z.string().url().default('https://api.openai.com/v1/chat/completions'),
+    OPENAI_API_URL: z.string().url().default('https://api.openai.com/v1'),
     OPENAI_MODEL: z.string().default('gpt-5.2'),
     LOG_LEVEL_FASTIFY: z.enum(['debug', 'info', 'warn', 'error']).default('warn'),
     LOG_LEVEL_SERVICE: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

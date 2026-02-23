@@ -73,7 +73,10 @@ export class GeminiProvider implements AIProvider {
 
     async generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any> {
         const start = Date.now();
-        const currentModel = modelOverride || this.model;
+        let currentModel = modelOverride || this.model;
+        if (['gemini-3-pro', 'gemini-3-flash', 'gemini-3.1-pro'].includes(currentModel)) {
+            currentModel = `${currentModel}-preview`;
+        }
 
         try {
             let cacheName: string | null = null;

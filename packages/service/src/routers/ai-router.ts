@@ -8,14 +8,13 @@ const aiRouter: FastifyPluginAsync = async (fastify) => {
         const agents = Object.keys(fastify.aiProvider);
         const combinations: string[] = [];
 
-        if (agents.includes('gemini')) {
-            combinations.push('gemini (gemini-1.5-pro)');
-            combinations.push('gemini (gemini-1.5-flash)');
-            combinations.push('gemini (gemini-2.0-pro-exp-02-05)');
-            combinations.push('gemini (gemini-2.0-flash)');
+        if (agents.includes('gemini') && fastify.aiProvider['gemini']?.hasApiKey && fastify.aiProvider['gemini']?.hasApiKey()) {
+            combinations.push('gemini (gemini-3-pro)');
+            combinations.push('gemini (gemini-3-flash)');
+            combinations.push('gemini (gemini-2.5-flash)');
         }
 
-        if (agents.includes('openai')) {
+        if (agents.includes('openai') && fastify.aiProvider['openai']?.hasApiKey && fastify.aiProvider['openai']?.hasApiKey()) {
             combinations.push('openai (gpt-5.2)');
             combinations.push('openai (gpt-5-mini)');
             combinations.push('openai (gpt-5-nano)');

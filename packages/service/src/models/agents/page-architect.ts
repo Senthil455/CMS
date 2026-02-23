@@ -80,7 +80,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
 ROUTING PLAN:
 - Planned Path: ${pagePlan.pageName}
 - Parameters: ${pagePlan.primaryParameter || 'None'}
-- Linking Rules: ${pagePlan.linkingRules.join(', ')}
+- Linking Rules: ${pagePlan.linkingRules?.join(', ') || 'None'}
 
 AVAILABLE QUERIES:
 ${queryListContext}

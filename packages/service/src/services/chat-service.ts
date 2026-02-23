@@ -104,9 +104,10 @@ export class ChatService {
         userInput: string,
         context: AgentContext
     ): Promise<void> {
-        const handler = this.chatHandlers[context.providerName]?.[taskType];
+        const baseProviderName = context.providerName.split(' ')[0] || context.providerName;
+        const handler = this.chatHandlers[baseProviderName]?.[taskType];
         if (!handler) {
-            this.logger.error({ taskType, providerName: context.providerName }, 'Handler not found for task type');
+            this.logger.error({ taskType, providerName: context.providerName, baseProviderName }, 'Handler not found for task type');
             return;
         }
 
@@ -157,7 +158,7 @@ export class ChatService {
             }
 
             if (!agent) {
-                agent = await this.intentClassifier[baseProviderName]!.resolve(content);
+                agent = await this.intentClassifier[baseProviderName]!.resolve(content, providerName);
             }
 
             if (agent) {
@@ -219,7 +220,8 @@ export class ChatService {
         );
 
         const providerName = response.requestPayload.providerName || 'gemini';
-        if (this.chatHandlers[providerName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
+        const baseProviderName = providerName.split(' ')[0] || providerName;
+        if (this.chatHandlers[baseProviderName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
             const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.PAGE_ARCHITECT, onEvent, schemaId);
             await this.executeAgent(AGENT_NAMES.PAGE_ARCHITECT, '', context);
         } else {
@@ -237,14 +239,14 @@ export class ChatService {
 
         let targetHandler: Agent | undefined;
         let providerName = log.providerName || 'gemini';
+        let baseProviderName = providerName.split(' ')[0] || providerName;
 
         for (const [pName, handlers] of Object.entries(this.chatHandlers)) {
             // If provider is specified in log, only enforce that one
-            if (log.providerName && pName !== log.providerName) continue;
+            if (log.providerName && pName !== baseProviderName) continue;
 
             if (handlers[handlerName as AgentName]) {
                 targetHandler = handlers[handlerName as AgentName];
-                providerName = pName;
                 break;
             }
         }
