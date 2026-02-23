@@ -7,24 +7,25 @@ import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { PageEditHeader } from './components/PageEditHeader';
 import { PageEditSettings } from './components/PageEditSettings';
 import { PageEditLayout } from './components/PageEditLayout';
+import { PageEditSource } from './components/PageEditSource';
 
 interface PageEditProps {
     item: SchemaDto;
-    initialTab?: 'settings' | 'layout';
-    onTabChange?: (tab: 'settings' | 'layout') => void;
+    initialTab?: 'settings' | 'layout' | 'view-html';
+    onTabChange?: (tab: 'settings' | 'layout' | 'view-html') => void;
     onSave: (payload: SaveSchemaPayload, skipNavigate?: boolean) => Promise<void>;
     onCancel: () => void;
 }
 
 export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: PageEditProps) {
-    const [activeTab, setActiveTab] = useState<'settings' | 'layout'>(initialTab);
+    const [activeTab, setActiveTab] = useState<'settings' | 'layout' | 'view-html'>(initialTab);
 
     // Sync internal state if prop changes (e.g. via URL)
     if (initialTab !== activeTab) {
         setActiveTab(initialTab);
     }
 
-    const handleTabChange = (tab: 'settings' | 'layout') => {
+    const handleTabChange = (tab: 'settings' | 'layout' | 'view-html') => {
         setActiveTab(tab);
         onTabChange?.(tab);
     };
@@ -58,13 +59,19 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             if (activeTab === 'layout' && pageForm.metadata?.layoutJson) {
                 const layoutJson = pageForm.metadata.layoutJson as LayoutJson;
 
-                // Construct componentsMap from default HTML blocks
+                // Use AI-generated components from metadata, falling back to HTML_BLOCKS
                 const componentsMap: Record<string, { html: string; props?: any }> = {};
+                const metadataComponents = pageForm.metadata.components || {};
+
                 layoutJson.sections.forEach(section => {
                     section.columns.forEach(col => {
                         col.blocks.forEach(block => {
-                            const template = HTML_BLOCKS[block.type] || '';
-                            componentsMap[block.id] = { html: template, props: {} };
+                            if (metadataComponents[block.id]) {
+                                componentsMap[block.id] = metadataComponents[block.id];
+                            } else {
+                                const template = HTML_BLOCKS[block.type] || '';
+                                componentsMap[block.id] = { html: template, props: {} };
+                            }
                         });
                     });
                 });
@@ -152,6 +159,18 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                             onSave={handleSave}
                             onCancel={onCancel}
                             isSaving={isSaving}
+                        />
+                    )}
+
+                    {activeTab === 'view-html' && (
+                        <PageEditSource
+                            item={item}
+                            pageForm={pageForm}
+                            onUpdateField={updateField}
+                            onSave={handleSave}
+                            onCancel={onCancel}
+                            isSaving={isSaving}
+                            readOnly={true}
                         />
                     )}
                 </div>

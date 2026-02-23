@@ -15,6 +15,7 @@ interface PageEditSourceProps {
     onSave: (exitAfterSave: boolean) => void;
     onCancel: () => void;
     isSaving: boolean;
+    readOnly?: boolean;
 }
 
 export function PageEditSource({
@@ -23,7 +24,8 @@ export function PageEditSource({
     onUpdateField,
     onSave,
     onCancel,
-    isSaving
+    isSaving,
+    readOnly = false
 }: PageEditSourceProps) {
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [paramValues, setParamValues] = useState<Record<string, string>>({});
@@ -64,7 +66,7 @@ export function PageEditSource({
                 <div className="flex items-center gap-4">
                     <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
                         <Code className="w-4 h-4" />
-                        HTML Content
+                        {readOnly ? 'View HTML' : 'HTML Content'}
                     </h3>
 
                     {/* Param Inputs */}
@@ -86,7 +88,7 @@ export function PageEditSource({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {isFullScreen && (
+                    {!readOnly && isFullScreen && (
                         <>
                             <button
                                 onClick={() => onSave(false)}
@@ -123,6 +125,16 @@ export function PageEditSource({
                             </button>
                         </>
                     )}
+                    {readOnly && isFullScreen && (
+                        <button
+                            onClick={onCancel}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-3 py-1.5 hover:bg-app-muted rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 text-primary-muted hover:text-primary"
+                        >
+                            <X className="w-3 h-3" />
+                            Exit
+                        </button>
+                    )}
                     <div className="w-px h-4 bg-border mx-1" />
                     <button
                         onClick={() => setIsFullScreen(!isFullScreen)}
@@ -146,9 +158,10 @@ export function PageEditSource({
                             height="100%"
                             defaultLanguage="html"
                             value={pageForm.html}
-                            onChange={(value) => onUpdateField('html', value || '')}
+                            onChange={(value) => !readOnly && onUpdateField('html', value || '')}
                             theme="vs-dark"
                             options={{
+                                readOnly,
                                 minimap: { enabled: false },
                                 fontSize: 14,
                                 padding: { top: 16 },

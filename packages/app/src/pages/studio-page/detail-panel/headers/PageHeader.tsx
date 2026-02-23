@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus, UserCircle, ChevronDown, Eye, TrendingUp } from 'lucide-react';
+import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus, UserCircle, ChevronDown, Eye, TrendingUp, Code } from 'lucide-react';
 import { type PageDto, AGENT_NAMES, type PageMetadata, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ interface PageHeaderProps {
     schemaId: string | null;
     publicationStatus?: string;
     onDelete: () => void;
-    onEdit: (tab: 'settings' | 'code') => void;
+    onEdit: (tab: 'settings' | 'code' | 'layout' | 'view-html') => void;
     onChatAction: (action: string) => void;
 }
 
@@ -126,13 +126,22 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             publicationStatus={publicationStatus}
             icon={<Layout className="w-5 h-5" />}
             menuItems={
-                <button
-                    onClick={onDelete}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left"
-                >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Page
-                </button>
+                <>
+                    <button
+                        onClick={() => onEdit('view-html')}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-primary hover:bg-app-muted transition-colors text-left"
+                    >
+                        <Code className="w-4 h-4 text-primary-muted" />
+                        View HTML
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Page
+                    </button>
+                </>
             }
         >
             <button
@@ -200,10 +209,11 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                     Settings
                 </button>
                 <button
-                    onClick={() => onEdit('code')}
+                    onClick={() => onEdit('layout')}
                     className="flex items-center gap-2 px-3 py-1.5 text-primary-muted hover:text-primary rounded-md text-xs font-bold transition-all"
                 >
-                    Edit Source
+                    <Layout className="w-3.5 h-3.5" />
+                    Edit Layout
                 </button>
             </div>
         </HeaderLayout>

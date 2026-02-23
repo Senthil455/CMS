@@ -12,7 +12,7 @@ import { PageHeader } from './headers/PageHeader';
 interface DetailViewProps {
     item: SchemaDto | null;
     schemas: SchemaDto[];
-    onEdit: (tab?: 'settings' | 'code') => void;
+    onEdit: (tab?: 'settings' | 'code' | 'layout' | 'view-html') => void;
     onDelete: () => void;
     onSelect: (item: SchemaDto) => void;
     onChatAction: (action: string) => void;

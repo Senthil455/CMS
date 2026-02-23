@@ -26,10 +26,10 @@ import { type SchemaDto, type ParsedPageDto, type LayoutJson, type LayoutSection
 
 // -- Subcomponents --
 
-function ToolboxItem({ type, label, icon }: { type: string; label: string; icon: string }) {
+function ToolboxItem({ componentId, label }: { componentId: string; label: string }) {
     const { attributes, listeners, setNodeRef, isDragging } = useSortable({
-        id: `toolbox-${type}`,
-        data: { type, isToolbox: true }
+        id: `toolbox-${componentId}`,
+        data: { componentId, type: 'ai-generated', isToolbox: true }
     });
 
     return (
@@ -39,9 +39,9 @@ function ToolboxItem({ type, label, icon }: { type: string; label: string; icon:
             {...attributes}
             className={`flex items-center gap-3 p-3 bg-white border border-border rounded-lg shadow-sm cursor-grab group transition-all ${isDragging ? 'opacity-50 border-blue-500 ring-2 ring-blue-200' : 'hover:border-blue-500 hover:shadow'}`}
         >
-            <span className="text-lg">{icon}</span>
-            <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600">{label}</span>
-            <GripVertical className="w-4 h-4 text-gray-300 ml-auto group-hover:text-blue-400" />
+            <span className="text-lg">🧩</span>
+            <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate">{label}</span>
+            <GripVertical className="w-4 h-4 text-gray-300 ml-auto shrink-0 group-hover:text-blue-400" />
         </div>
     );
 }
@@ -58,7 +58,7 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove }: 
         opacity: isDragging ? 0.3 : 1,
     };
 
-    const blockMeta = AVAILABLE_BLOCKS.find((b: any) => b.type === block.type) || { label: block.type, icon: '📦' };
+    const blockLabel = block.id;
 
     return (
         <div
@@ -75,8 +75,8 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove }: 
                 <X className="w-3 h-3" />
             </button>
             <div className="flex items-center gap-2">
-                <span className="text-base">{blockMeta.icon}</span>
-                <span className="text-xs font-bold text-gray-700">{blockMeta.label}</span>
+                <span className="text-base">🧩</span>
+                <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
             </div>
             <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {block.id}</div>
         </div>
@@ -119,16 +119,7 @@ function ColumnZone({ sectionIdx, colIdx, col, onRemoveBlock }: { sectionIdx: nu
     );
 }
 
-// Component mapping for the Toolbox
-const AVAILABLE_BLOCKS = [
-    { type: 'hero', label: 'Hero Banner', icon: '🎨' },
-    { type: 'featured-post', label: 'Featured Article', icon: '📰' },
-    { type: 'post-list', label: 'Blog Posts Grid', icon: '📝' },
-    { type: 'faq', label: 'FAQ Accordion', icon: '❓' },
-    { type: 'engagement-bar', label: 'Engagement Bar', icon: '👍' },
-    { type: 'top-list', label: 'Top List Sidebar', icon: '🔥' },
-    { type: 'user-avatar', label: 'User Avatar', icon: '👤' },
-];
+// SECTION_PRESETS kept for adding new layout sections
 
 const SECTION_PRESETS = [
     { id: '12', label: 'Full Width (12)', columns: [12] },
@@ -155,6 +146,13 @@ export function PageEditLayout({
 }: PageEditLayoutProps) {
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(null);
+
+    // Build the toolbox from metadata.components
+    const availableComponents = useMemo(() => {
+        const comps = pageForm.metadata?.components;
+        if (!comps) return [];
+        return Object.keys(comps).map(id => ({ id, label: id }));
+    }, [pageForm.metadata?.components]);
 
     // Initialize layout state safely
     const layout: LayoutJson = useMemo(() => {
@@ -285,9 +283,11 @@ export function PageEditLayout({
             const overLoc = findLocation(overIdStr, over.data.current);
             if (!overLoc) return;
 
+            // The componentId from toolbox data is the key into metadata.components
+            const componentId = active.data.current?.componentId || 'unknown';
             const newBlock: LayoutBlock = {
-                id: `block-${Math.random().toString(36).substring(2, 8)}`,
-                type: active.data.current?.type || 'unknown'
+                id: componentId,
+                type: 'ai-generated'
             };
 
             const newSections = [...layout.sections];
@@ -356,11 +356,15 @@ export function PageEditLayout({
                             <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">Components</h4>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                            <SortableContext items={AVAILABLE_BLOCKS.map(b => `toolbox-${b.type}`)} strategy={verticalListSortingStrategy}>
-                                {AVAILABLE_BLOCKS.map(block => (
-                                    <ToolboxItem key={block.type} type={block.type} label={block.label} icon={block.icon} />
-                                ))}
-                            </SortableContext>
+                            {availableComponents.length === 0 ? (
+                                <div className="text-xs text-gray-400 italic text-center py-4">No AI-generated components yet. Run the page builder first.</div>
+                            ) : (
+                                <SortableContext items={availableComponents.map(c => `toolbox-${c.id}`)} strategy={verticalListSortingStrategy}>
+                                    {availableComponents.map(comp => (
+                                        <ToolboxItem key={comp.id} componentId={comp.id} label={comp.label} />
+                                    ))}
+                                </SortableContext>
+                            )}
                         </div>
                     </div>
 
