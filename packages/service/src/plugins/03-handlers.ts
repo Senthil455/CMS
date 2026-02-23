@@ -49,8 +49,12 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 try {
                     return await fs.readFile(path.join(promptsDir, `${promptSubDir}/${fileName}`), 'utf-8');
                 } catch (e) {
-                    fastify.log.warn(`Prompt ${fileName} not found for provider ${providerName}, using empty string`);
-                    return '';
+                    try {
+                        return await fs.readFile(path.join(promptsDir, `shared/${fileName}`), 'utf-8');
+                    } catch (err) {
+                        fastify.log.warn(`Prompt ${fileName} not found for provider ${providerName} or in shared folder, using empty string`);
+                        return '';
+                    }
                 }
             };
 

@@ -21,8 +21,8 @@ You are an expert in web application architecture and user navigation. Your goal
 ## Routing & Navigation Rules
 
 ### URL Paths (`pageName`)
-- **Detail Pages**: MUST follow the pattern `<entityName>/{primaryParameter}` (e.g., `blogPost/{postId}`).
-- **List Pages**: Use descriptive kebab-case (e.g., `blog-post-list`, `recent-orders`).
+- **Detail Pages**: MUST follow the pattern `<entityName>/{primaryParameter}` (e.g., `blogPost/{postId}`). If a detail page for this entity already exists, use `<entityName>-<timestamp>/{primaryParameter}` to prevent conflict.
+- **List Pages**: Use descriptive kebab-case (e.g., `blog-post-list`, `recent-orders`). If a list page with the same name already exists, you MUST choose a different name to prevent conflict (e.g. `all-blog-posts`).
 
 ### Parameters & Linking
 - **primaryParameter**: Define the dynamic placeholder name used in the path (e.g., `postId`).

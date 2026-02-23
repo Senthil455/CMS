@@ -21,7 +21,8 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
 
         // Fetch existing entities to help planner
         const schemas = await this.cmsClient.getAllEntities(context.externalCookie);
-        const entityNames = schemas.map((s: any) => s.name).filter(Boolean) as string[];
+        const entityNames = schemas.filter((s: any) => s.type === 'entity').map((s: any) => s.name).filter(Boolean) as string[];
+        const existingPageNames = schemas.filter((s: any) => s.type === 'page' && s.settings?.page?.name).map((s: any) => s.settings.page.name) as string[];
 
         let existingPagePlan: PagePlan | undefined = undefined;
         if (schemaId) {
@@ -38,7 +39,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             }
         }
 
-        const pagePlan = await this.plan(userInput, context, entityNames, existingPagePlan);
+        const pagePlan = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
         await context.saveAgentMessage(`I have determined that you want to create a "${pagePlan.pageType}" page${pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : ''}. I've also designed a route: ${pagePlan.pageName}`);
 
         let templates: { id: string, name: string, description: string }[] = [];
@@ -70,10 +71,11 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         return null;
     }
 
-    private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {
+    private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {
         const entitiesList = entityNames.length > 0 ? entityNames.join(", ") : "None";
+        const existingPagesList = existingPageNames.length > 0 ? existingPageNames.join(", ") : "None";
 
-        let developerMessage = `Existing Entities: [${entitiesList}]\n\nDETERMINE THE PAGE TYPE, RELEVANT ENTITY, AND THE ROUTING STRUCTURE.`;
+        let developerMessage = `Existing Entities: [${entitiesList}]\nExisting Pages: [${existingPagesList}]\n\nDETERMINE THE PAGE TYPE, RELEVANT ENTITY, AND THE ROUTING STRUCTURE.`;
 
         if (existingPlan) {
             developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
