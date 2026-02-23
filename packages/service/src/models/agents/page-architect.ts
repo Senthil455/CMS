@@ -48,7 +48,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         const existingArchitecture = metadata.architecture || {};
 
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
-        const templateStyle = metadata.templateId || 'modern';
+        const templateStyle = metadata.templateId || '';
 
         const architecturePlan = await this.plan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
 
@@ -84,8 +84,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
             `).join('\n');
 
         let developerMessage = `
-DESIGN TEMPLATE: ${templateStyle}
-
+${templateStyle ? `DESIGN TEMPLATE: ${templateStyle}\n` : ''}
 ROUTING PLAN:
 - Planned Path: ${pagePlan.pageName}
 - Parameters: ${pagePlan.primaryParameter || 'None'}

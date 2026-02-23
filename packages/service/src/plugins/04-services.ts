@@ -16,6 +16,10 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const serviceLogger = fastify.log.child({ component: 'SERVICE' }, { level: config.LOG_LEVEL_SERVICE });
 
     const repository = new SqliteChatRepository(prisma);
+
+    // Seed default design styles if table is empty
+    await repository.seedDefaultStyles();
+
     const cmsClient = fastify.cms;
     const intentClassifier = fastify.intentClassifier;
 

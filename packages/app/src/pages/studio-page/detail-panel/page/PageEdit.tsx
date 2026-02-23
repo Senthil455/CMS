@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, LayoutCompiler, HTML_BLOCKS, type LayoutJson } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, LayoutCompiler, type LayoutJson } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { useSocket } from '../../../../hooks/use-socket';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
@@ -69,8 +69,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                             if (metadataComponents[block.id]) {
                                 componentsMap[block.id] = metadataComponents[block.id];
                             } else {
-                                const template = HTML_BLOCKS[block.type] || '';
-                                componentsMap[block.id] = { html: template, props: {} };
+                                componentsMap[block.id] = { html: `<!-- Generating component ${block.type} -->`, props: {} };
                             }
                         });
                     });

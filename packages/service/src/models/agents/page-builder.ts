@@ -21,7 +21,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
     constructor(
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
-        private readonly styleMap: Record<string, string>,
+        private readonly getStylePrompt: (styleName: string, pageType: string) => Promise<string>,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
         private readonly baseUrl: string,
@@ -59,7 +59,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
             throw new Error("No component instructions found in page metadata. The architect must generate componentInstructions.");
         }
 
-        const templateStyle = metadata.templateId || 'modern';
+        const templateStyle = metadata.templateId || '';
         const pageType = pagePlan.pageType;
         let enableEngagementBar = metadata.enableEngagementBar || false;
 
@@ -67,8 +67,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
             enableEngagementBar = false;
         }
 
-        const styleKey = `${templateStyle}-${pageType}`;
-        const stylePrompt = this.styleMap[styleKey] || this.styleMap[`modern-${pageType}`] || this.styleMap[templateStyle] || 'DESIGN STYLE INSTRUCTION: Modern Editorial';
+        const stylePrompt = await this.getStylePrompt(templateStyle, pageType);
 
         // Gather query endpoint details and sample data
         await context.updateStatus('Gathering data architecture context and samples...');
@@ -119,8 +118,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
                 .join('\n');
 
             let developerMessage = `
-${stylePrompt}
-
+${stylePrompt ? stylePrompt + '\n' : ''}
 COMPONENT ID: ${instruction.id}
 COMPONENT INSTRUCTION: ${instruction.instruction}
 

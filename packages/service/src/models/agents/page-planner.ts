@@ -9,7 +9,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         aiProvider: AIProvider,
         private readonly plannerSystemPrompt: string,
         logger: ServiceLogger,
-        private readonly templates: Record<string, { id: string, name: string, description: string }[]>,
+        private readonly getTemplateOptions: () => Promise<{ id: string; name: string; description: string }[]>,
         private readonly cmsClient: CmsClient
     ) {
         super("generating your page", logger, aiProvider);
@@ -42,13 +42,10 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         const pagePlan = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
         await context.saveAgentMessage(`I have determined that you want to create a "${pagePlan.pageType}" page${pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : ''}. I've also designed a route: ${pagePlan.pageName}`);
 
-        let templates: { id: string, name: string, description: string }[] = [];
-
-        if (pagePlan.pageType === 'detail') {
-            templates = this.templates['detail'] || [];
-        } else {
-            templates = this.templates['list'] || [];
-        }
+        // Load templates from DB and prepend "No Style" option
+        const dbTemplates = await this.getTemplateOptions();
+        const noStyleOption = { id: '', name: 'No Style', description: 'Generate without a specific design template. The AI will use its own judgement.' };
+        const templates = [noStyleOption, ...dbTemplates];
 
         return {
             userInput,

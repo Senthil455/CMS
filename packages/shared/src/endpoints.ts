@@ -1,11 +1,9 @@
 export const ENDPOINTS = {
     CHAT: {
         HISTORY: '/cmsapi/chat/history',
-        ENGAGEMENT_BAR: '/cmsapi/chat/engagement-bar',
-        USER_AVATAR: '/cmsapi/chat/user-avatar',
-        VISIT_TRACK: '/cmsapi/chat/visit-track',
-        TOP_LIST: '/cmsapi/chat/top-list',
         STATUS: '/cmsapi/chat/status',
+        PAGE_ADDONS: '/cmsapi/page-addons',
+        TRIGGER_ADDON: '/cmsapi/chat/addon',
     },
     AUTH: {
         LOGIN: '/api/login',

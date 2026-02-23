@@ -1,31 +1,28 @@
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
-import type { CmsClient } from '../../infrastructures/cms-client';
-import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
-import { AGENT_NAMES, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
+import type { AIProvider } from '../../../infrastructures/ai-provider.interface';
+import type { CmsClient } from '../../../infrastructures/cms-client';
+import type { ServiceLogger } from '../../../types/logger';
+import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
+import { type AgentName, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload } from '@cms/shared';
 
-export interface TopListPlan {
+export interface AddonPlan {
     schemaId: string;
     pageDto: PageDto;
 }
 
-export class PageTopListBuilder extends BaseAgent<TopListPlan> {
+export class PageAddonBuilder extends BaseAgent<AddonPlan> {
     constructor(
+        private readonly addonDef: PageAddonDefinition,
         aiProvider: AIProvider,
         private readonly systemPrompt: string,
-        private readonly topListSnippet: string,
+        private readonly snippet: string | undefined,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
     ) {
-        super("adding top list", logger, aiProvider);
+        super(`adding ${addonDef.label.toLowerCase()}`, logger, aiProvider);
     }
 
-    public getSnippet(): string {
-        return this.topListSnippet;
-    }
-
-    async think(userInput: string, context: AgentContext): Promise<TopListPlan> {
-        this.logger.info('PageTopListBuilder think started');
+    async think(userInput: string, context: AgentContext): Promise<AddonPlan> {
+        this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
 
         // 1. Extract Schema ID
         let schemaId = context.schemaId;
@@ -38,7 +35,7 @@ export class PageTopListBuilder extends BaseAgent<TopListPlan> {
             throw new Error("No page schema ID provided. Please provide the ID in the format #schemaId:");
         }
 
-        await context.saveAgentMessage(`I am correctly connected. Accessing page (ID: ${schemaId})...`);
+        await context.saveAgentMessage(`Accessing page (ID: ${schemaId}) to add ${this.addonDef.label}...`);
 
         // 2. Fetch Page
         const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
@@ -49,16 +46,21 @@ export class PageTopListBuilder extends BaseAgent<TopListPlan> {
         const pageDto = schema.settings.page;
         const metadata = schema.settings.page.metadata as PageMetadata;
 
-        const developerMessage = JSON.stringify({
+        // 3. Build developer message
+        const developerMessage: Record<string, string> = {
             existingHtml: pageDto.html,
-            topListSnippet: this.topListSnippet.replace(/{{entityName}}/g, metadata.plan?.entityName || '')
-        }, null, 2);
+        };
 
-        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
+        if (this.snippet) {
+            const entityName = metadata.plan?.entityName || '';
+            developerMessage[`${this.addonDef.id}Snippet`] = this.snippet.replace(/{{entityName}}/g, entityName);
+        }
+
+        this.setLastPrompts(this.systemPrompt, JSON.stringify(developerMessage, null, 2), userInput);
 
         const res = await this.aiProvider.generate(
             this.systemPrompt,
-            developerMessage,
+            JSON.stringify(developerMessage, null, 2),
             userInput,
             parseModelFromProvider(context.providerName)
         );
@@ -72,11 +74,12 @@ export class PageTopListBuilder extends BaseAgent<TopListPlan> {
         };
     }
 
-    async act(plan: TopListPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<AgentResponse | null> {
         const { schemaId, pageDto } = plan;
 
         const metadata = pageDto.metadata as PageMetadata;
-        metadata.enableTopList = true;
+        // Set the metadata flag dynamically
+        (metadata as any)[this.addonDef.metadataFlag] = true;
 
         const payload: SaveSchemaPayload = {
             schemaId: schemaId,
@@ -90,9 +93,9 @@ export class PageTopListBuilder extends BaseAgent<TopListPlan> {
         };
 
         await this.cmsClient.saveSchema(context.externalCookie, payload);
-        await context.saveAgentMessage(`Successfully added Top List component to page "${pageDto.name}".`);
+        await context.saveAgentMessage(`Successfully added ${this.addonDef.label} to page "${pageDto.name}".`);
         await context.onSchemasSync({
-            task_type: AGENT_NAMES.PAGE_TOP_LIST_BUILDER,
+            task_type: this.addonDef.agentName as AgentName,
             schemasId: [schemaId]
         });
         return null;

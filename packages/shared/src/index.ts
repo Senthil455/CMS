@@ -1,5 +1,4 @@
 export * from './contracts.js';
-export * from './blocks/index.js';
 export * from './utils/layout-compiler.js';
 export * from './endpoints.js';
 export * from './events.js';

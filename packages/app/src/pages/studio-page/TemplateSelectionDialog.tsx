@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Layout, Type, Image, Check, X } from 'lucide-react';
+import { Layout, Type, Image, Check, X, Ban } from 'lucide-react';
 
 interface TemplateOption {
     id: string;
@@ -27,13 +27,14 @@ export function TemplateSelectionDialog({
     if (!isOpen) return null;
 
     const handleConfirm = () => {
-        if (selectedId) {
+        if (selectedId !== null) {
             onConfirm(selectedId, false);
         }
     };
 
     const getIcon = (id: string) => {
         switch (id) {
+            case '': return <Ban className="w-8 h-8 text-gray-400" />;
             case 'modern': return <Layout className="w-8 h-8 text-blue-500" />;
             case 'classic': return <Type className="w-8 h-8 text-gray-700" />;
             case 'minimal': return <Image className="w-8 h-8 text-emerald-500" />;
@@ -106,7 +107,7 @@ export function TemplateSelectionDialog({
                     </button>
                     <button
                         onClick={handleConfirm}
-                        disabled={!selectedId}
+                        disabled={selectedId === null}
                         className="flex items-center gap-2 px-6 py-2 bg-primary text-app rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
                     >
                         Start Generation

@@ -1,7 +1,0 @@
-DESIGN STYLE INSTRUCTION: Minimalist Visual (List View)
-
-- Layout: Masonry or uniform grid with massive whitespace (gap-y-16).
-- Cards: COMPLETELY CLEAN. No borders, no shadows, no background colors. Just Image + Title + Subtitle.
-- Typography: Large, airy headings. text-gray-900 for title, text-gray-500 for summary.
-- Images: Tall aspect ratios (portrait or 4:3).
-- Navigation: Minimal header. No sticky headers.

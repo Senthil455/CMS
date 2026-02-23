@@ -15,10 +15,8 @@ import { PagePlanner } from '../models/agents/page-planner';
 import { PageArchitect } from '../models/agents/page-architect';
 import { PageBuilder } from '../models/agents/page-builder';
 import { DataGenerator } from '../models/agents/data-synthesizer';
-import { PageEngagementBarBuilder } from '../models/agents/page-engagement-bar-builder';
-import { PageUserAvatarBuilder } from '../models/agents/page-user-avatar-builder';
-import { PageVisitTracker } from '../models/agents/page-visit-tracker';
-import { PageTopListBuilder } from '../models/agents/page-top-list-builder';
+import { PAGE_ADDON_REGISTRY } from '../models/agents/page-addons/index';
+import { PageAddonBuilder } from '../models/agents/page-addons/PageAddonBuilder';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -76,66 +74,48 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 loadPrompt('page-builder.md'),
             ]);
 
-            const [
-                modernListPrompt,
-                modernDetailPrompt,
-                classicListPrompt,
-                classicDetailPrompt,
-                minimalListPrompt,
-                minimalDetailPrompt
-            ] = await Promise.all([
-                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-list.md'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/modern-editorial-detail.md'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-list.md'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/classic-newspaper-detail.md'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-list.md'), 'utf-8'),
-                fs.readFile(path.join(promptsDir, 'styles/minimalist-visual-detail.md'), 'utf-8'),
-            ]);
-
-            const styleMap: Record<string, string> = {
-                'modern-list': modernListPrompt,
-                'modern-detail': modernDetailPrompt,
-                'classic-list': classicListPrompt,
-                'classic-detail': classicDetailPrompt,
-                'minimal-list': minimalListPrompt,
-                'minimal-detail': minimalDetailPrompt,
-                // Fallbacks
-                'modern': modernListPrompt,
-                'classic': classicListPrompt,
-                'minimal': minimalListPrompt
+            // DB-backed style lookup function
+            const prisma = fastify.prisma;
+            const getStylePrompt = async (styleName: string, pageType: string): Promise<string> => {
+                if (!styleName) return '';
+                const style = await prisma.designStyle.findUnique({ where: { name: styleName } });
+                if (!style) return '';
+                return pageType === 'detail' ? (style.detailPrompt || '') : (style.listPrompt || '');
             };
 
-            const userAvatarPrompt = await loadPrompt('page-user-avatar-builder.md');
-            const engagementBarPrompt = await loadPrompt('page-engagement-bar-builder.md');
-            const visitTrackPrompt = await loadPrompt('page-visit-tracker.md');
-            const topListPrompt = await loadPrompt('page-top-list-builder.md');
-            const engagementBarSnippet = await fs.readFile(path.join(promptsDir, 'components/engagement-bar.html'), 'utf-8').catch(() => '');
-            const userAvatarSnippet = await fs.readFile(path.join(promptsDir, 'components/user-avatar.html'), 'utf-8').catch(() => '');
-            const topListSnippet = await fs.readFile(path.join(promptsDir, 'components/top-list.html'), 'utf-8').catch(() => '');
+            // Load template options from DB for PagePlanner
+            const getTemplateOptions = async (): Promise<{ id: string; name: string; description: string }[]> => {
+                const styles = await prisma.designStyle.findMany({ orderBy: { name: 'asc' } });
+                return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
+            };
 
+            // Load snippet helper
+            const htmlBlocksDir = path.join(__dirname, '../../resources/html-blocks');
+            const loadSnippet = async (fileName: string): Promise<string | undefined> => {
+                try {
+                    return await fs.readFile(path.join(htmlBlocksDir, fileName), 'utf-8');
+                } catch {
+                    return undefined;
+                }
+            };
 
-            // Instantiate Planners
-            // PagePlanner instantiation removed
-            // PageArchitect instantiation removed
-
-            const engagementBarGenerator = new PageEngagementBarBuilder(provider, engagementBarPrompt, engagementBarSnippet, cmsClient, modelLogger);
-            const userAvatarGenerator = new PageUserAvatarBuilder(provider, userAvatarPrompt, userAvatarSnippet, cmsClient, modelLogger);
-            const visitTrackGenerator = new PageVisitTracker(provider, visitTrackPrompt, cmsClient, modelLogger);
-            const topListGenerator = new PageTopListBuilder(provider, topListPrompt, topListSnippet, cmsClient, modelLogger);
+            // Build addon handlers from registry
+            const addonHandlers: Record<string, PageAddonBuilder> = {};
+            for (const addon of PAGE_ADDON_REGISTRY) {
+                const prompt = await loadPrompt(addon.promptFile);
+                const snippet = addon.snippetFile ? await loadSnippet(addon.snippetFile) : undefined;
+                addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger);
+            }
 
             const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger);
 
-            const pageBuilderAgent = new PageBuilder(provider, htmlGeneratorPrompt, styleMap, cmsClient, modelLogger, config.CMS_BASE_URL);
+            const pageBuilderAgent = new PageBuilder(provider, htmlGeneratorPrompt, getStylePrompt, cmsClient, modelLogger, config.CMS_BASE_URL);
 
-
-            const dataDir = path.join(__dirname, '../../resources/data');
-            const templatesData = await fs.readFile(path.join(dataDir, 'page-templates.json'), 'utf-8');
-            const templates = JSON.parse(templatesData);
 
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, templates, cmsClient);
+            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
             // removed htmlGenerationHandler instantiation
 
@@ -164,12 +144,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
                 [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
                 [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
-                [AGENT_NAMES.PAGE_ENGAGEMENT_BAR_BUILDER]: engagementBarGenerator,
-                [AGENT_NAMES.PAGE_USER_AVATAR_BUILDER]: userAvatarGenerator,
-                [AGENT_NAMES.PAGE_VISIT_TRACKER]: visitTrackGenerator,
-                [AGENT_NAMES.PAGE_TOP_LIST_BUILDER]: topListGenerator,
-
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
+                ...addonHandlers,
             };
         } catch (error) {
             fastify.log.warn(`Failed to load prompts for provider "${providerName}": ${(error as Error).message}`);

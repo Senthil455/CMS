@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { ENDPOINTS, SOCKET_EVENTS, AGENT_NAMES } from '@cms/shared';
 import { formatError } from '../utils/error-formatter';
+import { PAGE_ADDON_REGISTRY } from '../models/agents/page-addons/index';
 
 const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.HISTORY, {
@@ -28,45 +29,31 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         return { success: true, data: { statuses } };
     });
 
-    fastify.post(ENDPOINTS.CHAT.ENGAGEMENT_BAR, {
+    // --- Page Addons ---
+
+    // GET: Return the list of available page addons (for frontend dropdown)
+    fastify.get(ENDPOINTS.CHAT.PAGE_ADDONS, {
         preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
-        try {
-            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
-            const userId = request.user!.id.toString();
-            const externalCookie = request.headers.cookie || '';
-
-            // Define onEvent to emit to the specific user via socket
-            const onEvent = (event: string, payload: any) => {
-                fastify.socketService.emitToUser(userId, event, payload);
-            };
-
-            // Synthesize the user message that triggers the agent
-            const syntheticMessage = `@${AGENT_NAMES.PAGE_ENGAGEMENT_BAR_BUILDER} #${schemaId}: Add engagement bar code to this page`;
-
-            // Trigger the existing chat pipeline
-            // This will run asynchronously in terms of "agent thinking", but we await the initial handling.
-            // Note: handleUserMessage connects to executeAgent which awaits the full chain.
-            await fastify.chatService.handleUserMessage(
-                userId,
-                syntheticMessage,
-                externalCookie,
-                providerName || 'gemini', // default provider
-                onEvent
-            );
-
-            return { success: true, message: 'Engagement Bar Generator triggered successfully' };
-        } catch (error) {
-            fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to trigger Engagement Bar Generator' });
-        }
+    }, async () => {
+        return { success: true, data: PAGE_ADDON_REGISTRY };
     });
 
-    fastify.post(ENDPOINTS.CHAT.USER_AVATAR, {
+    // POST: Trigger any page addon by id
+    fastify.post(ENDPOINTS.CHAT.TRIGGER_ADDON, {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
+            const { addonId, schemaId, providerName } = request.body as {
+                addonId: string;
+                schemaId: string;
+                providerName?: string;
+            };
+
+            const addon = PAGE_ADDON_REGISTRY.find(a => a.id === addonId);
+            if (!addon) {
+                return reply.status(400).send({ success: false, error: `Unknown addon: ${addonId}` });
+            }
+
             const userId = request.user!.id.toString();
             const externalCookie = request.headers.cookie || '';
 
@@ -74,7 +61,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 fastify.socketService.emitToUser(userId, event, payload);
             };
 
-            const syntheticMessage = `@${AGENT_NAMES.PAGE_USER_AVATAR_BUILDER} #${schemaId}: Add user avatar to header`;
+            const syntheticMessage = `@${addon.agentName} #${schemaId}: ${addon.chatMessage}`;
 
             await fastify.chatService.handleUserMessage(
                 userId,
@@ -84,68 +71,10 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 onEvent
             );
 
-            return { success: true, message: 'User Avatar Generator triggered successfully' };
+            return { success: true, message: `${addon.label} triggered successfully` };
         } catch (error) {
             fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to trigger User Avatar Generator' });
-        }
-    });
-
-    fastify.post(ENDPOINTS.CHAT.VISIT_TRACK, {
-        preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
-        try {
-            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
-            const userId = request.user!.id.toString();
-            const externalCookie = request.headers.cookie || '';
-
-            const onEvent = (event: string, payload: any) => {
-                fastify.socketService.emitToUser(userId, event, payload);
-            };
-
-            const syntheticMessage = `@${AGENT_NAMES.PAGE_VISIT_TRACKER} #${schemaId}: Add visit tracking to this page`;
-
-            await fastify.chatService.handleUserMessage(
-                userId,
-                syntheticMessage,
-                externalCookie,
-                providerName || 'gemini',
-                onEvent
-            );
-
-            return { success: true, message: 'Visit Track Generator triggered successfully' };
-        } catch (error) {
-            fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to trigger Visit Track Generator' });
-        }
-    });
-
-    fastify.post(ENDPOINTS.CHAT.TOP_LIST, {
-        preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
-        try {
-            const { schemaId, providerName } = request.body as { schemaId: string, providerName?: string };
-            const userId = request.user!.id.toString();
-            const externalCookie = request.headers.cookie || '';
-
-            const onEvent = (event: string, payload: any) => {
-                fastify.socketService.emitToUser(userId, event, payload);
-            };
-
-            const syntheticMessage = `@${AGENT_NAMES.PAGE_TOP_LIST_BUILDER} #${schemaId}: Add top list component to this page`;
-
-            await fastify.chatService.handleUserMessage(
-                userId,
-                syntheticMessage,
-                externalCookie,
-                providerName || 'gemini',
-                onEvent
-            );
-
-            return { success: true, message: 'Top List Generator triggered successfully' };
-        } catch (error) {
-            fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to trigger Top List Generator' });
+            return reply.status(500).send({ success: false, error: 'Failed to trigger addon' });
         }
     });
 };

@@ -1,9 +1,33 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Edit2, Layout, Sparkles, MessageSquarePlus, UserCircle, ChevronDown, Eye, TrendingUp, Code } from 'lucide-react';
-import { type PageDto, AGENT_NAMES, type PageMetadata, ENDPOINTS } from '@cms/shared';
+import {
+    Trash2, Edit2, Layout, Sparkles, ChevronDown, Code,
+    MessageSquarePlus, UserCircle, Eye, TrendingUp, Plus, Puzzle
+} from 'lucide-react';
+import { type PageDto, AGENT_NAMES, type PageMetadata, type PageAddonDefinition, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { HeaderLayout } from './HeaderLayout';
+
+// Icon lookup for dynamic addon rendering
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+    MessageSquarePlus,
+    UserCircle,
+    Eye,
+    TrendingUp,
+    Plus,
+    Puzzle,
+};
+
+// Color class lookup
+const COLOR_MAP: Record<string, { text: string; bg: string }> = {
+    blue: { text: 'text-blue-600', bg: 'hover:bg-blue-500/10' },
+    green: { text: 'text-green-600', bg: 'hover:bg-green-500/10' },
+    orange: { text: 'text-orange-600', bg: 'hover:bg-orange-500/10' },
+    purple: { text: 'text-purple-600', bg: 'hover:bg-purple-500/10' },
+    red: { text: 'text-red-600', bg: 'hover:bg-red-500/10' },
+    cyan: { text: 'text-cyan-600', bg: 'hover:bg-cyan-500/10' },
+    pink: { text: 'text-pink-600', bg: 'hover:bg-pink-500/10' },
+};
 
 interface PageHeaderProps {
     page: PageDto;
@@ -16,6 +40,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit, onChatAction }: PageHeaderProps) {
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [addons, setAddons] = useState<PageAddonDefinition[]>([]);
     const addMenuRef = useRef<HTMLDivElement>(null);
 
     let metadata: PageMetadata = {};
@@ -26,6 +51,17 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     } catch {
         // ignore
     }
+
+    // Fetch available addons from backend
+    useEffect(() => {
+        axios.get(ENDPOINTS.CHAT.PAGE_ADDONS, { withCredentials: true })
+            .then(res => {
+                if (res.data?.success && Array.isArray(res.data.data)) {
+                    setAddons(res.data.data);
+                }
+            })
+            .catch(err => console.warn('Failed to load page addons:', err));
+    }, []);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -38,85 +74,36 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleAddEngagementBar = async () => {
+    const handleTriggerAddon = async (addon: PageAddonDefinition) => {
         setIsAddMenuOpen(false);
         try {
             const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering Engagement Bar Generator (${providerName})...`, { id: 'engagement-bar' });
-            await axios.post(`${''}${ENDPOINTS.CHAT.ENGAGEMENT_BAR}`, {
+            toast.loading(`Triggering ${addon.label} (${providerName})...`, { id: addon.id });
+            await axios.post(ENDPOINTS.CHAT.TRIGGER_ADDON, {
+                addonId: addon.id,
                 schemaId,
                 providerName
             }, {
                 withCredentials: true
             });
-            toast.success('Engagement Bar Generator triggered. Check chat for progress.', { id: 'engagement-bar' });
+            toast.success(`${addon.label} triggered. Check chat for progress.`, { id: addon.id });
         } catch (error) {
             console.error(error);
-            toast.error('Failed to trigger Engagement Bar Generator', { id: 'engagement-bar' });
-        }
-    };
-
-    const handleAddUserAvatar = async () => {
-        setIsAddMenuOpen(false);
-        try {
-            const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering User Avatar Generator (${providerName})...`, { id: 'user-avatar' });
-            await axios.post(`${''}${ENDPOINTS.CHAT.USER_AVATAR}`, {
-                schemaId,
-                providerName
-            }, {
-                withCredentials: true
-            });
-            toast.success('User Avatar Generator triggered. Check chat for progress.', { id: 'user-avatar' });
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to trigger User Avatar Generator', { id: 'user-avatar' });
-        }
-    };
-
-    const handleAddVisitTrack = async () => {
-        setIsAddMenuOpen(false);
-        try {
-            const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering Visit Track Generator (${providerName})...`, { id: 'visit-track' });
-            await axios.post(`${''}${ENDPOINTS.CHAT.VISIT_TRACK}`, {
-                schemaId,
-                providerName
-            }, {
-                withCredentials: true
-            });
-            toast.success('Visit Track Generator triggered. Check chat for progress.', { id: 'visit-track' });
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to trigger Visit Track Generator', { id: 'visit-track' });
-        }
-    };
-
-    const handleAddTopList = async () => {
-        setIsAddMenuOpen(false);
-        try {
-            const providerName = localStorage.getItem('cms_selected_provider') || 'gemini';
-            toast.loading(`Triggering Top List Generator (${providerName})...`, { id: 'top-list' });
-            await axios.post(`${''}${ENDPOINTS.CHAT.TOP_LIST}`, {
-                schemaId,
-                providerName
-            }, {
-                withCredentials: true
-            });
-            toast.success('Top List Generator triggered. Check chat for progress.', { id: 'top-list' });
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to trigger Top List Generator', { id: 'top-list' });
+            toast.error(`Failed to trigger ${addon.label}`, { id: addon.id });
         }
     };
 
     // Determine page type
     const isDetailPage = metadata.plan?.pageType === 'detail';
     const isListPage = metadata.plan?.pageType === 'list';
+    const currentPageType = isDetailPage ? 'detail' : isListPage ? 'list' : null;
 
-    // Show dropdown for detail pages (all 4 features) and list pages (3 features, no engagement bar)
-    // Buttons are always available so users can ask LLM to modify existing features
-    const hasAddOptions = (isDetailPage || isListPage) && metadata.plan?.entityName;
+    // Filter addons by current page type
+    const availableAddons = currentPageType
+        ? addons.filter(a => a.pageTypes.includes(currentPageType as 'detail' | 'list'))
+        : [];
+
+    const hasAddOptions = availableAddons.length > 0 && metadata.plan?.entityName;
 
     return (
         <HeaderLayout
@@ -165,36 +152,20 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
 
                     {isAddMenuOpen && (
                         <div className="absolute top-full left-0 mt-1 bg-app-surface border border-border rounded-lg shadow-lg z-50 min-w-[180px] py-1">
-                            {isDetailPage && (
-                                <button
-                                    onClick={handleAddEngagementBar}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10 transition-colors text-left"
-                                >
-                                    <MessageSquarePlus className="w-4 h-4" />
-                                    Engagement Bar
-                                </button>
-                            )}
-                            <button
-                                onClick={handleAddUserAvatar}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-green-600 hover:bg-green-500/10 transition-colors text-left"
-                            >
-                                <UserCircle className="w-4 h-4" />
-                                User Avatar
-                            </button>
-                            <button
-                                onClick={handleAddVisitTrack}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-orange-600 hover:bg-orange-500/10 transition-colors text-left"
-                            >
-                                <Eye className="w-4 h-4" />
-                                Visit Tracking
-                            </button>
-                            <button
-                                onClick={handleAddTopList}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-purple-600 hover:bg-purple-500/10 transition-colors text-left"
-                            >
-                                <TrendingUp className="w-4 h-4" />
-                                Top List
-                            </button>
+                            {availableAddons.map(addon => {
+                                const IconComponent = ICON_MAP[addon.icon] || Puzzle;
+                                const colors = COLOR_MAP[addon.color] || COLOR_MAP.blue;
+                                return (
+                                    <button
+                                        key={addon.id}
+                                        onClick={() => handleTriggerAddon(addon)}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-bold ${colors.text} ${colors.bg} transition-colors text-left`}
+                                    >
+                                        <IconComponent className="w-4 h-4" />
+                                        {addon.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

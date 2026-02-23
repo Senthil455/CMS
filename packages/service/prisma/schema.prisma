@@ -31,3 +31,14 @@ model SystemSetting {
   key   String @id
   value String
 }
+
+model DesignStyle {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  displayName  String
+  description  String   @default("")
+  listPrompt   String   @default("")
+  detailPrompt String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

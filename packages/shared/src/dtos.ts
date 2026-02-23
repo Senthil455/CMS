@@ -216,6 +216,19 @@ export interface LayoutJson {
     sections: LayoutSection[];
 }
 
+export interface PageAddonDefinition {
+    id: string;
+    agentName: string;
+    label: string;
+    icon: string;
+    color: string;
+    pageTypes: ('detail' | 'list')[];
+    metadataFlag: string;
+    resourceDir: string;
+    hasSnippet?: boolean;
+    chatMessage: string;
+}
+
 export interface PageMetadata {
     plan?: PagePlan;
     architecture?: PageArchitecture;
