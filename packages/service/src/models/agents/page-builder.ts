@@ -109,11 +109,13 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
 
         for (let i = 0; i < componentInstructions.length; i++) {
             const instruction = componentInstructions[i];
+            if (!instruction) continue;
+
             await context.updateStatus(`Generating component ${i + 1}/${componentInstructions.length}: ${instruction.id}...`);
 
             // Build query context for this specific component
             const relevantQueryDetails = instruction.queriesToUse
-                .map(qName => queryDetailsMap.get(qName) || `QUERY: ${qName} (no details available)`)
+                .map((qName: string) => queryDetailsMap.get(qName) || `QUERY: ${qName} (no details available)`)
                 .join('\n');
 
             let developerMessage = `
@@ -135,8 +137,8 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
 `;
 
             // If there are existing components for this ID, include them for refinement
-            if (metadata.components && metadata.components[instruction.id]) {
-                developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id].html}`;
+            if (metadata.components && metadata.components[instruction.id]?.html) {
+                developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id]!.html}`;
             }
 
             this.setLastPrompts(this.systemPrompt, developerMessage, originalInput);

@@ -128,7 +128,7 @@ export class PageManager {
                         });
                     });
                 });
-                compiledHtml = LayoutCompiler.compile(layout, componentsMap);
+                compiledHtml = LayoutCompiler.compile(layout, componentsMap, title || pageSettings.title);
             }
         } catch (e) {
             this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from AI layout components');
@@ -238,7 +238,7 @@ export class PageManager {
         // Compile final HTML from layout + components
         let compiledHtml = pageSettings.html;
         try {
-            compiledHtml = LayoutCompiler.compile(layoutJson, components);
+            compiledHtml = LayoutCompiler.compile(layoutJson, components, title || pageSettings.title);
         } catch (e) {
             this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from AI-generated components');
         }

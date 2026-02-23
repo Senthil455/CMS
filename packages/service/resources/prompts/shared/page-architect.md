@@ -67,13 +67,15 @@ You must output ONLY a valid JSON object with this structure:
 - **One per column**: Every column `id` in `sections` MUST have a corresponding entry in `componentInstructions`.
 - **Be specific**: Describe the visual design, content structure, and user interactions. For example: "A hero banner with full-bleed background image, overlaid title and excerpt, category pill badge, and a read-more link" is better than "A hero section".
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
+- **Follow the design template**: The template style (e.g., "modern", "classic", "minimal") should influence your section structure. A "modern" template might use a hero section + bento grid, while a "minimal" template might use a clean single-column layout.
 
 ## Context
 You will be provided with:
-1. **ROUTING PLAN**: The URL structure and parameters.
-2. **AVAILABLE QUERIES**: The list of data fetching operations.
-3. **USER INPUT**: The specific request or vision for the page.
-4. **EXISTING STRUCTURE (Optional)**: If refining an existing page.
+1. **DESIGN TEMPLATE**: The selected design style (e.g., "modern", "classic", "minimal"). Use this to guide section structure and layout complexity.
+2. **ROUTING PLAN**: The URL structure and parameters.
+3. **AVAILABLE QUERIES**: The list of data fetching operations.
+4. **USER INPUT**: The specific request or vision for the page.
+5. **EXISTING STRUCTURE (Optional)**: If refining an existing page.
 
 ## Final Output Protocol
 - Return ONLY the raw JSON object.

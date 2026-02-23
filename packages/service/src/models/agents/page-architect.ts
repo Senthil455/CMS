@@ -35,6 +35,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
             throw new Error("Schema not found or missing metadata for architecture planning.");
         }
 
+
         const metadata = existingSchema.settings.page.metadata;
         const routingPlan = metadata.plan;
         const actualUserInput = metadata.userInput || userInput;
@@ -47,8 +48,9 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         const existingArchitecture = metadata.architecture || {};
 
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
+        const templateStyle = metadata.templateId || 'modern';
 
-        const architecturePlan = await this.plan(actualUserInput, context, queries, routingPlan, existingArchitecture);
+        const architecturePlan = await this.plan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
 
         return {
             ...architecturePlan,
@@ -75,13 +77,15 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         };
     }
 
-    private async plan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {
+    private async plan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {
         const queryListContext = availableQueries.map((q: any) =>
             `- ${q.name}: ${q.settings?.query?.source}
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}
             `).join('\n');
 
         let developerMessage = `
+DESIGN TEMPLATE: ${templateStyle}
+
 ROUTING PLAN:
 - Planned Path: ${pagePlan.pageName}
 - Parameters: ${pagePlan.primaryParameter || 'None'}

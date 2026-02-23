@@ -76,7 +76,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                     });
                 });
 
-                htmlToSave = LayoutCompiler.compile(layoutJson, componentsMap);
+                htmlToSave = LayoutCompiler.compile(layoutJson, componentsMap, pageForm.title);
             }
 
             const payload: SaveSchemaPayload = {
