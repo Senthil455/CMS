@@ -44,6 +44,8 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
             throw new Error("Routing plan not found in page metadata.");
         }
 
+        await context.saveAgentMessage(`Planning architecture for ${routingPlan.pageType} page...`);
+
         // Pass pageType from metadata if available to guide architect
         const existingArchitecture = metadata.architecture || {};
 

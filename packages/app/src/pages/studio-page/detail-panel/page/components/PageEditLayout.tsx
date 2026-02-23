@@ -24,7 +24,63 @@ import { CSS } from '@dnd-kit/utilities';
 import { X, Save, Loader2, Maximize2, Minimize2, Plus, GripVertical, Trash2 } from 'lucide-react';
 import { type SchemaDto, type ParsedPageDto, type LayoutJson, type LayoutSection, type LayoutColumn, type LayoutBlock } from '@cms/shared';
 
+import { useRef } from 'react';
+
 // -- Subcomponents --
+
+function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
+    const isDragging = useRef(false);
+    const startX = useRef(0);
+    const accumulatedDelta = useRef(0);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isDragging.current = true;
+        startX.current = e.clientX;
+        accumulatedDelta.current = 0;
+
+        const handlePointerMove = (ev: PointerEvent) => {
+            if (!isDragging.current) return;
+            const deltaX = ev.clientX - startX.current;
+
+            // Assume 1 span ~ 50px of drag
+            const threshold = 50;
+            const spansToMove = Math.trunc((deltaX + accumulatedDelta.current) / threshold);
+
+            if (spansToMove !== 0) {
+                onResize(spansToMove);
+                // Adjust accumulated to carry over remainder
+                accumulatedDelta.current = (deltaX + accumulatedDelta.current) - (spansToMove * threshold);
+                startX.current = ev.clientX; // reset 
+            }
+        };
+
+        const handlePointerUp = () => {
+            isDragging.current = false;
+            document.removeEventListener('pointermove', handlePointerMove);
+            document.removeEventListener('pointerup', handlePointerUp);
+            document.body.style.cursor = '';
+        };
+
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
+        document.body.style.cursor = 'col-resize';
+    };
+
+    return (
+        <div
+            onPointerDown={handlePointerDown}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-4 h-8 bg-gray-200 hover:bg-blue-400 rounded-full cursor-col-resize z-20 flex items-center justify-center border-2 border-white shadow-sm transition-colors"
+        >
+            <div className="flex gap-px">
+                <div className="w-px h-3 bg-white/60" />
+                <div className="w-px h-3 bg-white/60" />
+            </div>
+        </div>
+    );
+}
+
 
 function ToolboxItem({ componentId, label }: { componentId: string; label: string }) {
     const { attributes, listeners, setNodeRef, isDragging } = useSortable({
@@ -83,7 +139,7 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove }: 
     );
 }
 
-function ColumnZone({ sectionIdx, colIdx, col, onRemoveBlock }: { sectionIdx: number, colIdx: number, col: LayoutColumn, onRemoveBlock: (s: number, c: number, id: string) => void }) {
+function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, onRemoveBlock: (s: number, c: number, id: string) => void, onResize?: (delta: number) => void }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `column-${sectionIdx}-${colIdx}`,
         data: { sectionIdx, colIdx, isColumn: true }
@@ -92,9 +148,13 @@ function ColumnZone({ sectionIdx, colIdx, col, onRemoveBlock }: { sectionIdx: nu
     return (
         <div
             ref={setNodeRef}
-            className={`bg-gray-50 border-2 rounded-lg p-3 min-h-[120px] flex flex-col gap-2 transition-colors ${isOver ? 'border-dashed border-blue-400 bg-blue-50/50' : 'border-dashed border-gray-300'}`}
+            className={`bg-gray-50 border-2 rounded-lg p-3 min-h-[120px] flex flex-col gap-2 transition-colors relative ${isOver ? 'border-dashed border-blue-400 bg-blue-50/50' : 'border-dashed border-gray-300'}`}
             style={{ gridColumn: `span ${col.span} / span ${col.span}` }}
         >
+            {!isLast && onResize && (
+                <ColumnResizer onResize={onResize} />
+            )}
+
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Col span-{col.span}</div>
 
             <SortableContext items={col.blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
@@ -123,9 +183,11 @@ function ColumnZone({ sectionIdx, colIdx, col, onRemoveBlock }: { sectionIdx: nu
 
 const SECTION_PRESETS = [
     { id: '12', label: 'Full Width (12)', columns: [12] },
+    { id: '1-11', label: 'Nav + Content (1-11)', columns: [1, 11] },
     { id: '6-6', label: 'Half & Half (6-6)', columns: [6, 6] },
     { id: '8-4', label: 'Content + Sidebar (8-4)', columns: [8, 4] },
     { id: '4-4-4', label: 'Three Columns (4-4-4)', columns: [4, 4, 4] },
+    { id: '3-3-3-3', label: 'Four Columns (3-3-3-3)', columns: [3, 3, 3, 3] },
 ];
 
 interface PageEditLayoutProps {
@@ -195,6 +257,29 @@ export function PageEditLayout({
         newSections[sectionIdx].columns[colIdx].blocks = newSections[sectionIdx].columns[colIdx].blocks.filter(b => b.id !== blockId);
         updateLayout({ sections: newSections });
     };
+
+    const resizeColumn = (sectionIdx: number, colIdx: number, deltaSpan: number) => {
+        const newSections = [...layout.sections];
+        const section = newSections[sectionIdx];
+
+        const leftCol = section.columns[colIdx];
+        const rightCol = section.columns[colIdx + 1];
+
+        if (!leftCol || !rightCol) return;
+
+        const newLeftSpan = leftCol.span + deltaSpan;
+        const newRightSpan = rightCol.span - deltaSpan;
+
+        if (newLeftSpan >= 1 && newRightSpan >= 1) {
+            // Reconstruct array to avoid mutating object reference directly if strict mode is active, though deep copy is better.
+            const newCols = [...section.columns];
+            newCols[colIdx] = { ...leftCol, span: newLeftSpan };
+            newCols[colIdx + 1] = { ...rightCol, span: newRightSpan };
+            newSections[sectionIdx] = { ...section, columns: newCols };
+            updateLayout({ sections: newSections });
+        }
+    };
+
 
     // --- DnD Helpers ---
 
@@ -400,7 +485,15 @@ export function PageEditLayout({
                                         </button>
                                         <div className="grid gap-4 w-full" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
                                             {section.columns.map((col, cIdx) => (
-                                                <ColumnZone key={cIdx} sectionIdx={sIdx} colIdx={cIdx} col={col} onRemoveBlock={removeBlock} />
+                                                <ColumnZone
+                                                    key={cIdx}
+                                                    sectionIdx={sIdx}
+                                                    colIdx={cIdx}
+                                                    col={col}
+                                                    isLast={cIdx === section.columns.length - 1}
+                                                    onRemoveBlock={removeBlock}
+                                                    onResize={(delta) => resizeColumn(sIdx, cIdx, delta)}
+                                                />
                                             ))}
                                         </div>
                                     </div>

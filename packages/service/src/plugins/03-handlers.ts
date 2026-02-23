@@ -89,21 +89,27 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 
-            // Load snippet helper
-            const htmlBlocksDir = path.join(__dirname, '../../resources/html-blocks');
-            const loadSnippet = async (fileName: string): Promise<string | undefined> => {
-                try {
-                    return await fs.readFile(path.join(htmlBlocksDir, fileName), 'utf-8');
-                } catch {
-                    return undefined;
-                }
-            };
+            const pageAddonsDir = path.join(__dirname, '../../resources/page-addons');
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, PageAddonBuilder> = {};
             for (const addon of PAGE_ADDON_REGISTRY) {
-                const prompt = await loadPrompt(addon.promptFile);
-                const snippet = addon.snippetFile ? await loadSnippet(addon.snippetFile) : undefined;
+                let prompt = '';
+                try {
+                    prompt = await fs.readFile(path.join(pageAddonsDir, addon.resourceDir, 'prompt.md'), 'utf-8');
+                } catch (err) {
+                    fastify.log.warn(`Prompt for addon ${addon.id} not found at ${addon.resourceDir}/prompt.md`);
+                }
+
+                let snippet: string | undefined = undefined;
+                if (addon.hasSnippet) {
+                    try {
+                        snippet = await fs.readFile(path.join(pageAddonsDir, addon.resourceDir, 'snippet.html'), 'utf-8');
+                    } catch (err) {
+                        fastify.log.warn(`Snippet for addon ${addon.id} not found at ${addon.resourceDir}/snippet.html`);
+                    }
+                }
+
                 addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger);
             }
 
