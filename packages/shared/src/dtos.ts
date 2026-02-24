@@ -166,7 +166,6 @@ export interface TemplateSelectionRequest {
 
 export interface TemplateSelectionResponse {
     selectedTemplate: string;
-    enableEngagementBar?: boolean;
     requestPayload: TemplateSelectionRequest;
 }
 
@@ -223,7 +222,6 @@ export interface PageAddonDefinition {
     icon: string;
     color: string;
     pageTypes: ('detail' | 'list')[];
-    metadataFlag: string;
     resourceDir: string;
     hasSnippet?: boolean;
     chatMessage: string;
@@ -237,10 +235,7 @@ export interface PageMetadata {
     components?: Record<string, { html: string; props?: any }>;
     userInput?: string;
     templateId?: string;
-    enableEngagementBar?: boolean;
-    enableUserAvatar?: boolean;
     enableVisitTrack?: boolean;
-    enableTopList?: boolean;
 }
 
 export interface PagePlan {

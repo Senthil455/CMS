@@ -78,6 +78,7 @@ docker run -d \
   -v cms_data:/data \
   -e DATABASE_PROVIDER=0 \
   -e "CONNECTION_STRING=Data Source=/data/cms.db" \
+  -e CMS_DATA_PATH=/data \
   senthil455/cms-mono:latest
 ```
 

@@ -1,8 +1,16 @@
 import type { LayoutJson } from '../dtos.js';
 
+export interface CompileOptions {
+    enableVisitTrack?: boolean;
+}
+
 export class LayoutCompiler {
-    // Hardcoded HTML head template — add/remove framework includes here
-    private static readonly HTML_HEAD = `
+    // Build HTML head template — add/remove framework includes here
+    private static buildHtmlHead(options?: CompileOptions): string {
+        const visitTrackSnippet = options?.enableVisitTrack
+            ? `\n\n        if (cmsSdk.engagementService) {\n            cmsSdk.engagementService.trackVisit();\n        }`
+            : '';
+        return `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Tailwind CSS -->
@@ -15,21 +23,22 @@ export class LayoutCompiler {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script type="module">
         import * as cmsSdk from '/static/index.js';
-        window.cmsSdk = cmsSdk;
+        window.cmsSdk = cmsSdk;${visitTrackSnippet}
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>`;
+    }
 
     /**
      * Compile layout + components into a full HTML document.
      */
-    static compile(layoutJson: LayoutJson, componentsMap: Record<string, { html: string; props?: any }>, title?: string): string {
+    static compile(layoutJson: LayoutJson, componentsMap: Record<string, { html: string; props?: any }>, title?: string, options?: CompileOptions): string {
         const body = this.compileBody(layoutJson, componentsMap);
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
-    ${this.HTML_HEAD}
+    ${this.buildHtmlHead(options)}
     <title>${title || 'Page'}</title>
 </head>
 <body>

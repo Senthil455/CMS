@@ -156,11 +156,10 @@ export default function StudioPage() {
         setConfirmationData(null);
     };
 
-    const handleConfirmTemplate = (selectedTemplateId: string, enableEngagementBar: boolean) => {
+    const handleConfirmTemplate = (selectedTemplateId: string) => {
         if (templateSelectionData) {
             sendTemplateSelectionResponse({
                 selectedTemplate: selectedTemplateId,
-                enableEngagementBar,
                 requestPayload: templateSelectionData
             });
             setShowTemplateSelection(false);

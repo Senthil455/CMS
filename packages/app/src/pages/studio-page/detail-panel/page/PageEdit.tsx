@@ -56,7 +56,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             let htmlToSave = pageForm.html;
 
             // Compile the LayoutJson into Tailwind Grid HTML if using the Layout Editor
-            if (activeTab === 'layout' && pageForm.metadata?.layoutJson) {
+            if (pageForm.metadata?.layoutJson) {
                 const layoutJson = pageForm.metadata.layoutJson as LayoutJson;
 
                 // Use AI-generated components from metadata, falling back to HTML_BLOCKS
@@ -75,7 +75,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                     });
                 });
 
-                htmlToSave = LayoutCompiler.compile(layoutJson, componentsMap, pageForm.title);
+                htmlToSave = LayoutCompiler.compile(layoutJson, componentsMap, pageForm.title, { enableVisitTrack: pageForm.metadata?.enableVisitTrack });
             }
 
             const payload: SaveSchemaPayload = {
@@ -120,8 +120,30 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
 
 
     const updateField = (field: keyof ParsedPageDto, value: any) => {
+        let updatedForm = { ...pageForm, [field]: value };
 
-        setPageForm({ ...pageForm, [field]: value });
+        // Auto-recompile HTML when title or metadata (e.g. tracking toggle) changes
+        if ((field === 'title' || field === 'metadata') && updatedForm.metadata && updatedForm.metadata.layoutJson) {
+            const layoutJson = updatedForm.metadata.layoutJson as LayoutJson;
+            const componentsMap: Record<string, { html: string; props?: any }> = {};
+            const metadataComponents = updatedForm.metadata.components || {};
+
+            layoutJson.sections.forEach(section => {
+                section.columns.forEach(col => {
+                    col.blocks.forEach(block => {
+                        if (metadataComponents[block.id]) {
+                            componentsMap[block.id] = metadataComponents[block.id];
+                        } else {
+                            componentsMap[block.id] = { html: `<!-- Generating component ${block.type} -->`, props: {} };
+                        }
+                    });
+                });
+            });
+
+            updatedForm.html = LayoutCompiler.compile(layoutJson, componentsMap, updatedForm.title, { enableVisitTrack: updatedForm.metadata?.enableVisitTrack });
+        }
+
+        setPageForm(updatedForm);
     };
 
     return (

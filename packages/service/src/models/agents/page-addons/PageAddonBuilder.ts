@@ -3,6 +3,7 @@ import type { CmsClient } from '../../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
 import { type AgentName, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
+import { PageManager } from '../../cms/page-manager';
 
 export interface AddonPlan {
     schemaId: string;
@@ -94,9 +95,6 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
 
         const metadata = pageDto.metadata as PageMetadata;
 
-        // Set the metadata flag dynamically
-        (metadata as any)[this.addonDef.metadataFlag] = true;
-
         // Replace layoutJson
         metadata.layoutJson = layoutJson;
 
@@ -106,27 +104,9 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         }
         metadata.components[newComponent.id] = { html: newComponent.html };
 
-        // Recompile HTML from layout + all components
-        let compiledHtml = pageDto.html;
-        try {
-            compiledHtml = LayoutCompiler.compile(layoutJson, metadata.components, pageDto.title);
-        } catch (e) {
-            this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from layout + components');
-        }
-
-        const payload: SaveSchemaPayload = {
-            schemaId: schemaId,
-            type: 'page',
-            settings: {
-                page: {
-                    ...pageDto,
-                    html: compiledHtml,
-                    metadata: metadata
-                }
-            }
-        };
-
-        await this.cmsClient.saveSchema(context.externalCookie, payload);
+        // Save the updated components and recompile HTML through PageManager
+        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        await pageManager.saveComponents(schemaId, layoutJson, metadata.components, pageDto.title);
         await context.saveAgentMessage(`Successfully added ${this.addonDef.label} to page "${pageDto.name}".`);
         await context.onSchemasSync({
             task_type: this.addonDef.agentName as AgentName,

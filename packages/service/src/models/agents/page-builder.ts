@@ -14,7 +14,6 @@ export interface PageBuilderPlan {
     title: string;
     layoutJson: LayoutJson;
     components: Record<string, { html: string; props?: any }>;
-    enableEngagementBar: boolean;
 }
 
 export class PageBuilder extends BaseAgent<PageBuilderPlan> {
@@ -61,11 +60,6 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
 
         const templateStyle = metadata.templateId || '';
         const pageType = pagePlan.pageType;
-        let enableEngagementBar = metadata.enableEngagementBar || false;
-
-        if (pageType === 'list') {
-            enableEngagementBar = false;
-        }
 
         const stylePrompt = await this.getStylePrompt(templateStyle, pageType);
 
@@ -166,7 +160,6 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
             title: architecturePlan.pageTitle,
             layoutJson,
             components,
-            enableEngagementBar
         };
     }
 

@@ -11,7 +11,7 @@ interface TemplateOption {
 interface TemplateSelectionDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (selectedTemplateId: string, enableEngagementBar: boolean) => void;
+    onConfirm: (selectedTemplateId: string) => void;
     templates: TemplateOption[];
     pageType?: string;
 }
@@ -28,7 +28,7 @@ export function TemplateSelectionDialog({
 
     const handleConfirm = () => {
         if (selectedId !== null) {
-            onConfirm(selectedId, false);
+            onConfirm(selectedId);
         }
     };
 
