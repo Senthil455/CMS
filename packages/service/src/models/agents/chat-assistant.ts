@@ -29,6 +29,17 @@ export interface Agent<T = any> {
 
 import type { ServiceLogger } from '../../types/logger';
 
+/**
+ * Throw this from think() to stop the agent pipeline and send a user-facing message.
+ * The common handle() method catches it, sends the message via websocket, and skips act().
+ */
+export class AgentStopError extends Error {
+    constructor(public readonly userMessage: string) {
+        super(userMessage);
+        this.name = 'AgentStopError';
+    }
+}
+
 export abstract class BaseAgent<T> implements Agent<T> {
     constructor(
         protected readonly actionDescription: string,
@@ -68,6 +79,12 @@ export abstract class BaseAgent<T> implements Agent<T> {
 
             return await this.act(plan, context);
         } catch (error: any) {
+            // AgentStopError: agent intentionally stopped — send reason to user, skip act()
+            if (error instanceof AgentStopError) {
+                this.logger.info({ agentName: context.agentName }, `Agent stopped: ${error.userMessage}`);
+                await context.saveAgentMessage(error.userMessage);
+                return null;
+            }
             await handleAgentError(
                 error,
                 context,

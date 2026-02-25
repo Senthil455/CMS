@@ -1,5 +1,5 @@
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, type AgentResponse, BaseAgent, AgentStopError, parseModelFromProvider } from './chat-assistant';
 import { type TemplateSelectionRequest, type PagePlan } from '@cms/shared';
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
@@ -40,6 +40,13 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         }
 
         const pagePlan = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
+
+        // If the planner couldn't match an entity, stop the pipeline
+        if (!pagePlan.entityName) {
+            const reason = (pagePlan as any).reason || 'No matching entity was found for your request.';
+            throw new AgentStopError(reason);
+        }
+
         await context.saveAgentMessage(`I have determined that you want to create a "${pagePlan.pageType}" page${pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : ''}. I've also designed a route: ${pagePlan.pageName}`);
 
         // Load templates from DB and prepend "No Style" option
@@ -94,15 +101,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             return response as PagePlan;
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse PagePlanner response');
-            // Default fallback
-            return {
-                pageType: 'list',
-                entityName: null,
-                pageName: `generated-page-${Date.now()}`,
-
-                linkingRules: [],
-                primaryParameter: null
-            };
+            throw new AgentStopError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
     }
 }

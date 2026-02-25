@@ -244,4 +244,5 @@ export interface PagePlan {
     pageType: 'list' | 'detail';
     primaryParameter: string | null;
     linkingRules: string[];
+    reason?: string | null;
 }

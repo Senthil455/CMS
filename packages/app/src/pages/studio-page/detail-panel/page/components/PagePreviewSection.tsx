@@ -26,7 +26,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
     const page = schema.settings?.page!;
     const [showData, setShowData] = useState(false);
 
-    const { data: pageData } = useSWR(
+    const { data: pageData, error: loadError } = useSWR(
         schema.schemaId ? [
             `${''}${ENDPOINTS.QUERY.PAGE_DATA}`,
             schema.schemaId,
@@ -84,7 +84,11 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
                         )}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold">
-                        {pageData ? (
+                        {loadError ? (
+                            <span className="text-red-500" title={loadError.message}>
+                                Data: {loadError.response?.data?.title || loadError.message || 'Load Error'}
+                            </span>
+                        ) : pageData ? (
                             <span className="text-green-500">
                                 Data: Loaded
                             </span>
@@ -99,7 +103,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
                 </div>
             )}
             <div className={`border border-border rounded-xl overflow-hidden bg-white shadow-sm w-full ${hideHeader ? 'flex-1' : 'h-[600px]'}`}>
-                {showData ? (
+                {showData && pageData ? (
                     <div className="h-full overflow-auto p-4 bg-[#f8f9fa]">
                         <JsonView
                             src={pageData}
