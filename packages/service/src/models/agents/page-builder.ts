@@ -4,6 +4,7 @@ import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { PageManager } from '../cms/page-manager';
+import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 
 
 export interface ComponentHtmlResponse {
@@ -114,8 +115,10 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
                     this.logger.info({ addonId: instruction.addonId }, `Routing component generation to specialized add-on agent`);
 
                     try {
-                        // Provide the context and userInput to the addon
-                        const addonPlan = await addonAgent.think(originalInput, context);
+                        // Pass the component instruction to the addon so it can use the architect's queries
+                        const addonPlan = addonAgent instanceof PageAddonBuilder
+                            ? await addonAgent.think(originalInput, context, instruction)
+                            : await addonAgent.think(originalInput, context);
 
                         if (addonPlan && addonPlan.newComponent) {
                             components[instruction.id] = {

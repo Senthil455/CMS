@@ -225,6 +225,7 @@ export interface PageAddonDefinition {
     pageTypes: ('detail' | 'list')[];
     resourceDir: string;
     hasSnippet?: boolean;
+    needQueries?: boolean; // if true, the addon builder will fetch query variable details
     chatMessage: string;
 }
 

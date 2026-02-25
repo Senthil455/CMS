@@ -2,7 +2,7 @@ import type { AIProvider } from '../../../infrastructures/ai-provider.interface'
 import type { CmsClient } from '../../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
-import { type AgentName, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
+import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 import { PageManager } from '../../cms/page-manager';
 
 export interface AddonPlan {
@@ -13,6 +13,7 @@ export interface AddonPlan {
 }
 
 export class PageAddonBuilder extends BaseAgent<AddonPlan> {
+
     constructor(
         private readonly addonDef: PageAddonDefinition,
         aiProvider: AIProvider,
@@ -24,7 +25,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         super(`adding ${addonDef.label.toLowerCase()}`, logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<AddonPlan> {
+    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<AddonPlan> {
         this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
 
         // 1. Extract Schema ID
@@ -58,9 +59,24 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             existingComponentIds,
         };
 
+        // Add snippet if available
         if (this.snippet) {
             const entityName = metadata.plan?.entityName || '';
             developerMessage[`${this.addonDef.id}Snippet`] = this.snippet.replace(/{{entityName}}/g, entityName);
+        }
+
+        // If the addon needs query details, fetch and attach them
+        if (this.addonDef.needQueries) {
+            const queryDetails = await this.fetchQueryDetails(metadata, context, componentInstruction);
+            if (queryDetails) {
+                developerMessage.queries = queryDetails;
+                developerMessage.pageUrl = `/${pageDto.name}`;
+            }
+        }
+
+        // If we have a component instruction from the architect, include it
+        if (componentInstruction) {
+            developerMessage.componentInstruction = componentInstruction.instruction;
         }
 
         await context.saveAgentMessage(`Planning layout for ${this.addonDef.label}...`);
@@ -113,5 +129,39 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             schemasId: [schemaId]
         });
         return null;
+    }
+
+    /**
+     * Fetch query details with variable info for addons that need it (e.g. search bar).
+     * If componentInstruction is set, use its queriesToUse; otherwise use all page queries.
+     */
+    private async fetchQueryDetails(metadata: PageMetadata, context: AgentContext, componentInstruction?: ComponentInstruction) {
+        const selectedQueries = metadata.architecture?.selectedQueries || [];
+        if (selectedQueries.length === 0) return null;
+
+        // Filter queries if we have a component instruction with specific queries
+        const queriesToFetch = componentInstruction?.queriesToUse?.length
+            ? selectedQueries.filter(sq => componentInstruction!.queriesToUse.includes(sq.queryName))
+            : selectedQueries;
+
+        if (queriesToFetch.length === 0) return null;
+
+        // Fetch full query schemas to get variable details
+        const allSchemas = await this.cmsClient.getAllEntities(context.externalCookie);
+        const querySchemas = allSchemas.filter((s: any) => s.type === 'query');
+
+        const queriesWithVars = queriesToFetch.map(sq => {
+            const querySchema = querySchemas.find((qs: any) => qs.settings?.query?.name === sq.queryName);
+            const variables = querySchema?.settings?.query?.variables || [];
+            return {
+                queryName: sq.queryName,
+                fieldName: sq.fieldName,
+                type: sq.type,
+                args: sq.args,
+                variables: variables.filter((v: any) => v.name !== 'sandbox'),
+            };
+        });
+
+        return queriesWithVars;
     }
 }

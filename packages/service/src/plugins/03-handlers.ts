@@ -17,7 +17,6 @@ import { PageBuilder } from '../models/agents/page-builder';
 import { DataGenerator } from '../models/agents/data-synthesizer';
 import { PAGE_ADDON_REGISTRY } from '../models/agents/page-addons/index';
 import { PageAddonBuilder } from '../models/agents/page-addons/PageAddonBuilder';
-import { SearchBarAddonBuilder } from '../models/agents/page-addons/SearchBarAddonBuilder';
 import { BaseAgent } from '../models/agents/chat-assistant';
 
 // ArchitectDesignerAgent import removed
@@ -93,11 +92,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const pageAddonsDir = path.join(__dirname, '../../resources/page-addons');
 
-            // Builder class overrides for addons that need custom logic
-            const ADDON_BUILDER_MAP: Record<string, typeof PageAddonBuilder> = {
-                'search_bar': SearchBarAddonBuilder as unknown as typeof PageAddonBuilder,
-            };
-
             // Build addon handlers from registry
             const addonHandlers: Record<string, BaseAgent<any>> = {};
             for (const addon of PAGE_ADDON_REGISTRY) {
@@ -117,8 +111,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                     }
                 }
 
-                const BuilderClass = ADDON_BUILDER_MAP[addon.id] ?? PageAddonBuilder;
-                addonHandlers[addon.agentName] = new BuilderClass(addon, provider, prompt, snippet, cmsClient, modelLogger);
+                addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger);
             }
 
             // Create a map of addon handlers keyed by their ID for the PageBuilder
