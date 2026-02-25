@@ -16,9 +16,10 @@ interface DetailViewProps {
     onDelete: () => void;
     onSelect: (item: SchemaDto) => void;
     onChatAction: (action: string) => void;
+    onSendMessage: (msg: string) => void;
 }
 
-export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction }: DetailViewProps) {
+export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction, onSendMessage }: DetailViewProps) {
 
     if (!item) {
         return (
@@ -126,7 +127,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     )}
 
                     {item.type === 'page' && item.settings?.page && (
-                        <PageDetail schema={item} />
+                        <PageDetail schema={item} onSendMessage={onSendMessage} />
                     )}
 
                     {item.type !== 'entity' && item.type !== 'query' && item.type !== 'page' && (

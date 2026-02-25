@@ -248,6 +248,7 @@ export default function StudioPage() {
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
+                                onSendMessage={(msg) => handleSend(msg, localStorage.getItem('cms_ai_provider') || 'openai')}
                             />
                         )}
                     </>
@@ -261,6 +262,7 @@ export default function StudioPage() {
                         onDelete={handleDelete}
                         onSelect={handleSelectItem}
                         onChatAction={handleChatAction}
+                        onSendMessage={(msg) => handleSend(msg, localStorage.getItem('cms_ai_provider') || 'openai')}
                     />
                 )}
 

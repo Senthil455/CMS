@@ -15,9 +15,10 @@ interface PageEditProps {
     onTabChange?: (tab: 'settings' | 'layout' | 'view-html') => void;
     onSave: (payload: SaveSchemaPayload, skipNavigate?: boolean) => Promise<void>;
     onCancel: () => void;
+    onSendMessage?: (msg: string) => void;
 }
 
-export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel }: PageEditProps) {
+export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, onCancel, onSendMessage }: PageEditProps) {
     const [activeTab, setActiveTab] = useState<'settings' | 'layout' | 'view-html'>(initialTab);
 
     // Sync internal state if prop changes (e.g. via URL)
@@ -179,6 +180,7 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
                             onUpdateField={updateField}
                             onSave={handleSave}
                             onCancel={onCancel}
+                            onSendMessage={onSendMessage}
                             isSaving={isSaving}
                         />
                     )}

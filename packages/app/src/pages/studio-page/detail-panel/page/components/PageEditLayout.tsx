@@ -21,8 +21,9 @@ import {
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { X, Save, Loader2, Maximize2, Minimize2, Plus, GripVertical, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Maximize2, Minimize2, Plus, Trash2 } from 'lucide-react';
 import { type SchemaDto, type ParsedPageDto, type LayoutJson, type LayoutSection, type LayoutColumn, type LayoutBlock } from '@cms/shared';
+import { PagePreviewSection } from './PagePreviewSection';
 
 import { useRef } from 'react';
 
@@ -82,31 +83,15 @@ function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
 }
 
 
-function ToolboxItem({ componentId, label }: { componentId: string; label: string }) {
-    const { attributes, listeners, setNodeRef, isDragging } = useSortable({
-        id: `toolbox-${componentId}`,
-        data: { componentId, type: 'ai-generated', isToolbox: true }
-    });
 
-    return (
-        <div
-            ref={setNodeRef}
-            {...listeners}
-            {...attributes}
-            className={`flex items-center gap-3 p-3 bg-white border border-border rounded-lg shadow-sm cursor-grab group transition-all ${isDragging ? 'opacity-50 border-blue-500 ring-2 ring-blue-200' : 'hover:border-blue-500 hover:shadow'}`}
-        >
-            <span className="text-lg">🧩</span>
-            <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate">{label}</span>
-            <GripVertical className="w-4 h-4 text-gray-300 ml-auto shrink-0 group-hover:text-blue-400" />
-        </div>
-    );
-}
-
-function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; onRemove: () => void }) {
+function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove, onModify }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; onRemove: () => void; onModify?: (id: string, req: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: block.id,
         data: { type: block.type, sectionIdx, colIdx, blockIndex, isToolbox: false }
     });
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [requirement, setRequirement] = useState('');
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -116,30 +101,77 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove }: 
 
     const blockLabel = block.id;
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (requirement.trim() && onModify) {
+            onModify(block.id, requirement.trim());
+            setIsEditing(false);
+            setRequirement('');
+        }
+    };
+
     return (
         <div
             ref={setNodeRef}
             style={style}
             {...attributes}
             {...listeners}
-            className={`flex flex-col gap-2 p-3 bg-white border rounded-lg shadow-sm cursor-grab group transition-colors ${isDragging ? 'border-blue-500 ring-2 ring-blue-200 z-50' : 'border-border hover:border-blue-400 relative z-10'}`}
+            className={`flex flex-col gap-2 p-3 bg-white border rounded-lg shadow-sm group transition-colors ${isDragging ? 'border-blue-500 ring-2 ring-blue-200 z-50' : 'border-border hover:border-blue-400 relative z-10'}`}
         >
-            <button
-                onPointerDown={(e) => { e.stopPropagation(); onRemove(); }}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            >
-                <X className="w-3 h-3" />
-            </button>
-            <div className="flex items-center gap-2">
+            <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                {onModify && (
+                    <button
+                        onPointerDown={(e) => { e.stopPropagation(); setIsEditing(!isEditing); }}
+                        className="w-5 h-5 bg-white border border-blue-200 text-blue-500 hover:bg-blue-50 hover:border-blue-500 rounded-full flex items-center justify-center"
+                        title="Modify Component with AI"
+                    >
+                        <span className="text-[10px]">✨</span>
+                    </button>
+                )}
+                <button
+                    onPointerDown={(e) => { e.stopPropagation(); onRemove(); }}
+                    className="w-5 h-5 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center"
+                    title="Remove Component"
+                >
+                    <X className="w-3 h-3" />
+                </button>
+            </div>
+
+            <div className="flex items-center gap-2 cursor-grab">
                 <span className="text-base">🧩</span>
                 <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
             </div>
             <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {block.id}</div>
+
+            {isEditing && (
+                <div
+                    className="mt-2 pt-2 border-t border-gray-100"
+                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+                >
+                    <form onSubmit={handleSubmit} className="flex gap-2">
+                        <input
+                            type="text"
+                            value={requirement}
+                            onChange={(e) => setRequirement(e.target.value)}
+                            placeholder="e.g. Make cards have hover effect..."
+                            className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                            autoFocus
+                        />
+                        <button
+                            type="submit"
+                            disabled={!requirement.trim()}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            Ask AI
+                        </button>
+                    </form>
+                </div>
+            )}
         </div>
     );
 }
 
-function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, onRemoveBlock: (s: number, c: number, id: string) => void, onResize?: (delta: number) => void }) {
+function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onModifyBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, onRemoveBlock: (s: number, c: number, id: string) => void, onModifyBlock?: (id: string, req: string) => void, onResize?: (delta: number) => void }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `column-${sectionIdx}-${colIdx}`,
         data: { sectionIdx, colIdx, isColumn: true }
@@ -166,6 +198,7 @@ function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onResize }
                         sectionIdx={sectionIdx}
                         colIdx={colIdx}
                         onRemove={() => onRemoveBlock(sectionIdx, colIdx, block.id)}
+                        onModify={onModifyBlock}
                     />
                 ))}
             </SortableContext>
@@ -196,25 +229,22 @@ interface PageEditLayoutProps {
     onUpdateField: (field: keyof ParsedPageDto, value: any) => void;
     onSave: (exitAfterSave: boolean) => void;
     onCancel: () => void;
+    onSendMessage?: (msg: string) => void;
     isSaving: boolean;
 }
 
 export function PageEditLayout({
+    item,
     pageForm,
     onUpdateField,
     onSave,
     onCancel,
+    onSendMessage,
     isSaving
 }: PageEditLayoutProps) {
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(null);
 
-    // Build the toolbox from metadata.components
-    const availableComponents = useMemo(() => {
-        const comps = pageForm.metadata?.components;
-        if (!comps) return [];
-        return Object.keys(comps).map(id => ({ id, label: id }));
-    }, [pageForm.metadata?.components]);
 
     // Initialize layout state safely
     const layout: LayoutJson = useMemo(() => {
@@ -281,6 +311,13 @@ export function PageEditLayout({
     };
 
 
+    const handleModifyBlock = useCallback((blockId: string, requirement: string) => {
+        if (!onSendMessage || !item.id) return;
+        // The id is e.g. "page_123" but backend expects the raw schemaId
+        const schemaId = item.id;
+        onSendMessage(`@modify-component ${schemaId} ${blockId} ${requirement}`);
+    }, [onSendMessage, item.id]);
+
     // --- DnD Helpers ---
 
     type LocationInfo = { sIdx: number; cIdx: number; bIdx?: number } | null;
@@ -320,7 +357,6 @@ export function PageEditLayout({
         const activeIdStr = String(active.id);
         const overIdStr = String(over.id);
 
-        if (activeIdStr.startsWith('toolbox-')) return;
 
         const activeLoc = findLocation(activeIdStr, active.data.current);
         const overLoc = findLocation(overIdStr, over.data.current);
@@ -362,31 +398,7 @@ export function PageEditLayout({
         const activeIdStr = String(active.id);
         const overIdStr = String(over.id);
 
-        const isToolbox = activeIdStr.startsWith('toolbox-');
 
-        if (isToolbox) {
-            const overLoc = findLocation(overIdStr, over.data.current);
-            if (!overLoc) return;
-
-            // The componentId from toolbox data is the key into metadata.components
-            const componentId = active.data.current?.componentId || 'unknown';
-            const newBlock: LayoutBlock = {
-                id: componentId,
-                type: 'ai-generated'
-            };
-
-            const newSections = [...layout.sections];
-            const destCol = newSections[overLoc.sIdx].columns[overLoc.cIdx];
-
-            if (overLoc.bIdx !== undefined) {
-                const isBelowOverItem = over && active.rect.current.translated && active.rect.current.translated.top > over.rect.top + over.rect.height / 2;
-                destCol.blocks.splice(overLoc.bIdx + (isBelowOverItem ? 1 : 0), 0, newBlock);
-            } else {
-                destCol.blocks.push(newBlock);
-            }
-            updateLayout({ sections: newSections });
-            return;
-        }
 
         const activeLoc = findLocation(activeIdStr, active.data.current);
         const overLoc = findLocation(overIdStr, over.data.current);
@@ -435,23 +447,7 @@ export function PageEditLayout({
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                 <div className="flex-1 flex flex-row gap-4 h-full min-h-0">
 
-                    {/* TOOLBOX PANE */}
-                    <div className="w-64 border border-border rounded-xl bg-white shadow-sm flex flex-col h-full overflow-hidden shrink-0">
-                        <div className="p-4 border-b border-border bg-app-surface">
-                            <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">Components</h4>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                            {availableComponents.length === 0 ? (
-                                <div className="text-xs text-gray-400 italic text-center py-4">No AI-generated components yet. Run the page builder first.</div>
-                            ) : (
-                                <SortableContext items={availableComponents.map(c => `toolbox-${c.id}`)} strategy={verticalListSortingStrategy}>
-                                    {availableComponents.map(comp => (
-                                        <ToolboxItem key={comp.id} componentId={comp.id} label={comp.label} />
-                                    ))}
-                                </SortableContext>
-                            )}
-                        </div>
-                    </div>
+
 
                     {/* CANVAS PANE */}
                     <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
@@ -492,6 +488,7 @@ export function PageEditLayout({
                                                     col={col}
                                                     isLast={cIdx === section.columns.length - 1}
                                                     onRemoveBlock={removeBlock}
+                                                    onModifyBlock={onSendMessage ? handleModifyBlock : undefined}
                                                     onResize={(delta) => resizeColumn(sIdx, cIdx, delta)}
                                                 />
                                             ))}
@@ -501,12 +498,21 @@ export function PageEditLayout({
                             )}
                         </div>
                     </div>
+
+                    {/* PREVIEW PANE */}
+                    <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
+                        <PagePreviewSection
+                            schema={item}
+                            html={pageForm.html}
+                            hideHeader={false}
+                        />
+                    </div>
                 </div>
 
                 <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
                     {activeId ? (
                         <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-xl font-bold text-sm tracking-wide border-2 border-blue-400 rotate-3 cursor-grabbing flex items-center justify-center min-w-[150px]">
-                            {activeId.startsWith('toolbox-') ? 'Placing Component...' : 'Moving Block...'}
+                            Moving Block...
                         </div>
                     ) : null}
                 </DragOverlay>

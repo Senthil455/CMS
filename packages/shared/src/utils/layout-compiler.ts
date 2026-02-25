@@ -68,7 +68,7 @@ ${body}
                 // Render blocks inside column
                 for (const block of col.blocks) {
                     const compHtml = componentsMap[block.id]?.html || '';
-                    compiledHtml += '\n        ' + compHtml;
+                    compiledHtml += '\n        <div data-component-id="' + block.id + '">' + compHtml + '</div>';
                 }
 
                 compiledHtml += '\n    </div>';

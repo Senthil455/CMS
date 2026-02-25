@@ -182,4 +182,107 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         await context.saveAgentMessage(finalMessage);
         return null;
     }
+
+    async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<AgentResponse | null> {
+        this.logger.info({ componentId }, 'PageBuilder modifySingleComponent started');
+
+        const schemaId = context.schemaId;
+        if (!schemaId) throw new Error("PageBuilder requires a valid schema ID in context.");
+
+        await context.updateStatus(`Fetching context for component ${componentId}...`);
+        const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
+        if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
+            throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
+        }
+
+        const metadata: PageMetadata = existingPageSchema.settings.page.metadata;
+        const pagePlan = metadata.plan;
+        const architecturePlan = metadata.architecture;
+        const componentInstructions = metadata.componentInstructions || architecturePlan?.componentInstructions || [];
+
+        if (!pagePlan || !architecturePlan) throw new Error("Required plans (routing or architecture) not found in page metadata.");
+
+        const targetInstruction = componentInstructions.find(i => i.id === componentId);
+        if (!targetInstruction) {
+            // Note: Addons don't have instructions, so we might need a fallback.
+            // But for now, user is modifying visually generated components.
+            throw new Error(`Component instruction not found for ID: ${componentId}`);
+        }
+
+        const templateStyle = metadata.templateId || '';
+        const stylePrompt = await this.getStylePrompt(templateStyle, pagePlan.pageType);
+
+        // Gather queries for this component
+        const queryDetailsMap = new Map<string, string>();
+        for (const qName of targetInstruction.queriesToUse) {
+            try {
+                const sampleData = await this.cmsClient.requestQuery(context.externalCookie, qName);
+                queryDetailsMap.set(qName, `QUERY: ${qName}
+                    ENDPOINTS: ${this.baseUrl}/api/queries/${qName}
+                    REFERENCE RESPONSE SHAPE: ${JSON.stringify(sampleData)}`);
+            } catch (e) {
+                queryDetailsMap.set(qName, `QUERY: ${qName}\nENDPOINTS: ${this.baseUrl}/api/queries/${qName}`);
+            }
+        }
+        const relevantQueryDetails = targetInstruction.queriesToUse
+            .map((qName: string) => queryDetailsMap.get(qName) || `QUERY: ${qName} (no details available)`)
+            .join('\n');
+
+        let developerMessage = `
+${stylePrompt ? stylePrompt + '\n' : ''}
+COMPONENT ID: ${targetInstruction.id}
+ORIGINAL INSTRUCTION: ${targetInstruction.instruction}
+
+NEW REQUIREMENT FROM USER:
+"${userRequirement}"
+
+OVERALL PAGE CONTEXT:
+- Page Type: ${pagePlan.pageType}
+- Page Title: ${architecturePlan.pageTitle}
+
+DATA ENDPOINTS FOR THIS COMPONENT:
+${relevantQueryDetails}
+`;
+        if (metadata.components && metadata.components[componentId]?.html) {
+            developerMessage += `\n\nEXISTING COMPONENT HTML (Modify this base to apply the new requirement):\n${metadata.components[componentId]!.html}`;
+        }
+
+        await context.updateStatus(`Applying modification to ${componentId} using AI...`);
+        this.setLastPrompts(this.systemPrompt, developerMessage, userRequirement);
+
+        const aiResponse = await this.aiProvider.generate(
+            this.systemPrompt,
+            developerMessage,
+            userRequirement,
+            parseModelFromProvider(context.providerName)
+        );
+
+        let componentResponse: ComponentHtmlResponse;
+        if (typeof aiResponse === 'string') {
+            componentResponse = JSON.parse(aiResponse);
+        } else {
+            componentResponse = aiResponse as ComponentHtmlResponse;
+        }
+
+        const newHtml = componentResponse.html;
+
+        // Save only this component
+        await context.updateStatus(`Saving updated ${componentId}...`);
+        const layoutJson = metadata.layoutJson || { sections: [] }; // fall back to empty if undefined
+
+        // Merge updated component html back
+        if (!metadata.components) metadata.components = {};
+        metadata.components[componentId] = { html: newHtml };
+
+        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        await pageManager.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title);
+
+        await context.onSchemasSync({
+            task_type: context.agentName,
+            schemasId: [schemaId]
+        });
+
+        await context.saveAgentMessage(`Successfully updated component "${componentId}" based on your request.`);
+        return null;
+    }
 }

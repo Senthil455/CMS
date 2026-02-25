@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Globe, Database } from 'lucide-react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { Globe, Database, ExternalLink } from 'lucide-react';
 import useSWR from 'swr';
 import axios from 'axios';
 import Handlebars from 'handlebars';
@@ -19,10 +19,36 @@ interface PagePreviewSectionProps {
     html?: string;
     hideHeader?: boolean;
     paramValues?: Record<string, string>;
+    highlightComponentId?: string | null;
     onRenderError?: (error: string | null) => void;
 }
 
-export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRenderError }: PagePreviewSectionProps) {
+const HIGHLIGHT_SCRIPT = `
+<script>
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'highlight-component') {
+        // Remove previous highlights
+        document.querySelectorAll('[data-component-id]').forEach(function(el) {
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+            el.style.transition = '';
+        });
+        var id = e.data.componentId;
+        if (id) {
+            var el = document.querySelector('[data-component-id="' + id + '"]');
+            if (el) {
+                el.style.outline = '3px solid #f97316';
+                el.style.outlineOffset = '2px';
+                el.style.transition = 'outline 0.2s ease';
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+});
+</script>
+`;
+
+export function PagePreviewSection({ schema, html, hideHeader, paramValues, highlightComponentId, onRenderError }: PagePreviewSectionProps) {
     const page = schema.settings?.page!;
     const [showData, setShowData] = useState(false);
 
@@ -61,6 +87,30 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
         onRenderError?.(renderError);
     }, [renderError, onRenderError]);
 
+    // Inject highlight script into rendered HTML
+    const previewHtml = useMemo(() => {
+        if (!renderedHtml) return renderedHtml;
+        // Insert before </body> or at end
+        if (renderedHtml.includes('</body>')) {
+            return renderedHtml.replace('</body>', HIGHLIGHT_SCRIPT + '</body>');
+        }
+        return renderedHtml + HIGHLIGHT_SCRIPT;
+    }, [renderedHtml]);
+
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Send highlight message to iframe whenever highlightComponentId changes
+    const sendHighlight = useCallback(() => {
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({ type: 'highlight-component', componentId: highlightComponentId || null }, '*');
+        }
+    }, [highlightComponentId]);
+
+    useEffect(() => {
+        sendHighlight();
+    }, [sendHighlight]);
+
     return (
         <section className={`space-y-4 ${hideHeader ? 'h-full flex flex-col' : ''}`}>
             {!hideHeader && (
@@ -81,6 +131,17 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
                                 <Database className="w-3 h-3" />
                                 {showData ? 'Show Preview' : 'Display Data'}
                             </button>
+                        )}
+                        {page?.name && (
+                            <a
+                                href={`${''}/${page.name}?version=${Date.now()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-app-muted text-primary-muted hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-200"
+                            >
+                                <ExternalLink className="w-3 h-3" />
+                                Visit Page
+                            </a>
                         )}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold">
@@ -115,10 +176,12 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, onRe
                     </div>
                 ) : (
                     <iframe
+                        ref={iframeRef}
                         title="Page Preview"
-                        srcDoc={renderedHtml}
+                        srcDoc={previewHtml}
                         className="w-full h-full border-none"
                         sandbox="allow-scripts allow-same-origin"
+                        onLoad={sendHighlight}
                     />
                 )}
             </div>
