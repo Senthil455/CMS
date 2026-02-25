@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type SchemaDto, type SaveSchemaPayload, type QueryDto } from '@cms/shared';
 import { FileCode, Save, X, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { QueryEditSetting } from './QueryEditSetting';
 import { QueryEditSource } from './QueryEditSource';
 import { useSchemas } from '../../../../hooks/use-schemas';
@@ -54,6 +55,7 @@ export function QueryEdit({ item, initialTab = 'settings', onTabChange, onSave, 
             };
 
             await onSave(payload, true);
+            toast.success('Query saved successfully');
 
             // Open publish dialog
             setIsPublishDialogOpen(true);

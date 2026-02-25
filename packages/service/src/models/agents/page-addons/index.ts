@@ -35,4 +35,15 @@ export const PAGE_ADDON_REGISTRY: PageAddonDefinition[] = [
         hasSnippet: true,
         chatMessage: 'Add top list component to this page',
     },
+    {
+        id: 'search_bar',
+        agentName: AGENT_NAMES.PAGE_SEARCH_BAR_BUILDER,
+        label: 'Search Bar',
+        icon: 'Search',
+        color: 'orange',
+        pageTypes: ['list'],
+        resourceDir: 'search-bar',
+        hasSnippet: false,
+        chatMessage: 'Add search bar to this page',
+    },
 ];

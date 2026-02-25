@@ -9,6 +9,7 @@ export const AGENT_NAMES = {
     PAGE_USER_AVATAR_BUILDER: 'page_user_avatar_builder',
     PAGE_VISIT_TRACKER: 'page_visit_tracker',
     PAGE_TOP_LIST_BUILDER: 'page_top_list_builder',
+    PAGE_SEARCH_BAR_BUILDER: 'page_search_bar_builder',
 } as const;
 
 
