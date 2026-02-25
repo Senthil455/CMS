@@ -194,6 +194,7 @@ export interface ComponentInstruction {
     id: string;
     instruction: string;
     queriesToUse: string[];
+    addonId?: string; // matches PageAddonDefinition.id when this is a known add-on
 }
 
 export interface LayoutBlock {

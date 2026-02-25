@@ -6,6 +6,7 @@ import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvide
 import { AGENT_NAMES } from '@cms/shared';
 import { PageManager } from '../cms/page-manager';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
+import { PAGE_ADDON_REGISTRY } from './page-addons/index';
 
 export interface ArchitectDesignerAgentPlan extends PageArchitecture {
     userInput: string;
@@ -84,12 +85,19 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}
             `).join('\n');
 
+        const addonsListContext = PAGE_ADDON_REGISTRY.map(addon =>
+            `- ${addon.id}: ${addon.label} (${addon.pageTypes.join(', ')} pages) - ${addon.chatMessage}`
+        ).join('\n');
+
         let developerMessage = `
 ${templateStyle ? `DESIGN TEMPLATE: ${templateStyle}\n` : ''}
 ROUTING PLAN:
 - Planned Path: ${pagePlan.pageName}
 - Parameters: ${pagePlan.primaryParameter || 'None'}
 - Linking Rules: ${pagePlan.linkingRules?.join(', ') || 'None'}
+
+AVAILABLE ADD-ONS:
+${addonsListContext}
 
 AVAILABLE QUERIES:
 ${queryListContext}

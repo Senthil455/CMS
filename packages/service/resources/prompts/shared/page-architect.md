@@ -36,9 +36,10 @@ You must output ONLY a valid JSON object with this structure:
   ],
   "componentInstructions": [
     {
-      "id": "string", // MUST match a column `id` from the sections above
+        "id": "string", // MUST match a column `id` from the sections above
       "instruction": "string", // Detailed description of the UI component to build for this slot. Describe layout, visual style, interactions, and content structure.
-      "queriesToUse": ["string"] // Array of queryName values from selectedQueries that this component needs
+      "queriesToUse": ["string"], // Array of queryName values from selectedQueries that this component needs
+      "addonId": "string" // (OPTIONAL) If this component exactly matches one of the "AVAILABLE ADD-ONS" listed below, provide its ID here (e.g. "engagement_bar").
     }
   ],
   "architectureHints": "string" // Overall design guidance for the page builder
@@ -69,13 +70,18 @@ You must output ONLY a valid JSON object with this structure:
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
 - **Follow the design template**: The template style (e.g., "modern", "classic", "minimal") should influence your section structure. A "modern" template might use a hero section + bento grid, while a "minimal" template might use a clean single-column layout.
 
+### Known Add-ons
+- If the user explicitly requests a feature that matches an "AVAILABLE ADD-ON" (e.g. they ask for a search bar, and "search_bar" is available), you MUST include the `addonId` in that component's instruction.
+- Only use `addonId` for components that exactly match the provided add-ons. Do not invent add-on IDs.
+
 ## Context
 You will be provided with:
 1. **DESIGN TEMPLATE**: The selected design style (e.g., "modern", "classic", "minimal"). Use this to guide section structure and layout complexity.
 2. **ROUTING PLAN**: The URL structure and parameters.
 3. **AVAILABLE QUERIES**: The list of data fetching operations.
-4. **USER INPUT**: The specific request or vision for the page.
-5. **EXISTING STRUCTURE (Optional)**: If refining an existing page.
+4. **AVAILABLE ADD-ONS**: The list of pre-built special components available.
+5. **USER INPUT**: The specific request or vision for the page.
+6. **EXISTING STRUCTURE (Optional)**: If refining an existing page.
 
 ## Final Output Protocol
 - Return ONLY the raw JSON object.

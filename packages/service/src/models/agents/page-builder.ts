@@ -24,6 +24,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
         private readonly baseUrl: string,
+        private readonly addonHandlers: Record<string, BaseAgent<any>> = {},
     ) {
         super("generating your html", logger, aiProvider);
     }
@@ -105,6 +106,29 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
             if (!instruction) continue;
 
             await context.updateStatus(`Generating component ${i + 1}/${componentInstructions.length}: ${instruction.id}...`);
+
+            // Check if this component is a known add-on
+            if (instruction.addonId && this.addonHandlers) {
+                const addonAgent = this.addonHandlers[instruction.addonId];
+                if (addonAgent) {
+                    this.logger.info({ addonId: instruction.addonId }, `Routing component generation to specialized add-on agent`);
+
+                    try {
+                        // Provide the context and userInput to the addon
+                        const addonPlan = await addonAgent.think(originalInput, context);
+
+                        if (addonPlan && addonPlan.newComponent) {
+                            components[instruction.id] = {
+                                html: addonPlan.newComponent.html,
+                            };
+                            this.logger.info({ componentId: instruction.id }, `Generated add-on component ${i + 1}/${componentInstructions.length}`);
+                            continue; // Skip the standard generation path
+                        }
+                    } catch (err: any) {
+                        this.logger.warn({ err, addonId: instruction.addonId }, `Addon agent failed to generate component, falling back to general LLM`);
+                    }
+                }
+            }
 
             // Build query context for this specific component
             const relevantQueryDetails = instruction.queriesToUse
