@@ -84,14 +84,11 @@ function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
 
 
 
-function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove, onModify }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; onRemove: () => void; onModify?: (id: string, req: string) => void }) {
+function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, onSelect }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove: () => void; onModify?: (id: string, req: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: block.id,
         data: { type: block.type, sectionIdx, colIdx, blockIndex, isToolbox: false }
     });
-
-    const [isEditing, setIsEditing] = useState(false);
-    const [requirement, setRequirement] = useState('');
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -101,77 +98,28 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, onRemove, on
 
     const blockLabel = block.id;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (requirement.trim() && onModify) {
-            onModify(block.id, requirement.trim());
-            setIsEditing(false);
-            setRequirement('');
-        }
-    };
-
     return (
         <div
             ref={setNodeRef}
             style={style}
             {...attributes}
             {...listeners}
-            className={`flex flex-col gap-2 p-3 bg-white border rounded-lg shadow-sm group transition-colors ${isDragging ? 'border-blue-500 ring-2 ring-blue-200 z-50' : 'border-border hover:border-blue-400 relative z-10'}`}
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect?.();
+            }}
+            className={`flex flex-col gap-2 p-3 bg-white border rounded-lg shadow-sm group transition-colors ${isDragging ? 'border-blue-500 ring-2 ring-blue-200 z-50' : isSelected ? 'border-blue-500 ring-2 ring-blue-500 relative z-20' : 'border-border hover:border-blue-400 relative z-10'}`}
         >
-            <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                {onModify && (
-                    <button
-                        onPointerDown={(e) => { e.stopPropagation(); setIsEditing(!isEditing); }}
-                        className="w-5 h-5 bg-white border border-blue-200 text-blue-500 hover:bg-blue-50 hover:border-blue-500 rounded-full flex items-center justify-center"
-                        title="Modify Component with AI"
-                    >
-                        <span className="text-[10px]">✨</span>
-                    </button>
-                )}
-                <button
-                    onPointerDown={(e) => { e.stopPropagation(); onRemove(); }}
-                    className="w-5 h-5 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center"
-                    title="Remove Component"
-                >
-                    <X className="w-3 h-3" />
-                </button>
-            </div>
-
             <div className="flex items-center gap-2 cursor-grab">
                 <span className="text-base">🧩</span>
                 <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
             </div>
             <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {block.id}</div>
-
-            {isEditing && (
-                <div
-                    className="mt-2 pt-2 border-t border-gray-100"
-                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
-                >
-                    <form onSubmit={handleSubmit} className="flex gap-2">
-                        <input
-                            type="text"
-                            value={requirement}
-                            onChange={(e) => setRequirement(e.target.value)}
-                            placeholder="e.g. Make cards have hover effect..."
-                            className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
-                            autoFocus
-                        />
-                        <button
-                            type="submit"
-                            disabled={!requirement.trim()}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            Ask AI
-                        </button>
-                    </form>
-                </div>
-            )}
         </div>
     );
 }
 
-function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onModifyBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, onRemoveBlock: (s: number, c: number, id: string) => void, onModifyBlock?: (id: string, req: string) => void, onResize?: (delta: number) => void }) {
+function ColumnZone({ sectionIdx, colIdx, col, isLast, selectedBlockId, onSelectBlock, onRemoveBlock, onModifyBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, selectedBlockId: string | null, onSelectBlock: (id: string) => void, onRemoveBlock: (s: number, c: number, id: string) => void, onModifyBlock?: (id: string, req: string) => void, onResize?: (delta: number) => void }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `column-${sectionIdx}-${colIdx}`,
         data: { sectionIdx, colIdx, isColumn: true }
@@ -197,6 +145,8 @@ function ColumnZone({ sectionIdx, colIdx, col, isLast, onRemoveBlock, onModifyBl
                         blockIndex={bIdx}
                         sectionIdx={sectionIdx}
                         colIdx={colIdx}
+                        isSelected={selectedBlockId === block.id}
+                        onSelect={() => onSelectBlock(block.id)}
                         onRemove={() => onRemoveBlock(sectionIdx, colIdx, block.id)}
                         onModify={onModifyBlock}
                     />
@@ -244,7 +194,26 @@ export function PageEditLayout({
 }: PageEditLayoutProps) {
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
+    const selectedHtml = useMemo(() => {
+        if (!selectedBlockId) return '';
+        return pageForm.metadata?.components?.[selectedBlockId]?.html || '';
+    }, [pageForm.metadata?.components, selectedBlockId]);
+
+    const handleHtmlChange = (newHtml: string) => {
+        if (!selectedBlockId) return;
+        const metadata = { ...(pageForm.metadata || {}) };
+        if (!metadata.components) metadata.components = {};
+        metadata.components = {
+            ...metadata.components,
+            [selectedBlockId]: {
+                ...(metadata.components[selectedBlockId] || {}),
+                html: newHtml
+            }
+        };
+        onUpdateField('metadata', metadata);
+    };
 
     // Initialize layout state safely
     const layout: LayoutJson = useMemo(() => {
@@ -445,68 +414,93 @@ export function PageEditLayout({
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-                <div className="flex-1 flex flex-row gap-4 h-full min-h-0">
+                <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
+                    <div className="flex-1 flex flex-row gap-4 min-h-0">
 
 
 
-                    {/* CANVAS PANE */}
-                    <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
-                        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                        <div className="p-4 border-b border-border bg-white z-10 flex items-center justify-between">
-                            <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">Layout Canvas</h4>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 font-medium mr-2">Add Section:</span>
-                                {SECTION_PRESETS.map(preset => (
-                                    <button key={preset.id} onClick={() => addSection(preset.id)} className="px-2 py-1 bg-white border border-gray-200 hover:border-blue-500 hover:text-blue-600 rounded text-[10px] font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                        + {preset.label}
-                                    </button>
-                                ))}
+                        {/* CANVAS PANE */}
+                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
+                            <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                            <div className="p-4 border-b border-border bg-white z-10 flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">Layout Canvas</h4>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 font-medium mr-2">Add Section:</span>
+                                    {SECTION_PRESETS.map(preset => (
+                                        <button key={preset.id} onClick={() => addSection(preset.id)} className="px-2 py-1 bg-white border border-gray-200 hover:border-blue-500 hover:text-blue-600 rounded text-[10px] font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                            + {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 z-10 space-y-6">
+                                {layout.sections.length === 0 ? (
+                                    <div className="h-full w-full flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                                            <Plus className="w-8 h-8" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">Empty Layout</h3>
+                                        <p className="text-sm text-gray-500 max-w-sm">Design your page by adding a layout section from the top toolbar, then drag components into the columns.</p>
+                                    </div>
+                                ) : (
+                                    layout.sections.map((section, sIdx) => (
+                                        <div key={sIdx} className="bg-white border border-border shadow-sm rounded-xl p-4 relative group">
+                                            <button onClick={() => removeSection(sIdx)} className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-20">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                            <div className="grid gap-4 w-full" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
+                                                {section.columns.map((col, cIdx) => (
+                                                    <ColumnZone
+                                                        key={cIdx}
+                                                        sectionIdx={sIdx}
+                                                        colIdx={cIdx}
+                                                        col={col}
+                                                        isLast={cIdx === section.columns.length - 1}
+                                                        selectedBlockId={selectedBlockId}
+                                                        onSelectBlock={setSelectedBlockId}
+                                                        onRemoveBlock={removeBlock}
+                                                        onModifyBlock={onSendMessage ? handleModifyBlock : undefined}
+                                                        onResize={(delta) => resizeColumn(sIdx, cIdx, delta)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 z-10 space-y-6">
-                            {layout.sections.length === 0 ? (
-                                <div className="h-full w-full flex flex-col items-center justify-center text-center">
-                                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                                        <Plus className="w-8 h-8" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Empty Layout</h3>
-                                    <p className="text-sm text-gray-500 max-w-sm">Design your page by adding a layout section from the top toolbar, then drag components into the columns.</p>
-                                </div>
-                            ) : (
-                                layout.sections.map((section, sIdx) => (
-                                    <div key={sIdx} className="bg-white border border-border shadow-sm rounded-xl p-4 relative group">
-                                        <button onClick={() => removeSection(sIdx)} className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-20">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                        <div className="grid gap-4 w-full" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
-                                            {section.columns.map((col, cIdx) => (
-                                                <ColumnZone
-                                                    key={cIdx}
-                                                    sectionIdx={sIdx}
-                                                    colIdx={cIdx}
-                                                    col={col}
-                                                    isLast={cIdx === section.columns.length - 1}
-                                                    onRemoveBlock={removeBlock}
-                                                    onModifyBlock={onSendMessage ? handleModifyBlock : undefined}
-                                                    onResize={(delta) => resizeColumn(sIdx, cIdx, delta)}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                        {/* PREVIEW PANE */}
+                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
+                            <PagePreviewSection
+                                schema={item}
+                                html={pageForm.html}
+                                hideHeader={false}
+                            />
                         </div>
                     </div>
 
-                    {/* PREVIEW PANE */}
-                    <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
-                        <PagePreviewSection
-                            schema={item}
-                            html={pageForm.html}
-                            hideHeader={false}
-                        />
-                    </div>
+                    {/* HTML EDITOR PANE */}
+                    {selectedBlockId && (
+                        <div className="h-64 shrink-0 border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm relative mb-4">
+                            <div className="p-2 border-b border-border bg-white flex items-center justify-between z-10">
+                                <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">HTML Source: {selectedBlockId}</h4>
+                                <button onClick={() => setSelectedBlockId(null)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="flex-1 p-0 overflow-hidden bg-white">
+                                <textarea
+                                    className="w-full h-full p-4 font-mono text-xs border-0 outline-none resize-none focus:ring-2 focus:ring-blue-500/50"
+                                    value={selectedHtml}
+                                    onChange={(e) => handleHtmlChange(e.target.value)}
+                                    placeholder={`<div>Component ${selectedBlockId} Content...</div>`}
+                                    spellCheck={false}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>

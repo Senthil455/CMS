@@ -180,7 +180,7 @@ export default function StudioPage() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-app transition-colors duration-300 overflow-hidden">
+        <div className="flex flex-col h-full bg-app transition-colors duration-300 overflow-hidden">
             <StudioHeader
                 isDark={isDark}
                 toggleTheme={toggleTheme}
