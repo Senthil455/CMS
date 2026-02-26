@@ -1,0 +1,63 @@
+<!-- Pagination Component — Cursor-Based -->
+<!-- Embed cursor markers inside your {{#each}} data loop -->
+<!-- query.last.cursor -->
+{{#each items}}
+<span class="hidden pagination-cursor-marker" data-cursor="{{this.cursor}}"></span>
+{{/each}}
+
+<!-- Pagination Controls -->
+<nav x-data="{
+    prevUrl: '',
+    nextUrl: '',
+    hasPrev: false,
+    hasNext: false,
+    init() {
+        const params = new URLSearchParams(window.location.search);
+        const markers = document.querySelectorAll('.pagination-cursor-marker');
+
+        // If we have any cursor markers, we can potentially go to the next page
+        if (markers.length > 0) {
+            const lastCursor = markers[markers.length - 1].getAttribute('data-cursor');
+            const firstCursor = markers[0].getAttribute('data-cursor');
+
+            // Build next URL: ?last=<lastCursor>
+            if (lastCursor) {
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.delete('first');
+                nextParams.set('last', lastCursor);
+                this.nextUrl = window.location.pathname + '?' + nextParams.toString();
+                this.hasNext = true;
+            }
+
+            // Build prev URL: ?first=<firstCursor>
+            if (firstCursor && (params.has('last') || params.has('first'))) {
+                const prevParams = new URLSearchParams(window.location.search);
+                prevParams.delete('last');
+                prevParams.set('first', firstCursor);
+                this.prevUrl = window.location.pathname + '?' + prevParams.toString();
+                this.hasPrev = true;
+            }
+        }
+
+        // If we navigated with 'first' param, the data is before that cursor,
+        // so there is always a 'next' (the page we came from)
+        if (params.has('first') && markers.length > 0) {
+            this.hasNext = true;
+        }
+    }
+}" class="flex justify-center items-center gap-4 py-8">
+    <a x-show="hasPrev" :href="prevUrl"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Previous
+    </a>
+    <a x-show="hasNext" :href="nextUrl"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors">
+        Next
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+    </a>
+</nav>

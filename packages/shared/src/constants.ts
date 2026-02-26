@@ -11,6 +11,14 @@ export const AGENT_NAMES = {
     PAGE_TOP_LIST_BUILDER: 'page_top_list_builder',
     PAGE_SEARCH_BAR_BUILDER: 'page_search_bar_builder',
     PAGE_DATA_LIST_BUILDER: 'page_data_list_builder',
+    PAGE_PAGINATION_BUILDER: 'page_pagination_builder',
+    PAGE_BREADCRUMB_BUILDER: 'page_breadcrumb_builder',
+    PAGE_DETAIL_HERO_BUILDER: 'page_detail_hero_builder',
+    PAGE_RELATED_ITEMS_BUILDER: 'page_related_items_builder',
+    PAGE_TABLE_VIEW_BUILDER: 'page_table_view_builder',
+    PAGE_CONTACT_FORM_BUILDER: 'page_contact_form_builder',
+    PAGE_IMAGE_CAROUSEL_BUILDER: 'page_image_carousel_builder',
+    PAGE_FAQ_ACCORDION_BUILDER: 'page_faq_accordion_builder',
 } as const;
 
 

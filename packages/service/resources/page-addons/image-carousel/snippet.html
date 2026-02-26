@@ -1,0 +1,57 @@
+<!-- Image Carousel Component -->
+<!-- Images come from a Handlebars array field (e.g., {{#each post.images}}) -->
+<div x-data="{
+    current: 0,
+    total: 0,
+    autoplay: null,
+    init() {
+        this.total = this.$refs.track.children.length;
+        if (this.total > 0) this.startAutoplay();
+    },
+    next() { this.current = (this.current + 1) % this.total; },
+    prev() { this.current = (this.current - 1 + this.total) % this.total; },
+    goTo(i) { this.current = i; },
+    startAutoplay() {
+        this.autoplay = setInterval(() => this.next(), 5000);
+    },
+    stopAutoplay() {
+        if (this.autoplay) clearInterval(this.autoplay);
+    }
+}" @keydown.left.window="prev()" @keydown.right.window="next()" @mouseenter="stopAutoplay()"
+    @mouseleave="startAutoplay()" class="relative max-w-4xl mx-auto">
+
+    <!-- Slides -->
+    <div x-ref="track" class="relative overflow-hidden rounded-xl aspect-video bg-gray-100">
+        {{#each images}}
+        <div class="absolute inset-0 transition-opacity duration-500 ease-in-out"
+            :class="current === {{@index}} ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+            <img src="{{this.url}}" alt="{{this.alt}}" class="w-full h-full object-cover" />
+        </div>
+        {{/each}}
+    </div>
+
+    <!-- Previous Button -->
+    <button @click="prev()"
+        class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition backdrop-blur-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+    </button>
+
+    <!-- Next Button -->
+    <button @click="next()"
+        class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition backdrop-blur-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+    </button>
+
+    <!-- Dot Indicators -->
+    <div class="flex justify-center gap-2 mt-4">
+        {{#each images}}
+        <button @click="goTo({{@index}})" class="w-2.5 h-2.5 rounded-full transition-all duration-300"
+            :class="current === {{@index}} ? 'bg-gray-800 scale-125' : 'bg-gray-300 hover:bg-gray-400'">
+        </button>
+        {{/each}}
+    </div>
+</div>
