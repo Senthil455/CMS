@@ -112,7 +112,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, high
     }, [sendHighlight]);
 
     return (
-        <section className={`space-y-4 ${hideHeader ? 'h-full flex flex-col' : ''}`}>
+        <section className={`flex flex-col gap-4 overflow-hidden ${hideHeader ? 'h-full' : 'h-full'}`}>
             {!hideHeader && (
                 <div className="flex items-center justify-between border-b border-border pb-2 shrink-0">
                     <div className="flex items-center gap-4">
@@ -163,7 +163,7 @@ export function PagePreviewSection({ schema, html, hideHeader, paramValues, high
                     </div>
                 </div>
             )}
-            <div className={`border border-border rounded-xl overflow-hidden bg-white shadow-sm w-full ${hideHeader ? 'flex-1' : 'h-[600px]'}`}>
+            <div className={`border border-border rounded-xl overflow-hidden bg-white shadow-sm w-full flex-1 min-h-0`}>
                 {showData && pageData ? (
                     <div className="h-full overflow-auto p-4 bg-[#f8f9fa]">
                         <JsonView

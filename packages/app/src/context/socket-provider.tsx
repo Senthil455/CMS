@@ -79,14 +79,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             reconnectAttemptRef.current++;
             const attempt = reconnectAttemptRef.current;
 
-            // If session is invalid, force a reload to trigger re-auth check (unless already on login page)
-            if (err.message.includes('Unauthorized')) {
-                console.log('Socket unauthorized, reloading...', window.location.pathname);
-                if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/settings')) {
-                    window.location.reload();
-                }
-                // We don't return here anymore, so the UI updates while reload happens
-            }
+            // // If session is invalid, force a reload to trigger re-auth check (unless already on login page)
+            // if (err.message.includes('Unauthorized')) {
+            //     console.log('Socket unauthorized, reloading...', window.location.pathname);
+            //     if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/settings')) {
+            //         window.location.reload();
+            //     }
+            //     // We don't return here anymore, so the UI updates while reload happens
+            // }
 
             // If we receive a specialized error (like Unauthorized), show it
             setConnectError(err.message);

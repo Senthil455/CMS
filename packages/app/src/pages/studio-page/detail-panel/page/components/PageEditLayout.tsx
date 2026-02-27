@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import Editor from '@monaco-editor/react';
 import {
     DndContext,
     closestCenter,
@@ -84,7 +85,7 @@ function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
 
 
 
-function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, onSelect }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove: () => void; onModify?: (id: string, req: string) => void }) {
+function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, onSelect, onRemove }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove?: () => void; onModify?: (id: string, req: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: block.id,
         data: { type: block.type, sectionIdx, colIdx, blockIndex, isToolbox: false }
@@ -110,9 +111,20 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, 
             }}
             className={`flex flex-col gap-2 p-3 bg-white border rounded-lg shadow-sm group transition-colors ${isDragging ? 'border-blue-500 ring-2 ring-blue-200 z-50' : isSelected ? 'border-blue-500 ring-2 ring-blue-500 relative z-20' : 'border-border hover:border-blue-400 relative z-10'}`}
         >
-            <div className="flex items-center gap-2 cursor-grab">
-                <span className="text-base">🧩</span>
-                <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 cursor-grab">
+                    <span className="text-base">🧩</span>
+                    <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
+                </div>
+                {onRemove && (
+                    <button
+                        onPointerDown={(e) => { e.stopPropagation(); onRemove(); }}
+                        className="p-1 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 rounded cursor-pointer"
+                        title="Delete Component"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
             </div>
             <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {block.id}</div>
         </div>
@@ -472,11 +484,12 @@ export function PageEditLayout({
                         </div>
 
                         {/* PREVIEW PANE */}
-                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
+                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative p-4">
                             <PagePreviewSection
                                 schema={item}
                                 html={pageForm.html}
                                 hideHeader={false}
+                                highlightComponentId={selectedBlockId}
                             />
                         </div>
                     </div>
@@ -490,13 +503,22 @@ export function PageEditLayout({
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                            <div className="flex-1 p-0 overflow-hidden bg-white">
-                                <textarea
-                                    className="w-full h-full p-4 font-mono text-xs border-0 outline-none resize-none focus:ring-2 focus:ring-blue-500/50"
+                            <div className="flex-1 p-0 overflow-hidden bg-[#1e1e1e]">
+                                <Editor
+                                    height="100%"
+                                    defaultLanguage="html"
                                     value={selectedHtml}
-                                    onChange={(e) => handleHtmlChange(e.target.value)}
-                                    placeholder={`<div>Component ${selectedBlockId} Content...</div>`}
-                                    spellCheck={false}
+                                    onChange={(value) => handleHtmlChange(value || '')}
+                                    theme="vs-dark"
+                                    options={{
+                                        minimap: { enabled: false },
+                                        fontSize: 12,
+                                        padding: { top: 12, bottom: 12 },
+                                        scrollBeyondLastLine: false,
+                                        wordWrap: 'on',
+                                        automaticLayout: true,
+                                        tabSize: 2,
+                                    }}
                                 />
                             </div>
                         </div>

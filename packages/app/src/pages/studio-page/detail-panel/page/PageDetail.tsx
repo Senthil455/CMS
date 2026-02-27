@@ -99,26 +99,30 @@ export function PageDetail({ schema, onSendMessage }: PageDetailProps) {
     };
 
     return (
-        <div className="space-y-8">
-            <PagePublishSection
-                schema={schema}
-                onPublish={() => setIsPublishDialogOpen(true)}
-            />
+        <div className="flex flex-col h-full gap-8 pb-8">
+            <div className="shrink-0">
+                <PagePublishSection
+                    schema={schema}
+                    onPublish={() => setIsPublishDialogOpen(true)}
+                />
+            </div>
 
+            <div className="shrink-0">
+                <PageComponentsSection
+                    metadata={parsedPage.metadata}
+                    selectedComponentId={selectedComponentId}
+                    onSelectComponent={setSelectedComponentId}
+                    onRemoveComponent={handleRemoveComponent}
+                    onModifyComponent={handleModifyComponent}
+                />
+            </div>
 
-
-            <PageComponentsSection
-                metadata={parsedPage.metadata}
-                selectedComponentId={selectedComponentId}
-                onSelectComponent={setSelectedComponentId}
-                onRemoveComponent={handleRemoveComponent}
-                onModifyComponent={handleModifyComponent}
-            />
-
-            <PagePreviewSection
-                schema={schema}
-                highlightComponentId={selectedComponentId}
-            />
+            <div className="flex-1 min-h-0">
+                <PagePreviewSection
+                    schema={schema}
+                    highlightComponentId={selectedComponentId}
+                />
+            </div>
 
             <PublishConfirmDialog
                 isOpen={isPublishDialogOpen}

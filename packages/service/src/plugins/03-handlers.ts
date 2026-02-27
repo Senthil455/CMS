@@ -29,7 +29,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     // Resolve directories
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const promptsDir = path.join(__dirname, '../../resources/prompts');
+    const agentsDir = path.join(__dirname, '../models/agents');
     const schemasDir = path.join(__dirname, '../../resources/schemas');
 
     // Load common schemas
@@ -39,41 +39,37 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         fs.readFile(path.join(schemasDir, 'relationship.json'), 'utf-8'),
     ]);
 
+    const loadPrompt = async (fileName: string) => {
+        try {
+            return await fs.readFile(path.join(agentsDir, fileName), 'utf-8');
+        } catch (err) {
+            fastify.log.warn(`Prompt ${fileName} not found in agents folder, using empty string`);
+            return '';
+        }
+    };
+
+    const [
+        entityGeneratorPrompt,
+        intentClassifierPrompt,
+        queryGeneratorPrompt,
+        dataGeneratorPrompt,
+        pageArchitectPrompt,
+        pagePlannerPrompt,
+        htmlGeneratorPrompt,
+    ] = await Promise.all([
+        loadPrompt('entity-designer.md'),
+        loadPrompt('intent-classifier.md'),
+        loadPrompt('query-builder.md'),
+        loadPrompt('data-synthesizer.md'),
+        loadPrompt('page-architect.md'),
+        loadPrompt('page-planner.md'),
+        loadPrompt('page-builder.md'),
+    ]);
+
     const intentClassifiers: Record<string, IntentClassifier> = {};
 
     for (const [providerName, provider] of Object.entries(providers)) {
-        const promptSubDir = providerName;
         try {
-            const loadPrompt = async (fileName: string) => {
-                try {
-                    return await fs.readFile(path.join(promptsDir, `${promptSubDir}/${fileName}`), 'utf-8');
-                } catch (e) {
-                    try {
-                        return await fs.readFile(path.join(promptsDir, `shared/${fileName}`), 'utf-8');
-                    } catch (err) {
-                        fastify.log.warn(`Prompt ${fileName} not found for provider ${providerName} or in shared folder, using empty string`);
-                        return '';
-                    }
-                }
-            };
-
-            const [
-                entityGeneratorPrompt,
-                intentClassifierPrompt,
-                queryGeneratorPrompt,
-                dataGeneratorPrompt,
-                pageArchitectPrompt,
-                pagePlannerPrompt,
-                htmlGeneratorPrompt,
-            ] = await Promise.all([
-                loadPrompt('entity-designer.md'),
-                loadPrompt('intent-classifier.md'),
-                loadPrompt('query-builder.md'),
-                loadPrompt('data-synthesizer.md'),
-                loadPrompt('page-architect.md'),
-                loadPrompt('page-planner.md'),
-                loadPrompt('page-builder.md'),
-            ]);
 
             // DB-backed style lookup function
             const prisma = fastify.prisma;
@@ -90,7 +86,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 
-            const pageAddonsDir = path.join(__dirname, '../../resources/page-addons');
+            const pageAddonsDir = path.join(__dirname, '../models/agents/page-addons');
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, BaseAgent<any>> = {};
