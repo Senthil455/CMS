@@ -2,7 +2,8 @@
 <!-- Embed cursor markers inside your {{#each}} data loop -->
 <!-- query.last.cursor -->
 {{#each items}}
-<span class="hidden pagination-cursor-marker" data-cursor="{{this.cursor}}"></span>
+<span class="hidden pagination-cursor-marker" data-cursor="{{this.cursor}}"
+    data-has-previous-page="{{this.hasPreviousPage}}" data-has-next-page="{{this.hasNextPage}}"></span>
 {{/each}}
 
 <!-- Pagination Controls -->
@@ -12,37 +13,31 @@
     hasPrev: false,
     hasNext: false,
     init() {
-        const params = new URLSearchParams(window.location.search);
         const markers = document.querySelectorAll('.pagination-cursor-marker');
 
-        // If we have any cursor markers, we can potentially go to the next page
         if (markers.length > 0) {
-            const lastCursor = markers[markers.length - 1].getAttribute('data-cursor');
-            const firstCursor = markers[0].getAttribute('data-cursor');
+            const firstMarker = markers[0];
+            const lastMarker = markers[markers.length - 1];
 
-            // Build next URL: ?last=<lastCursor>
-            if (lastCursor) {
-                const nextParams = new URLSearchParams(window.location.search);
-                nextParams.delete('first');
-                nextParams.set('last', lastCursor);
-                this.nextUrl = window.location.pathname + '?' + nextParams.toString();
-                this.hasNext = true;
-            }
+            const firstCursor = firstMarker.getAttribute('data-cursor');
+            const lastCursor = lastMarker.getAttribute('data-cursor');
+            
+            this.hasPrev = firstMarker.getAttribute('data-has-previous-page') === 'true';
+            this.hasNext = lastMarker.getAttribute('data-has-next-page') === 'true';
 
-            // Build prev URL: ?first=<firstCursor>
-            if (firstCursor && (params.has('last') || params.has('first'))) {
+            if (this.hasPrev && firstCursor) {
                 const prevParams = new URLSearchParams(window.location.search);
                 prevParams.delete('last');
                 prevParams.set('first', firstCursor);
                 this.prevUrl = window.location.pathname + '?' + prevParams.toString();
-                this.hasPrev = true;
             }
-        }
 
-        // If we navigated with 'first' param, the data is before that cursor,
-        // so there is always a 'next' (the page we came from)
-        if (params.has('first') && markers.length > 0) {
-            this.hasNext = true;
+            if (this.hasNext && lastCursor) {
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.delete('first');
+                nextParams.set('last', lastCursor);
+                this.nextUrl = window.location.pathname + '?' + nextParams.toString();
+            }
         }
     }
 }" class="flex justify-center items-center gap-4 py-8">

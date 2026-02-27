@@ -12,20 +12,22 @@ You are a senior frontend engineer. Your responsibility is to add cursor-based p
 ## Cursor-Based Pagination (CRITICAL)
 CMS uses **cursor-based pagination**, NOT offset/limit. The rules are:
 
-- Each item in the query result has a `cursor` field (a base64-encoded string)
+- Each item in the query result has a `cursor` field (a base64-encoded string).
+- In addition to `cursor`, the **first item** has a `hasPreviousPage` boolean field, and the **last item** has a `hasNextPage` boolean field.
 - **Next page**: append `?last=<cursor_of_last_item>` to the page URL. The query returns all items AFTER that cursor.
 - **Previous page**: append `?first=<cursor_of_first_item>` to the page URL. The query returns all items BEFORE that cursor.
 - **Do NOT** implement page numbers, "go to page X", or "last page" — these are expensive on the database.
 - Only show **Previous** and **Next** buttons.
 
 ## Implementation Strategy
-1. **Embed cursor data**: Inside the `{{#each fieldName}}` loop of the data list, render hidden `<span>` elements with `data-cursor="{{this.cursor}}"` and a shared CSS class (e.g., `pagination-cursor-marker`).
+1. **Embed cursor data**: Inside the `{{#each fieldName}}` loop of the data list, render hidden `<span>` elements with `data-cursor="{{this.cursor}}"`, `data-has-previous-page="{{this.hasPreviousPage}}"`, `data-has-next-page="{{this.hasNextPage}}"` and a shared CSS class (e.g., `pagination-cursor-marker`).
 2. **Alpine.js controller**: Use Alpine.js `x-data` to:
-   - Read the current URL query parameters to detect if we are on a paginated page (i.e., `last` or `first` param exists)
-   - On `x-init`, read the first and last `.pagination-cursor-marker` elements from the DOM to extract cursor values
-   - Construct `prevUrl` (using `first=<first_cursor>`) and `nextUrl` (using `last=<last_cursor>`)
-   - Show "Previous" only if the current URL has `last` or `first` parameter (meaning we navigated away from page 1)
-   - Show "Next" only if there are items on the page (cursors exist in the DOM)
+   - On `x-init`, read the first and last `.pagination-cursor-marker` elements from the DOM.
+   - Extract the first item's cursor and `hasPreviousPage` value (`dataset.hasPreviousPage === 'true'`).
+   - Extract the last item's cursor and `hasNextPage` value (`dataset.hasNextPage === 'true'`).
+   - Construct `prevUrl` (using `first=<first_cursor>`) and `nextUrl` (using `last=<last_cursor>`).
+   - Show "Previous" only if `hasPreviousPage` is true.
+   - Show "Next" only if `hasNextPage` is true.
 
 ## Handlebars Rules
 - Use `{{#each fieldName}} ... {{/each}}` — replace `fieldName` with the actual query field name from the `queries` context
