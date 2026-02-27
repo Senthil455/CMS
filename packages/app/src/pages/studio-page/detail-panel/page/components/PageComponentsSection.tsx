@@ -1,4 +1,4 @@
-import { Layers, Trash2, Edit2, Check } from 'lucide-react';
+import { Layers, Trash2, Check, Sparkles, Code } from 'lucide-react';
 import type { PageMetadata } from '@cms/shared';
 import { useState } from 'react';
 
@@ -8,9 +8,10 @@ interface PageComponentsSectionProps {
     onSelectComponent: (id: string | null) => void;
     onRemoveComponent?: (id: string) => void;
     onModifyComponent?: (id: string, req: string) => void;
+    onEditSource?: (id: string) => void;
 }
 
-export function PageComponentsSection({ metadata, selectedComponentId, onSelectComponent, onRemoveComponent, onModifyComponent }: PageComponentsSectionProps) {
+export function PageComponentsSection({ metadata, selectedComponentId, onSelectComponent, onRemoveComponent, onModifyComponent, onEditSource }: PageComponentsSectionProps) {
     const components = metadata.components;
     const [editingId, setEditingId] = useState<string | null>(null);
     const [modifyReq, setModifyReq] = useState('');
@@ -20,7 +21,7 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
     const componentIds = Object.keys(components);
 
     return (
-        <section className="space-y-4">
+        <section className="space-y-4 shrink-0">
             <div className="flex items-center justify-between border-b border-border pb-2">
                 <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
                     <Layers className="w-4 h-4" />
@@ -47,23 +48,37 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
                                         {id}
                                     </button>
 
-                                    {onModifyComponent && (
-                                        <button
-                                            onClick={() => {
-                                                if (editingId === id) {
-                                                    setEditingId(null);
-                                                    setModifyReq('');
-                                                } else {
-                                                    setEditingId(id);
-                                                    setModifyReq('');
-                                                }
-                                            }}
-                                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
-                                            title="Ask AI to Modify"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => {
+                                            // Focus the component
+                                            onSelectComponent(id);
+                                            // We want to trigger a message to chat. The parent handles onModifyComponent.
+                                            // If we just want to mention @[componentId], we can pass an empty requirement
+                                            // or let the parent handle the mention.
+                                            if (onModifyComponent) {
+                                                onModifyComponent(id, ''); // The user said "put a message to the chat mention @[componentId]"
+                                            }
+                                        }}
+                                        className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-md transition-colors border border-violet-200"
+                                        title="Edit with AI"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>AI Edit</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            onSelectComponent(id);
+                                            if (onEditSource) {
+                                                onEditSource(id);
+                                            }
+                                        }}
+                                        className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors border border-blue-200"
+                                        title="Edit Source"
+                                    >
+                                        <Code className="w-3 h-3" />
+                                        <span>Source</span>
+                                    </button>
 
                                     {onRemoveComponent && (
                                         <button

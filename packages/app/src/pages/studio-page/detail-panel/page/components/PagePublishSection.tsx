@@ -10,7 +10,7 @@ export function PagePublishSection({ schema, onPublish }: PagePublishSectionProp
     if (schema.publicationStatus === 'published') return null;
 
     return (
-        <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 shadow-sm flex items-center justify-between">
+        <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 shadow-sm flex items-center justify-between shrink-0">
             <div className="space-y-1">
                 <h4 className="text-sm font-bold text-orange-600">Page Not Published</h4>
                 <p className="text-xs text-orange-600/80">

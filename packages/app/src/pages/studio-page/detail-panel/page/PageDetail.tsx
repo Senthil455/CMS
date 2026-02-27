@@ -9,9 +9,10 @@ import { PagePreviewSection } from './components/PagePreviewSection';
 interface PageDetailProps {
     schema: SchemaDto;
     onSendMessage: (msg: string) => void;
+    onEditSource?: (id: string) => void;
 }
 
-export function PageDetail({ schema, onSendMessage }: PageDetailProps) {
+export function PageDetail({ schema, onSendMessage, onEditSource }: PageDetailProps) {
     const page = schema.settings?.page!;
 
     const { publishSchema } = useSchemas();
@@ -99,23 +100,20 @@ export function PageDetail({ schema, onSendMessage }: PageDetailProps) {
     };
 
     return (
-        <div className="flex flex-col h-full gap-8 pb-8">
-            <div className="shrink-0">
-                <PagePublishSection
-                    schema={schema}
-                    onPublish={() => setIsPublishDialogOpen(true)}
-                />
-            </div>
+        <div className="flex flex-col h-full gap-4 pb-8">
+            <PagePublishSection
+                schema={schema}
+                onPublish={() => setIsPublishDialogOpen(true)}
+            />
 
-            <div className="shrink-0">
-                <PageComponentsSection
-                    metadata={parsedPage.metadata}
-                    selectedComponentId={selectedComponentId}
-                    onSelectComponent={setSelectedComponentId}
-                    onRemoveComponent={handleRemoveComponent}
-                    onModifyComponent={handleModifyComponent}
-                />
-            </div>
+            <PageComponentsSection
+                metadata={parsedPage.metadata}
+                selectedComponentId={selectedComponentId}
+                onSelectComponent={setSelectedComponentId}
+                onRemoveComponent={handleRemoveComponent}
+                onModifyComponent={handleModifyComponent}
+                onEditSource={onEditSource}
+            />
 
             <div className="flex-1 min-h-0">
                 <PagePreviewSection

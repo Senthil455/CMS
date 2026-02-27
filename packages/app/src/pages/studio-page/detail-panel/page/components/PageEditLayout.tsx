@@ -195,6 +195,8 @@ interface PageEditLayoutProps {
     isSaving: boolean;
 }
 
+import { useSearchParams } from 'react-router-dom';
+
 export function PageEditLayout({
     item,
     pageForm,
@@ -204,9 +206,21 @@ export function PageEditLayout({
     onSendMessage,
     isSaving
 }: PageEditLayoutProps) {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(searchParams.get('block'));
+
+    // Update URL when block selection changes so it persists or can be cleared
+    const handleSelectBlockId = (id: string | null) => {
+        setSelectedBlockId(id);
+        if (id) {
+            searchParams.set('block', id);
+        } else {
+            searchParams.delete('block');
+        }
+        setSearchParams(searchParams, { replace: true });
+    };
 
     const selectedHtml = useMemo(() => {
         if (!selectedBlockId) return '';
@@ -470,7 +484,7 @@ export function PageEditLayout({
                                                         col={col}
                                                         isLast={cIdx === section.columns.length - 1}
                                                         selectedBlockId={selectedBlockId}
-                                                        onSelectBlock={setSelectedBlockId}
+                                                        onSelectBlock={handleSelectBlockId}
                                                         onRemoveBlock={removeBlock}
                                                         onModifyBlock={onSendMessage ? handleModifyBlock : undefined}
                                                         onResize={(delta) => resizeColumn(sIdx, cIdx, delta)}
@@ -499,7 +513,7 @@ export function PageEditLayout({
                         <div className="h-64 shrink-0 border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm relative mb-4">
                             <div className="p-2 border-b border-border bg-white flex items-center justify-between z-10">
                                 <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">HTML Source: {selectedBlockId}</h4>
-                                <button onClick={() => setSelectedBlockId(null)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
+                                <button onClick={() => handleSelectBlockId(null)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
