@@ -108,7 +108,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         };
     }
 
-    async act(plan: AddonPlan, context: AgentContext): Promise<void> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<boolean> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         const metadata = pageDto.metadata as PageMetadata;
@@ -129,6 +129,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             task_type: this.addonDef.agentName as AgentName,
             schemasId: [schemaId]
         });
+        return false;
     }
 
     /**

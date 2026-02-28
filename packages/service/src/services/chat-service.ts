@@ -13,12 +13,14 @@ import type { Agent, AgentContext } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
+import { AgentTaskModel, type AgentTask } from '../models/agent-task-model';
 import type { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../agent/intent-classifier';
 import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
+import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
@@ -38,6 +40,7 @@ export class ChatService {
         private readonly prisma: PrismaClient,
         private readonly entityOperator: EntityOperator,
         private readonly pageOperator: PageOperator,
+        private readonly taskOperator: TaskOperator,
     ) { }
 
     async handleUserMessage(
@@ -111,8 +114,7 @@ export class ChatService {
                     this.logger.info('Executing resolved handler');
 
                     const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
-
-                    await this.executeAgent(agent, content, context);
+                    await this.executeAgent(agent, content, context, onEvent);
                     return;
                 }
 
@@ -153,6 +155,7 @@ export class ChatService {
         }
     }
 
+
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
             const schemaId = await this.pageOperator.savePlanAndUserInput(
@@ -162,16 +165,13 @@ export class ChatService {
                 response.requestPayload.userInput,
                 externalCookie
             );
-
-            const providerName = response.requestPayload.providerName || 'gemini';
-            const baseProviderName = providerName.split(' ')[0] || providerName;
-            if (this.chatHandlers[baseProviderName]?.[AGENT_NAMES.PAGE_ARCHITECT]) {
-                const context = this.createContext(userId, externalCookie, providerName, AGENT_NAMES.PAGE_ARCHITECT, onEvent, schemaId);
-                await this.executeAgent(AGENT_NAMES.PAGE_ARCHITECT, '', context);
-            } else {
-                this.logger.error('PageArchitect handler not found');
-                await this.saveAndEmitAgentMessage(userId, 'PageArchitect handler not found. Please check your AI provider configuration.', onEvent);
+            let taskId = response.requestPayload.taskId;
+            if (!taskId) {
+                taskId = (await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId)).id;
             }
+            await this.executePendingTaskItem(taskId!, userId, externalCookie, response.requestPayload.providerName || 'gemini', onEvent);
+
+
         } catch (error: any) {
             this.logger.error({ error: formatError(error) }, 'Error handling template selection response');
             const userMessage = error?.response?.data?.title
@@ -222,7 +222,7 @@ export class ChatService {
                     onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
                     const context = this.createContext(userId, externalCookie, providerName, targetAgent, onEvent);
-                    await this.executeAgent(targetAgent, prompt, context);
+                    await this.executeAgent(targetAgent, prompt, context, onEvent);
                 } else {
                     this.logger.error(`Handler for ${targetAgent} not found`);
                 }
@@ -295,16 +295,32 @@ export class ChatService {
         };
     }
 
+    private async executePendingTaskItem(
+        taskId: number,
+        userId: string,
+        externalCookie: string,
+        providerName: string,
+        onEvent: OnServerToClientEvent
+    ): Promise<void> {
+        const item = await this.taskOperator.checkout(taskId);
+        if (item) {
+            const context = this.createContext(userId, externalCookie, providerName, item.agentName, onEvent, item.schemaId);
+            context.taskId = taskId;
+            await this.executeAgent(item.agentName, item.description || '', context, onEvent);
+        }
+    }
+
     private async executeAgent(
         taskType: AgentName,
         userInput: string,
-        context: AgentContext
-    ): Promise<void> {
+        context: AgentContext,
+        onEvent: OnServerToClientEvent
+    ): Promise<import('../agent/chat-assistant').AgentHandleResponse> {
         const baseProviderName = context.providerName.split(' ')[0] || context.providerName;
         const handler = this.chatHandlers[baseProviderName]?.[taskType];
         if (!handler) {
             this.logger.error({ taskType, providerName: context.providerName, baseProviderName }, 'Handler not found for task type');
-            return;
+            return { needUserFeedback: false };
         }
 
         this.logger.info({ taskType }, 'Executing handler');
@@ -313,14 +329,19 @@ export class ChatService {
             // Update context with the specific agent for this execution
             const agentContext = { ...context, agentName: taskType };
             const response = await handler.handle(userInput, agentContext);
-            if (context.taskId) {
 
+            if (context.taskId) {
+                await this.taskOperator.commit(context.taskId);
             }
+
+            if (context.taskId && !response.needUserFeedback) {
+                await this.executePendingTaskItem(context.taskId, context.userId, context.externalCookie, context.providerName, onEvent);
+            }
+            return response;
         } catch (error) {
             this.statusService.clearStatus(context.userId);
             this.logger.error({ error: formatError(error), taskType }, 'Error executing agent');
-            // Error handling is mostly done inside agent.handle via handleAgentError, 
-            // but if something bubbles up:
+            return { needUserFeedback: false };
         }
     }
 

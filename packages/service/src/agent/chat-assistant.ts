@@ -18,10 +18,14 @@ export interface AgentContext {
     updateStatus: (content: string) => Promise<void>;
 }
 
+export interface AgentHandleResponse {
+    needUserFeedback: boolean;
+}
+
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<T>;
-    act(plan: T, context: AgentContext): Promise<void>;
-    handle(userInput: string, context: AgentContext): Promise<void>;
+    act(plan: T, context: AgentContext): Promise<boolean>;
+    handle(userInput: string, context: AgentContext): Promise<AgentHandleResponse>;
 }
 
 import type { ServiceLogger } from '../types/logger';
@@ -52,10 +56,10 @@ export abstract class BaseAgent<T> implements Agent<T> {
     }
 
     abstract think(userInput: string, context: AgentContext): Promise<T>;
-    abstract act(plan: T, context: AgentContext): Promise<void>;
+    abstract act(plan: T, context: AgentContext): Promise<boolean>;
 
     // Common handle implementation
-    async handle(userInput: string, context: AgentContext): Promise<void> {
+    async handle(userInput: string, context: AgentContext): Promise<AgentHandleResponse> {
         this.logger.info(`${context.agentName} initiated via direct handle call`);
         try {
             const plan = await this.think(userInput, context);
@@ -73,13 +77,17 @@ export abstract class BaseAgent<T> implements Agent<T> {
                 inputLog
             );
 
-            return await this.act(plan, context);
+            const needUserFeedback = await this.act(plan, context);
+
+            return {
+                needUserFeedback: needUserFeedback
+            };
         } catch (error: any) {
             // AgentStopError: agent intentionally stopped — send reason to user, skip act()
             if (error instanceof AgentStopError) {
                 this.logger.info({ agentName: context.agentName }, `Agent stopped: ${error.userMessage}`);
                 await context.saveAgentMessage(error.userMessage);
-                return;
+                return { needUserFeedback: false };
             }
             await handleAgentError(
                 error,
@@ -88,7 +96,7 @@ export abstract class BaseAgent<T> implements Agent<T> {
                 this.actionDescription,
                 this.aiProvider
             );
-            return;
+            return { needUserFeedback: false };
         }
     }
 }

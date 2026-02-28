@@ -64,11 +64,11 @@ ${sdl}
         };
     }
 
-    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<boolean> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid query configuration. Please try again with more details.");
-            return;
+            return false;
         }
 
         const schemaIds: string[] = [];
@@ -103,5 +103,6 @@ ${sdl}
                 : `I have generated the queries, you can find them in CMS.`;
             await context.saveAgentMessage(finalMessage);
         }
+        return false;
     }
 }

@@ -54,10 +54,10 @@ Output ONLY a JSON array.
         return parsedPlan;
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<void> {
+    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<boolean> {
         if (!plan || plan.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
-            return;
+            return false;
         }
 
         try {
@@ -81,6 +81,7 @@ Output ONLY a JSON array.
             }
             this.logger.error({ error }, 'Failed to emit system plan for confirmation');
             await context.saveAgentMessage("I generated the plan but failed to send it for your confirmation.");
+            return false;
         }
     }
 }

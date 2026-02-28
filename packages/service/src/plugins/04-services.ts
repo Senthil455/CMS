@@ -11,6 +11,7 @@ import { SocketService } from '../services/socket-service';
 import { statusService } from '../services/status-service';
 import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
+import { TaskOperator } from '../operators/task-operator';
 
 import { config } from '../config';
 
@@ -46,7 +47,8 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         serviceLogger,
         prisma,
         new EntityOperator(cmsClient, serviceLogger),
-        new PageOperator(cmsClient, serviceLogger)
+        new PageOperator(cmsClient, serviceLogger),
+        new TaskOperator(agentTaskRepository, serviceLogger)
     );
     const authService = new AuthService(cmsClient, serviceLogger);
     const socketService = new SocketService(fastify.io);

@@ -192,7 +192,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         };
     }
 
-    async act(plan: PageBuilderPlan, context: AgentContext): Promise<void> {
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<boolean> {
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
@@ -208,6 +208,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const componentCount = Object.keys(plan.components).length;
         const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in explorer.`;
         await context.saveAgentMessage(finalMessage);
+        return false;
     }
 
     async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<void> {

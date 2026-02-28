@@ -64,7 +64,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<void> {
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<boolean> {
         const pageType = plan.plan.pageType;
         if (pageType === 'detail') {
             await context.onTemplateSelectionDetailToConfirm(plan);
@@ -73,6 +73,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         }
 
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
+        return true;
     }
 
     private async generateRoutingPlan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {

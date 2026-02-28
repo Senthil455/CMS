@@ -62,7 +62,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         };
     }
 
-    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<void> {
+    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<boolean> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
         // Also save componentInstructions into metadata at the top level
@@ -71,6 +71,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         }
 
         await context.saveAgentMessage(`I've planned the structure and components for your page.`);
+        return false;
     }
 
     private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {

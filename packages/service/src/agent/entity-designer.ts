@@ -90,7 +90,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         };
     }
 
-    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<void> {
+    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<boolean> {
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -113,5 +113,6 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
         await context.onConfirmSchemaSummary(summary);
+        return true;
     }
 }
