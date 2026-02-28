@@ -279,3 +279,14 @@ export interface SystemImplementationTask {
     description?: string;
     schemaId?: string;
 }
+
+export interface DesignStyle {
+    id: number;
+    name: string;
+    displayName: string;
+    description: string;
+    listPrompt: string;
+    detailPrompt: string;
+    createdAt: string;
+    updatedAt: string;
+}

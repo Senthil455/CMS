@@ -1,99 +1,51 @@
 import { PrismaClient } from '@prisma/client';
-import type { ChatMessage } from '@cms/shared';
-import type { IChatRepository } from './chat-repository.interface';
+import type { DesignStyle } from '@cms/shared';
 
-export class SqliteChatRepository implements IChatRepository {
+export interface IDesignStyleRepository {
+    getAllDesignStyles(): Promise<DesignStyle[]>;
+    getDesignStyleByName(name: string): Promise<DesignStyle | null>;
+    createDesignStyle(data: { name: string; displayName: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<DesignStyle>;
+    updateDesignStyle(id: number, data: { name?: string; displayName?: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<DesignStyle>;
+    deleteDesignStyle(id: number): Promise<void>;
+    seedDefaultStyles(): Promise<void>;
+}
+
+export class SqliteDesignStyleRepository implements IDesignStyleRepository {
     constructor(private prisma: PrismaClient) { }
 
-    async save(message: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<ChatMessage> {
-        const saved = await this.prisma.chatMessage.create({
-            data: {
-                userId: message.userId,
-                content: message.content,
-                role: message.role,
-                payload: message.payload ? JSON.stringify(message.payload) : null,
-            },
-        });
+    private mapDesignStyle(style: any): DesignStyle {
         return {
-            ...saved,
-            role: saved.role as 'user' | 'assistant',
-            createdAt: saved.createdAt.toISOString(),
-            payload: saved.payload ? JSON.parse(saved.payload) : undefined,
+            ...style,
+            createdAt: style.createdAt.toISOString(),
+            updatedAt: style.updatedAt.toISOString(),
         };
     }
 
-    async findAll(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
-        const where: any = { userId };
-        if (beforeId) {
-            where.id = { lt: beforeId };
-        }
-
-        const messages = await this.prisma.chatMessage.findMany({
-            where,
-            orderBy: { id: 'desc' },
-            take: limit,
-        });
-        return messages.reverse().map((m: any) => ({
-            ...m,
-            role: m.role as 'user' | 'assistant',
-            createdAt: m.createdAt.toISOString(),
-            payload: m.payload ? JSON.parse(m.payload) : undefined,
-        }));
-    }
-
-    async saveAiResponseLog(handler: string, response: string, providerName?: string, schemaId?: string, input?: string): Promise<void> {
-        await this.prisma.aiResponseLog.create({
-            data: {
-                handler,
-                response,
-                providerName: providerName || null,
-                schemaId: schemaId || null,
-                input: input || null,
-            },
-        });
-    }
-
-    async findAllAiResponseLogs(): Promise<any[]> {
-        return this.prisma.aiResponseLog.findMany({
-            orderBy: { timestamp: 'desc' },
-        });
-    }
-
-    async findAiResponseLogById(id: number): Promise<any | null> {
-        return this.prisma.aiResponseLog.findUnique({
-            where: { id },
-        });
-    }
-
-    async deleteAiResponseLog(id: number): Promise<void> {
-        await this.prisma.aiResponseLog.delete({
-            where: { id },
-        });
-    }
-
-    // ==================== Design Styles ====================
-
-    async getAllDesignStyles(): Promise<any[]> {
-        return this.prisma.designStyle.findMany({
+    async getAllDesignStyles(): Promise<DesignStyle[]> {
+        const styles = await this.prisma.designStyle.findMany({
             orderBy: { name: 'asc' },
         });
+        return styles.map(s => this.mapDesignStyle(s));
     }
 
-    async getDesignStyleByName(name: string): Promise<any | null> {
-        return this.prisma.designStyle.findUnique({
+    async getDesignStyleByName(name: string): Promise<DesignStyle | null> {
+        const style = await this.prisma.designStyle.findUnique({
             where: { name },
         });
+        return style ? this.mapDesignStyle(style) : null;
     }
 
-    async createDesignStyle(data: { name: string; displayName: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<any> {
-        return this.prisma.designStyle.create({ data });
+    async createDesignStyle(data: { name: string; displayName: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<DesignStyle> {
+        const created = await this.prisma.designStyle.create({ data });
+        return this.mapDesignStyle(created);
     }
 
-    async updateDesignStyle(id: number, data: { name?: string; displayName?: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<any> {
-        return this.prisma.designStyle.update({
+    async updateDesignStyle(id: number, data: { name?: string; displayName?: string; description?: string; listPrompt?: string; detailPrompt?: string }): Promise<DesignStyle> {
+        const updated = await this.prisma.designStyle.update({
             where: { id },
             data,
         });
+        return this.mapDesignStyle(updated);
     }
 
     async deleteDesignStyle(id: number): Promise<void> {

@@ -5,21 +5,16 @@ import { config } from '../config';
 
 import { OpenAIProvider } from '../infrastructures/openai-provider';
 import { GeminiProvider } from '../infrastructures/gemini-provider';
+import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
 
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+    const systemSettingRepository = new SqliteSystemSettingRepository(fastify.prisma);
 
-    const geminiKeySetting = await fastify.prisma.systemSetting.findUnique({
-        where: { key: 'GEMINI_API_KEY' }
-    });
-    const geminiKey = geminiKeySetting?.value || config.GEMINI_API_KEY || '';
-
-    const openaiKeySetting = await fastify.prisma.systemSetting.findUnique({
-        where: { key: 'OPENAI_API_KEY' }
-    });
-    const openaiKey = openaiKeySetting?.value || config.OPENAI_API_KEY || '';
+    const geminiKey = (await systemSettingRepository.get('GEMINI_API_KEY')) || config.GEMINI_API_KEY || '';
+    const openaiKey = (await systemSettingRepository.get('OPENAI_API_KEY')) || config.OPENAI_API_KEY || '';
 
     const providers: Record<string, AIProvider> = {
         openai: new OpenAIProvider(

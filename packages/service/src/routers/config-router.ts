@@ -49,11 +49,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
 
         if (geminiAgent.setApiKey) {
             // Save to database
-            await fastify.prisma.systemSetting.upsert({
-                where: { key: 'GEMINI_API_KEY' },
-                update: { value: apiKey },
-                create: { key: 'GEMINI_API_KEY', value: apiKey }
-            });
+            await (fastify as any).systemSettingRepository.upsert('GEMINI_API_KEY', apiKey);
 
             // Update in-memory
             geminiAgent.setApiKey(apiKey);
@@ -76,9 +72,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
 
         if (geminiAgent.setApiKey) {
             // Remove from database
-            await fastify.prisma.systemSetting.deleteMany({
-                where: { key: 'GEMINI_API_KEY' }
-            });
+            await (fastify as any).systemSettingRepository.delete('GEMINI_API_KEY');
 
             // Reset in-memory (empty string or revert to env if desired, but here we clear it to match user intent)
             geminiAgent.setApiKey('');
@@ -132,11 +126,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
 
         if (openaiAgent.setApiKey) {
             // Save to database
-            await fastify.prisma.systemSetting.upsert({
-                where: { key: 'OPENAI_API_KEY' },
-                update: { value: apiKey },
-                create: { key: 'OPENAI_API_KEY', value: apiKey }
-            });
+            await (fastify as any).systemSettingRepository.upsert('OPENAI_API_KEY', apiKey);
 
             // Update in-memory
             openaiAgent.setApiKey(apiKey);
@@ -159,9 +149,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
 
         if (openaiAgent.setApiKey) {
             // Remove from database
-            await fastify.prisma.systemSetting.deleteMany({
-                where: { key: 'OPENAI_API_KEY' }
-            });
+            await (fastify as any).systemSettingRepository.delete('OPENAI_API_KEY');
 
             // Reset in-memory
             openaiAgent.setApiKey('');

@@ -1,16 +1,17 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
+import { SqliteDesignStyleRepository } from '../repositories/design-style-repository';
+
 const designStyleRouter: FastifyPluginAsync = async (fastify) => {
     const prisma = fastify.prisma;
+    const repository = new SqliteDesignStyleRepository(prisma);
 
     // GET /cmsapi/design-styles
     fastify.get('/cmsapi/design-styles', {
         preHandler: [fastify.authenticate]
     }, async () => {
-        const styles = await prisma.designStyle.findMany({
-            orderBy: { name: 'asc' },
-        });
+        const styles = await repository.getAllDesignStyles();
         return { success: true, data: styles };
     });
 
@@ -31,7 +32,7 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
             return reply.status(400).send({ error: 'Invalid request body', details: body.error.flatten() });
         }
         try {
-            const style = await prisma.designStyle.create({ data: body.data });
+            const style = await repository.createDesignStyle(body.data);
             return { success: true, data: style };
         } catch (e: any) {
             if (e.code === 'P2002') {
@@ -64,10 +65,7 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
             for (const [key, val] of Object.entries(body.data)) {
                 if (val !== undefined) updateData[key] = val;
             }
-            const style = await prisma.designStyle.update({
-                where: { id: parseInt(id) },
-                data: updateData,
-            });
+            const style = await repository.updateDesignStyle(parseInt(id), updateData);
             return { success: true, data: style };
         } catch (e: any) {
             if (e.code === 'P2025') {
@@ -83,9 +81,7 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
     }, async (request, reply) => {
         const { id } = request.params as { id: string };
         try {
-            await prisma.designStyle.delete({
-                where: { id: parseInt(id) },
-            });
+            await repository.deleteDesignStyle(parseInt(id));
             return { success: true };
         } catch (e: any) {
             if (e.code === 'P2025') {

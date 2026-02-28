@@ -1,7 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { PrismaClient } from '@prisma/client';
-import { SqliteChatRepository } from '../infrastructures/sqlite-chat-repository';
+import { SqliteChatMessageRepository } from '../repositories/chat-message-repository';
+import { SqliteAiResponseLogRepository } from '../repositories/ai-response-log-repository';
+import { SqliteDesignStyleRepository } from '../repositories/design-style-repository';
+import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
 import { ChatService } from '../services/chat-service';
 import { AuthService } from '../services/auth-service';
 import { SocketService } from '../services/socket-service';
@@ -15,16 +18,22 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
 
     const serviceLogger = fastify.log.child({ component: 'SERVICE' }, { level: config.LOG_LEVEL_SERVICE });
 
-    const repository = new SqliteChatRepository(prisma);
+    const messageRepository = new SqliteChatMessageRepository(prisma);
+    const logRepository = new SqliteAiResponseLogRepository(prisma);
+    const designStyleRepository = new SqliteDesignStyleRepository(prisma);
+    const systemSettingRepository = new SqliteSystemSettingRepository(prisma);
+
+    fastify.decorate('systemSettingRepository', systemSettingRepository);
 
     // Seed default design styles if table is empty
-    await repository.seedDefaultStyles();
+    await designStyleRepository.seedDefaultStyles();
 
     const cmsClient = fastify.cms;
     const intentClassifier = fastify.intentClassifier;
 
     const chatService = new ChatService(
-        repository,
+        messageRepository,
+        logRepository,
         cmsClient,
         intentClassifier,
         // @ts-ignore

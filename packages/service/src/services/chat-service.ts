@@ -11,7 +11,8 @@ import {
 } from '@cms/shared';
 import type { Agent, AgentContext } from '../agent/chat-assistant';
 
-import type { IChatRepository } from '../infrastructures/chat-repository.interface';
+import type { IChatMessageRepository } from '../repositories/chat-message-repository';
+import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../agent/intent-classifier';
@@ -25,7 +26,8 @@ import { config } from '../config';
 
 export class ChatService {
     constructor(
-        private readonly repository: IChatRepository,
+        private readonly messageRepository: IChatMessageRepository,
+        private readonly logRepository: IAiResponseLogRepository,
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
@@ -35,23 +37,27 @@ export class ChatService {
     ) { }
 
     async getHistory(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
-        return this.repository.findAll(userId, limit, beforeId);
+        return this.messageRepository.findAll(userId, limit, beforeId);
     }
 
     async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
-        return this.repository.save({ userId, content, role: 'user' });
+        return this.messageRepository.save({ userId, content, role: 'user' });
     }
 
     async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
-        return this.repository.save({ userId, content, role: 'assistant', payload });
+        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
     }
 
     async getAiResponseLogs(): Promise<any[]> {
-        return this.repository.findAllAiResponseLogs();
+        return this.logRepository.findAllAiResponseLogs();
+    }
+
+    async getAiResponseLogById(id: number): Promise<any | null> {
+        return this.logRepository.findAiResponseLogById(id);
     }
 
     async deleteAiResponseLog(id: number): Promise<void> {
-        return this.repository.deleteAiResponseLog(id);
+        return this.logRepository.deleteAiResponseLog(id);
     }
 
     // Helper method to save and emit assistant messages
@@ -84,7 +90,7 @@ export class ChatService {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
             },
             saveAiResponseLog: async (handlerName: string, response: string, input?: string) => {
-                await this.repository.saveAiResponseLog(handlerName, response, providerName, schemaId, input);
+                await this.logRepository.saveAiResponseLog(handlerName, response, providerName, schemaId, input);
             },
             onConfirmSchemaSummary: async (summary: SchemaSummary) => {
                 onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
@@ -336,7 +342,7 @@ export class ChatService {
     }
 
     async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
-        const log = await this.repository.findAiResponseLogById(logId);
+        const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
             throw new Error(`Log with ID ${logId} not found`);
         }
