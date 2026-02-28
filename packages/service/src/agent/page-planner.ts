@@ -55,9 +55,9 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         const templates = [noStyleOption, ...dbTemplates];
 
         return {
-            taskId: context.taskId,
+            taskId: context.taskId || undefined,
             userInput,
-            schemaId: schemaId,
+            schemaId: pagePlan.pageName,
             providerName: context.providerName,
             plan: pagePlan,
             templates: templates

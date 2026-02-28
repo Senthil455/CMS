@@ -43,13 +43,6 @@ model DesignStyle {
   updatedAt    DateTime @updatedAt
 }
 
-model SystemPlan {
-  id        Int      @id @default(autoincrement())
-  userInput String
-  status    String   @default("pending") // 'pending' | 'finished'
-  entries   String   // JSON stringified array of SystemPlanItem
-  createdAt DateTime @default(now())
-}
 
 model AgentTask {
   id        Int      @id @default(autoincrement())

@@ -18,6 +18,12 @@ export class TaskOperator {
         return await this.taskRepository.save(task);
     }
 
+    async createSystemTask(requirement: any): Promise<AgentTask> {
+        this.logger.info({ requirement }, 'Creating system task in TaskOperator');
+        const task = this.agentTaskModel.createSystemTask(requirement);
+        return await this.taskRepository.save(task);
+    }
+
     async checkout(taskId: number): Promise<AgentTaskItem | null> {
         this.logger.info({ taskId }, 'Checking out task item in TaskOperator');
         const task = await this.taskRepository.findById(taskId);

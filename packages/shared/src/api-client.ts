@@ -1,7 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import { ENDPOINTS } from './endpoints.js';
 import type { User } from './contracts.js';
-import type { SchemaDto, SaveSchemaPayload, XEntityDto, AssetListResponse } from './dtos.js';
+import type { SchemaDto, SaveSchemaPayload, XEntityDto, AssetListResponse } from './cms.dto.js';
 
 export class CmsApiClient {
     constructor(private readonly axios: AxiosInstance) { }

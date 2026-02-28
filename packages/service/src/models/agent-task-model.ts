@@ -40,6 +40,22 @@ export class AgentTaskModel {
             ]
         };
     }
+
+    public createEntityTask(userInput: string, schemaId?: string): AgentTask {
+        return {
+            status: 'pending',
+            items: [
+                {
+                    type: 'entity',
+                    agentName: AGENT_NAMES.ENTITY_DESIGNER,
+                    description: userInput,
+                    status: 'pending',
+                    schemaId
+                }
+            ]
+        };
+    }
+
     public createSystemTask(requirement: SystemRequirment): AgentTask {
         const items: AgentTaskItem[] = [];
         for (const item of requirement.entries) {

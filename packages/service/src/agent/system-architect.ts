@@ -61,18 +61,9 @@ Output ONLY a JSON array.
         }
 
         try {
-            const systemPlan = await this.prisma.systemPlan.create({
-                data: {
-                    userInput: this.lastPrompts.userInput || '',
-                    status: 'pending',
-                    entries: JSON.stringify(plan)
-                }
-            });
-
             await context.onSystemPlanToConfirm({
-                planId: systemPlan.id,
                 items: plan
-            });
+            } as any);
             throw new AgentStopError("Please review the generated system plan, then confirm what to build.");
         } catch (error) {
             // Re-throw AgentStopError so handle() can process it properly

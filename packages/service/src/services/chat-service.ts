@@ -5,7 +5,6 @@ import {
     type OnServerToClientEvent,
     type TemplateSelectionResponse,
     type SystemRequirmentConfirmationDto,
-    type SystemRequirmentItem,
     AGENT_NAMES,
     type AgentName
 } from '@cms/shared';
@@ -13,10 +12,7 @@ import type { Agent, AgentContext } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
-import { AgentTaskModel, type AgentTask } from '../models/agent-task-model';
-import type { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import type { ServiceLogger } from '../types/logger';
-import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../agent/intent-classifier';
 import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
@@ -24,20 +20,16 @@ import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
-import type { PrismaClient } from '@prisma/client';
 import { config } from '../config';
 
 export class ChatService {
     constructor(
         private readonly messageRepository: IChatMessageRepository,
         private readonly logRepository: IAiResponseLogRepository,
-        private readonly taskRepository: IAgentTaskRepository,
-        private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
         private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
-        private readonly prisma: PrismaClient,
         private readonly entityOperator: EntityOperator,
         private readonly pageOperator: PageOperator,
         private readonly taskOperator: TaskOperator,
@@ -105,24 +97,18 @@ export class ChatService {
                 }
             }
 
-            if (!agent) {
-                agent = await this.intentClassifier[baseProviderName]!.resolve(content, providerName);
+
+            if (agent && this.chatHandlers[baseProviderName]?.[agent]) {
+                this.logger.info('Executing resolved handler');
+                const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
+                await this.executeAgent(agent, content, context, onEvent);
+                return;
             }
 
-            if (agent) {
-                if (this.chatHandlers[baseProviderName]?.[agent]) {
-                    this.logger.info('Executing resolved handler');
-
-                    const context = this.createContext(userId, externalCookie, providerName, agent, onEvent);
-                    await this.executeAgent(agent, content, context, onEvent);
-                    return;
-                }
-
-                // Fallback or default behavior if no command resolved
-                const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
-                const aiMessage = await this.saveAgentMessage(userId, helpMessage);
-                onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
-            }
+            // Fallback or default behavior if no command resolved
+            const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
+            const aiMessage = await this.saveAgentMessage(userId, helpMessage);
+            onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
         } catch (error) {
             this.logger.error({ error: formatError(error) }, 'Error handling user message');
 
@@ -141,7 +127,7 @@ export class ChatService {
         }
 
         await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
-
+        let taskId = response.taskId;
         try {
             const schemaIds = await this.entityOperator.commit(response, externalCookie);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
@@ -149,6 +135,9 @@ export class ChatService {
                 schemasId: schemaIds
             });
             await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
+            if (taskId) {
+                await this.executePendingTaskItem(taskId, userId, externalCookie, 'gemini', onEvent);
+            }
         } catch (error) {
             this.logger.error({ error: formatError(error) }, 'Failed to commit schema changes');
             await this.saveAndEmitAgentMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
@@ -183,50 +172,8 @@ export class ChatService {
 
     async handleSystemPlanResponse(userId: string, response: SystemRequirmentConfirmationDto, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
-            await this.prisma.systemPlan.update({
-                where: { id: response.planId },
-                data: {
-                    status: 'finished',
-                    entries: JSON.stringify(response.items)
-                }
-            });
-
-            const entitiesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'entity').length;
-            const queriesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'query').length;
-            const pagesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'page').length;
-
-            await this.saveAndEmitAgentMessage(userId, `I have saved your confirmed system architecture plan featuring ${entitiesCount} entities, ${queriesCount} queries, and ${pagesCount} pages. I will now start building them...`, onEvent);
-            this.statusService.clearStatus(userId);
-
-            const providerName = config.AI_PROVIDER;
-            const baseProviderName = providerName.split(' ')[0] || providerName;
-
-            for (const item of response.items) {
-                let targetAgent: AgentName | null = null;
-                let prompt = '';
-
-                if (item.type === 'entity') {
-                    targetAgent = AGENT_NAMES.ENTITY_DESIGNER;
-                    prompt = `Create an entity named "${item.name}": ${item.description}`;
-                } else if (item.type === 'query') {
-                    targetAgent = AGENT_NAMES.QUERY_BUILDER;
-                    prompt = `Create a query named "${item.name}": ${item.description}`;
-                } else if (item.type === 'page') {
-                    targetAgent = AGENT_NAMES.PAGE_PLANNER;
-                    prompt = `Create a page named "${item.name}": ${item.description}`;
-                }
-
-                if (targetAgent && this.chatHandlers[baseProviderName]?.[targetAgent]) {
-                    this.logger.info(`Executing ${targetAgent} for ${item.name}`);
-                    const userMessage = await this.saveUserMessage(userId, prompt);
-                    onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
-
-                    const context = this.createContext(userId, externalCookie, providerName, targetAgent, onEvent);
-                    await this.executeAgent(targetAgent, prompt, context, onEvent);
-                } else {
-                    this.logger.error(`Handler for ${targetAgent} not found`);
-                }
-            }
+            const task = await this.taskOperator.createSystemTask(response);
+            await this.executePendingTaskItem(task.id!, userId, externalCookie, config.AI_PROVIDER, onEvent);
         } catch (error: any) {
             this.logger.error({ error: formatError(error) }, 'Error handling system plan response');
             await this.saveAndEmitAgentMessage(userId, 'I encountered an error while saving the system plan. Please check the logs and try again.', onEvent);
