@@ -91,12 +91,13 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         );
 
         // Parse response: { layoutJson, component: { id, html } }
-        let parsed: { layoutJson: LayoutJson; component: { id: string; html: string } };
+        let parsed: { layoutJson: LayoutJson; component: { id: string; html: string; addonId: string } };
         if (typeof res === 'string') {
             parsed = JSON.parse(res);
         } else {
             parsed = res as any;
         }
+        parsed.component.addonId = this.addonDef.id;
 
         return {
             schemaId,

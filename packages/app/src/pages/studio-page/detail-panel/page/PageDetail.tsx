@@ -9,10 +9,11 @@ import { PagePreviewSection } from './components/PagePreviewSection';
 interface PageDetailProps {
     schema: SchemaDto;
     onSendMessage: (msg: string) => void;
+    onChatAction?: (action: string) => void;
     onEditSource?: (id: string) => void;
 }
 
-export function PageDetail({ schema, onSendMessage, onEditSource }: PageDetailProps) {
+export function PageDetail({ schema, onSendMessage, onChatAction, onEditSource }: PageDetailProps) {
     const page = schema.settings?.page!;
 
     const { publishSchema } = useSchemas();
@@ -95,10 +96,6 @@ export function PageDetail({ schema, onSendMessage, onEditSource }: PageDetailPr
         }
     };
 
-    const handleModifyComponent = (componentId: string, req: string) => {
-        onSendMessage(`@modify-component ${schema.schemaId} ${componentId} ${req}`);
-    };
-
     return (
         <div className="flex flex-col h-full gap-4 pb-8">
             <PagePublishSection
@@ -108,10 +105,11 @@ export function PageDetail({ schema, onSendMessage, onEditSource }: PageDetailPr
 
             <PageComponentsSection
                 metadata={parsedPage.metadata}
+                schemaId={schema.schemaId!}
                 selectedComponentId={selectedComponentId}
                 onSelectComponent={setSelectedComponentId}
                 onRemoveComponent={handleRemoveComponent}
-                onModifyComponent={handleModifyComponent}
+                onChatAction={onChatAction}
                 onEditSource={onEditSource}
             />
 

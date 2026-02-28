@@ -4,14 +4,15 @@ import { useState } from 'react';
 
 interface PageComponentsSectionProps {
     metadata: PageMetadata;
+    schemaId: string;
     selectedComponentId: string | null;
     onSelectComponent: (id: string | null) => void;
     onRemoveComponent?: (id: string) => void;
-    onModifyComponent?: (id: string, req: string) => void;
+    onChatAction?: (action: string) => void;
     onEditSource?: (id: string) => void;
 }
 
-export function PageComponentsSection({ metadata, selectedComponentId, onSelectComponent, onRemoveComponent, onModifyComponent, onEditSource }: PageComponentsSectionProps) {
+export function PageComponentsSection({ metadata, schemaId, selectedComponentId, onSelectComponent, onRemoveComponent, onChatAction, onEditSource }: PageComponentsSectionProps) {
     const components = metadata.components;
     const [editingId, setEditingId] = useState<string | null>(null);
     const [modifyReq, setModifyReq] = useState('');
@@ -55,8 +56,8 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
                                             // We want to trigger a message to chat. The parent handles onModifyComponent.
                                             // If we just want to mention @[componentId], we can pass an empty requirement
                                             // or let the parent handle the mention.
-                                            if (onModifyComponent) {
-                                                onModifyComponent(id, ''); // The user said "put a message to the chat mention @[componentId]"
+                                            if (onChatAction) {
+                                                onChatAction(`@modify-component ${schemaId} ${id} `); // The user said "put a message to the chat mention @[componentId]"
                                             }
                                         }}
                                         className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-md transition-colors border border-violet-200"
@@ -91,7 +92,7 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
                                     )}
                                 </div>
 
-                                {editingId === id && onModifyComponent && (
+                                {editingId === id && onChatAction && (
                                     <div className="flex items-center gap-2 mt-1 px-1">
                                         <input
                                             type="text"
@@ -101,7 +102,7 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
                                             className="flex-1 text-xs px-2 py-1 border border-border rounded-md focus:outline-none focus:border-blue-500"
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && modifyReq.trim()) {
-                                                    onModifyComponent(id, modifyReq.trim());
+                                                    onChatAction(`@modify-component ${schemaId} ${id} ${modifyReq.trim()}`);
                                                     setEditingId(null);
                                                     setModifyReq('');
                                                 }
@@ -110,7 +111,7 @@ export function PageComponentsSection({ metadata, selectedComponentId, onSelectC
                                         <button
                                             onClick={() => {
                                                 if (modifyReq.trim()) {
-                                                    onModifyComponent(id, modifyReq.trim());
+                                                    onChatAction(`@modify-component ${schemaId} ${id} ${modifyReq.trim()}`);
                                                     setEditingId(null);
                                                     setModifyReq('');
                                                 }

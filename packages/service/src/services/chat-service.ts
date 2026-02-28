@@ -152,13 +152,16 @@ export class ChatService {
             }
 
             // Check for modify-component command: @modify-component <schemaId> <componentId> <requirement>
-            const modifyMatch = content.trim().match(/^@modify-component\s+([\w-]+)\s+([\w-]+)\s+(.+)$/is);
+            const modifyMatch = content.trim().match(/^@modify-component\s+([\w-]+)\s+([\w-]+)(?:\s+(.*))?$/is);
             if (modifyMatch) {
                 const schemaId = modifyMatch[1]!;
                 const componentId = modifyMatch[2]!;
-                const requirement = modifyMatch[3]!;
+                const requirement = modifyMatch[3]?.trim() || '';
 
-                const userMessage = await this.saveUserMessage(userId, `Modify component "${componentId}": ${requirement}`);
+                const messageText = requirement
+                    ? `Modify component "${componentId}": ${requirement}`
+                    : `Modify component "${componentId}"`;
+                const userMessage = await this.saveUserMessage(userId, messageText);
                 onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
                 const baseProviderName = providerName.split(' ')[0] || providerName;

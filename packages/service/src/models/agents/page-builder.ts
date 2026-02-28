@@ -14,7 +14,7 @@ export interface ComponentHtmlResponse {
 export interface PageBuilderPlan {
     title: string;
     layoutJson: LayoutJson;
-    components: Record<string, { html: string; props?: any }>;
+    components: Record<string, { html: string; addonId?: string; }>;
 }
 
 export class PageBuilder extends BaseAgent<PageBuilderPlan> {
@@ -100,7 +100,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
         }
 
         // Generate HTML for each component sequentially
-        const components: Record<string, { html: string; props?: any }> = {};
+        const components: Record<string, { html: string; addonId?: string; }> = {};
 
         for (let i = 0; i < componentInstructions.length; i++) {
             const instruction = componentInstructions[i];
@@ -178,6 +178,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
 
             components[instruction.id] = {
                 html: componentResponse.html,
+                addonId: instruction.addonId ?? '',
             };
 
             this.logger.info({ componentId: instruction.id }, `Generated component ${i + 1}/${componentInstructions.length}`);
@@ -231,6 +232,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
 
         const targetInstruction = componentInstructions.find(i => i.id === componentId);
         if (!targetInstruction) {
+            //
             // Note: Addons don't have instructions, so we might need a fallback.
             // But for now, user is modifying visually generated components.
             throw new Error(`Component instruction not found for ID: ${componentId}`);

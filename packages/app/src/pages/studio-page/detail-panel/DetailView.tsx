@@ -130,13 +130,10 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                         <PageDetail
                             schema={item}
                             onSendMessage={onSendMessage}
+                            onChatAction={onChatAction}
                             onEditSource={(id) => {
-                                // Transition to layout editor mode
-                                onEdit('layout');
-                                // Wait for a moment for the component to render, then we could pass the selected block id, 
-                                // but currently it might not accept the block id directly. The layout editor 
-                                // doesn't take an initial selection state from the outside.
-                                // At minimum it switches to the layout tab.
+                                // Transition to layout editor mode and pass block ID
+                                onEdit(`layout&block=${id}` as any);
                             }}
                         />
                     )}
