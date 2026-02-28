@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Database, FileCode, LayoutTemplate, Trash2, X } from 'lucide-react';
-
-export interface SystemPlanItem {
-    type: 'entity' | 'query' | 'page';
-    name: string;
-    description: string;
-}
+import type { SystemPlanItem, SystemPlanConfirmationDto } from '@cms/shared';
 
 interface SystemPlanConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (plan: SystemPlanItem[]) => void;
-    plan: SystemPlanItem[];
+    onConfirm: (data: SystemPlanConfirmationDto) => void;
+    plan: SystemPlanConfirmationDto | null;
 }
 
 export function SystemPlanConfirmationModal({
@@ -23,8 +18,8 @@ export function SystemPlanConfirmationModal({
     const [editablePlan, setEditablePlan] = useState<SystemPlanItem[]>([]);
 
     useEffect(() => {
-        if (isOpen) {
-            setEditablePlan([...plan]);
+        if (isOpen && plan) {
+            setEditablePlan([...plan.items]);
         }
     }, [isOpen, plan]);
 
@@ -52,7 +47,7 @@ export function SystemPlanConfirmationModal({
                             Review System Architecture Plan
                         </h2>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                            The AI has generated the following components. Delete any you do not want before confirming.
+                            The AI has generated the following components. Modify instructions or delete any you do not want before confirming.
                         </p>
                     </div>
                     <button
@@ -93,9 +88,17 @@ export function SystemPlanConfirmationModal({
                                                 {item.type}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                                            {item.description}
-                                        </p>
+                                        <textarea
+                                            value={item.description}
+                                            onChange={(e) => {
+                                                const newPlan = [...editablePlan];
+                                                newPlan[idx] = { ...item, description: e.target.value };
+                                                setEditablePlan(newPlan);
+                                            }}
+                                            rows={2}
+                                            className="w-full mt-2 text-sm text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-md p-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-y transition-colors"
+                                            placeholder="Enter instructions for this component..."
+                                        />
                                     </div>
                                     <button
                                         onClick={() => handleDelete(idx)}
@@ -123,7 +126,7 @@ export function SystemPlanConfirmationModal({
                         Cancel
                     </button>
                     <button
-                        onClick={() => onConfirm(editablePlan)}
+                        onClick={() => plan && onConfirm({ planId: plan.planId, items: editablePlan })}
                         disabled={editablePlan.length === 0}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors flex items-center gap-2"
                     >

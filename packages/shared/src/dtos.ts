@@ -1,3 +1,4 @@
+import { AgentName } from "./constants";
 
 export interface AttributeDto {
     field: string;
@@ -247,4 +248,34 @@ export interface PagePlan {
     primaryParameter: string | null;
     linkingRules: string[];
     reason?: string | null;
+}
+
+export interface SystemRequirmentItem {
+    type: 'entity' | 'query' | 'page';
+    name: string;
+    description: string;
+}
+
+export interface SystemRequirment {
+    id: number;
+    userInput: string;
+    createdAt: Date;
+    status: 'pending' | 'finished';
+    entries: SystemRequirmentItem[];
+}
+
+export interface SystemRequirmentConfirmationDto {
+    planId: number;
+    items: SystemRequirmentItem[];
+}
+
+export interface SystemImplementationTask {
+    planId: number;
+    type: 'entity' | 'query' | 'page';
+    schemaName: string;
+    agentName: AgentName;
+    status: 'pending' | 'finished';
+    taskId?: string;
+    description?: string;
+    schemaId?: string;
 }

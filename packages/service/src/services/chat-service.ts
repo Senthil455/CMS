@@ -4,17 +4,19 @@ import {
     type SchemaSummary,
     type OnServerToClientEvent,
     type TemplateSelectionResponse,
+    type SystemRequirmentConfirmationDto,
+    type SystemRequirmentItem,
     AGENT_NAMES,
     type AgentName
 } from '@cms/shared';
-import type { Agent, AgentContext } from '../models/agents/chat-assistant';
+import type { Agent, AgentContext } from '../agent/chat-assistant';
 
 import type { IChatRepository } from '../infrastructures/chat-repository.interface';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
-import { IntentClassifier } from '../models/agents/intent-classifier';
-import { EntityManager } from '../models/cms/entity-manager';
-import { PageManager } from '../models/cms/page-manager';
+import { IntentClassifier } from '../agent/intent-classifier';
+import { EntityRepository } from '../repositories/entity-repository';
+import { PageRepository } from '../repositories/page-repository';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
@@ -96,8 +98,8 @@ export class ChatService {
             onTemplateSelectionDetailToConfirm: async (payload: any) => {
                 onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
             },
-            onSystemPlanToConfirm: async (plan: any[]) => {
-                onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, plan);
+            onSystemPlanToConfirm: async (data: SystemRequirmentConfirmationDto) => {
+                onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, data);
             },
             updateStatus: async (content: string) => {
                 this.statusService.updateStatus(userId, content);
@@ -239,7 +241,7 @@ export class ChatService {
         await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
         try {
-            const schemaManager = new EntityManager(this.cmsClient, this.logger, externalCookie);
+            const schemaManager = new EntityRepository(this.cmsClient, this.logger, externalCookie);
             const schemaIds = await schemaManager.commit(response);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
                 task_type: 'entity_designer',
@@ -254,7 +256,7 @@ export class ChatService {
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
-            const pageManager = new PageManager(this.cmsClient, this.logger, externalCookie);
+            const pageManager = new PageRepository(this.cmsClient, this.logger, externalCookie);
             const schemaId = await pageManager.savePlanAndUserInput(
                 response.requestPayload.schemaId,
                 response.requestPayload.plan,
@@ -280,17 +282,19 @@ export class ChatService {
         }
     }
 
-    async handleSystemPlanResponse(userId: string, response: any[], externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+    async handleSystemPlanResponse(userId: string, response: SystemRequirmentConfirmationDto, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
-            await this.prisma.systemPlan.create({
+            await this.prisma.systemPlan.update({
+                where: { id: response.planId },
                 data: {
-                    plan: JSON.stringify(response)
+                    status: 'finished',
+                    entries: JSON.stringify(response.items)
                 }
             });
 
-            const entitiesCount = response.filter(i => i.type === 'entity').length;
-            const queriesCount = response.filter(i => i.type === 'query').length;
-            const pagesCount = response.filter(i => i.type === 'page').length;
+            const entitiesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'entity').length;
+            const queriesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'query').length;
+            const pagesCount = response.items.filter((i: SystemRequirmentItem) => i.type === 'page').length;
 
             await this.saveAndEmitAgentMessage(userId, `I have saved your confirmed system architecture plan featuring ${entitiesCount} entities, ${queriesCount} queries, and ${pagesCount} pages. I will now start building them...`, onEvent);
             this.statusService.clearStatus(userId);
@@ -298,7 +302,7 @@ export class ChatService {
             const providerName = config.AI_PROVIDER;
             const baseProviderName = providerName.split(' ')[0] || providerName;
 
-            for (const item of response) {
+            for (const item of response.items) {
                 let targetAgent: AgentName | null = null;
                 let prompt = '';
 

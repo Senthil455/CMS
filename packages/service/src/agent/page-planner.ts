@@ -1,8 +1,8 @@
-import type { ServiceLogger } from '../../types/logger';
+import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, AgentStopError, parseModelFromProvider } from './chat-assistant';
 import { type TemplateSelectionRequest, type PagePlan } from '@cms/shared';
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
-import type { CmsClient } from '../../infrastructures/cms-client';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
+import type { CmsClient } from '../infrastructures/cms-client';
 
 export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
     constructor(

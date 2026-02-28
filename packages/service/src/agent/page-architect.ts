@@ -1,10 +1,10 @@
 
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
-import type { CmsClient } from '../../infrastructures/cms-client';
-import type { ServiceLogger } from '../../types/logger';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
+import type { CmsClient } from '../infrastructures/cms-client';
+import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
-import { PageManager } from '../cms/page-manager';
+import { PageRepository } from '../repositories/page-repository';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
 import { PAGE_ADDON_REGISTRY } from './page-addons/index';
 
@@ -62,7 +62,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
     }
 
     async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<AgentResponse | null> {
-        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
         await pageManager.saveArchitecture(plan.schemaId, plan);
 
         // Also save componentInstructions into metadata at the top level

@@ -6,7 +6,7 @@ import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
 import { useSocketContext } from '../../context/socket-provider';
 import { Loader2 } from 'lucide-react';
-import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest, type SystemPlanConfirmationDto } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './explorer-panel/Explorer';
 import { DetailView } from './detail-panel/DetailView';
@@ -17,7 +17,7 @@ import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { TemplateSelectionDialog } from './TemplateSelectionDialog';
-import { SystemPlanConfirmationModal, type SystemPlanItem } from './SystemPlanConfirmationModal';
+import { SystemPlanConfirmationModal } from './SystemPlanConfirmationModal';
 
 export default function StudioPage() {
     const { type, id } = useParams();
@@ -98,7 +98,7 @@ export default function StudioPage() {
 
     // System Plan Confirmation State
     const [showSystemPlanConfirmation, setShowSystemPlanConfirmation] = useState(false);
-    const [systemPlanData, setSystemPlanData] = useState<SystemPlanItem[]>([]);
+    const [systemPlanData, setSystemPlanData] = useState<SystemPlanConfirmationDto | null>(null);
 
     useEffect(() => {
         if (history) {
@@ -179,10 +179,10 @@ export default function StudioPage() {
         }
     };
 
-    const handleConfirmSystemPlan = (plan: SystemPlanItem[]) => {
+    const handleConfirmSystemPlan = (plan: SystemPlanConfirmationDto) => {
         sendSystemPlanResponse(plan);
         setShowSystemPlanConfirmation(false);
-        setSystemPlanData([]);
+        setSystemPlanData(null);
     };
 
     const [chatDraft, setChatDraft] = useState<string | null>(null);

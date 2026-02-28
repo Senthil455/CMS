@@ -1,6 +1,6 @@
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
-import type { ServiceLogger } from '../../types/logger';
+import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider, AgentStopError } from './chat-assistant';
 
 export interface SystemPlanItem {
@@ -61,7 +61,18 @@ Output ONLY a JSON array.
         }
 
         try {
-            await context.onSystemPlanToConfirm(plan);
+            const systemPlan = await this.prisma.systemPlan.create({
+                data: {
+                    userInput: this.lastPrompts.userInput || '',
+                    status: 'pending',
+                    entries: JSON.stringify(plan)
+                }
+            });
+
+            await context.onSystemPlanToConfirm({
+                planId: systemPlan.id,
+                items: plan
+            });
             throw new AgentStopError("Please review the generated system plan, then confirm what to build.");
         } catch (error) {
             // Re-throw AgentStopError so handle() can process it properly

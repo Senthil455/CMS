@@ -1,5 +1,5 @@
 import type { ChatMessage } from './contracts.js';
-import { SchemaSummary } from './dtos.js';
+import { SchemaSummary, SystemRequirmentItem, SystemRequirmentConfirmationDto } from './dtos.js';
 import type { AgentName } from './constants.js';
 
 export const SOCKET_EVENTS = {
@@ -29,14 +29,14 @@ export interface ServerToClientEvents {
     [SOCKET_EVENTS.CHAT.SCHEMAS_SYNC]: (data: SystemMessagePayload) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM]: (data: any) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM]: (data: any) => void;
-    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM]: (data: any[]) => void; // Using any[] to represent SystemPlanItem[] temporarily, since it is defined inservice. We can refine this later if needed.
+    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM]: (data: SystemRequirmentConfirmationDto) => void;
 }
 
 export interface ClientToServerEvents {
     [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string, providerName?: string }) => void;
     [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummary) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE]: (data: any) => void;
-    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE]: (data: any[]) => void;
+    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE]: (data: SystemRequirmentConfirmationDto) => void;
 }
 
 export interface InterServerEvents {

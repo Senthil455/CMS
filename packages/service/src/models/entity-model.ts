@@ -1,6 +1,6 @@
 import { type EntityDto } from '@cms/shared';
 import { normalizeAttribute } from './attribute-model';
-import { camelize } from './utils';
+import { camelize } from '../repositories/utils';
 
 export class EntityModel {
     constructor(public readonly entity: EntityDto) { }

@@ -6,19 +6,19 @@ import { fileURLToPath } from 'url';
 import { config } from '../config';
 import { AGENT_NAMES } from '@cms/shared';
 
-import { IntentClassifier } from '../models/agents/intent-classifier';
-import { EntityGenerator } from '../models/agents/entity-designer';
+import { IntentClassifier } from '../agent/intent-classifier';
+import { EntityGenerator } from '../agent/entity-designer';
 
-import { QueryGenerator } from '../models/agents/query-builder';
-import { PagePlanner } from '../models/agents/page-planner';
+import { QueryGenerator } from '../agent/query-builder';
+import { PagePlanner } from '../agent/page-planner';
 // PageArchitect import removed
-import { PageArchitect } from '../models/agents/page-architect';
-import { PageBuilder } from '../models/agents/page-builder';
-import { DataGenerator } from '../models/agents/data-synthesizer';
-import { PAGE_ADDON_REGISTRY } from '../models/agents/page-addons/index';
-import { PageAddonBuilder } from '../models/agents/page-addons/PageAddonBuilder';
-import { BaseAgent } from '../models/agents/chat-assistant';
-import { SystemArchitect } from '../models/agents/system-architect';
+import { PageArchitect } from '../agent/page-architect';
+import { PageBuilder } from '../agent/page-builder';
+import { DataGenerator } from '../agent/data-synthesizer';
+import { PAGE_ADDON_REGISTRY } from '../agent/page-addons/index';
+import { PageAddonBuilder } from '../agent/page-addons/PageAddonBuilder';
+import { BaseAgent } from '../agent/chat-assistant';
+import { SystemArchitect } from '../agent/system-architect';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -89,7 +89,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 
-            const pageAddonsDir = path.join(__dirname, '../models/agents/page-addons');
+            const pageAddonsDir = path.join(__dirname, '../agent/page-addons');
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, BaseAgent<any>> = {};

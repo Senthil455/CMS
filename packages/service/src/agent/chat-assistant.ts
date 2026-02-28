@@ -1,5 +1,5 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest } from '@cms/shared';
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirmentConfirmationDto } from '@cms/shared';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
     userId: string;
@@ -13,7 +13,7 @@ export interface AgentContext {
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
     onTemplateSelectionListToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
     onTemplateSelectionDetailToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
-    onSystemPlanToConfirm: (plan: any[]) => Promise<void>;
+    onSystemPlanToConfirm: (plan: SystemRequirmentConfirmationDto) => Promise<void>;
     updateStatus: (content: string) => Promise<void>;
 }
 
@@ -28,7 +28,7 @@ export interface Agent<T = any> {
     handle(userInput: string, context: AgentContext): Promise<AgentResponse | null>;
 }
 
-import type { ServiceLogger } from '../../types/logger';
+import type { ServiceLogger } from '../types/logger';
 
 /**
  * Throw this from think() to stop the agent pipeline and send a user-facing message.

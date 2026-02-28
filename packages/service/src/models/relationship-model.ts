@@ -1,5 +1,5 @@
 import { type RelationshipDto, type SchemaDto, type AttributeDto } from '@cms/shared';
-import { camelize } from './utils';
+import { camelize } from '../repositories/utils';
 
 export class RelationshipModel {
     constructor(public readonly relationship: RelationshipDto) { }

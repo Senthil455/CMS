@@ -3,11 +3,11 @@ import {
     type SchemaDto,
     type SaveSchemaPayload
 } from '@cms/shared';
-import type { CmsClient } from '../../infrastructures/cms-client';
-import type { ServiceLogger } from '../../types/logger';
-import { RelationshipModel } from './relationship-model';
+import type { CmsClient } from '../infrastructures/cms-client';
+import type { ServiceLogger } from '../types/logger';
+import { RelationshipModel } from '../models/relationship-model';
 
-export class EntityManager {
+export class EntityRepository {
     constructor(
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,

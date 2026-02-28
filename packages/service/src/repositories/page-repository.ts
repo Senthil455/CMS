@@ -1,9 +1,9 @@
-import type { CmsClient } from '../../infrastructures/cms-client';
-import type { ServiceLogger } from '../../types/logger';
+import type { CmsClient } from '../infrastructures/cms-client';
+import type { ServiceLogger } from '../types/logger';
 import type { SaveSchemaPayload, TemplateSelectionResponse, PagePlan } from '@cms/shared';
 import { LayoutCompiler, type LayoutJson } from '@cms/shared';
 
-export class PageManager {
+export class PageRepository {
     constructor(
         private readonly cmsClient: CmsClient,
         private readonly logger: ServiceLogger,
@@ -63,7 +63,7 @@ export class PageManager {
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
         const newSchemaId = saveResp.schemaId;
 
-        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved plan and user input via PageManager');
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved plan and user input via PageRepository');
         return newSchemaId;
     }
 
@@ -96,7 +96,7 @@ export class PageManager {
         };
 
         await this.cmsClient.saveSchema(this.externalCookie, payload);
-        this.logger.info({ schemaId }, 'Successfully saved architecture via PageManager');
+        this.logger.info({ schemaId }, 'Successfully saved architecture via PageRepository');
     }
 
     async saveLayout(schemaId: string, layoutJson: any, title?: string): Promise<string> {
@@ -150,7 +150,7 @@ export class PageManager {
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
         const newSchemaId = saveResp.schemaId;
 
-        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page layout JSON via PageManager');
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page layout JSON via PageRepository');
         return newSchemaId;
     }
 
@@ -177,7 +177,7 @@ export class PageManager {
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
         const newSchemaId = saveResp.schemaId;
 
-        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page HTML via PageManager');
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved page HTML via PageRepository');
         return newSchemaId;
     }
 
@@ -209,7 +209,7 @@ export class PageManager {
         };
 
         await this.cmsClient.saveSchema(this.externalCookie, payload);
-        this.logger.info({ schemaId }, 'Successfully saved component instructions via PageManager');
+        this.logger.info({ schemaId }, 'Successfully saved component instructions via PageRepository');
     }
 
     async saveComponents(
@@ -259,7 +259,7 @@ export class PageManager {
         const saveResp = await this.cmsClient.saveSchema(this.externalCookie, payload);
         const newSchemaId = saveResp.schemaId;
 
-        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved AI-generated components and compiled HTML via PageManager');
+        this.logger.info({ schemaId: newSchemaId }, 'Successfully saved AI-generated components and compiled HTML via PageRepository');
         return newSchemaId;
     }
 }

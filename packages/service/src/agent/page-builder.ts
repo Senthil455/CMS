@@ -1,9 +1,9 @@
-import type { AIProvider } from '../../infrastructures/ai-provider.interface';
+import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES } from '@cms/shared';
-import type { CmsClient } from '../../infrastructures/cms-client';
-import type { ServiceLogger } from '../../types/logger';
+import type { CmsClient } from '../infrastructures/cms-client';
+import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
-import { PageManager } from '../cms/page-manager';
+import { PageRepository } from '../repositories/page-repository';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 
 
@@ -192,7 +192,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
     }
 
     async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentResponse | null> {
-        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
@@ -303,7 +303,7 @@ ${relevantQueryDetails}
         if (!metadata.components) metadata.components = {};
         metadata.components[componentId] = { html: newHtml };
 
-        const pageManager = new PageManager(this.cmsClient, this.logger, context.externalCookie);
+        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
         await pageManager.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title);
 
         await context.onSchemasSync({

@@ -45,6 +45,8 @@ model DesignStyle {
 
 model SystemPlan {
   id        Int      @id @default(autoincrement())
-  plan      String   // JSON stringified array of planned items
+  userInput String
+  status    String   @default("pending") // 'pending' | 'finished'
+  entries   String   // JSON stringified array of SystemPlanItem
   createdAt DateTime @default(now())
 }
