@@ -42,3 +42,9 @@ model DesignStyle {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model SystemPlan {
+  id        Int      @id @default(autoincrement())
+  plan      String   // JSON stringified array of planned items
+  createdAt DateTime @default(now())
+}

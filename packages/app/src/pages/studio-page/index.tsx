@@ -17,6 +17,7 @@ import { ChatPanel } from './chat-panel/ChatPanel';
 import { SchemaConfirmationModal } from './chat-panel/entity-confirm';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { TemplateSelectionDialog } from './TemplateSelectionDialog';
+import { SystemPlanConfirmationModal, type SystemPlanItem } from './SystemPlanConfirmationModal';
 
 export default function StudioPage() {
     const { type, id } = useParams();
@@ -29,7 +30,7 @@ export default function StudioPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSchemasSync } = useSocket();
+    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, sendSystemPlanResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSystemPlanToConfirm, onSchemasSync } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
@@ -95,6 +96,10 @@ export default function StudioPage() {
     const [showTemplateSelection, setShowTemplateSelection] = useState(false);
     const [templateSelectionData, setTemplateSelectionData] = useState<TemplateSelectionRequest | null>(null);
 
+    // System Plan Confirmation State
+    const [showSystemPlanConfirmation, setShowSystemPlanConfirmation] = useState(false);
+    const [systemPlanData, setSystemPlanData] = useState<SystemPlanItem[]>([]);
+
     useEffect(() => {
         if (history) {
             // Dedup history just in case
@@ -136,14 +141,21 @@ export default function StudioPage() {
             mutate();
         });
 
+        const unsubSystemPlan = onSystemPlanToConfirm((data) => {
+            console.log('System plan confirmation requested:', data);
+            setSystemPlanData(data);
+            setShowSystemPlanConfirmation(true);
+        });
+
         return () => {
             unsubReceived();
             unsubConfirm();
             unsubTemplateList();
             unsubTemplateDetail();
+            unsubSystemPlan();
             unsubSync();
         };
-    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSchemasSync, mutate]);
+    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSystemPlanToConfirm, onSchemasSync, mutate]);
 
     const handleSend = (content: string, providerName: string) => {
         sendMessage(content, providerName);
@@ -165,6 +177,12 @@ export default function StudioPage() {
             setShowTemplateSelection(false);
             setTemplateSelectionData(null);
         }
+    };
+
+    const handleConfirmSystemPlan = (plan: SystemPlanItem[]) => {
+        sendSystemPlanResponse(plan);
+        setShowSystemPlanConfirmation(false);
+        setSystemPlanData([]);
     };
 
     const [chatDraft, setChatDraft] = useState<string | null>(null);
@@ -262,7 +280,6 @@ export default function StudioPage() {
                         onDelete={handleDelete}
                         onSelect={handleSelectItem}
                         onChatAction={handleChatAction}
-                        onSendMessage={(msg) => handleSend(msg, localStorage.getItem('cms_ai_provider') || 'openai')}
                     />
                 )}
 
@@ -296,6 +313,13 @@ export default function StudioPage() {
                 onConfirm={handleConfirmTemplate}
                 templates={templateSelectionData?.templates || []}
                 pageType={templateSelectionData?.plan?.pageType}
+            />
+
+            <SystemPlanConfirmationModal
+                isOpen={showSystemPlanConfirmation}
+                onClose={() => setShowSystemPlanConfirmation(false)}
+                onConfirm={handleConfirmSystemPlan}
+                plan={systemPlanData}
             />
 
             <DeleteConfirmDialog

@@ -8,12 +8,11 @@ import { PagePreviewSection } from './components/PagePreviewSection';
 
 interface PageDetailProps {
     schema: SchemaDto;
-    onSendMessage: (msg: string) => void;
     onChatAction?: (action: string) => void;
     onEditSource?: (id: string) => void;
 }
 
-export function PageDetail({ schema, onSendMessage, onChatAction, onEditSource }: PageDetailProps) {
+export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailProps) {
     const page = schema.settings?.page!;
 
     const { publishSchema } = useSchemas();

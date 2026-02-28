@@ -18,6 +18,8 @@ import { PageManager } from '../models/cms/page-manager';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
+import type { PrismaClient } from '@prisma/client';
+import { config } from '../config';
 
 export class ChatService {
     constructor(
@@ -27,6 +29,7 @@ export class ChatService {
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
         private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
+        private readonly prisma: PrismaClient,
     ) { }
 
     async getHistory(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
@@ -92,6 +95,9 @@ export class ChatService {
             },
             onTemplateSelectionDetailToConfirm: async (payload: any) => {
                 onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
+            },
+            onSystemPlanToConfirm: async (plan: any[]) => {
+                onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, plan);
             },
             updateStatus: async (content: string) => {
                 this.statusService.updateStatus(userId, content);
@@ -273,6 +279,58 @@ export class ChatService {
             await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
         }
     }
+
+    async handleSystemPlanResponse(userId: string, response: any[], externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+        try {
+            await this.prisma.systemPlan.create({
+                data: {
+                    plan: JSON.stringify(response)
+                }
+            });
+
+            const entitiesCount = response.filter(i => i.type === 'entity').length;
+            const queriesCount = response.filter(i => i.type === 'query').length;
+            const pagesCount = response.filter(i => i.type === 'page').length;
+
+            await this.saveAndEmitAgentMessage(userId, `I have saved your confirmed system architecture plan featuring ${entitiesCount} entities, ${queriesCount} queries, and ${pagesCount} pages. I will now start building them...`, onEvent);
+            this.statusService.clearStatus(userId);
+
+            const providerName = config.AI_PROVIDER;
+            const baseProviderName = providerName.split(' ')[0] || providerName;
+
+            for (const item of response) {
+                let targetAgent: AgentName | null = null;
+                let prompt = '';
+
+                if (item.type === 'entity') {
+                    targetAgent = AGENT_NAMES.ENTITY_DESIGNER;
+                    prompt = `Create an entity named "${item.name}": ${item.description}`;
+                } else if (item.type === 'query') {
+                    targetAgent = AGENT_NAMES.QUERY_BUILDER;
+                    prompt = `Create a query named "${item.name}": ${item.description}`;
+                } else if (item.type === 'page') {
+                    targetAgent = AGENT_NAMES.PAGE_PLANNER;
+                    prompt = `Create a page named "${item.name}": ${item.description}`;
+                }
+
+                if (targetAgent && this.chatHandlers[baseProviderName]?.[targetAgent]) {
+                    this.logger.info(`Executing ${targetAgent} for ${item.name}`);
+                    const userMessage = await this.saveUserMessage(userId, prompt);
+                    onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
+
+                    const context = this.createContext(userId, externalCookie, providerName, targetAgent, onEvent);
+                    await this.executeAgent(targetAgent, prompt, context);
+                } else {
+                    this.logger.error(`Handler for ${targetAgent} not found`);
+                }
+            }
+        } catch (error: any) {
+            this.logger.error({ error: formatError(error) }, 'Error handling system plan response');
+            await this.saveAndEmitAgentMessage(userId, 'I encountered an error while saving the system plan. Please check the logs and try again.', onEvent);
+            this.statusService.clearStatus(userId);
+        }
+    }
+
     async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
         const log = await this.repository.findAiResponseLogById(logId);
         if (!log) {

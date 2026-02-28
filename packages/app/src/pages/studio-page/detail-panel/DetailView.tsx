@@ -16,10 +16,9 @@ interface DetailViewProps {
     onDelete: () => void;
     onSelect: (item: SchemaDto) => void;
     onChatAction: (action: string) => void;
-    onSendMessage: (msg: string) => void;
 }
 
-export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction, onSendMessage }: DetailViewProps) {
+export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction }: DetailViewProps) {
 
     if (!item) {
         return (
@@ -129,7 +128,6 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     {item.type === 'page' && item.settings?.page && (
                         <PageDetail
                             schema={item}
-                            onSendMessage={onSendMessage}
                             onChatAction={onChatAction}
                             onEditSource={(id) => {
                                 // Transition to layout editor mode and pass block ID

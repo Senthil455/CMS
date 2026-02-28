@@ -42,6 +42,14 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 }
             });
 
+            socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, async (data: any[]) => {
+                try {
+                    await fastify.chatService.handleSystemPlanResponse(userId, data, socket.data.externalCookie, onEvent);
+                } catch (error) {
+                    console.error('Error handling system plan response:', formatError(error));
+                }
+            });
+
             socket.on('disconnect', () => {
                 console.log('User disconnected:', socket.id);
             });

@@ -13,6 +13,8 @@ export const SOCKET_EVENTS = {
         TEMPLATE_SELECTION_LIST_TO_CONFIRM: 'chat:template_selection_list_to_confirm',
         TEMPLATE_SELECTION_DETAIL_TO_CONFIRM: 'chat:template_selection_detail_to_confirm',
         TEMPLATE_SELECTION_RESPONSE: 'chat:template_selection_response',
+        SYSTEM_PLAN_TO_CONFIRM: 'chat:system_plan_to_confirm',
+        SYSTEM_PLAN_RESPONSE: 'chat:system_plan_response',
     }
 } as const;
 
@@ -27,13 +29,14 @@ export interface ServerToClientEvents {
     [SOCKET_EVENTS.CHAT.SCHEMAS_SYNC]: (data: SystemMessagePayload) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM]: (data: any) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM]: (data: any) => void;
-
+    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM]: (data: any[]) => void; // Using any[] to represent SystemPlanItem[] temporarily, since it is defined inservice. We can refine this later if needed.
 }
 
 export interface ClientToServerEvents {
     [SOCKET_EVENTS.CHAT.SEND_MESSAGE]: (data: { content: string, providerName?: string }) => void;
     [SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE]: (data: SchemaSummary) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE]: (data: any) => void;
+    [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE]: (data: any[]) => void;
 }
 
 export interface InterServerEvents {

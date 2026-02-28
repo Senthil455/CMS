@@ -54,8 +54,20 @@ export function useSocket() {
         };
     }, [socket]);
 
+    const onSystemPlanToConfirm = useCallback((callback: (data: any[]) => void) => {
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, callback);
+        return () => {
+            socket.off(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, callback);
+        };
+    }, [socket]);
+
     const sendTemplateSelectionResponse = useCallback((data: any) => {
         socket?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
+    }, [socket]);
+
+    const sendSystemPlanResponse = useCallback((data: any[]) => {
+        socket?.emit(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, data);
     }, [socket]);
 
     return {
@@ -63,10 +75,12 @@ export function useSocket() {
         sendMessage,
         sendSchemaResponse,
         sendTemplateSelectionResponse,
+        sendSystemPlanResponse,
         onMessageReceived,
         onSchemaSummaryToConfirm,
         onTemplateSelectionListToConfirm,
         onTemplateSelectionDetailToConfirm,
+        onSystemPlanToConfirm,
         onSchemasSync,
     };
 }

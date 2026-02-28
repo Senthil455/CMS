@@ -18,6 +18,7 @@ import { DataGenerator } from '../models/agents/data-synthesizer';
 import { PAGE_ADDON_REGISTRY } from '../models/agents/page-addons/index';
 import { PageAddonBuilder } from '../models/agents/page-addons/PageAddonBuilder';
 import { BaseAgent } from '../models/agents/chat-assistant';
+import { SystemArchitect } from '../models/agents/system-architect';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -56,6 +57,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         pageArchitectPrompt,
         pagePlannerPrompt,
         htmlGeneratorPrompt,
+        systemArchitectPrompt,
     ] = await Promise.all([
         loadPrompt('entity-designer.md'),
         loadPrompt('intent-classifier.md'),
@@ -64,6 +66,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         loadPrompt('page-architect.md'),
         loadPrompt('page-planner.md'),
         loadPrompt('page-builder.md'),
+        loadPrompt('system-architect.md'),
     ]);
 
     const intentClassifiers: Record<string, IntentClassifier> = {};
@@ -129,7 +132,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
             const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
-            // removed htmlGenerationHandler instantiation
+            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger);
 
             const intentClassifier = new IntentClassifier(
                 provider,
@@ -149,7 +152,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             }
 
             // @ts-ignore
-            // @ts-ignore
             fastify.chatHandlers[providerName] = {
                 [AGENT_NAMES.ENTITY_DESIGNER]: entityGenerator,
                 [AGENT_NAMES.QUERY_BUILDER]: queryGenerator,
@@ -157,6 +159,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
                 [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
+                [AGENT_NAMES.SYSTEM_ARCHITECT]: systemArchitect,
                 ...addonHandlers,
             };
         } catch (error) {

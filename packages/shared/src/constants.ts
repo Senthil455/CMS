@@ -19,7 +19,7 @@ export const AGENT_NAMES = {
     PAGE_CONTACT_FORM_BUILDER: 'page_contact_form_builder',
     PAGE_IMAGE_CAROUSEL_BUILDER: 'page_image_carousel_builder',
     PAGE_FAQ_ACCORDION_BUILDER: 'page_faq_accordion_builder',
+    SYSTEM_ARCHITECT: 'system_architect',
 } as const;
-
 
 export type AgentName = typeof AGENT_NAMES[keyof typeof AGENT_NAMES];
