@@ -1,7 +1,8 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirmentConfirmationDto } from '@cms/shared';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirmentConfirmationDto, SystemRequirment } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
+    taskId?: number;
     userId: string;
     externalCookie: string;
     agentName: AgentName;
@@ -17,15 +18,10 @@ export interface AgentContext {
     updateStatus: (content: string) => Promise<void>;
 }
 
-export interface AgentResponse {
-    nextAgent: AgentName;
-    nextUserInput: string;
-}
-
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<T>;
-    act(plan: T, context: AgentContext): Promise<AgentResponse | null>;
-    handle(userInput: string, context: AgentContext): Promise<AgentResponse | null>;
+    act(plan: T, context: AgentContext): Promise<void>;
+    handle(userInput: string, context: AgentContext): Promise<void>;
 }
 
 import type { ServiceLogger } from '../types/logger';
@@ -55,12 +51,11 @@ export abstract class BaseAgent<T> implements Agent<T> {
         this.lastPrompts = { systemPrompt, developerMessage, userInput };
     }
 
-    // Abstract methods that subclasses must implement
     abstract think(userInput: string, context: AgentContext): Promise<T>;
-    abstract act(plan: T, context: AgentContext): Promise<AgentResponse | null>;
+    abstract act(plan: T, context: AgentContext): Promise<void>;
 
     // Common handle implementation
-    async handle(userInput: string, context: AgentContext): Promise<AgentResponse | null> {
+    async handle(userInput: string, context: AgentContext): Promise<void> {
         this.logger.info(`${context.agentName} initiated via direct handle call`);
         try {
             const plan = await this.think(userInput, context);
@@ -84,7 +79,7 @@ export abstract class BaseAgent<T> implements Agent<T> {
             if (error instanceof AgentStopError) {
                 this.logger.info({ agentName: context.agentName }, `Agent stopped: ${error.userMessage}`);
                 await context.saveAgentMessage(error.userMessage);
-                return null;
+                return;
             }
             await handleAgentError(
                 error,
@@ -93,7 +88,7 @@ export abstract class BaseAgent<T> implements Agent<T> {
                 this.actionDescription,
                 this.aiProvider
             );
-            return null;
+            return;
         }
     }
 }

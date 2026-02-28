@@ -2,9 +2,9 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
-import { PageRepository } from '../repositories/page-repository';
+import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
+import { PageOperator } from '../operators/page-operator';
 
 
 export interface ComponentHtmlResponse {
@@ -25,6 +25,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
         private readonly baseUrl: string,
+        private readonly pageOperator: PageOperator,
         private readonly addonHandlers: Record<string, BaseAgent<any>> = {},
     ) {
         super("generating your html", logger, aiProvider);
@@ -117,8 +118,8 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
                     try {
                         // Pass the component instruction to the addon so it can use the architect's queries
                         const addonPlan = addonAgent instanceof PageAddonBuilder
-                            ? await addonAgent.think(originalInput, context, instruction)
-                            : await addonAgent.think(originalInput, context);
+                            ? await (addonAgent as any).think(originalInput, context, instruction)
+                            : await (addonAgent as any).think(originalInput, context);
 
                         if (addonPlan && addonPlan.newComponent) {
                             components[instruction.id] = {
@@ -191,13 +192,12 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         };
     }
 
-    async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentResponse | null> {
-        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<void> {
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
         await context.updateStatus('Compiling layout and components into final HTML...');
-        const newSchemaId = await pageManager.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title);
+        const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
         await context.onSchemasSync({
             task_type: context.agentName,
@@ -208,10 +208,9 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const componentCount = Object.keys(plan.components).length;
         const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in explorer.`;
         await context.saveAgentMessage(finalMessage);
-        return null;
     }
 
-    async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<AgentResponse | null> {
+    async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<void> {
         this.logger.info({ componentId }, 'PageBuilder modifySingleComponent started');
 
         const schemaId = context.schemaId;
@@ -303,8 +302,7 @@ ${relevantQueryDetails}
         if (!metadata.components) metadata.components = {};
         metadata.components[componentId] = { html: newHtml };
 
-        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
-        await pageManager.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title);
+        await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title, context.externalCookie);
 
         await context.onSchemasSync({
             task_type: context.agentName,
@@ -312,6 +310,5 @@ ${relevantQueryDetails}
         });
 
         await context.saveAgentMessage(`Successfully updated component "${componentId}" based on your request.`);
-        return null;
     }
 }

@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider, AgentStopError } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider, AgentStopError } from './chat-assistant';
 
 export interface SystemPlanItem {
     type: 'entity' | 'query' | 'page';
@@ -54,10 +54,10 @@ Output ONLY a JSON array.
         return parsedPlan;
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<void> {
         if (!plan || plan.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
-            return null;
+            return;
         }
 
         try {
@@ -82,7 +82,5 @@ Output ONLY a JSON array.
             this.logger.error({ error }, 'Failed to emit system plan for confirmation');
             await context.saveAgentMessage("I generated the plan but failed to send it for your confirmation.");
         }
-
-        return null;
     }
 }

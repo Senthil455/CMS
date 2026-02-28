@@ -2,9 +2,9 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
-import { PageRepository } from '../repositories/page-repository';
+import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
 import { PAGE_ADDON_REGISTRY } from './page-addons/index';
 
@@ -18,7 +18,8 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         aiProvider: AIProvider,
         private readonly architectSystemPrompt: string, // Replaces PageArchitect
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger
+        logger: ServiceLogger,
+        private readonly pageOperator: PageOperator
     ) {
         super("architecting your page", logger, aiProvider);
     }
@@ -52,7 +53,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
         const templateStyle = metadata.templateId || '';
 
-        const architecturePlan = await this.plan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
+        const architecturePlan = await this.generateArchitecturePlan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
 
         return {
             ...architecturePlan,
@@ -61,25 +62,18 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         };
     }
 
-    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<AgentResponse | null> {
-        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
-        await pageManager.saveArchitecture(plan.schemaId, plan);
+    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<void> {
+        await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
         // Also save componentInstructions into metadata at the top level
         if (plan.componentInstructions && plan.componentInstructions.length > 0) {
-            await pageManager.saveComponentInstructions(plan.schemaId, plan.componentInstructions);
+            await this.pageOperator.saveComponentInstructions(plan.schemaId, plan.componentInstructions, context.externalCookie);
         }
 
         await context.saveAgentMessage(`I've planned the structure and components for your page.`);
-
-        // Chain to HTML Generator
-        return {
-            nextAgent: AGENT_NAMES.PAGE_BUILDER,
-            nextUserInput: ``
-        };
     }
 
-    private async plan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {
+    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {
         const queryListContext = availableQueries.map((q: any) =>
             `- ${q.name}: ${q.settings?.query?.source}
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}

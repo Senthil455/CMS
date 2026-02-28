@@ -265,20 +265,10 @@ export interface SystemRequirment {
 }
 
 export interface SystemRequirmentConfirmationDto {
-    planId: number;
     items: SystemRequirmentItem[];
 }
 
-export interface SystemImplementationTask {
-    planId: number;
-    type: 'entity' | 'query' | 'page';
-    schemaName: string;
-    agentName: AgentName;
-    status: 'pending' | 'finished';
-    taskId?: string;
-    description?: string;
-    schemaId?: string;
-}
+
 
 export interface DesignStyle {
     id: number;

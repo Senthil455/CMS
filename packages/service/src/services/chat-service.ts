@@ -13,11 +13,12 @@ import type { Agent, AgentContext } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
+import type { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import type { ServiceLogger } from '../types/logger';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { IntentClassifier } from '../agent/intent-classifier';
-import { EntityRepository } from '../repositories/entity-repository';
-import { PageRepository } from '../repositories/page-repository';
+import { EntityOperator } from '../operators/entity-operator';
+import { PageOperator } from '../operators/page-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
@@ -28,123 +29,16 @@ export class ChatService {
     constructor(
         private readonly messageRepository: IChatMessageRepository,
         private readonly logRepository: IAiResponseLogRepository,
+        private readonly taskRepository: IAgentTaskRepository,
         private readonly cmsClient: CmsClient,
         private readonly intentClassifier: Record<string, IntentClassifier>,
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
         private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
         private readonly prisma: PrismaClient,
+        private readonly entityOperator: EntityOperator,
+        private readonly pageOperator: PageOperator,
     ) { }
-
-    async getHistory(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {
-        return this.messageRepository.findAll(userId, limit, beforeId);
-    }
-
-    async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
-        return this.messageRepository.save({ userId, content, role: 'user' });
-    }
-
-    async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
-        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
-    }
-
-    async getAiResponseLogs(): Promise<any[]> {
-        return this.logRepository.findAllAiResponseLogs();
-    }
-
-    async getAiResponseLogById(id: number): Promise<any | null> {
-        return this.logRepository.findAiResponseLogById(id);
-    }
-
-    async deleteAiResponseLog(id: number): Promise<void> {
-        return this.logRepository.deleteAiResponseLog(id);
-    }
-
-    // Helper method to save and emit assistant messages
-    private async saveAndEmitAgentMessage(
-        userId: string,
-        content: string,
-        onEvent: OnServerToClientEvent,
-        payload?: any
-    ): Promise<ChatMessage> {
-        const message = await this.saveAgentMessage(userId, content, payload);
-        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
-        return message;
-    }
-
-    private createContext(
-        userId: string,
-        externalCookie: string,
-        providerName: string,
-        agentName: AgentName,
-        onEvent: OnServerToClientEvent,
-        schemaId?: string
-    ): AgentContext {
-        return {
-            agentName,
-            userId,
-            externalCookie,
-            providerName,
-            ...(schemaId ? { schemaId } : {}),
-            saveAgentMessage: async (content: string, payload?: any) => {
-                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
-            },
-            saveAiResponseLog: async (handlerName: string, response: string, input?: string) => {
-                await this.logRepository.saveAiResponseLog(handlerName, response, providerName, schemaId, input);
-            },
-            onConfirmSchemaSummary: async (summary: SchemaSummary) => {
-                onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-            },
-            onSchemasSync: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
-            },
-            onTemplateSelectionListToConfirm: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
-            },
-            onTemplateSelectionDetailToConfirm: async (payload: any) => {
-                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
-            },
-            onSystemPlanToConfirm: async (data: SystemRequirmentConfirmationDto) => {
-                onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, data);
-            },
-            updateStatus: async (content: string) => {
-                this.statusService.updateStatus(userId, content);
-            }
-        };
-    }
-
-    private async executeAgent(
-        taskType: AgentName,
-        userInput: string,
-        context: AgentContext
-    ): Promise<void> {
-        const baseProviderName = context.providerName.split(' ')[0] || context.providerName;
-        const handler = this.chatHandlers[baseProviderName]?.[taskType];
-        if (!handler) {
-            this.logger.error({ taskType, providerName: context.providerName, baseProviderName }, 'Handler not found for task type');
-            return;
-        }
-
-        this.logger.info({ taskType }, 'Executing handler');
-
-        try {
-            // Update context with the specific agent for this execution
-            const agentContext = { ...context, agentName: taskType };
-            const response = await handler.handle(userInput, agentContext);
-
-            if (response) {
-                this.logger.info({ nextAgent: response.nextAgent }, 'Agent requested chaining');
-                await this.executeAgent(response.nextAgent, response.nextUserInput, agentContext);
-            } else {
-                this.statusService.clearStatus(context.userId);
-            }
-        } catch (error) {
-            this.statusService.clearStatus(context.userId);
-            this.logger.error({ error: formatError(error), taskType }, 'Error executing agent');
-            // Error handling is mostly done inside agent.handle via handleAgentError, 
-            // but if something bubbles up:
-        }
-    }
 
     async handleUserMessage(
         userId: string,
@@ -247,8 +141,7 @@ export class ChatService {
         await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
 
         try {
-            const schemaManager = new EntityRepository(this.cmsClient, this.logger, externalCookie);
-            const schemaIds = await schemaManager.commit(response);
+            const schemaIds = await this.entityOperator.commit(response, externalCookie);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
                 task_type: 'entity_designer',
                 schemasId: schemaIds
@@ -262,12 +155,12 @@ export class ChatService {
 
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
-            const pageManager = new PageRepository(this.cmsClient, this.logger, externalCookie);
-            const schemaId = await pageManager.savePlanAndUserInput(
+            const schemaId = await this.pageOperator.savePlanAndUserInput(
                 response.requestPayload.schemaId,
                 response.requestPayload.plan,
                 response.selectedTemplate,
-                response.requestPayload.userInput
+                response.requestPayload.userInput,
+                externalCookie
             );
 
             const providerName = response.requestPayload.providerName || 'gemini';
@@ -341,7 +234,97 @@ export class ChatService {
         }
     }
 
-    async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
+    private async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
+        return this.messageRepository.save({ userId, content, role: 'user' });
+    }
+
+    private async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
+        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
+    }
+
+    // Helper method to save and emit assistant messages
+    private async saveAndEmitAgentMessage(
+        userId: string,
+        content: string,
+        onEvent: OnServerToClientEvent,
+        payload?: any
+    ): Promise<ChatMessage> {
+        const message = await this.saveAgentMessage(userId, content, payload);
+        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
+        return message;
+    }
+
+    private createContext(
+        userId: string,
+        externalCookie: string,
+        providerName: string,
+        agentName: AgentName,
+        onEvent: OnServerToClientEvent,
+        schemaId?: string
+    ): AgentContext {
+        return {
+            agentName,
+            userId,
+            externalCookie,
+            providerName,
+            ...(schemaId ? { schemaId } : {}),
+            saveAgentMessage: async (content: string, payload?: any) => {
+                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
+            },
+            saveAiResponseLog: async (handlerName: string, response: string, input?: string) => {
+                await this.logRepository.saveAiResponseLog(handlerName, response, providerName, schemaId, input);
+            },
+            onConfirmSchemaSummary: async (summary: SchemaSummary) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+            },
+            onSchemasSync: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, payload);
+            },
+            onTemplateSelectionListToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, payload);
+            },
+            onTemplateSelectionDetailToConfirm: async (payload: any) => {
+                onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
+            },
+            onSystemPlanToConfirm: async (data: SystemRequirmentConfirmationDto) => {
+                onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, data);
+            },
+            updateStatus: async (content: string) => {
+                this.statusService.updateStatus(userId, content);
+            }
+        };
+    }
+
+    private async executeAgent(
+        taskType: AgentName,
+        userInput: string,
+        context: AgentContext
+    ): Promise<void> {
+        const baseProviderName = context.providerName.split(' ')[0] || context.providerName;
+        const handler = this.chatHandlers[baseProviderName]?.[taskType];
+        if (!handler) {
+            this.logger.error({ taskType, providerName: context.providerName, baseProviderName }, 'Handler not found for task type');
+            return;
+        }
+
+        this.logger.info({ taskType }, 'Executing handler');
+
+        try {
+            // Update context with the specific agent for this execution
+            const agentContext = { ...context, agentName: taskType };
+            const response = await handler.handle(userInput, agentContext);
+            if (context.taskId) {
+
+            }
+        } catch (error) {
+            this.statusService.clearStatus(context.userId);
+            this.logger.error({ error: formatError(error), taskType }, 'Error executing agent');
+            // Error handling is mostly done inside agent.handle via handleAgentError, 
+            // but if something bubbles up:
+        }
+    }
+
+    private async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
         const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
             throw new Error(`Log with ID ${logId} not found`);
@@ -373,9 +356,9 @@ export class ChatService {
         const plan = JSON.parse(responseContent);
 
         await this.saveAgentMessage(userId, "Manually triggering action from log...");
-        var res = await targetHandler.act(plan, context);
-        if (res && continuePipeline) {
-            this.executeAgent(res.nextAgent, res.nextUserInput, context);
-        }
+        // var res = await targetHandler.act(plan, context);
+        // if (res && continuePipeline) {
+        //     this.executeAgent(res.nextAgent, res.nextUserInput, context);
+        // }
     }
 }

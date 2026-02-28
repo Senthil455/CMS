@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
@@ -64,11 +64,11 @@ ${sdl}
         };
     }
 
-    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<void> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid query configuration. Please try again with more details.");
-            return null;
+            return;
         }
 
         const schemaIds: string[] = [];
@@ -103,6 +103,5 @@ ${sdl}
                 : `I have generated the queries, you can find them in CMS.`;
             await context.saveAgentMessage(finalMessage);
         }
-        return null;
     }
 }

@@ -1,14 +1,16 @@
 import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { PrismaClient } from '@prisma/client';
 import { SqliteChatMessageRepository } from '../repositories/chat-message-repository';
 import { SqliteAiResponseLogRepository } from '../repositories/ai-response-log-repository';
 import { SqliteDesignStyleRepository } from '../repositories/design-style-repository';
 import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
+import { SqliteAgentTaskRepository } from '../repositories/agent-task-repository';
 import { ChatService } from '../services/chat-service';
 import { AuthService } from '../services/auth-service';
 import { SocketService } from '../services/socket-service';
 import { statusService } from '../services/status-service';
+import { EntityOperator } from '../operators/entity-operator';
+import { PageOperator } from '../operators/page-operator';
 
 import { config } from '../config';
 
@@ -22,6 +24,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const logRepository = new SqliteAiResponseLogRepository(prisma);
     const designStyleRepository = new SqliteDesignStyleRepository(prisma);
     const systemSettingRepository = new SqliteSystemSettingRepository(prisma);
+    const agentTaskRepository = new SqliteAgentTaskRepository(prisma);
 
     fastify.decorate('systemSettingRepository', systemSettingRepository);
 
@@ -34,16 +37,25 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const chatService = new ChatService(
         messageRepository,
         logRepository,
+        agentTaskRepository,
         cmsClient,
         intentClassifier,
         // @ts-ignore
         fastify.chatHandlers,
         statusService,
         serviceLogger,
-        prisma
+        prisma,
+        new EntityOperator(cmsClient, serviceLogger),
+        new PageOperator(cmsClient, serviceLogger)
     );
     const authService = new AuthService(cmsClient, serviceLogger);
     const socketService = new SocketService(fastify.io);
+
+    fastify.decorate('chatMessageRepository', messageRepository);
+    fastify.decorate('aiResponseLogRepository', logRepository);
+    fastify.decorate('designStyleRepository', designStyleRepository);
+    fastify.decorate('systemSettingRepository', systemSettingRepository);
+    fastify.decorate('agentTaskRepository', agentTaskRepository);
 
     fastify.decorate('chatService', chatService);
     fastify.decorate('authService', authService);

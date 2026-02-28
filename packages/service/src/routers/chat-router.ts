@@ -9,7 +9,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     }, async (request, reply) => {
         try {
             const { limit, beforeId } = request.query as { limit?: string; beforeId?: string };
-            const history = await fastify.chatService.getHistory(
+            const history = await fastify.chatMessageRepository.findAll(
                 request.user!.id.toString(),
                 limit ? parseInt(limit) : 10,
                 beforeId ? parseInt(beforeId) : undefined

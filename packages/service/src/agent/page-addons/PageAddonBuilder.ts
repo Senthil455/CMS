@@ -1,9 +1,9 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider } from '../chat-assistant';
 import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
-import { PageRepository } from '../../repositories/page-repository';
+import { PageOperator } from '../../operators/page-operator';
 
 export interface AddonPlan {
     schemaId: string;
@@ -21,6 +21,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         private readonly snippet: string | undefined,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
+        private readonly pageOperator: PageOperator,
     ) {
         super(`adding ${addonDef.label.toLowerCase()}`, logger, aiProvider);
     }
@@ -107,7 +108,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         };
     }
 
-    async act(plan: AddonPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<void> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         const metadata = pageDto.metadata as PageMetadata;
@@ -121,15 +122,13 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         }
         metadata.components[newComponent.id] = { html: newComponent.html };
 
-        // Save the updated components and recompile HTML through PageRepository
-        const pageManager = new PageRepository(this.cmsClient, this.logger, context.externalCookie);
-        await pageManager.saveComponents(schemaId, layoutJson, metadata.components, pageDto.title);
+        // Save the updated components and recompile HTML through PageOperator
+        await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, pageDto.title, context.externalCookie);
         await context.saveAgentMessage(`Successfully added ${this.addonDef.label} to page "${pageDto.name}".`);
         await context.onSchemasSync({
             task_type: this.addonDef.agentName as AgentName,
             schemasId: [schemaId]
         });
-        return null;
     }
 
     /**

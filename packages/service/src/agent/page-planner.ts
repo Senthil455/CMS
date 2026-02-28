@@ -1,5 +1,5 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, AgentStopError, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, AgentStopError, parseModelFromProvider } from './chat-assistant';
 import { type TemplateSelectionRequest, type PagePlan } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -39,7 +39,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             }
         }
 
-        const pagePlan = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
+        const pagePlan = await this.generateRoutingPlan(userInput, context, entityNames, existingPageNames, existingPagePlan);
 
         // If the planner couldn't match an entity, stop the pipeline
         if (!pagePlan.entityName) {
@@ -55,6 +55,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         const templates = [noStyleOption, ...dbTemplates];
 
         return {
+            taskId: context.taskId,
             userInput,
             schemaId: schemaId,
             providerName: context.providerName,
@@ -63,7 +64,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<void> {
         const pageType = plan.plan.pageType;
         if (pageType === 'detail') {
             await context.onTemplateSelectionDetailToConfirm(plan);
@@ -72,10 +73,9 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         }
 
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
-        return null;
     }
 
-    private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {
+    private async generateRoutingPlan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {
         const entitiesList = entityNames.length > 0 ? entityNames.join(", ") : "None";
         const existingPagesList = existingPageNames.length > 0 ? existingPageNames.join(", ") : "None";
 

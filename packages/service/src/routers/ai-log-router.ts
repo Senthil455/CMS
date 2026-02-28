@@ -4,17 +4,15 @@ import { ENDPOINTS } from '@cms/shared';
 const aiLogRouter: FastifyPluginAsync = async (fastify) => {
     fastify.get(ENDPOINTS.AI.LOGS, {
         preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
-        const { chatService } = fastify as any;
-        const logs = await chatService.getAiResponseLogs();
+    }, async () => {
+        const logs = await fastify.aiResponseLogRepository.findAllAiResponseLogs();
         return { success: true, data: logs };
     });
     fastify.delete(ENDPOINTS.AI.DELETE_LOG, {
         preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
+    }, async (request) => {
         const { id } = request.params as { id: string };
-        const { chatService } = fastify as any;
-        await chatService.deleteAiResponseLog(parseInt(id));
+        await fastify.aiResponseLogRepository.deleteAiResponseLog(parseInt(id));
         return { success: true };
     });
 };

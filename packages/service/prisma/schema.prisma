@@ -50,3 +50,11 @@ model SystemPlan {
   entries   String   // JSON stringified array of SystemPlanItem
   createdAt DateTime @default(now())
 }
+
+model AgentTask {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("pending") // 'pending' | 'finished'
+  items     String   // JSON stringified AgentTaskItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

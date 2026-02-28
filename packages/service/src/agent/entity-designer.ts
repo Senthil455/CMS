@@ -1,10 +1,11 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../models/entity-model';
 import { RelationshipModel } from '../models/relationship-model';
+import { EntityOperator } from '../operators/entity-operator';
 
 export interface EntityGeneratorResponse {
     entities: EntityDto[];
@@ -25,6 +26,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         private readonly relationshipSchema: string,
         private readonly cmsClient: CmsClient,
         logger: ServiceLogger,
+        private readonly entityOperator: EntityOperator,
     ) {
         super("generating your schema", logger, aiProvider);
     }
@@ -88,7 +90,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         };
     }
 
-    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<AgentResponse | null> {
+    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<void> {
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -97,35 +99,19 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
 
         // normalize attributes using model behavior
         const normalizedEntities = entities.map((entity: any) => new EntityModel(entity).normalize());
+        const normalizedRelationships = (plan.relationships || []).map(r => new RelationshipModel(r).normalize());
 
         // Compare with CMS to categorize entities and create summary
         await context.updateStatus('Comparing with existing schemas and preparing summary...');
-        const existingSchemas = await this.cmsClient.getAllEntities(context.externalCookie);
+        const summary = await this.entityOperator.prepareSummary(
+            normalizedEntities,
+            normalizedRelationships,
+            plan.userInput,
+            context.externalCookie
+        );
 
-        const summaryEntities = normalizedEntities.map(ne => {
-            const existing = existingSchemas.find(es => es.name === ne.name);
-            return {
-                ...ne,
-                schemaId: existing?.schemaId || null
-            };
-        });
+        this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
-        const summaryText = summaryEntities.map(se =>
-            `- ${se.name} (${se.schemaId ? 'update' : 'new'}${se.schemaId ? ` - existing sid: ${se.schemaId}` : ''})`
-        ).join('\n');
-
-        const summary = `Proposed Schema Changes:\n${summaryText}`;
-
-        this.logger.info({ summaryEntities }, 'Summary entities');
-
-        const normalizedRelationships = (plan.relationships || []).map(r => new RelationshipModel(r).normalize());
-
-        await context.onConfirmSchemaSummary({
-            userInput: plan.userInput,
-            summary,
-            entities: summaryEntities,
-            relationships: normalizedRelationships
-        });
-        return null;
+        await context.onConfirmSchemaSummary(summary);
     }
 }
