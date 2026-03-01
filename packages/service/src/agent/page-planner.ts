@@ -92,7 +92,8 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             this.plannerSystemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         try {

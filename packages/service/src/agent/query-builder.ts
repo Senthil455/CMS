@@ -54,7 +54,8 @@ ${sdl}
             this.systemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         return {

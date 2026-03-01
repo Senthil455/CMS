@@ -112,7 +112,8 @@ ${queryListContext}
             this.architectSystemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         // Expecting JSON response as specified in prompt

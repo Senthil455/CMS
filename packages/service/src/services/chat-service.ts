@@ -24,6 +24,7 @@ import { UserVisibleError } from '../utils/user-visible-error';
 import { config } from '../config';
 
 export class ChatService {
+    private activeRequests = new Map<string, AbortController>();
     constructor(
         private readonly messageRepository: IChatMessageRepository,
         private readonly logRepository: IAiResponseLogRepository,
@@ -35,6 +36,16 @@ export class ChatService {
         private readonly pageOperator: PageOperator,
         private readonly taskOperator: TaskOperator,
     ) { }
+
+    async cancelActiveRequest(userId: string): Promise<boolean> {
+        if (this.activeRequests.has(userId)) {
+            const controller = this.activeRequests.get(userId)!;
+            controller.abort();
+            this.activeRequests.delete(userId);
+            return true;
+        }
+        return false;
+    }
 
     async handleUserMessage(
         userId: string,
@@ -145,8 +156,14 @@ export class ChatService {
 
         if (agent && this.chatHandlers[baseProviderName]?.[agent]) {
             this.logger.info('Executing resolved handler');
-            const context = this.createContext(userId, externalCookie, providerName, agent, undefined, undefined, onEvent);
-            await this.executeAgent(agent, content, context, onEvent);
+            const abortController = new AbortController();
+            this.activeRequests.set(userId, abortController);
+            try {
+                const context = this.createContext(userId, externalCookie, providerName, agent, undefined, undefined, onEvent, abortController.signal);
+                await this.executeAgent(agent, content, context, onEvent);
+            } finally {
+                this.activeRequests.delete(userId);
+            }
             return;
         }
 
@@ -246,13 +263,15 @@ export class ChatService {
         schemaId: string | undefined,
         agentTaskItem: AgentTaskRef | undefined,
         onEvent: OnServerToClientEvent,
+        signal?: AbortSignal,
     ): AgentContext {
         return {
             agentTaskItem,
-            agentName,
             userId,
             externalCookie,
+            agentName,
             providerName,
+            ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
             saveAgentMessage: async (content: string, payload?: any) => {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
@@ -291,9 +310,16 @@ export class ChatService {
         const item = await this.taskOperator.checkout(agentTaskItem.taskId);
         if (item) {
             agentTaskItem = { ...agentTaskItem, index: item.index };
-            const context = this.createContext(userId, externalCookie, providerName, item.agentName,
-                item.schemaId, agentTaskItem, onEvent);
-            await this.executeAgent(item.agentName, item.description || '', context, onEvent);
+
+            const abortController = new AbortController();
+            this.activeRequests.set(userId, abortController);
+            try {
+                const context = this.createContext(userId, externalCookie, providerName, item.agentName,
+                    item.schemaId, agentTaskItem, onEvent, abortController.signal);
+                await this.executeAgent(item.agentName, item.description || '', context, onEvent);
+            } finally {
+                this.activeRequests.delete(userId);
+            }
         }
     }
 

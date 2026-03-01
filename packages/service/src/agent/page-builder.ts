@@ -167,7 +167,8 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 this.systemPrompt,
                 developerMessage,
                 originalInput,
-                parseModelFromProvider(context.providerName)
+                parseModelFromProvider(context.providerName),
+                context.signal ? { signal: context.signal } : undefined
             );
 
             let componentResponse: ComponentHtmlResponse;
@@ -283,7 +284,8 @@ ${relevantQueryDetails}
             this.systemPrompt,
             developerMessage,
             userRequirement,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         let componentResponse: ComponentHtmlResponse;

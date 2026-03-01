@@ -21,6 +21,11 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
     });
 
+    fastify.post(ENDPOINTS.CHAT.CANCEL, { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        const cancelled = await fastify.chatService.cancelActiveRequest(request.user!.id.toString());
+        return reply.send({ success: true, cancelled });
+    });
+
     fastify.get(ENDPOINTS.CHAT.STATUS, {
         preHandler: [fastify.authenticate]
     }, async (request) => {
@@ -38,45 +43,6 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         return { success: true, data: PAGE_ADDON_REGISTRY };
     });
 
-    // POST: Trigger any page addon by id
-    fastify.post(ENDPOINTS.CHAT.TRIGGER_ADDON, {
-        preHandler: [fastify.authenticate]
-    }, async (request, reply) => {
-        try {
-            const { addonId, schemaId, providerName } = request.body as {
-                addonId: string;
-                schemaId: string;
-                providerName?: string;
-            };
-
-            const addon = PAGE_ADDON_REGISTRY.find(a => a.id === addonId);
-            if (!addon) {
-                return reply.status(400).send({ success: false, error: `Unknown addon: ${addonId}` });
-            }
-
-            const userId = request.user!.id.toString();
-            const externalCookie = request.headers.cookie || '';
-
-            const onEvent = (event: string, payload: any) => {
-                fastify.socketService.emitToUser(userId, event, payload);
-            };
-
-            const syntheticMessage = `@${addon.agentName} #${schemaId}: ${addon.chatMessage}`;
-
-            await fastify.chatService.handleUserMessage(
-                userId,
-                syntheticMessage,
-                externalCookie,
-                providerName || 'gemini',
-                onEvent
-            );
-
-            return { success: true, message: `${addon.label} triggered successfully` };
-        } catch (error) {
-            fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to trigger addon' });
-        }
-    });
 };
 
 export default chatRoutes;

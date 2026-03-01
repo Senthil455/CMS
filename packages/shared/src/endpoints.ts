@@ -3,7 +3,7 @@ export const ENDPOINTS = {
         HISTORY: '/cmsapi/chat/history',
         STATUS: '/cmsapi/chat/status',
         PAGE_ADDONS: '/cmsapi/page-addons',
-        TRIGGER_ADDON: '/cmsapi/chat/addon',
+        CANCEL: '/cmsapi/chat/cancel',
     },
     AUTH: {
         LOGIN: '/api/login',

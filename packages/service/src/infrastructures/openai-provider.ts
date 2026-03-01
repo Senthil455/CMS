@@ -35,7 +35,7 @@ export class OpenAIProvider implements AIProvider {
         return `...${this.apiKey.slice(-4)}`;
     }
 
-    async generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any> {
+    async generate(system: string, developer: string, user: string, modelOverride?: string, options?: { signal?: AbortSignal }): Promise<any> {
         try {
             this.logger.info('OpenAIProvider generating from roles using SDK');
 
@@ -49,7 +49,7 @@ export class OpenAIProvider implements AIProvider {
                     { role: 'user', content: user }
                 ],
                 response_format: { type: "json_object" }
-            });
+            }, options);
 
             const content = response.choices?.[0]?.message?.content;
             if (content) {

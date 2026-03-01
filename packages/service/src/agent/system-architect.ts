@@ -35,7 +35,8 @@ Output ONLY a JSON array.
             this.systemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         let parsedPlan: SystemArchitectPlan;

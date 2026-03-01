@@ -28,7 +28,7 @@ export class GeminiProvider implements AIProvider {
         return `...${this.apiKey.slice(-2)}`;
     }
 
-    private async getOrCreateCache(system: string, developer: string, currentModel: string): Promise<string | null> {
+    private async getOrCreateCache(system: string, developer: string, currentModel: string, options?: { signal?: AbortSignal }): Promise<string | null> {
         const cacheKey = `${currentModel}\n${system}\n\n${developer}`;
         if (this.cacheNames.has(cacheKey)) {
             return this.cacheNames.get(cacheKey)!;
@@ -45,11 +45,15 @@ export class GeminiProvider implements AIProvider {
                 ttl: "3600s" // 1 hour TTL
             };
 
-            const resp = await fetch(endpoint, {
+            const fetchOptions: any = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
-            });
+            };
+            if (options?.signal) {
+                fetchOptions.signal = options.signal;
+            }
+            const resp = await fetch(endpoint, fetchOptions);
 
             if (!resp.ok) {
                 const text = await resp.text();
@@ -71,7 +75,7 @@ export class GeminiProvider implements AIProvider {
         return null;
     }
 
-    async generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any> {
+    async generate(system: string, developer: string, user: string, modelOverride?: string, options?: { signal?: AbortSignal }): Promise<any> {
         const start = Date.now();
         let currentModel = modelOverride || this.model;
         if (['gemini-3-pro', 'gemini-3-flash', 'gemini-3.1-pro'].includes(currentModel)) {
@@ -81,7 +85,7 @@ export class GeminiProvider implements AIProvider {
         try {
             let cacheName: string | null = null;
             if (this.useCaching) {
-                cacheName = await this.getOrCreateCache(system, developer, currentModel);
+                cacheName = await this.getOrCreateCache(system, developer, currentModel, options);
             }
 
             const endpoint = `${this.baseURL}/v1beta/models/${currentModel}:generateContent?key=${this.apiKey}`;
@@ -109,11 +113,15 @@ export class GeminiProvider implements AIProvider {
 
             this.logger.debug({ model: currentModel, cached: !!cacheName }, 'GeminiProvider generating content');
 
-            const resp = await fetch(endpoint, {
+            const fetchOptions: any = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
-            });
+            };
+            if (options?.signal) {
+                fetchOptions.signal = options.signal;
+            }
+            const resp = await fetch(endpoint, fetchOptions);
 
             if (!resp.ok) {
                 const text = await resp.text();

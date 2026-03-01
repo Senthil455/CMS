@@ -48,7 +48,8 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
             this.systemPrompt,
             schemasText,
             userInput,
-            parseModelFromProvider(context?.providerName || '')
+            parseModelFromProvider(context?.providerName || ''),
+            context?.signal ? { signal: context.signal } : undefined
         );
 
         return response;

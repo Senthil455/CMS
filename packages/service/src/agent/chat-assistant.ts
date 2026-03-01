@@ -16,6 +16,7 @@ export interface AgentContext {
     onTemplateSelectionDetailToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
     onSystemPlanToConfirm: (plan: SystemRequirment) => Promise<void>;
     updateStatus: (content: string) => Promise<void>;
+    signal?: AbortSignal;
 }
 
 export interface AgentHandleResponse {

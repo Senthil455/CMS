@@ -4,7 +4,7 @@ export interface AgentMessage {
 }
 
 export interface AIProvider {
-    generate(system: string, developer: string, user: string, modelOverride?: string): Promise<any>;
+    generate(system: string, developer: string, user: string, modelOverride?: string, options?: { signal?: AbortSignal }): Promise<any>;
     transformError(error: any): string;
     setApiKey?(key: string): void;
     hasApiKey?(): boolean;

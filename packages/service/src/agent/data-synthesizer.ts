@@ -62,7 +62,8 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             this.systemPrompt,
             devMsg,
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         const { entityName, data } = response;

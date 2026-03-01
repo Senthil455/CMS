@@ -88,7 +88,8 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
             this.systemPrompt,
             JSON.stringify(developerMessage, null, 2),
             userInput,
-            parseModelFromProvider(context.providerName)
+            parseModelFromProvider(context.providerName),
+            context.signal ? { signal: context.signal } : undefined
         );
 
         // Parse response: { layoutJson, component: { id, html } }
