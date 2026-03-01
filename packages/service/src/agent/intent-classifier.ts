@@ -1,6 +1,6 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import { type AgentName } from '@cms/shared';
-import { parseModelFromProvider } from './chat-assistant';
+import { type AgentContext } from './chat-assistant';
 
 export class IntentClassifier {
     constructor(
@@ -8,13 +8,17 @@ export class IntentClassifier {
         private readonly systemPrompt: string,
     ) { }
 
-    async resolve(userInput: string, providerName?: string): Promise<AgentName | null> {
-        const modelName = providerName ? parseModelFromProvider(providerName) : undefined;
-        const response = await this.aiProvider.generate(this.systemPrompt, '', userInput, modelName);
+    async resolve(userInput: string, context: AgentContext): Promise<AgentName | null> {
+        const response = await this.aiProvider.generate(
+            this.systemPrompt,
+            '',
+            userInput,
+            context?.selection.model
+        );
 
         if (response && typeof response === 'object') {
             const { agentName, taskType } = response;
-            return (agentName || taskType) as AgentName;
+            return (agentName as AgentName) || (taskType as AgentName) || null;
         }
 
         return null;

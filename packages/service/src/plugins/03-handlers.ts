@@ -17,7 +17,7 @@ import { PageBuilder } from '../agent/page-builder';
 import { DataGenerator } from '../agent/data-synthesizer';
 import { PAGE_ADDON_REGISTRY } from '../agent/page-addons/index';
 import { PageAddonBuilder } from '../agent/page-addons/PageAddonBuilder';
-import { BaseAgent } from '../agent/chat-assistant';
+import type { Agent } from '../agent/chat-assistant';
 import { SystemArchitect } from '../agent/system-architect';
 import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
@@ -94,7 +94,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const pageAddonsDir = path.join(__dirname, '../agent/page-addons');
 
             // Build addon handlers from registry
-            const addonHandlers: Record<string, BaseAgent<any>> = {};
+            const addonHandlers: Record<string, Agent<any>> = {};
             const entityOperator = new EntityOperator(cmsClient, modelLogger);
             const pageOperator = new PageOperator(cmsClient, modelLogger);
 
@@ -119,7 +119,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             }
 
             // Create a map of addon handlers keyed by their ID for the PageBuilder
-            const addonHandlersById: Record<string, BaseAgent<any>> = {};
+            const addonHandlersById: Record<string, Agent<any>> = {};
             for (const addon of PAGE_ADDON_REGISTRY) {
                 const handler = addonHandlers[addon.agentName];
                 if (handler) {

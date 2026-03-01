@@ -1,8 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
-import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
+import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
+import { type EntityDto, type RelationshipDto, AGENT_NAMES, SOCKET_EVENTS } from '@cms/shared';
 import { EntityModel } from '../models/entity-model';
 import { RelationshipModel } from '../models/relationship-model';
 import { EntityOperator } from '../operators/entity-operator';
@@ -17,19 +17,17 @@ export interface EntityGeneratorPlan extends EntityGeneratorResponse {
     userInput: string;
 }
 
-export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
+export class EntityGenerator implements Agent<EntityGeneratorPlan> {
     constructor(
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly entitySchema: string,
         private readonly attributeSchema: string,
         private readonly relationshipSchema: string,
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger,
+        private readonly logger: ServiceLogger,
         private readonly entityOperator: EntityOperator,
-    ) {
-        super("generating your schema", logger, aiProvider);
-    }
+    ) { }
 
     async create(userInput: string, existingContext?: string, context?: AgentContext): Promise<{ response: EntityGeneratorResponse, developerMessage: string }> {
         let schemasText = [
@@ -48,7 +46,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
             this.systemPrompt,
             schemasText,
             userInput,
-            parseModelFromProvider(context?.providerName || ''),
+            context?.selection.model,
             context?.signal ? { signal: context.signal } : undefined
         );
 
@@ -127,7 +125,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
 
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
-        await context.onConfirmSchemaSummary(summary);
+        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
         return true;
     }
 }

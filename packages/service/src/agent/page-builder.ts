@@ -1,8 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
-import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES } from '@cms/shared';
+import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES, SOCKET_EVENTS } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentPlanResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, type Agent } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 import { PageOperator } from '../operators/page-operator';
 
@@ -17,19 +17,17 @@ export interface PageBuilderPlan {
     components: Record<string, { html: string; addonId?: string; }>;
 }
 
-export class PageBuilder extends BaseAgent<PageBuilderPlan> {
+export class PageBuilder implements Agent<PageBuilderPlan> {
     constructor(
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly getStylePrompt: (styleName: string, pageType: string) => Promise<string>,
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger,
+        private readonly logger: ServiceLogger,
         private readonly baseUrl: string,
         private readonly pageOperator: PageOperator,
-        private readonly addonHandlers: Record<string, BaseAgent<any>> = {},
-    ) {
-        super("generating your html", logger, aiProvider);
-    }
+        private readonly addonHandlers: Record<string, Agent<any>> = {},
+    ) { }
 
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<PageBuilderPlan>> {
@@ -163,12 +161,11 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
             }
 
             overallDeveloperMessage = developerMessage;
-
             const aiResponse = await this.aiProvider.generate(
                 this.systemPrompt,
                 developerMessage,
                 originalInput,
-                parseModelFromProvider(context.providerName),
+                context.selection.model,
                 context.signal ? { signal: context.signal } : undefined
             );
 
@@ -208,7 +205,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         await context.updateStatus('Compiling layout and components into final HTML...');
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
-        await context.onSchemasSync({
+        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
             task_type: context.agentName,
             schemasId: [newSchemaId]
         });
@@ -291,7 +288,7 @@ ${relevantQueryDetails}
             this.systemPrompt,
             developerMessage,
             userRequirement,
-            parseModelFromProvider(context.providerName),
+            context.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 
@@ -316,7 +313,7 @@ ${relevantQueryDetails}
 
         await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title, context.externalCookie);
 
-        await context.onSchemasSync({
+        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
             task_type: context.agentName,
             schemasId: [schemaId]
         });

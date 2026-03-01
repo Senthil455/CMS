@@ -1,8 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { parseModelFromProvider } from './chat-assistant';
-import { type AgentContext, type AgentPlanResponse, BaseAgent, AgentStopError } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError } from './chat-assistant';
+import { SOCKET_EVENTS } from '@cms/shared';
 
 export interface SystemPlanItem {
     type: 'entity' | 'query' | 'page';
@@ -12,15 +12,13 @@ export interface SystemPlanItem {
 
 export type SystemArchitectPlan = SystemPlanItem[];
 
-export class SystemArchitect extends BaseAgent<SystemArchitectPlan> {
+export class SystemArchitect implements Agent<SystemArchitectPlan> {
     constructor(
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly prisma: PrismaClient,
-        logger: ServiceLogger
-    ) {
-        super("architecting your system", logger, aiProvider);
-    }
+        private readonly logger: ServiceLogger
+    ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
         await context.saveAgentMessage(`Analyzing your request and architecting the system components...`);
@@ -34,7 +32,7 @@ Output ONLY a JSON array.
             this.systemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName),
+            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 
@@ -68,7 +66,7 @@ Output ONLY a JSON array.
         }
 
         try {
-            await context.onSystemPlanToConfirm({
+            await context.emitEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, {
                 items: plan
             } as any);
             throw new AgentStopError("Please review the generated system plan, then confirm what to build.");

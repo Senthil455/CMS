@@ -1,8 +1,8 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentPlanResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
-import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
+import { type AgentContext, type AgentPlanResponse, type Agent } from '../chat-assistant';
+import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler, SOCKET_EVENTS } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 
 export interface AddonPlan {
@@ -12,19 +12,17 @@ export interface AddonPlan {
     newComponent: { id: string; html: string; addonId?: string };
 }
 
-export class PageAddonBuilder extends BaseAgent<AddonPlan> {
+export class PageAddonBuilder implements Agent<AddonPlan> {
 
     constructor(
         private readonly addonDef: PageAddonDefinition,
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly snippet: string | undefined,
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger,
+        private readonly logger: ServiceLogger,
         private readonly pageOperator: PageOperator,
-    ) {
-        super(`adding ${addonDef.label.toLowerCase()}`, logger, aiProvider);
-    }
+    ) { }
 
     async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<AgentPlanResponse<AddonPlan>> {
         this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
@@ -122,7 +120,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         // Save the updated components and recompile HTML through PageOperator
         await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, pageDto.title, context.externalCookie);
         await context.saveAgentMessage(`Successfully added ${this.addonDef.label} to page "${pageDto.name}".`);
-        await context.onSchemasSync({
+        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
             task_type: this.addonDef.agentName as AgentName,
             schemasId: [schemaId]
         });

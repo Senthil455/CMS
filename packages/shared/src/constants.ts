@@ -1,4 +1,5 @@
 export const AGENT_NAMES = {
+    INTENT_CLASSIFIER: 'intent_classifier',
     ENTITY_DESIGNER: 'entity_designer',
     PAGE_PLANNER: 'page_planner',
     QUERY_BUILDER: 'query_builder',

@@ -23,12 +23,17 @@ export interface SchemaSummary {
     relationships: RelationshipDto[];
 }
 
+export interface ModelSelection {
+    provider: string;  // "gemini", "openai"
+    model: string;     // "gemini-3-flash", "gpt-5.2"
+}
+
 export interface TemplateSelectionRequest {
     userInput: string;
     schemaId?: string;
     agentTaskItem?: AgentTaskRef | undefined;
     plan: PagePlan;
-    providerName: string;
+    selection: ModelSelection;
     templates: {
         id: string;
         name: string;

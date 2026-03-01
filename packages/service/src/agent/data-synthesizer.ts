@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
+import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -15,15 +15,13 @@ export interface DataGeneratorPlan extends DataGeneratorResponse {
     entities: any[];
 }
 
-export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
+export class DataGenerator implements Agent<DataGeneratorPlan> {
     constructor(
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger,
-    ) {
-        super("generating your data", logger, aiProvider);
-    }
+        private readonly logger: ServiceLogger,
+    ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<DataGeneratorPlan>> {
         await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
@@ -61,7 +59,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
             this.systemPrompt,
             devMsg,
             userInput,
-            parseModelFromProvider(context.providerName),
+            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

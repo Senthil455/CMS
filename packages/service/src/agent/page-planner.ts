@@ -1,19 +1,17 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, AgentStopError, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
-import { type TemplateSelectionRequest, type PagePlan } from '@cms/shared';
+import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse } from './chat-assistant';
+import { type TemplateSelectionRequest, type PagePlan, SOCKET_EVENTS } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 
-export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
+export class PagePlanner implements Agent<TemplateSelectionRequest> {
     constructor(
-        aiProvider: AIProvider,
+        private readonly aiProvider: AIProvider,
         private readonly plannerSystemPrompt: string,
-        logger: ServiceLogger,
+        private readonly logger: ServiceLogger,
         private readonly getTemplateOptions: () => Promise<{ id: string; name: string; description: string }[]>,
         private readonly cmsClient: CmsClient
-    ) {
-        super("generating your page", logger, aiProvider);
-    }
+    ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<TemplateSelectionRequest>> {
         let schemaId = '';
@@ -59,7 +57,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
                 agentTaskItem: context.agentTaskItem,
                 userInput,
                 schemaId: schemaId,
-                providerName: context.providerName,
+                selection: context.selection,
                 plan: pagePlan,
                 templates: templates
             },
@@ -74,9 +72,9 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
     async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<boolean> {
         const pageType = plan.plan.pageType;
         if (pageType === 'detail') {
-            await context.onTemplateSelectionDetailToConfirm(plan);
+            await context.emitEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, plan);
         } else {
-            await context.onTemplateSelectionListToConfirm(plan);
+            await context.emitEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, plan);
         }
 
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
@@ -99,7 +97,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             this.plannerSystemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName),
+            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

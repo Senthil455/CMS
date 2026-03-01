@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
 export interface IAiResponseLogRepository {
-    saveAiResponseLog(handler: string, response: string, providerName?: string,
-        schemaId?: string, input?: string, taskId?: number, taskItemIndex?: number): Promise<void>;
+    saveAiResponseLog(handler: string, response: string, providerName?: string, modelName?: string,
+        schemaId?: string, input?: string): Promise<void>;
     findAllAiResponseLogs(): Promise<any[]>;
     findAiResponseLogById(id: number): Promise<any | null>;
     deleteAiResponseLog(id: number): Promise<void>;
@@ -11,12 +11,13 @@ export interface IAiResponseLogRepository {
 export class SqliteAiResponseLogRepository implements IAiResponseLogRepository {
     constructor(private prisma: PrismaClient) { }
 
-    async saveAiResponseLog(handler: string, response: string, providerName?: string, schemaId?: string, input?: string): Promise<void> {
+    async saveAiResponseLog(handler: string, response: string, providerName?: string, modelName?: string, schemaId?: string, input?: string): Promise<void> {
         await this.prisma.aiResponseLog.create({
             data: {
                 handler,
                 response,
                 providerName: providerName || null,
+                modelName: modelName || null,
                 schemaId: schemaId || null,
                 input: input || null,
             },

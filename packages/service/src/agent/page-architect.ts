@@ -2,7 +2,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
+import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -13,16 +13,14 @@ export interface ArchitectDesignerAgentPlan extends PageArchitecture {
     schemaId: string;
 }
 
-export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
+export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
     constructor(
-        aiProvider: AIProvider,
-        private readonly architectSystemPrompt: string, // Replaces PageArchitect
+        private readonly aiProvider: AIProvider,
+        private readonly architectSystemPrompt: string,
         private readonly cmsClient: CmsClient,
-        logger: ServiceLogger,
+        private readonly logger: ServiceLogger,
         private readonly pageOperator: PageOperator
-    ) {
-        super("architecting your page", logger, aiProvider);
-    }
+    ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<ArchitectDesignerAgentPlan>> {
         // Extract schemaId
@@ -113,7 +111,7 @@ ${queryListContext}
             this.architectSystemPrompt,
             developerMessage,
             userInput,
-            parseModelFromProvider(context.providerName),
+            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 
