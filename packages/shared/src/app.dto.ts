@@ -122,14 +122,6 @@ export interface SystemRequirmentItem {
 }
 
 export interface SystemRequirment {
-    id: number;
-    userInput: string;
-    createdAt: Date;
-    status: 'pending' | 'finished';
-    entries: SystemRequirmentItem[];
-}
-
-export interface SystemRequirmentConfirmationDto {
     items: SystemRequirmentItem[];
 }
 

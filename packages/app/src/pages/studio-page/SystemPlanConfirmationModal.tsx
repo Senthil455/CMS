@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Database, FileCode, LayoutTemplate, Trash2, X } from 'lucide-react';
-import type { SystemPlanItem, SystemPlanConfirmationDto } from '@cms/shared';
+import type { SystemRequirmentItem, SystemRequirment } from '@cms/shared';
 
 interface SystemPlanConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (data: SystemPlanConfirmationDto) => void;
-    plan: SystemPlanConfirmationDto | null;
+    onConfirm: (data: SystemRequirment) => void;
+    plan: SystemRequirment | null;
 }
 
 export function SystemPlanConfirmationModal({
@@ -15,7 +15,7 @@ export function SystemPlanConfirmationModal({
     onConfirm,
     plan
 }: SystemPlanConfirmationModalProps) {
-    const [editablePlan, setEditablePlan] = useState<SystemPlanItem[]>([]);
+    const [editablePlan, setEditablePlan] = useState<SystemRequirmentItem[]>([]);
 
     useEffect(() => {
         if (isOpen && plan) {
@@ -126,7 +126,7 @@ export function SystemPlanConfirmationModal({
                         Cancel
                     </button>
                     <button
-                        onClick={() => plan && onConfirm({ planId: plan.planId, items: editablePlan })}
+                        onClick={() => plan && onConfirm({ items: editablePlan })}
                         disabled={editablePlan.length === 0}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors flex items-center gap-2"
                     >

@@ -58,7 +58,7 @@ export class AgentTaskModel {
 
     public createSystemTask(requirement: SystemRequirment): AgentTask {
         const items: AgentTaskItem[] = [];
-        for (const item of requirement.entries) {
+        for (const item of requirement.items) {
             if (item.type === 'entity') {
                 items.push({
                     type: 'entity',

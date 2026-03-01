@@ -1,4 +1,4 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirmentConfirmationDto, SystemRequirment } from '@cms/shared';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirment } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
@@ -14,7 +14,7 @@ export interface AgentContext {
     onSchemasSync: (payload: SystemMessagePayload) => Promise<void>;
     onTemplateSelectionListToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
     onTemplateSelectionDetailToConfirm: (payload: TemplateSelectionRequest) => Promise<void>;
-    onSystemPlanToConfirm: (plan: SystemRequirmentConfirmationDto) => Promise<void>;
+    onSystemPlanToConfirm: (plan: SystemRequirment) => Promise<void>;
     updateStatus: (content: string) => Promise<void>;
 }
 

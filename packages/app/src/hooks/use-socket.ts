@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { SOCKET_EVENTS, type ChatMessage, type SchemaSummary, type SystemMessagePayload, type SystemPlanConfirmationDto } from '@cms/shared';
+import { SOCKET_EVENTS, type ChatMessage, type SchemaSummary, type SystemMessagePayload, type SystemRequirment } from '@cms/shared';
 import { useSocketContext } from '../context/socket-provider';
 
 export function useSocket() {
@@ -54,7 +54,7 @@ export function useSocket() {
         };
     }, [socket]);
 
-    const onSystemPlanToConfirm = useCallback((callback: (data: SystemPlanConfirmationDto) => void) => {
+    const onSystemPlanToConfirm = useCallback((callback: (data: SystemRequirment) => void) => {
         if (!socket) return () => { };
         socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, callback);
         return () => {
@@ -66,7 +66,7 @@ export function useSocket() {
         socket?.emit(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, data);
     }, [socket]);
 
-    const sendSystemPlanResponse = useCallback((data: SystemPlanConfirmationDto) => {
+    const sendSystemPlanResponse = useCallback((data: SystemRequirment) => {
         socket?.emit(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, data);
     }, [socket]);
 

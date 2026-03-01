@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { type Socket } from 'socket.io';
-import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent, type SystemRequirmentConfirmationDto } from '@cms/shared';
+import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent, type SystemRequirment } from '@cms/shared';
 import { formatError } from '../utils/error-formatter';
 
 import { config } from '../config';
@@ -42,7 +42,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 }
             });
 
-            socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, async (data: SystemRequirmentConfirmationDto) => {
+            socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, async (data: SystemRequirment) => {
                 try {
                     await fastify.chatService.handleSystemPlanResponse(userId, data, socket.data.externalCookie, onEvent);
                 } catch (error) {

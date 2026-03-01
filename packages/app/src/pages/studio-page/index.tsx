@@ -6,7 +6,7 @@ import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
 import { useSocketContext } from '../../context/socket-provider';
 import { Loader2 } from 'lucide-react';
-import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest, type SystemPlanConfirmationDto } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest, type SystemRequirment } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './explorer-panel/Explorer';
 import { DetailView } from './detail-panel/DetailView';
@@ -98,7 +98,7 @@ export default function StudioPage() {
 
     // System Plan Confirmation State
     const [showSystemPlanConfirmation, setShowSystemPlanConfirmation] = useState(false);
-    const [systemPlanData, setSystemPlanData] = useState<SystemPlanConfirmationDto | null>(null);
+    const [systemPlanData, setSystemPlanData] = useState<SystemRequirment | null>(null);
 
     useEffect(() => {
         if (history) {
@@ -179,7 +179,7 @@ export default function StudioPage() {
         }
     };
 
-    const handleConfirmSystemPlan = (plan: SystemPlanConfirmationDto) => {
+    const handleConfirmSystemPlan = (plan: SystemRequirment) => {
         sendSystemPlanResponse(plan);
         setShowSystemPlanConfirmation(false);
         setSystemPlanData(null);
@@ -304,7 +304,7 @@ export default function StudioPage() {
                 isOpen={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
                 onConfirm={handleConfirmSchema}
-                schemaSummary={confirmationData || { userInput: '', summary: '', entities: [], relationships: [] }}
+                schemaSummary={confirmationData || { taskId: undefined, userInput: '', summary: '', entities: [], relationships: [] }}
             />
 
             <TemplateSelectionDialog

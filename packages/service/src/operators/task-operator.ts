@@ -1,4 +1,5 @@
 import { AgentTaskModel, type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
+import type { SystemRequirment } from '@cms/shared';
 import type { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import type { ServiceLogger } from '../types/logger';
 
@@ -18,7 +19,7 @@ export class TaskOperator {
         return await this.taskRepository.save(task);
     }
 
-    async createSystemTask(requirement: any): Promise<AgentTask> {
+    async createSystemTask(requirement: SystemRequirment): Promise<AgentTask> {
         this.logger.info({ requirement }, 'Creating system task in TaskOperator');
         const task = this.agentTaskModel.createSystemTask(requirement);
         return await this.taskRepository.save(task);

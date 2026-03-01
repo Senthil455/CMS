@@ -4,7 +4,7 @@ import {
     type SchemaSummary,
     type OnServerToClientEvent,
     type TemplateSelectionResponse,
-    type SystemRequirmentConfirmationDto,
+    type SystemRequirment,
     AGENT_NAMES,
     type AgentName
 } from '@cms/shared';
@@ -205,7 +205,7 @@ export class ChatService {
         }
     }
 
-    async handleSystemPlanResponse(userId: string, response: SystemRequirmentConfirmationDto, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+    async handleSystemPlanResponse(userId: string, response: SystemRequirment, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
             const task = await this.taskOperator.createSystemTask(response);
             await this.executePendingTaskItem(task.id!, userId, externalCookie, config.AI_PROVIDER, onEvent);
@@ -270,7 +270,7 @@ export class ChatService {
             onTemplateSelectionDetailToConfirm: async (payload: any) => {
                 onEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, payload);
             },
-            onSystemPlanToConfirm: async (data: SystemRequirmentConfirmationDto) => {
+            onSystemPlanToConfirm: async (data: SystemRequirment) => {
                 onEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, data);
             },
             updateStatus: async (content: string) => {

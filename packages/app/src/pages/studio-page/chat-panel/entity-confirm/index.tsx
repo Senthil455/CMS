@@ -38,6 +38,7 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
 
     const handleConfirm = () => {
         const response: SchemaSummary = {
+            taskId: schemaSummary.taskId,
             userInput: schemaSummary.userInput,
             summary: schemaSummary.summary,
             entities: schemaSummary.entities.filter((_, idx) => !skippedIndices.has(idx)),
