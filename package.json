@@ -9,6 +9,7 @@
         "packages/app"
     ],
     "scripts": {
+        "debug": "concurrently \"npm run debug:service\" \"npm run dev:app\"",
         "dev": "concurrently \"npm run dev:service\" \"npm run dev:app\"",
         "dev:service": "npm run dev --workspace=@cms/service",
         "debug:service": "npm run debug --workspace=@cms/service",

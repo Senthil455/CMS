@@ -20,7 +20,7 @@ export class PageOperator {
         externalCookie: string
     ): Promise<string> {
         let pageSettings: any = {
-            name: plan.pageName || `generated-page-${Date.now()}`,
+            name: plan.pageName,
             title: `Generated Page ${Date.now()}`,
             html: '',
             source: 'ai',

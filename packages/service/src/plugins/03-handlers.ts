@@ -32,7 +32,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     // Resolve directories
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const agentsDir = path.join(__dirname, '../models/agents');
+    const agentsDir = path.join(__dirname, '../agent');
     const schemasDir = path.join(__dirname, '../../resources/schemas');
 
     // Load common schemas

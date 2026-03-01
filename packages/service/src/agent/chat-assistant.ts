@@ -2,7 +2,7 @@ import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, Templ
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
-    taskId?: number;
+    taskId?: number | undefined;
     userId: string;
     externalCookie: string;
     agentName: AgentName;

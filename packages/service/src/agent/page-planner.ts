@@ -57,7 +57,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         return {
             taskId: context.taskId || undefined,
             userInput,
-            schemaId: pagePlan.pageName,
+            schemaId: schemaId,
             providerName: context.providerName,
             plan: pagePlan,
             templates: templates

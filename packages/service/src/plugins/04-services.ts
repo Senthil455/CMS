@@ -27,8 +27,6 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const systemSettingRepository = new SqliteSystemSettingRepository(prisma);
     const agentTaskRepository = new SqliteAgentTaskRepository(prisma);
 
-    fastify.decorate('systemSettingRepository', systemSettingRepository);
-
     // Seed default design styles if table is empty
     await designStyleRepository.seedDefaultStyles();
 
