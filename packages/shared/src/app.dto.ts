@@ -10,9 +10,14 @@ export interface PageDto {
 
 export type ParsedPageDto = PageDto;
 
+export interface AgentTaskRef {
+    taskId: number;
+    index: number;
+}
+
 export interface SchemaSummary {
     userInput: string;
-    taskId: number | undefined;
+    agentTaskItem?: AgentTaskRef | undefined;
     summary: string;
     entities: (EntityDto & { schemaId?: string | null; })[];
     relationships: RelationshipDto[];
@@ -21,7 +26,7 @@ export interface SchemaSummary {
 export interface TemplateSelectionRequest {
     userInput: string;
     schemaId?: string;
-    taskId: number | undefined;
+    agentTaskItem?: AgentTaskRef | undefined;
     plan: PagePlan;
     providerName: string;
     templates: {

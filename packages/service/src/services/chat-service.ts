@@ -6,7 +6,8 @@ import {
     type TemplateSelectionResponse,
     type SystemRequirment,
     AGENT_NAMES,
-    type AgentName
+    type AgentName,
+    type AgentTaskRef
 } from '@cms/shared';
 import type { Agent, AgentContext } from '../agent/chat-assistant';
 
@@ -162,7 +163,7 @@ export class ChatService {
         }
 
         await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
-        let taskId = response.taskId;
+        let agentTaskItem = response.agentTaskItem;
         try {
             const schemaIds = await this.entityOperator.commit(response, externalCookie);
             onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
@@ -170,8 +171,8 @@ export class ChatService {
                 schemasId: schemaIds
             });
             await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
-            if (taskId) {
-                await this.executePendingTaskItem(taskId, userId, externalCookie, 'gemini', onEvent);
+            if (agentTaskItem) {
+                await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, 'gemini', onEvent);
             }
         } catch (error) {
             this.logger.error({ error: formatError(error) }, 'Failed to commit schema changes');
@@ -189,11 +190,12 @@ export class ChatService {
                 response.requestPayload.userInput,
                 externalCookie
             );
-            let taskId = response.requestPayload.taskId;
-            if (!taskId) {
-                taskId = (await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId)).id;
+            let agentTaskItem = response.requestPayload?.agentTaskItem;
+            if (!agentTaskItem) {
+                const task = await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId);
+                agentTaskItem = { taskId: task.id!, index: 0 }; // Initial item index
             }
-            await this.executePendingTaskItem(taskId!, userId, externalCookie, response.requestPayload.providerName, onEvent);
+            await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, response.requestPayload.providerName, onEvent);
 
 
         } catch (error: any) {
@@ -208,7 +210,7 @@ export class ChatService {
     async handleSystemPlanResponse(userId: string, response: SystemRequirment, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
             const task = await this.taskOperator.createSystemTask(response);
-            await this.executePendingTaskItem(task.id!, userId, externalCookie, config.AI_PROVIDER, onEvent);
+            await this.executePendingTaskItem({ taskId: task.id!, index: 0 }, userId, externalCookie, config.AI_PROVIDER, onEvent);
         } catch (error: any) {
             this.logger.error({ error: formatError(error) }, 'Error handling system plan response');
             await this.saveAndEmitAgentMessage(userId, 'I encountered an error while saving the system plan. Please check the logs and try again.', onEvent);
@@ -242,11 +244,11 @@ export class ChatService {
         providerName: string,
         agentName: AgentName,
         schemaId: string | undefined,
-        taskId: number | undefined,
+        agentTaskItem: AgentTaskRef | undefined,
         onEvent: OnServerToClientEvent,
     ): AgentContext {
         return {
-            taskId,
+            agentTaskItem,
             agentName,
             userId,
             externalCookie,
@@ -280,16 +282,17 @@ export class ChatService {
     }
 
     private async executePendingTaskItem(
-        taskId: number,
+        agentTaskItem: AgentTaskRef,
         userId: string,
         externalCookie: string,
         providerName: string,
         onEvent: OnServerToClientEvent
     ): Promise<void> {
-        const item = await this.taskOperator.checkout(taskId);
+        const item = await this.taskOperator.checkout(agentTaskItem.taskId);
         if (item) {
+            agentTaskItem = { ...agentTaskItem, index: item.index };
             const context = this.createContext(userId, externalCookie, providerName, item.agentName,
-                item.schemaId, taskId, onEvent);
+                item.schemaId, agentTaskItem, onEvent);
             await this.executeAgent(item.agentName, item.description || '', context, onEvent);
         }
     }
@@ -315,12 +318,12 @@ export class ChatService {
             const response = await handler.handle(userInput, agentContext);
             this.statusService.clearStatus(context.userId);
 
-            if (context.taskId) {
-                await this.taskOperator.commit(context.taskId);
+            if (context.agentTaskItem) {
+                await this.taskOperator.commit(context.agentTaskItem.taskId);
             }
 
-            if (context.taskId && !response.needUserFeedback) {
-                await this.executePendingTaskItem(context.taskId, context.userId, context.externalCookie, context.providerName, onEvent);
+            if (context.agentTaskItem && !response.needUserFeedback) {
+                await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.providerName, onEvent);
             }
             return response;
         } catch (error) {

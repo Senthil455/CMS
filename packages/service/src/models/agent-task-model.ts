@@ -11,7 +11,7 @@ export interface AgentTask {
     items: AgentTaskItem[];
 }
 export interface AgentTaskItem {
-    type: 'entity' | 'query' | 'page';
+    index: number;
     agentName: AgentName;
     status: 'pending' | 'finished';
     description?: string;
@@ -20,91 +20,91 @@ export interface AgentTaskItem {
 
 export class AgentTaskModel {
     public createPageTask(userInput: string, schemaId?: string): AgentTask {
-        return {
-            status: 'pending',
-            items: [
-                {
-                    type: 'page',
-                    agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                    description: userInput,
-                    status: 'pending',
-                    schemaId
-                },
-                {
-                    type: 'page',
-                    agentName: AGENT_NAMES.PAGE_BUILDER,
-                    description: userInput,
-                    status: 'pending',
-                    schemaId
-                }
-            ]
-        };
-    }
-
-    public createEntityTask(userInput: string, schemaId?: string): AgentTask {
-        return {
-            status: 'pending',
-            items: [
-                {
-                    type: 'entity',
-                    agentName: AGENT_NAMES.ENTITY_DESIGNER,
-                    description: userInput,
-                    status: 'pending',
-                    schemaId
-                }
-            ]
-        };
-    }
-
-    public createSystemTask(requirement: SystemRequirment): AgentTask {
-        const items: AgentTaskItem[] = [];
-        for (const item of requirement.items) {
-            if (item.type === 'entity') {
-                items.push({
-                    type: 'entity',
-                    agentName: AGENT_NAMES.ENTITY_DESIGNER,
-                    description: `Generate the following entity,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
-                    status: 'pending'
-                });
-            } else if (item.type === 'query') {
-                items.push({
-                    type: 'query',
-                    agentName: AGENT_NAMES.QUERY_BUILDER,
-                    description: `Generate the following query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
-                    status: 'pending'
-                });
-            } else if (item.type === 'page') {
-                const schemaId = ulid();
-
-                items.push({
-                    type: 'page',
-                    agentName: AGENT_NAMES.PAGE_PLANNER,
-                    schemaId,
-                    description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                    status: 'pending'
-                });
-
-                items.push({
-                    type: 'page',
-                    agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                    schemaId,
-                    description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                    status: 'pending'
-                });
-
-                items.push({
-                    type: 'page',
-                    agentName: AGENT_NAMES.PAGE_BUILDER,
-                    schemaId,
-                    description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                    status: 'pending'
-                });
+        const items = this.calculateIndices([
+            {
+                agentName: AGENT_NAMES.PAGE_ARCHITECT,
+                description: userInput,
+                status: 'pending',
+                schemaId
+            },
+            {
+                agentName: AGENT_NAMES.PAGE_BUILDER,
+                description: userInput,
+                status: 'pending',
+                schemaId
             }
-        }
+        ]);
 
         return {
             status: 'pending',
             items
+        };
+    }
+
+    private calculateIndices(items: Omit<AgentTaskItem, 'index'>[]): AgentTaskItem[] {
+        return items.map((item, index) => ({
+            ...item,
+            index
+        })) as AgentTaskItem[];
+    }
+
+
+
+    public createSystemTask(requirement: SystemRequirment): AgentTask {
+        const entityItems = requirement.items.filter(item => item.type === 'entity');
+        const queryItems = requirement.items.filter(item => item.type === 'query');
+        const pageItems = requirement.items.filter(item => item.type === 'page');
+
+        const tasks: Omit<AgentTaskItem, 'index'>[] = [];
+
+        // 1. All entities => one task
+        if (entityItems.length > 0) {
+            const description = entityItems.map(item => `entityName:${item.name}\n\tdescription: ${item.description}`).join('\n\n');
+            tasks.push({
+                agentName: AGENT_NAMES.ENTITY_DESIGNER,
+                description: `Generate the following entities,\n\n${description}`,
+                status: 'pending'
+            });
+        }
+
+        // 2. Each query => one task
+        for (const item of queryItems) {
+            tasks.push({
+                agentName: AGENT_NAMES.QUERY_BUILDER,
+                description: `Generate the following query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+        }
+
+        // 3. Each page => 3 tasks
+        for (const item of pageItems) {
+            const schemaId = ulid();
+
+            tasks.push({
+                agentName: AGENT_NAMES.PAGE_PLANNER,
+                schemaId,
+                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+
+            tasks.push({
+                agentName: AGENT_NAMES.PAGE_ARCHITECT,
+                schemaId,
+                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+
+            tasks.push({
+                agentName: AGENT_NAMES.PAGE_BUILDER,
+                schemaId,
+                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+        }
+
+        return {
+            status: 'pending',
+            items: this.calculateIndices(tasks)
         };
     }
 }

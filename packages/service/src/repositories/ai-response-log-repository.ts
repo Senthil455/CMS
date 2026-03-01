@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
 export interface IAiResponseLogRepository {
-    saveAiResponseLog(handler: string, response: string, providerName?: string, schemaId?: string, input?: string): Promise<void>;
+    saveAiResponseLog(handler: string, response: string, providerName?: string,
+        schemaId?: string, input?: string, taskId?: number, taskItemIndex?: number): Promise<void>;
     findAllAiResponseLogs(): Promise<any[]>;
     findAiResponseLogById(id: number): Promise<any | null>;
     deleteAiResponseLog(id: number): Promise<void>;

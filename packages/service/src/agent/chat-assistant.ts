@@ -1,8 +1,8 @@
-import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirment } from '@cms/shared';
+import type { ChatMessage, SchemaSummary, SystemMessagePayload, AgentName, TemplateSelectionRequest, SystemRequirment, AgentTaskRef } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 
 export interface AgentContext {
-    taskId?: number | undefined;
+    agentTaskItem?: AgentTaskRef | undefined;
     userId: string;
     externalCookie: string;
     agentName: AgentName;
@@ -69,6 +69,7 @@ export abstract class BaseAgent<T> implements Agent<T> {
                 systemPrompt: this.lastPrompts.systemPrompt || '',
                 developerMessage: this.lastPrompts.developerMessage || '',
                 userInput: this.lastPrompts.userInput || userInput,
+                agentTaskItem: context.agentTaskItem
             });
 
             await context.saveAiResponseLog(
