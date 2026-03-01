@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -25,7 +25,7 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         super("generating your data", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<DataGeneratorPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<DataGeneratorPlan>> {
         await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
         await context.updateStatus('Fetching latest schemas for data generation...');
 
@@ -55,7 +55,6 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         }
 
         const devMsg = `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`;
-        this.setLastPrompts(this.systemPrompt, devMsg, userInput);
 
         await context.updateStatus('Generating sample data with AI...');
         const response: DataGeneratorResponse = await this.aiProvider.generate(
@@ -74,9 +73,16 @@ export class DataGenerator extends BaseAgent<DataGeneratorPlan> {
         }
 
         return {
-            ...response,
-            entities,
-            targetEntity
+            plan: {
+                ...response,
+                entities,
+                targetEntity
+            },
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage: devMsg,
+                userInput: userInput
+            }
         };
     }
 

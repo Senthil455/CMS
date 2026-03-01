@@ -2,7 +2,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -24,7 +24,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         super("architecting your page", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<ArchitectDesignerAgentPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<ArchitectDesignerAgentPlan>> {
         // Extract schemaId
         const schemaId = context.schemaId;
         if (!schemaId) {
@@ -53,12 +53,15 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
         const templateStyle = metadata.templateId || '';
 
-        const architecturePlan = await this.generateArchitecturePlan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
+        const { plan, prompts } = await this.generateArchitecturePlan(actualUserInput, context, queries, routingPlan, templateStyle, existingArchitecture);
 
         return {
-            ...architecturePlan,
-            userInput: actualUserInput,
-            schemaId
+            plan: {
+                ...plan,
+                userInput: actualUserInput,
+                schemaId
+            },
+            prompts
         };
     }
 
@@ -74,7 +77,7 @@ export class PageArchitect extends BaseAgent<ArchitectDesignerAgentPlan> {
         return false;
     }
 
-    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<PageArchitecture> {
+    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<AgentPlanResponse<PageArchitecture>> {
         const queryListContext = availableQueries.map((q: any) =>
             `- ${q.name}: ${q.settings?.query?.source}
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}
@@ -104,8 +107,6 @@ ${queryListContext}
 
         developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
 
-        this.setLastPrompts(this.architectSystemPrompt, developerMessage, userInput);
-
         await context.saveAgentMessage(`Designing page architecture...`);
 
         const response = await this.aiProvider.generate(
@@ -119,21 +120,42 @@ ${queryListContext}
         // Expecting JSON response as specified in prompt
         try {
             if (typeof response === 'string') {
-                return JSON.parse(response);
+                return {
+                    plan: JSON.parse(response),
+                    prompts: {
+                        systemPrompt: this.architectSystemPrompt,
+                        developerMessage,
+                        userInput: userInput
+                    }
+                };
             }
-            return response as PageArchitecture;
+            return {
+                plan: response as ArchitectDesignerAgentPlan,
+                prompts: {
+                    systemPrompt: this.architectSystemPrompt,
+                    developerMessage,
+                    userInput: userInput
+                }
+            };
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse PageArchitect response');
             // Fallback plan
             return {
-                pageTitle: '',
-                sections: [
-                    { preset: '12', columns: [{ span: 12, id: 'main-content' }] }
-                ],
-                selectedQueries: [
-                    { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
-                ],
-                architectureHints: 'Generate a basic layout'
+                plan: {
+                    pageTitle: 'Fallback Page',
+                    sections: [
+                        { preset: '12', columns: [{ span: 12, id: 'main-content' }] }
+                    ],
+                    selectedQueries: [
+                        { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
+                    ],
+                    architectureHints: 'Generate a basic layout'
+                },
+                prompts: {
+                    systemPrompt: this.architectSystemPrompt,
+                    developerMessage,
+                    userInput
+                }
             };
         }
     }

@@ -19,6 +19,27 @@ export interface AgentTaskItem {
 }
 
 export class AgentTaskModel {
+    private calculateIndices(items: Omit<AgentTaskItem, 'index'>[]): AgentTaskItem[] {
+        return items.map((item, index) => ({
+            ...item,
+            index
+        })) as AgentTaskItem[];
+    }
+
+    public checkout(task: AgentTask): AgentTaskItem | null {
+        return task.items.find(item => item.status === 'pending') || null;
+    }
+
+    public commit(task: AgentTask, index: number): void {
+        if (task.items[index]) {
+            task.items[index].status = 'finished';
+        }
+
+        const hasPendingItems = task.items.some(item => item.status === 'pending');
+        if (!hasPendingItems) {
+            task.status = 'finished';
+        }
+    }
     public createPageTask(userInput: string, schemaId?: string): AgentTask {
         const items = this.calculateIndices([
             {
@@ -39,18 +60,7 @@ export class AgentTaskModel {
             status: 'pending',
             items
         };
-    }
-
-    private calculateIndices(items: Omit<AgentTaskItem, 'index'>[]): AgentTaskItem[] {
-        return items.map((item, index) => ({
-            ...item,
-            index
-        })) as AgentTaskItem[];
-    }
-
-
-
-    public createSystemTask(requirement: SystemRequirment): AgentTask {
+    } public createSystemTask(requirement: SystemRequirment): AgentTask {
         const entityItems = requirement.items.filter(item => item.type === 'entity');
         const queryItems = requirement.items.filter(item => item.type === 'query');
         const pageItems = requirement.items.filter(item => item.type === 'page');

@@ -1,7 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider, AgentStopError } from './chat-assistant';
+import { parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, BaseAgent, AgentStopError } from './chat-assistant';
 
 export interface SystemPlanItem {
     type: 'entity' | 'query' | 'page';
@@ -21,15 +22,13 @@ export class SystemArchitect extends BaseAgent<SystemArchitectPlan> {
         super("architecting your system", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<SystemArchitectPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
         await context.saveAgentMessage(`Analyzing your request and architecting the system components...`);
 
         const developerMessage = `
 Analyze the user's idea and break it down into a list of required entities, queries, and pages.
 Output ONLY a JSON array.
         `;
-
-        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
 
         const response = await this.aiProvider.generate(
             this.systemPrompt,
@@ -52,7 +51,14 @@ Output ONLY a JSON array.
             parsedPlan = [];
         }
 
-        return parsedPlan;
+        return {
+            plan: parsedPlan,
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage,
+                userInput
+            }
+        };
     }
 
     async act(plan: SystemArchitectPlan, context: AgentContext): Promise<boolean> {

@@ -2,7 +2,7 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 import { PageOperator } from '../operators/page-operator';
 
@@ -32,7 +32,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
     }
 
 
-    async think(userInput: string, context: AgentContext): Promise<PageBuilderPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<PageBuilderPlan>> {
         this.logger.info('PageBuilder think started');
 
         const schemaId = context.schemaId;
@@ -102,6 +102,7 @@ export class PageBuilder extends BaseAgent<PageBuilderPlan> {
 
         // Generate HTML for each component sequentially
         const components: Record<string, { html: string; addonId?: string; }> = {};
+        let overallDeveloperMessage = '';
 
         for (let i = 0; i < componentInstructions.length; i++) {
             const instruction = componentInstructions[i];
@@ -161,7 +162,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id]!.html}`;
             }
 
-            this.setLastPrompts(this.systemPrompt, developerMessage, originalInput);
+            overallDeveloperMessage = developerMessage;
 
             const aiResponse = await this.aiProvider.generate(
                 this.systemPrompt,
@@ -187,9 +188,16 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         }
 
         return {
-            title: architecturePlan.pageTitle,
-            layoutJson,
-            components,
+            plan: {
+                title: architecturePlan.pageTitle,
+                layoutJson,
+                components,
+            },
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage: overallDeveloperMessage,
+                userInput: originalInput
+            }
         };
     }
 
@@ -278,7 +286,6 @@ ${relevantQueryDetails}
         }
 
         await context.updateStatus(`Applying modification to ${componentId} using AI...`);
-        this.setLastPrompts(this.systemPrompt, developerMessage, userRequirement);
 
         const aiResponse = await this.aiProvider.generate(
             this.systemPrompt,
@@ -287,6 +294,8 @@ ${relevantQueryDetails}
             parseModelFromProvider(context.providerName),
             context.signal ? { signal: context.signal } : undefined
         );
+
+
 
         let componentResponse: ComponentHtmlResponse;
         if (typeof aiResponse === 'string') {

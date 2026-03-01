@@ -1,5 +1,5 @@
 import { AgentTaskModel, type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
-import type { SystemRequirment } from '@cms/shared';
+import type { SystemRequirment, AgentTaskRef } from '@cms/shared';
 import type { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import type { ServiceLogger } from '../types/logger';
 
@@ -33,31 +33,19 @@ export class TaskOperator {
             return null;
         }
 
-        const firstPendingItem = task.items.find(item => item.status === 'pending');
-        if (!firstPendingItem) {
-            this.logger.info({ taskId }, 'No pending items found for task');
-            return null;
-        }
-
-        return firstPendingItem;
+        return this.agentTaskModel.checkout(task);
     }
 
-    async commit(taskId: number): Promise<void> {
-        this.logger.info({ taskId }, 'Committing task item in TaskOperator');
-        const task = await this.taskRepository.findById(taskId);
+    async commit(taskRef: AgentTaskRef): Promise<void> {
+        this.logger.info({ taskRef }, 'Committing task item in TaskOperator');
+        const task = await this.taskRepository.findById(taskRef.taskId);
         if (!task) {
-            this.logger.warn({ taskId }, 'Task not found during commit');
+            this.logger.warn({ taskRef }, 'Task not found during commit');
             return;
         }
 
-        const pendingItem = task.items.find(item => item.status === 'pending');
-        if (pendingItem) {
-            pendingItem.status = 'finished';
-        }
-
-        const hasPendingItems = task.items.some(item => item.status === 'pending');
-        if (!hasPendingItems) {
-            task.status = 'finished';
+        if (taskRef.index !== undefined) {
+            this.agentTaskModel.commit(task, taskRef.index);
         }
 
         await this.taskRepository.update(task);

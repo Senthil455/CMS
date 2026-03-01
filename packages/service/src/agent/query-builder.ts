@@ -1,7 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
+
+import { type AgentContext, type AgentPlanResponse, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
@@ -19,7 +20,7 @@ export class QueryGenerator extends BaseAgent<QueryGeneratorPlan> {
         super("generating your query", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<QueryGeneratorPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<QueryGeneratorPlan>> {
         let existingSchema: SchemaDto | null = null;
         let schemaId = '';
 
@@ -48,7 +49,6 @@ ${sdl}
             developerMessage += `\n\nExisting Query to Modify:\n${JSON.stringify(existingSchema.settings.query, null, 2)}`;
         }
 
-        this.setLastPrompts(this.systemPrompt, developerMessage, userInput);
 
         const response: QueryResponse = await this.aiProvider.generate(
             this.systemPrompt,
@@ -59,9 +59,16 @@ ${sdl}
         );
 
         return {
-            ...response,
-            schemaId,
-            existingSchema
+            plan: {
+                ...response,
+                schemaId,
+                existingSchema
+            },
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage,
+                userInput
+            }
         };
     }
 

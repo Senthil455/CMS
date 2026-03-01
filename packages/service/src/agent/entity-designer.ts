@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
 import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../models/entity-model';
 import { RelationshipModel } from '../models/relationship-model';
@@ -31,7 +31,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         super("generating your schema", logger, aiProvider);
     }
 
-    async create(userInput: string, existingContext?: string, context?: AgentContext): Promise<EntityGeneratorResponse> {
+    async create(userInput: string, existingContext?: string, context?: AgentContext): Promise<{ response: EntityGeneratorResponse, developerMessage: string }> {
         let schemasText = [
             { name: 'entity', content: this.entitySchema },
             { name: 'attribute', content: this.attributeSchema },
@@ -42,7 +42,7 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
             schemasText += `\n\n${existingContext}`;
         }
 
-        this.setLastPrompts(this.systemPrompt, schemasText, userInput);
+
 
         const response = await this.aiProvider.generate(
             this.systemPrompt,
@@ -52,10 +52,16 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
             context?.signal ? { signal: context.signal } : undefined
         );
 
-        return response;
+        let responseJson: any;
+        if (typeof response === 'string') {
+            responseJson = JSON.parse(response);
+        } else {
+            responseJson = response;
+        }
+        return { response: responseJson, developerMessage: schemasText };
     }
 
-    async think(userInput: string, context: AgentContext): Promise<EntityGeneratorPlan> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<EntityGeneratorPlan>> {
         let existingContext = '';
         const idMatch = userInput.match(new RegExp(`${AGENT_NAMES.ENTITY_DESIGNER}#([^:]+):`));
 
@@ -82,12 +88,19 @@ export class EntityGenerator extends BaseAgent<EntityGeneratorPlan> {
         }
 
         await context.updateStatus('Analyzing requirements and generating schema...');
-        const resp = await this.create(userInput, existingContext, context);
+        const { response: resp, developerMessage } = await this.create(userInput, existingContext, context);
 
         return {
-            ...resp,
-            existingContext,
-            userInput
+            plan: {
+                ...resp,
+                existingContext,
+                userInput
+            },
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage,
+                userInput
+            }
         };
     }
 

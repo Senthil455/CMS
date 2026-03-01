@@ -1,5 +1,5 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, BaseAgent, AgentStopError, parseModelFromProvider } from './chat-assistant';
+import { type AgentContext, BaseAgent, AgentStopError, parseModelFromProvider, type AgentPlanResponse } from './chat-assistant';
 import { type TemplateSelectionRequest, type PagePlan } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -15,7 +15,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         super("generating your page", logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext): Promise<TemplateSelectionRequest> {
+    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<TemplateSelectionRequest>> {
         let schemaId = '';
 
 
@@ -39,7 +39,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             }
         }
 
-        const pagePlan = await this.generateRoutingPlan(userInput, context, entityNames, existingPageNames, existingPagePlan);
+        const { plan: pagePlan, developerMessage } = await this.generateRoutingPlan(userInput, context, entityNames, existingPageNames, existingPagePlan);
 
         // If the planner couldn't match an entity, stop the pipeline
         if (!pagePlan.entityName) {
@@ -55,12 +55,19 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         const templates = [noStyleOption, ...dbTemplates];
 
         return {
-            agentTaskItem: context.agentTaskItem,
-            userInput,
-            schemaId: schemaId,
-            providerName: context.providerName,
-            plan: pagePlan,
-            templates: templates
+            plan: {
+                agentTaskItem: context.agentTaskItem,
+                userInput,
+                schemaId: schemaId,
+                providerName: context.providerName,
+                plan: pagePlan,
+                templates: templates
+            },
+            prompts: {
+                systemPrompt: this.plannerSystemPrompt,
+                developerMessage,
+                userInput
+            }
         };
     }
 
@@ -76,7 +83,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         return true;
     }
 
-    private async generateRoutingPlan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<PagePlan> {
+    private async generateRoutingPlan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<{ plan: PagePlan, developerMessage: string }> {
         const entitiesList = entityNames.length > 0 ? entityNames.join(", ") : "None";
         const existingPagesList = existingPageNames.length > 0 ? existingPageNames.join(", ") : "None";
 
@@ -86,7 +93,7 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
             developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
         }
 
-        this.setLastPrompts(this.plannerSystemPrompt, developerMessage, userInput);
+
 
         const response = await this.aiProvider.generate(
             this.plannerSystemPrompt,
@@ -97,10 +104,13 @@ export class PagePlanner extends BaseAgent<TemplateSelectionRequest> {
         );
 
         try {
+            let plan: PagePlan;
             if (typeof response === 'string') {
-                return JSON.parse(response);
+                plan = JSON.parse(response);
+            } else {
+                plan = response as PagePlan;
             }
-            return response as PagePlan;
+            return { plan, developerMessage };
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse PagePlanner response');
             throw new AgentStopError("I couldn't understand the plan generated. Please try rephrasing your request.");

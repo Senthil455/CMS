@@ -23,8 +23,17 @@ export interface AgentHandleResponse {
     needUserFeedback: boolean;
 }
 
+export interface AgentPlanResponse<T> {
+    plan: T;
+    prompts: {
+        systemPrompt: string;
+        developerMessage: string;
+        userInput: string;
+    };
+}
+
 export interface Agent<T = any> {
-    think(userInput: string, context: AgentContext): Promise<T>;
+    think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<T>>;
     act(plan: T, context: AgentContext): Promise<boolean>;
     handle(userInput: string, context: AgentContext): Promise<AgentHandleResponse>;
 }
@@ -49,27 +58,20 @@ export abstract class BaseAgent<T> implements Agent<T> {
         protected readonly aiProvider: AIProvider
     ) { }
 
-    // Agents should set this during think() to capture the full prompt
-    protected lastPrompts: { systemPrompt?: string; developerMessage?: string; userInput?: string } = {};
-
-    protected setLastPrompts(systemPrompt: string, developerMessage: string, userInput: string) {
-        this.lastPrompts = { systemPrompt, developerMessage, userInput };
-    }
-
-    abstract think(userInput: string, context: AgentContext): Promise<T>;
+    abstract think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<T>>;
     abstract act(plan: T, context: AgentContext): Promise<boolean>;
 
     // Common handle implementation
     async handle(userInput: string, context: AgentContext): Promise<AgentHandleResponse> {
         this.logger.info(`${context.agentName} initiated via direct handle call`);
         try {
-            const plan = await this.think(userInput, context);
+            const { plan, prompts } = await this.think(userInput, context);
 
-            // Build the full prompt log from what the agent captured
+            // Build the full prompt log from what the agent returned
             const inputLog = JSON.stringify({
-                systemPrompt: this.lastPrompts.systemPrompt || '',
-                developerMessage: this.lastPrompts.developerMessage || '',
-                userInput: this.lastPrompts.userInput || userInput,
+                systemPrompt: prompts.systemPrompt || '',
+                developerMessage: prompts.developerMessage || '',
+                userInput: prompts.userInput || userInput,
                 agentTaskItem: context.agentTaskItem
             });
 

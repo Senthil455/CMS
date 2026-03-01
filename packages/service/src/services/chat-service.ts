@@ -173,7 +173,9 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
     }
 
-    async handleSchemaSummaryResponse(userId: string, response: SchemaSummary, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
+    async handleSchemaSummaryResponse(
+        userId: string, response: SchemaSummary, externalCookie: string,
+        onEvent: OnServerToClientEvent): Promise<void> {
         if (response.entities.length === 0) {
             await this.saveAgentMessage(userId, 'No entities provided to commit.');
             return;
@@ -345,7 +347,7 @@ export class ChatService {
             this.statusService.clearStatus(context.userId);
 
             if (context.agentTaskItem) {
-                await this.taskOperator.commit(context.agentTaskItem.taskId);
+                await this.taskOperator.commit(context.agentTaskItem);
             }
 
             if (context.agentTaskItem && !response.needUserFeedback) {

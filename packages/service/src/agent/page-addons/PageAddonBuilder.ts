@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, BaseAgent, parseModelFromProvider } from '../chat-assistant';
+import { type AgentContext, type AgentPlanResponse, BaseAgent, parseModelFromProvider } from '../chat-assistant';
 import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 
@@ -9,7 +9,7 @@ export interface AddonPlan {
     schemaId: string;
     pageDto: PageDto;
     layoutJson: LayoutJson;
-    newComponent: { id: string; html: string };
+    newComponent: { id: string; html: string; addonId?: string };
 }
 
 export class PageAddonBuilder extends BaseAgent<AddonPlan> {
@@ -26,7 +26,7 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
         super(`adding ${addonDef.label.toLowerCase()}`, logger, aiProvider);
     }
 
-    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<AddonPlan> {
+    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<AgentPlanResponse<AddonPlan>> {
         this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
 
         // 1. Extract Schema ID
@@ -82,35 +82,31 @@ export class PageAddonBuilder extends BaseAgent<AddonPlan> {
 
         await context.saveAgentMessage(`Planning layout for ${this.addonDef.label}...`);
 
-        this.setLastPrompts(this.systemPrompt, JSON.stringify(developerMessage, null, 2), userInput);
-
-        const res = await this.aiProvider.generate(
-            this.systemPrompt,
-            JSON.stringify(developerMessage, null, 2),
-            userInput,
-            parseModelFromProvider(context.providerName),
-            context.signal ? { signal: context.signal } : undefined
-        );
-
-        // Parse response: { layoutJson, component: { id, html } }
-        let parsed: { layoutJson: LayoutJson; component: { id: string; html: string; addonId: string } };
-        if (typeof res === 'string') {
-            parsed = JSON.parse(res);
-        } else {
-            parsed = res as any;
-        }
-        parsed.component.addonId = this.addonDef.id;
-
+        // The actual generation and parsing will happen in the act step
+        // For now, we return the necessary info to perform the generation
         return {
-            schemaId,
-            pageDto,
-            layoutJson: parsed.layoutJson,
-            newComponent: parsed.component,
+            plan: {
+                schemaId,
+                pageDto,
+                layoutJson: existingLayoutJson, // This will be replaced by the AI's output
+                newComponent: { id: '', html: '', addonId: this.addonDef.id }, // This will be replaced by the AI's output
+            },
+            prompts: {
+                systemPrompt: this.systemPrompt,
+                developerMessage: JSON.stringify(developerMessage, null, 2),
+                userInput
+            }
         };
     }
 
+
+
     async act(plan: AddonPlan, context: AgentContext): Promise<boolean> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
+
+        if (this.addonDef.id && !newComponent.addonId) {
+            newComponent.addonId = this.addonDef.id;
+        }
 
         const metadata = pageDto.metadata as PageMetadata;
 
