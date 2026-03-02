@@ -21,42 +21,32 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
-        await context.saveAgentMessage(`Analyzing your request and architecting the system components...`);
-
-        const developerMessage = `
-Analyze the user's idea and break it down into a list of required entities, queries, and pages.
-Output ONLY a JSON array.
-        `;
-
         const response = await this.aiProvider.generate(
             this.systemPrompt,
-            developerMessage,
+            'Generate a system plan identifying the required entities, queries, and pages based on user input.',
             userInput,
             context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 
-        let parsedPlan: SystemArchitectPlan;
-
         try {
+            let plan: SystemArchitectPlan;
             if (typeof response === 'string') {
-                parsedPlan = JSON.parse(response);
+                plan = JSON.parse(response);
             } else {
-                parsedPlan = response as unknown as SystemArchitectPlan;
+                plan = response as SystemArchitectPlan;
             }
+            return {
+                plan, prompts: {
+                    systemPrompt: this.systemPrompt,
+                    developerMessage: 'Generate a system plan identifying the required entities, queries, and pages based on user input.',
+                    userInput
+                }
+            };
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse SystemArchitect response');
-            parsedPlan = [];
+            throw new AgentStopError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
-
-        return {
-            plan: parsedPlan,
-            prompts: {
-                systemPrompt: this.systemPrompt,
-                developerMessage,
-                userInput
-            }
-        };
     }
 
     async act(plan: SystemArchitectPlan, context: AgentContext): Promise<boolean> {

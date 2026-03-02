@@ -131,7 +131,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             const pageBuilderAgent = new PageBuilder(provider, htmlGeneratorPrompt, getStylePrompt, cmsClient, modelLogger, config.CMS_BASE_URL, pageOperator, addonHandlersById);
 
-
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger, entityOperator);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);

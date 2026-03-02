@@ -122,7 +122,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
 
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
-        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
+        context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
         return true;
     }
 }

@@ -210,7 +210,7 @@ export class ChatService {
                 const task = await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId);
                 agentTaskItem = { taskId: task.id!, index: 0 }; // Initial item index
             } else {
-                await this.taskOperator.assignNextItemsSchemaId(agentTaskItem, schemaId, 2);
+                await this.taskOperator.appendPageTasks(agentTaskItem, response.requestPayload.userInput, schemaId);
             }
             await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, response.requestPayload.selection, onEvent);
 

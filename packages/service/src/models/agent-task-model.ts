@@ -41,13 +41,30 @@ export class AgentTaskModel {
         }
     }
 
-    public assignNextItemsSchemaId(task: AgentTask, currentIndex: number, schemaId: string, count: number): void {
-        for (let i = 1; i <= count; i++) {
-            const nextIndex = currentIndex + i;
-            if (task.items[nextIndex]) {
-                task.items[nextIndex].schemaId = schemaId;
+    public appendPageTasks(task: AgentTask, description: string, schemaId: string): void {
+        const newItems: Omit<AgentTaskItem, 'index'>[] = [
+            {
+                agentName: AGENT_NAMES.PAGE_ARCHITECT,
+                description,
+                status: 'pending',
+                schemaId
+            },
+            {
+                agentName: AGENT_NAMES.PAGE_BUILDER,
+                description,
+                status: 'pending',
+                schemaId
             }
-        }
+        ];
+
+        const startingIndex = task.items.length;
+        const mappedItems = newItems.map((item, i) => ({
+            ...item,
+            index: startingIndex + i
+        })) as AgentTaskItem[];
+
+        task.items.push(...mappedItems);
+        task.status = 'pending'; // Ensure task is marked pending since we added new items
     }
 
     public reset(task: AgentTask, index: number): void {
@@ -66,27 +83,17 @@ export class AgentTaskModel {
         const hasPendingItems = task.items.some(item => item.status === 'pending');
         task.status = hasPendingItems ? 'pending' : 'finished';
     }
-    public createPageTask(userInput: string, schemaId?: string): AgentTask {
-        const items = this.calculateIndices([
-            {
-                agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                description: userInput,
-                status: 'pending',
-                schemaId
-            },
-            {
-                agentName: AGENT_NAMES.PAGE_BUILDER,
-                description: userInput,
-                status: 'pending',
-                schemaId
-            }
-        ]);
 
-        return {
+    public createPageTask(userInput: string, schemaId?: string): AgentTask {
+        const task: AgentTask = {
             status: 'pending',
-            items
+            items: []
         };
-    } public createSystemTask(requirement: SystemRequirment): AgentTask {
+        this.appendPageTasks(task, userInput, schemaId || '');
+        return task;
+    }
+
+    public createSystemTask(requirement: SystemRequirment): AgentTask {
         const entityItems = requirement.items.filter(item => item.type === 'entity');
         const queryItems = requirement.items.filter(item => item.type === 'query');
         const pageItems = requirement.items.filter(item => item.type === 'page');
@@ -116,18 +123,6 @@ export class AgentTaskModel {
         for (const item of pageItems) {
             tasks.push({
                 agentName: AGENT_NAMES.PAGE_PLANNER,
-                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                status: 'pending'
-            });
-
-            tasks.push({
-                agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                status: 'pending'
-            });
-
-            tasks.push({
-                agentName: AGENT_NAMES.PAGE_BUILDER,
                 description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });
