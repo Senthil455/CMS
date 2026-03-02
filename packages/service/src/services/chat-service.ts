@@ -22,7 +22,6 @@ import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
-import { config } from '../config';
 
 export class ChatService {
     private activeRequests = new Map<string, AbortController>();
@@ -186,7 +185,7 @@ export class ChatService {
                 task_type: 'entity_designer',
                 schemasId: schemaIds
             });
-            await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS. How else can I help?', onEvent);
+            await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS.', onEvent);
             if (agentTaskItem) {
                 await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, { provider: 'gemini', model: 'gemini-3-flash' }, onEvent);
             }
@@ -200,7 +199,7 @@ export class ChatService {
     async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
         try {
             const schemaId = await this.pageOperator.savePlanAndUserInput(
-                response.requestPayload.schemaId,
+                undefined,
                 response.requestPayload.plan,
                 response.selectedTemplate,
                 response.requestPayload.userInput,
@@ -210,6 +209,8 @@ export class ChatService {
             if (!agentTaskItem) {
                 const task = await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId);
                 agentTaskItem = { taskId: task.id!, index: 0 }; // Initial item index
+            } else {
+                await this.taskOperator.assignNextItemsSchemaId(agentTaskItem, schemaId, 2);
             }
             await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, response.requestPayload.selection, onEvent);
 
@@ -276,9 +277,6 @@ export class ChatService {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
             },
             emitEvent: onEvent,
-            updateStatus: async (content: string) => {
-                this.statusService.updateStatus(userId, content);
-            }
         };
     }
 
@@ -297,7 +295,7 @@ export class ChatService {
             this.activeRequests.set(userId, abortController);
             try {
                 const context = this.createContext(userId, externalCookie, selection, item.agentName,
-                    item.schemaId, agentTaskItem, onEvent, abortController.signal);
+                    undefined, agentTaskItem, onEvent, abortController.signal);
                 await this.executeAgent(item.agentName, item.description || '', context, onEvent);
             } finally {
                 this.activeRequests.delete(userId);
@@ -306,19 +304,19 @@ export class ChatService {
     }
 
     private async executeAgent(
-        taskType: AgentName,
+        agentName: AgentName,
         userInput: string,
         context: AgentContext,
         onEvent: OnServerToClientEvent
     ): Promise<import('../agent/chat-assistant').AgentHandleResponse> {
-        const handler = this.chatHandlers[context.selection.provider]?.[taskType];
+        const handler = this.chatHandlers[context.selection.provider]?.[agentName];
         if (!handler) {
-            this.logger.error({ taskType, provider: context.selection.provider, model: context.selection.model }, 'Handler not found for task type');
+            this.logger.error({ taskType: agentName, provider: context.selection.provider, model: context.selection.model }, 'Handler not found for task type');
             return { needUserFeedback: false };
         }
 
-        this.logger.info({ taskType }, 'Executing handler');
-        const agentContext = { ...context, agentName: taskType };
+        this.statusService.updateStatus(context.userId, 'executing ' + agentName);
+        const agentContext = { ...context, agentName: agentName };
 
         try {
             // Orchestrator owns the think → log → act pipeline
@@ -332,8 +330,8 @@ export class ChatService {
                 agentTaskItem: context.agentTaskItem
             });
             await this.logRepository.saveAiResponseLog(
-                taskType,
-                JSON.stringify({ ...plan, taskType }),
+                agentName,
+                JSON.stringify({ ...plan, taskType: agentName }),
                 context.selection.provider,
                 context.selection.model,
                 context.schemaId,
@@ -356,12 +354,12 @@ export class ChatService {
 
             // AgentStopError: agent intentionally stopped — send reason to user
             if (error instanceof AgentStopError) {
-                this.logger.info({ agentName: taskType }, `Agent stopped: ${error.userMessage}`);
+                this.logger.info({ agentName: agentName }, `Agent stopped: ${error.userMessage}`);
                 await this.saveAndEmitAgentMessage(context.userId, error.userMessage, onEvent);
                 return { needUserFeedback: false };
             }
 
-            this.logger.error({ error: formatError(error), taskType }, 'Error executing agent');
+            this.logger.error({ error: formatError(error), taskType: agentName }, 'Error executing agent');
             const errorMessage = error.message || 'Unknown error occurred';
             await this.saveAndEmitAgentMessage(
                 context.userId,
@@ -372,7 +370,8 @@ export class ChatService {
         }
     }
 
-    private async actOnLog(logId: number, userId: string, externalCookie: string, onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
+    private async actOnLog(logId: number, userId: string, externalCookie: string,
+        onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
         const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
             throw new Error(`Log with ID ${logId} not found`);
@@ -381,17 +380,21 @@ export class ChatService {
         const responseContent = log.response;
         const handlerName = log.handler;
 
-        const selection = { provider: log.providerName || 'gemini', model: log.modelName || 'gemini-3-flash' };
+        const selection = { provider: log.providerName, model: log.modelName };
         const context = this.createContext(userId, externalCookie, selection,
             handlerName as AgentName, log.schemaId, log.agentTaskItem, onEvent);
 
         const plan = JSON.parse(responseContent);
-
+        const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...");
 
-        // var res = await targetHandler.act(plan, context);
-        // if (res && continuePipeline) {
-        //     this.executeAgent(res.nextAgent, res.nextUserInput, context);
-        // }
+
+        const needUIFeedback = await handler.act(plan, context);
+        if (continuePipeline && context.agentTaskItem) {
+            await this.taskOperator.reset(context.agentTaskItem);
+            if (!needUIFeedback) {
+                await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.selection, onEvent);
+            }
+        }
     }
 }

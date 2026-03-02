@@ -40,6 +40,32 @@ export class AgentTaskModel {
             task.status = 'finished';
         }
     }
+
+    public assignNextItemsSchemaId(task: AgentTask, currentIndex: number, schemaId: string, count: number): void {
+        for (let i = 1; i <= count; i++) {
+            const nextIndex = currentIndex + i;
+            if (task.items[nextIndex]) {
+                task.items[nextIndex].schemaId = schemaId;
+            }
+        }
+    }
+
+    public reset(task: AgentTask, index: number): void {
+        task.items.forEach((item, i) => {
+            if (i < index) {
+                item.status = 'finished';
+            } else {
+                item.status = 'pending';
+                // Also clear schemaId for items being reset if needed? 
+                // Usually reset means retry, so we might want to keep schemaId if it was already assigned
+                // for some items, but typically if we reset from an index, we want a fresh start from there.
+                // However, the request didn't specifically ask to clear schemaId.
+            }
+        });
+
+        const hasPendingItems = task.items.some(item => item.status === 'pending');
+        task.status = hasPendingItems ? 'pending' : 'finished';
+    }
     public createPageTask(userInput: string, schemaId?: string): AgentTask {
         const items = this.calculateIndices([
             {
@@ -88,25 +114,20 @@ export class AgentTaskModel {
 
         // 3. Each page => 3 tasks
         for (const item of pageItems) {
-            const schemaId = ulid();
-
             tasks.push({
                 agentName: AGENT_NAMES.PAGE_PLANNER,
-                schemaId,
                 description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });
 
             tasks.push({
                 agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                schemaId,
                 description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });
 
             tasks.push({
                 agentName: AGENT_NAMES.PAGE_BUILDER,
-                schemaId,
                 description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });

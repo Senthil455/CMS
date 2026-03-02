@@ -39,7 +39,6 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
         }
 
         // Fetch Schema
-        await context.updateStatus('Fetching page schema and metadata...');
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
             throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
@@ -65,7 +64,6 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
         const stylePrompt = await this.getStylePrompt(templateStyle, pageType);
 
         // Gather query endpoint details and sample data
-        await context.updateStatus('Gathering data architecture context and samples...');
         const queryDetailsMap = new Map<string, string>();
         for (const sq of architecturePlan.selectedQueries) {
             const queryName = sq.queryName;
@@ -106,7 +104,6 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
             const instruction = componentInstructions[i];
             if (!instruction) continue;
 
-            await context.updateStatus(`Generating component ${i + 1}/${componentInstructions.length}: ${instruction.id}...`);
 
             // Check if this component is a known add-on
             if (instruction.addonId && this.addonHandlers) {
@@ -202,7 +199,6 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
-        await context.updateStatus('Compiling layout and components into final HTML...');
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
         await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
@@ -223,7 +219,6 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("PageBuilder requires a valid schema ID in context.");
 
-        await context.updateStatus(`Fetching context for component ${componentId}...`);
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
             throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
@@ -282,7 +277,6 @@ ${relevantQueryDetails}
             developerMessage += `\n\nEXISTING COMPONENT HTML (Modify this base to apply the new requirement):\n${metadata.components[componentId]!.html}`;
         }
 
-        await context.updateStatus(`Applying modification to ${componentId} using AI...`);
 
         const aiResponse = await this.aiProvider.generate(
             this.systemPrompt,
@@ -304,7 +298,6 @@ ${relevantQueryDetails}
         const newHtml = componentResponse.html;
 
         // Save only this component
-        await context.updateStatus(`Saving updated ${componentId}...`);
         const layoutJson = metadata.layoutJson || { sections: [] }; // fall back to empty if undefined
 
         // Merge updated component html back

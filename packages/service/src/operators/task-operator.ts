@@ -51,4 +51,33 @@ export class TaskOperator {
         await this.taskRepository.update(task);
     }
 
+    async reset(taskRef: AgentTaskRef): Promise<void> {
+        this.logger.info({ taskRef }, 'Resetting task in TaskOperator');
+        const task = await this.taskRepository.findById(taskRef.taskId);
+        if (!task) {
+            this.logger.warn({ taskRef }, 'Task not found during reset');
+            return;
+        }
+
+        if (taskRef.index !== undefined) {
+            this.agentTaskModel.reset(task, taskRef.index);
+        }
+
+        await this.taskRepository.update(task);
+    }
+
+    async assignNextItemsSchemaId(taskRef: AgentTaskRef, schemaId: string, count: number): Promise<void> {
+        this.logger.info({ taskRef, schemaId, count }, 'Assigning schemaId to next items in TaskOperator');
+        const task = await this.taskRepository.findById(taskRef.taskId);
+        if (!task) {
+            this.logger.warn({ taskRef }, 'Task not found during schemaId assignment');
+            return;
+        }
+
+        if (taskRef.index !== undefined) {
+            this.agentTaskModel.assignNextItemsSchemaId(task, taskRef.index, schemaId, count);
+        }
+
+        await this.taskRepository.update(task);
+    }
 }

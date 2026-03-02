@@ -65,7 +65,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
 
         if (idMatch) {
             const schemaId = idMatch[1] as string;
-            await context.updateStatus(`Fetching schema for entity ID: ${schemaId}...`);
             try {
                 const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
                 if (existingSchema && existingSchema.settings.entity) {
@@ -85,7 +84,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             await context.saveAgentMessage('I am entity generator, I am analyzing your requirements and generating the schema...');
         }
 
-        await context.updateStatus('Analyzing requirements and generating schema...');
         const { response: resp, developerMessage } = await this.create(userInput, existingContext, context);
 
         return {
@@ -114,7 +112,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         const normalizedRelationships = (plan.relationships || []).map(r => new RelationshipModel(r).normalize());
 
         // Compare with CMS to categorize entities and create summary
-        await context.updateStatus('Comparing with existing schemas and preparing summary...');
         const summary = await this.entityOperator.prepareSummary(
             normalizedEntities,
             normalizedRelationships,

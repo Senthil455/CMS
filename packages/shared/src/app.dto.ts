@@ -30,7 +30,6 @@ export interface ModelSelection {
 
 export interface TemplateSelectionRequest {
     userInput: string;
-    schemaId?: string;
     agentTaskItem?: AgentTaskRef | undefined;
     plan: PagePlan;
     selection: ModelSelection;

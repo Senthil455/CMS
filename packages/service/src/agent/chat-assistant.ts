@@ -8,7 +8,6 @@ export interface AgentContext {
     selection: ModelSelection;
     schemaId?: string;
     saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
-    updateStatus: (content: string) => Promise<void>;
     emitEvent: OnServerToClientEvent;
     signal?: AbortSignal;
 }
