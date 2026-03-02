@@ -1,8 +1,10 @@
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse } from './chat-assistant';
-import { type TemplateSelectionRequest, type PagePlan, SOCKET_EVENTS } from '@cms/shared';
+import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, SOCKET_EVENTS } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
+import { PageOperator } from '../operators/page-operator';
+import { TaskOperator } from '../operators/task-operator';
 
 export class PagePlanner implements Agent<TemplateSelectionRequest> {
     constructor(
@@ -10,7 +12,9 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         private readonly plannerSystemPrompt: string,
         private readonly logger: ServiceLogger,
         private readonly getTemplateOptions: () => Promise<{ id: string; name: string; description: string }[]>,
-        private readonly cmsClient: CmsClient
+        private readonly cmsClient: CmsClient,
+        private readonly pageOperator: PageOperator,
+        private readonly taskOperator: TaskOperator,
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<TemplateSelectionRequest>> {
@@ -69,16 +73,29 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<boolean> {
-        const pageType = plan.plan.pageType;
-        if (pageType === 'detail') {
-            await context.emitEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM, plan);
-        } else {
-            await context.emitEvent(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM, plan);
-        }
-
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<TemplateSelectionRequest | null> {
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
-        return true;
+        // Return the plan as feedback data — ChatService will compose the payload and emit the event
+        return plan;
+    }
+
+    async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<void> {
+        const schemaId = await this.pageOperator.savePlanAndUserInput(
+            undefined,
+            feedbackData.requestPayload.plan,
+            feedbackData.selectedTemplate,
+            feedbackData.requestPayload.userInput,
+            context.externalCookie
+        );
+        let agentTaskItem = feedbackData.requestPayload?.agentTaskItem;
+        if (!agentTaskItem) {
+            const task = await this.taskOperator.createPageTask(feedbackData.requestPayload.userInput, schemaId);
+            agentTaskItem = { taskId: task.id!, index: 0 };
+        } else {
+            await this.taskOperator.appendPageTasks(agentTaskItem, feedbackData.requestPayload.userInput, schemaId);
+        }
+        // Store agentTaskItem on context so ChatService can continue the pipeline
+        context.agentTaskItem = agentTaskItem;
     }
 
     private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<{ plan: PagePlan, developerMessage: string }> {
@@ -115,4 +132,3 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         }
     }
 }
-

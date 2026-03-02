@@ -99,7 +99,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
 
 
 
-    async act(plan: AddonPlan, context: AgentContext): Promise<boolean> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<AddonPlan | null> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         if (this.addonDef.id && !newComponent.addonId) {
@@ -124,7 +124,11 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
             task_type: this.addonDef.agentName as AgentName,
             schemasId: [schemaId]
         });
-        return false;
+        return null;
+    }
+
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
+        // No feedback needed for addon building
     }
 
     /**

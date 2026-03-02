@@ -21,6 +21,8 @@ import type { Agent } from '../agent/chat-assistant';
 import { SystemArchitect } from '../agent/system-architect';
 import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
+import { TaskOperator } from '../operators/task-operator';
+import { SqliteAgentTaskRepository } from '../repositories/agent-task-repository';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -97,6 +99,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const addonHandlers: Record<string, Agent<any>> = {};
             const entityOperator = new EntityOperator(cmsClient, modelLogger);
             const pageOperator = new PageOperator(cmsClient, modelLogger);
+            const agentTaskRepository = new SqliteAgentTaskRepository(fastify.prisma);
+            const taskOperator = new TaskOperator(agentTaskRepository, modelLogger);
 
             for (const addon of PAGE_ADDON_REGISTRY) {
                 let prompt = '';
@@ -134,9 +138,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger, entityOperator);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient);
+            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient, pageOperator, taskOperator);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
-            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger);
+            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger, taskOperator);
 
             const intentClassifier = new IntentClassifier(
                 provider,

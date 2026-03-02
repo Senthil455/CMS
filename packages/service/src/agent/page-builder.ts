@@ -1,5 +1,5 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
-import { type PageMetadata, type SaveSchemaPayload, type ComponentInstruction, type LayoutJson, AGENT_NAMES, SOCKET_EVENTS } from '@cms/shared';
+import { type PageMetadata, type LayoutJson, SOCKET_EVENTS } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentPlanResponse, type Agent } from './chat-assistant';
@@ -195,7 +195,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         };
     }
 
-    async act(plan: PageBuilderPlan, context: AgentContext): Promise<boolean> {
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<PageBuilderPlan | null> {
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
@@ -210,7 +210,11 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const componentCount = Object.keys(plan.components).length;
         const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in explorer.`;
         await context.saveAgentMessage(finalMessage);
-        return false;
+        return null;
+    }
+
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
+        // No feedback needed for page building
     }
 
     async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<void> {

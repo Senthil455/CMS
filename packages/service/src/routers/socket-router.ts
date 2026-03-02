@@ -1,9 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { type Socket } from 'socket.io';
-import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type SchemaSummary, type OnServerToClientEvent, type SystemRequirment, type ModelSelection } from '@cms/shared';
+import { SOCKET_EVENTS, type ClientToServerEvents, type ServerToClientEvents, type InterServerEvents, type SocketData, type OnServerToClientEvent, type ModelSelection, type AgentName } from '@cms/shared';
 import { formatError } from '../utils/error-formatter';
-
-import { config } from '../config';
 
 const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.ready((err) => {
@@ -26,27 +24,20 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 }
             });
 
-            socket.on(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_RESPONSE, async (data: SchemaSummary) => {
+            // Unified feedback response handler — replaces individual schema/template/system listeners
+            socket.on(SOCKET_EVENTS.CHAT.AGENT_FEEDBACK_RESPONSE, async (data: { agentName: string; feedbackData: any; selection?: any }) => {
                 try {
-                    await fastify.chatService.handleSchemaSummaryResponse(userId, data, socket.data.externalCookie, onEvent);
+                    const selection = data.selection || { provider: 'gemini', model: 'gemini-3-flash' };
+                    await fastify.chatService.handleAgentFeedback(
+                        userId,
+                        data.agentName as AgentName,
+                        data.feedbackData,
+                        socket.data.externalCookie,
+                        selection,
+                        onEvent
+                    );
                 } catch (error) {
-                    console.error('Error handling schema summary response:', formatError(error));
-                }
-            });
-
-            socket.on(SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_RESPONSE, async (data: any) => {
-                try {
-                    await fastify.chatService.handleTemplateSelectionResponse(userId, data, socket.data.externalCookie, onEvent);
-                } catch (error) {
-                    console.error('Error handling template selection response:', formatError(error));
-                }
-            });
-
-            socket.on(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, async (data: SystemRequirment) => {
-                try {
-                    await fastify.chatService.handleSystemPlanResponse(userId, data, socket.data.externalCookie, onEvent);
-                } catch (error) {
-                    console.error('Error handling system plan response:', formatError(error));
+                    console.error('Error handling agent feedback response:', formatError(error));
                 }
             });
 

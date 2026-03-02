@@ -1,23 +1,18 @@
 import {
     SOCKET_EVENTS,
     type ChatMessage,
-    type SchemaSummary,
     type OnServerToClientEvent,
-    type TemplateSelectionResponse,
-    type SystemRequirment,
     AGENT_NAMES,
     type AgentName,
     type AgentTaskRef,
     type ModelSelection
 } from '@cms/shared';
-import { AgentStopError, type Agent, type AgentContext } from '../agent/chat-assistant';
+import { AgentStopError, type Agent, type AgentContext, type AgentFeedbackPayload } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
 import type { ServiceLogger } from '../types/logger';
 import { IntentClassifier } from '../agent/intent-classifier';
-import { EntityOperator } from '../operators/entity-operator';
-import { PageOperator } from '../operators/page-operator';
 import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
@@ -32,8 +27,6 @@ export class ChatService {
         private readonly chatHandlers: Record<string, Partial<Record<AgentName, Agent>>>,
         private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
-        private readonly entityOperator: EntityOperator,
-        private readonly pageOperator: PageOperator,
         private readonly taskOperator: TaskOperator,
     ) { }
 
@@ -169,68 +162,42 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
     }
 
-    async handleSchemaSummaryResponse(
-        userId: string, response: SchemaSummary, externalCookie: string,
-        onEvent: OnServerToClientEvent): Promise<void> {
-        if (response.entities.length === 0) {
-            await this.saveAgentMessage(userId, 'No entities provided to commit.');
+    /**
+     * Unified handler for agent feedback responses from the frontend.
+     * Replaces handleSchemaSummaryResponse, handleTemplateSelectionResponse, handleSystemPlanResponse.
+     */
+    async handleAgentFeedback(
+        userId: string,
+        agentName: AgentName,
+        feedbackData: any,
+        externalCookie: string,
+        selection: ModelSelection,
+        onEvent: OnServerToClientEvent
+    ): Promise<void> {
+        const handler = this.chatHandlers[selection.provider]?.[agentName];
+        if (!handler) {
+            this.logger.error({ agentName }, 'Handler not found for agent feedback');
+            await this.saveAndEmitAgentMessage(userId, 'Unable to process your response. Agent handler not found.', onEvent);
             return;
         }
 
-        await this.saveAgentMessage(userId, `Committing ${response.entities.length} entities to CMS...`);
-        let agentTaskItem = response.agentTaskItem;
         try {
-            const schemaIds = await this.entityOperator.commit(response, externalCookie);
-            onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-                task_type: 'entity_designer',
-                schemasId: schemaIds
-            });
-            await this.saveAndEmitAgentMessage(userId, 'All confirmed entities have been successfully committed to CMS.', onEvent);
-            if (agentTaskItem) {
-                await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, { provider: 'gemini', model: 'gemini-3-flash' }, onEvent);
+            const agentTaskItem = feedbackData.agentTaskItem;
+            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, agentTaskItem, onEvent);
+            await handler.finalize(feedbackData, context);
+
+            // Continue pipeline if there's a pending task item
+            const resolvedTaskItem = context.agentTaskItem;
+            if (resolvedTaskItem) {
+                await this.taskOperator.commit(resolvedTaskItem);
+                await this.executePendingTaskItem(resolvedTaskItem, userId, externalCookie, selection, onEvent);
             }
-        } catch (error) {
-            this.logger.error({ error: formatError(error) }, 'Failed to commit schema changes');
-            await this.saveAndEmitAgentMessage(userId, 'I encountered an error while committing your changes. Please check the logs and try again.', onEvent);
-        }
-    }
-
-
-    async handleTemplateSelectionResponse(userId: string, response: TemplateSelectionResponse, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
-        try {
-            const schemaId = await this.pageOperator.savePlanAndUserInput(
-                undefined,
-                response.requestPayload.plan,
-                response.selectedTemplate,
-                response.requestPayload.userInput,
-                externalCookie
-            );
-            let agentTaskItem = response.requestPayload?.agentTaskItem;
-            if (!agentTaskItem) {
-                const task = await this.taskOperator.createPageTask(response.requestPayload.userInput, schemaId);
-                agentTaskItem = { taskId: task.id!, index: 0 }; // Initial item index
-            } else {
-                await this.taskOperator.appendPageTasks(agentTaskItem, response.requestPayload.userInput, schemaId);
-            }
-            await this.executePendingTaskItem(agentTaskItem, userId, externalCookie, response.requestPayload.selection, onEvent);
-
-
         } catch (error: any) {
-            this.logger.error({ error: formatError(error) }, 'Error handling template selection response');
+            this.logger.error({ error: formatError(error), agentName }, 'Error handling agent feedback');
             const userMessage = error?.response?.data?.title
                 ? `Error: ${error.response.data.title}`
-                : 'I encountered an error while setting up the page. Please check the logs and try again.';
+                : 'I encountered an error while processing your confirmation. Please check the logs and try again.';
             await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
-        }
-    }
-
-    async handleSystemPlanResponse(userId: string, response: SystemRequirment, externalCookie: string, onEvent: OnServerToClientEvent): Promise<void> {
-        try {
-            const task = await this.taskOperator.createSystemTask(response);
-            await this.executePendingTaskItem({ taskId: task.id!, index: 0 }, userId, externalCookie, { provider: 'gemini', model: 'gemini-3-flash' }, onEvent);
-        } catch (error: any) {
-            this.logger.error({ error: formatError(error) }, 'Error handling system plan response');
-            await this.saveAndEmitAgentMessage(userId, 'I encountered an error while saving the system plan. Please check the logs and try again.', onEvent);
             this.statusService.clearStatus(userId);
         }
     }
@@ -308,11 +275,11 @@ export class ChatService {
         userInput: string,
         context: AgentContext,
         onEvent: OnServerToClientEvent
-    ): Promise<import('../agent/chat-assistant').AgentHandleResponse> {
+    ): Promise<void> {
         const handler = this.chatHandlers[context.selection.provider]?.[agentName];
         if (!handler) {
             this.logger.error({ taskType: agentName, provider: context.selection.provider, model: context.selection.model }, 'Handler not found for task type');
-            return { needUserFeedback: false };
+            return;
         }
 
         this.statusService.updateStatus(context.userId, 'executing ' + agentName);
@@ -338,17 +305,28 @@ export class ChatService {
                 inputLog
             );
 
-            const needUserFeedback = await handler.act(plan, agentContext);
+            const actResult = await handler.act(plan, agentContext);
             this.statusService.clearStatus(context.userId);
 
+            if (actResult !== null) {
+                // Agent needs user feedback — compose payload and emit unified event
+                const feedbackPayload: AgentFeedbackPayload = {
+                    agentName,
+                    data: actResult,
+                    ...(context.agentTaskItem ? { agentTaskItem: context.agentTaskItem } : {}),
+                };
+                onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
+                return; // Wait for user feedback via handleAgentFeedback
+            }
+
+            // No feedback needed — commit and continue pipeline
             if (context.agentTaskItem) {
                 await this.taskOperator.commit(context.agentTaskItem);
             }
 
-            if (context.agentTaskItem && !needUserFeedback) {
+            if (context.agentTaskItem) {
                 await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.selection, onEvent);
             }
-            return { needUserFeedback };
         } catch (error: any) {
             this.statusService.clearStatus(context.userId);
 
@@ -356,7 +334,7 @@ export class ChatService {
             if (error instanceof AgentStopError) {
                 this.logger.info({ agentName: agentName }, `Agent stopped: ${error.userMessage}`);
                 await this.saveAndEmitAgentMessage(context.userId, error.userMessage, onEvent);
-                return { needUserFeedback: false };
+                return;
             }
 
             this.logger.error({ error: formatError(error), taskType: agentName }, 'Error executing agent');
@@ -366,7 +344,6 @@ export class ChatService {
                 `I'm sorry, I encountered an error while processing your request:\n${errorMessage}`,
                 onEvent
             );
-            return { needUserFeedback: false };
         }
     }
 
@@ -388,11 +365,10 @@ export class ChatService {
         const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...");
 
-
-        const needUIFeedback = await handler.act(plan, context);
+        const actResult = await handler.act(plan, context);
         if (continuePipeline && context.agentTaskItem) {
             await this.taskOperator.reset(context.agentTaskItem);
-            if (!needUIFeedback) {
+            if (actResult === null) {
                 await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.selection, onEvent);
             }
         }

@@ -12,8 +12,14 @@ export interface AgentContext {
     signal?: AbortSignal;
 }
 
-export interface AgentHandleResponse {
-    needUserFeedback: boolean;
+/**
+ * Payload composed by ChatService when an agent's act() returns non-null.
+ * Sent to the frontend via AGENT_PLAN_TO_CONFIRM so the user can review & confirm.
+ */
+export interface AgentFeedbackPayload<T = any> {
+    agentName: AgentName;
+    data: T;
+    agentTaskItem?: AgentTaskRef;
 }
 
 export interface AgentPlanResponse<T> {
@@ -27,7 +33,17 @@ export interface AgentPlanResponse<T> {
 
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<T>>;
-    act(plan: T, context: AgentContext): Promise<boolean>;
+    /**
+     * Execute the plan. Return domain data if user feedback is needed before finalizing,
+     * or null if no feedback is needed and the pipeline can continue.
+     */
+    act(plan: T, context: AgentContext): Promise<T | null>;
+    /**
+     * Called by the orchestrator after the user confirms the feedback.
+     * Move post-confirmation logic here (e.g. commit entities, save pages, create tasks).
+     * Agents that don't need feedback can provide a no-op.
+     */
+    finalize(feedbackData: any, context: AgentContext): Promise<void>;
 }
 
 /**

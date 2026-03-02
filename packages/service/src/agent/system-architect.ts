@@ -2,7 +2,8 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError } from './chat-assistant';
-import { SOCKET_EVENTS } from '@cms/shared';
+import type { SystemRequirment } from '@cms/shared';
+import { TaskOperator } from '../operators/task-operator';
 
 export interface SystemPlanItem {
     type: 'entity' | 'query' | 'page';
@@ -17,7 +18,8 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly prisma: PrismaClient,
-        private readonly logger: ServiceLogger
+        private readonly logger: ServiceLogger,
+        private readonly taskOperator: TaskOperator,
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
@@ -49,25 +51,18 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         }
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<boolean> {
+    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<SystemArchitectPlan | null> {
         if (!plan || plan.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
-            return false;
+            return null;
         }
 
-        try {
-            await context.emitEvent(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM, {
-                items: plan
-            } as any);
-            throw new AgentStopError("Please review the generated system plan, then confirm what to build.");
-        } catch (error) {
-            // Re-throw AgentStopError so handle() can process it properly
-            if (error instanceof AgentStopError) {
-                throw error;
-            }
-            this.logger.error({ error }, 'Failed to emit system plan for confirmation');
-            await context.saveAgentMessage("I generated the plan but failed to send it for your confirmation.");
-            return false;
-        }
+        // Return plan as feedback data — ChatService will compose the payload and emit the event
+        return plan;
+    }
+
+    async finalize(feedbackData: SystemRequirment, context: AgentContext): Promise<void> {
+        const task = await this.taskOperator.createSystemTask(feedbackData);
+        context.agentTaskItem = { taskId: task.id!, index: 0 };
     }
 }

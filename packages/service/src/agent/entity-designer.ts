@@ -100,7 +100,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         };
     }
 
-    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<boolean> {
+    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<EntityGeneratorPlan | null> {
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -122,7 +122,23 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
 
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
-        context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMA_SUMMARY_TO_CONFIRM, summary);
-        return true;
+        // Return summary as feedback data — ChatService will compose the payload and emit the event
+        return summary;
+    }
+
+    async finalize(feedbackData: any, context: AgentContext): Promise<void> {
+        const response = feedbackData;
+        if (!response.entities || response.entities.length === 0) {
+            await context.saveAgentMessage('No entities provided to commit.');
+            return;
+        }
+
+        await context.saveAgentMessage(`Committing ${response.entities.length} entities to CMS...`);
+        const schemaIds = await this.entityOperator.commit(response, context.externalCookie);
+        context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
+            task_type: 'entity_designer',
+            schemasId: schemaIds
+        });
+        await context.saveAgentMessage('All confirmed entities have been successfully committed to CMS.');
     }
 }

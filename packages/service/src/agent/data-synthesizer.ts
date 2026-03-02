@@ -82,17 +82,17 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         };
     }
 
-    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<boolean> {
+    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<DataGeneratorPlan | null> {
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
             await context.saveAgentMessage('I could not generate any data. Please make sure the entity exists and your request is clear.');
-            return false;
+            return null;
         }
 
         if (!targetEntity) {
             await context.saveAgentMessage(`I could not find the entity "${entityName}" in the schema definition.`);
-            return false;
+            return null;
         }
 
         await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
@@ -109,6 +109,10 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         }
 
         await context.saveAgentMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
-        return false;
+        return null;
+    }
+
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
+        // No feedback needed for data generation
     }
 }
