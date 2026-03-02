@@ -1,8 +1,8 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent } from '../chat-assistant';
-import { type AgentName, type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler, SOCKET_EVENTS } from '@cms/shared';
+import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from '../chat-assistant';
+import { type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 
 export interface AddonPlan {
@@ -99,7 +99,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
 
 
 
-    async act(plan: AddonPlan, context: AgentContext): Promise<AddonPlan | null> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<AgentActResult<AddonPlan>> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         if (this.addonDef.id && !newComponent.addonId) {
@@ -120,15 +120,11 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
         // Save the updated components and recompile HTML through PageOperator
         await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, pageDto.title, context.externalCookie);
         await context.saveAgentMessage(`Successfully added ${this.addonDef.label} to page "${pageDto.name}".`);
-        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-            task_type: this.addonDef.agentName as AgentName,
-            schemasId: [schemaId]
-        });
-        return null;
+        return { feedback: null, syncedSchemaIds: [schemaId] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
-        // No feedback needed for addon building
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+        return { syncedSchemaIds: [] };
     }
 
     /**

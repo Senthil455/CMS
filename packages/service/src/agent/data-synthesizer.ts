@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
+import { type AgentContext, type Agent, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -82,17 +82,17 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         };
     }
 
-    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<DataGeneratorPlan | null> {
+    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<AgentActResult<DataGeneratorPlan>> {
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
             await context.saveAgentMessage('I could not generate any data. Please make sure the entity exists and your request is clear.');
-            return null;
+            return { feedback: null, syncedSchemaIds: [] };
         }
 
         if (!targetEntity) {
             await context.saveAgentMessage(`I could not find the entity "${entityName}" in the schema definition.`);
-            return null;
+            return { feedback: null, syncedSchemaIds: [] };
         }
 
         await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into CMS...`);
@@ -109,10 +109,10 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         }
 
         await context.saveAgentMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
-        return null;
+        return { feedback: null, syncedSchemaIds: [] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
-        // No feedback needed for data generation
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+        return { syncedSchemaIds: [] };
     }
 }

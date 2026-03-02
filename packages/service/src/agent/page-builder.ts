@@ -1,8 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
-import { type PageMetadata, type LayoutJson, SOCKET_EVENTS } from '@cms/shared';
+import { type PageMetadata, type LayoutJson } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 import { PageOperator } from '../operators/page-operator';
 
@@ -195,29 +195,24 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         };
     }
 
-    async act(plan: PageBuilderPlan, context: AgentContext): Promise<PageBuilderPlan | null> {
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentActResult<PageBuilderPlan>> {
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
-        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-            task_type: context.agentName,
-            schemasId: [newSchemaId]
-        });
-
         // Completion
         const componentCount = Object.keys(plan.components).length;
         const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in explorer.`;
         await context.saveAgentMessage(finalMessage);
-        return null;
+        return { feedback: null, syncedSchemaIds: [newSchemaId] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
-        // No feedback needed for page building
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+        return { syncedSchemaIds: [] };
     }
 
-    async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<void> {
+    async modifySingleComponent(componentId: string, userRequirement: string, context: AgentContext): Promise<string[]> {
         this.logger.info({ componentId }, 'PageBuilder modifySingleComponent started');
 
         const schemaId = context.schemaId;
@@ -310,11 +305,7 @@ ${relevantQueryDetails}
 
         await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, existingPageSchema.settings.page.title, context.externalCookie);
 
-        await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-            task_type: context.agentName,
-            schemasId: [schemaId]
-        });
-
         await context.saveAgentMessage(`Successfully updated component "${componentId}" based on your request.`);
+        return [schemaId];
     }
 }

@@ -1,8 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
-import { type EntityDto, type RelationshipDto, AGENT_NAMES, SOCKET_EVENTS } from '@cms/shared';
+import { type AgentContext, type Agent, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type EntityDto, type RelationshipDto, AGENT_NAMES } from '@cms/shared';
 import { EntityModel } from '../models/entity-model';
 import { RelationshipModel } from '../models/relationship-model';
 import { EntityOperator } from '../operators/entity-operator';
@@ -100,7 +100,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         };
     }
 
-    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<EntityGeneratorPlan | null> {
+    async act(plan: EntityGeneratorPlan, context: AgentContext): Promise<AgentActResult<EntityGeneratorPlan>> {
         // Normalize: handle cases where AI might return 'fields' instead of 'attributes'
         const entities = (plan.entities || []).map((e: any) => ({
             ...e,
@@ -123,22 +123,19 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 
         // Return summary as feedback data — ChatService will compose the payload and emit the event
-        return summary;
+        return { feedback: summary, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: any, context: AgentContext): Promise<void> {
+    async finalize(feedbackData: any, context: AgentContext): Promise<AgentFinalizeResult> {
         const response = feedbackData;
         if (!response.entities || response.entities.length === 0) {
             await context.saveAgentMessage('No entities provided to commit.');
-            return;
+            return { syncedSchemaIds: [] };
         }
 
         await context.saveAgentMessage(`Committing ${response.entities.length} entities to CMS...`);
         const schemaIds = await this.entityOperator.commit(response, context.externalCookie);
-        context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-            task_type: 'entity_designer',
-            schemasId: schemaIds
-        });
         await context.saveAgentMessage('All confirmed entities have been successfully committed to CMS.');
+        return { syncedSchemaIds: schemaIds };
     }
 }

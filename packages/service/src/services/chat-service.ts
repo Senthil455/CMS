@@ -111,7 +111,8 @@ export class ChatService {
         if (pageBuilder && pageBuilder.modifySingleComponent) {
             const context = this.createContext(userId, externalCookie, selection,
                 AGENT_NAMES.PAGE_BUILDER, schemaId, undefined, onEvent);
-            await pageBuilder.modifySingleComponent(componentId, requirement, context);
+            const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
+            this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
         } else {
             await this.saveAndEmitAgentMessage(userId, 'Page builder is not available to modify components.', onEvent);
         }
@@ -149,7 +150,7 @@ export class ChatService {
             this.activeRequests.set(userId, abortController);
             try {
                 const context = this.createContext(userId, externalCookie, selection, agent, undefined, undefined, onEvent, abortController.signal);
-                await this.executeAgent(agent, content, context, onEvent);
+                await this.executeAgent(agent, content, context, userId, onEvent);
             } finally {
                 this.activeRequests.delete(userId);
             }
@@ -184,7 +185,8 @@ export class ChatService {
         try {
             const agentTaskItem = feedbackData.agentTaskItem;
             const context = this.createContext(userId, externalCookie, selection, agentName, undefined, agentTaskItem, onEvent);
-            await handler.finalize(feedbackData, context);
+            const { syncedSchemaIds } = await handler.finalize(feedbackData, context);
+            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
 
             // Continue pipeline if there's a pending task item
             const resolvedTaskItem = context.agentTaskItem;
@@ -234,7 +236,6 @@ export class ChatService {
     ): AgentContext {
         return {
             agentTaskItem,
-            userId,
             externalCookie,
             agentName,
             selection,
@@ -243,8 +244,17 @@ export class ChatService {
             saveAgentMessage: async (content: string, payload?: any) => {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
             },
-            emitEvent: onEvent,
         };
+    }
+
+    /** Emit SCHEMAS_SYNC if any schemas were modified */
+    private emitSchemasSync(syncedSchemaIds: string[], agentName: AgentName, onEvent: OnServerToClientEvent): void {
+        if (syncedSchemaIds.length > 0) {
+            onEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
+                task_type: agentName,
+                schemasId: [...syncedSchemaIds]
+            });
+        }
     }
 
     private async executePendingTaskItem(
@@ -263,7 +273,7 @@ export class ChatService {
             try {
                 const context = this.createContext(userId, externalCookie, selection, item.agentName,
                     undefined, agentTaskItem, onEvent, abortController.signal);
-                await this.executeAgent(item.agentName, item.description || '', context, onEvent);
+                await this.executeAgent(item.agentName, item.description || '', context, userId, onEvent);
             } finally {
                 this.activeRequests.delete(userId);
             }
@@ -274,6 +284,7 @@ export class ChatService {
         agentName: AgentName,
         userInput: string,
         context: AgentContext,
+        userId: string,
         onEvent: OnServerToClientEvent
     ): Promise<void> {
         const handler = this.chatHandlers[context.selection.provider]?.[agentName];
@@ -282,7 +293,7 @@ export class ChatService {
             return;
         }
 
-        this.statusService.updateStatus(context.userId, 'executing ' + agentName);
+        this.statusService.updateStatus(userId, 'executing ' + agentName);
         const agentContext = { ...context, agentName: agentName };
 
         try {
@@ -305,14 +316,15 @@ export class ChatService {
                 inputLog
             );
 
-            const actResult = await handler.act(plan, agentContext);
-            this.statusService.clearStatus(context.userId);
+            const { feedback, syncedSchemaIds } = await handler.act(plan, agentContext);
+            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
+            this.statusService.clearStatus(userId);
 
-            if (actResult !== null) {
+            if (feedback !== null) {
                 // Agent needs user feedback — compose payload and emit unified event
                 const feedbackPayload: AgentFeedbackPayload = {
                     agentName,
-                    data: actResult,
+                    data: feedback,
                     ...(context.agentTaskItem ? { agentTaskItem: context.agentTaskItem } : {}),
                 };
                 onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
@@ -325,22 +337,22 @@ export class ChatService {
             }
 
             if (context.agentTaskItem) {
-                await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.selection, onEvent);
+                await this.executePendingTaskItem(context.agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
             }
         } catch (error: any) {
-            this.statusService.clearStatus(context.userId);
+            this.statusService.clearStatus(userId);
 
             // AgentStopError: agent intentionally stopped — send reason to user
             if (error instanceof AgentStopError) {
                 this.logger.info({ agentName: agentName }, `Agent stopped: ${error.userMessage}`);
-                await this.saveAndEmitAgentMessage(context.userId, error.userMessage, onEvent);
+                await this.saveAndEmitAgentMessage(userId, error.userMessage, onEvent);
                 return;
             }
 
             this.logger.error({ error: formatError(error), taskType: agentName }, 'Error executing agent');
             const errorMessage = error.message || 'Unknown error occurred';
             await this.saveAndEmitAgentMessage(
-                context.userId,
+                userId,
                 `I'm sorry, I encountered an error while processing your request:\n${errorMessage}`,
                 onEvent
             );
@@ -365,11 +377,12 @@ export class ChatService {
         const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...");
 
-        const actResult = await handler.act(plan, context);
+        const { feedback, syncedSchemaIds } = await handler.act(plan, context);
+        this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
         if (continuePipeline && context.agentTaskItem) {
             await this.taskOperator.reset(context.agentTaskItem);
-            if (actResult === null) {
-                await this.executePendingTaskItem(context.agentTaskItem, context.userId, context.externalCookie, context.selection, onEvent);
+            if (feedback === null) {
+                await this.executePendingTaskItem(context.agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
             }
         }
     }

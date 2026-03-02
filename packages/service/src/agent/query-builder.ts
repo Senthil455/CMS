@@ -1,9 +1,9 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 
-import { type AgentContext, type AgentPlanResponse, type Agent } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
 import type { ServiceLogger } from '../types/logger';
-import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES, SOCKET_EVENTS } from '@cms/shared';
+import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
 export interface QueryGeneratorPlan extends QueryResponse {
     schemaId?: string;
@@ -70,11 +70,11 @@ ${sdl}
         };
     }
 
-    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<QueryGeneratorPlan | null> {
+    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<AgentActResult<QueryGeneratorPlan>> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid query configuration. Please try again with more details.");
-            return null;
+            return { feedback: null, syncedSchemaIds: [] };
         }
 
         const schemaIds: string[] = [];
@@ -100,19 +100,15 @@ ${sdl}
         }
 
         if (schemaIds.length > 0) {
-            await context.emitEvent(SOCKET_EVENTS.CHAT.SCHEMAS_SYNC, {
-                task_type: 'query_builder',
-                schemasId: schemaIds
-            });
             const finalMessage = plan.existingSchema
                 ? `I have updated the queries, you can view them in CMS.`
                 : `I have generated the queries, you can find them in CMS.`;
             await context.saveAgentMessage(finalMessage);
         }
-        return null;
+        return { feedback: null, syncedSchemaIds: schemaIds };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
-        // No feedback needed for query generation
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+        return { syncedSchemaIds: [] };
     }
 }

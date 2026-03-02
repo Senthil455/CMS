@@ -1,6 +1,6 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse } from './chat-assistant';
-import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, SOCKET_EVENTS } from '@cms/shared';
+import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { PageOperator } from '../operators/page-operator';
@@ -73,13 +73,12 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<TemplateSelectionRequest | null> {
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<AgentActResult<TemplateSelectionRequest>> {
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
-        // Return the plan as feedback data — ChatService will compose the payload and emit the event
-        return plan;
+        return { feedback: plan, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<void> {
+    async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<AgentFinalizeResult> {
         const schemaId = await this.pageOperator.savePlanAndUserInput(
             undefined,
             feedbackData.requestPayload.plan,
@@ -96,6 +95,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         }
         // Store agentTaskItem on context so ChatService can continue the pipeline
         context.agentTaskItem = agentTaskItem;
+        return { syncedSchemaIds: [] };
     }
 
     private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<{ plan: PagePlan, developerMessage: string }> {

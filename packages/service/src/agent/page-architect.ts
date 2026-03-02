@@ -2,7 +2,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, type AgentPlanResponse } from './chat-assistant';
+import { type AgentContext, type Agent, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -63,7 +63,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         };
     }
 
-    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<ArchitectDesignerAgentPlan | null> {
+    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<AgentActResult<ArchitectDesignerAgentPlan>> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
         // Also save componentInstructions into metadata at the top level
@@ -72,11 +72,11 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         }
 
         await context.saveAgentMessage(`I've planned the structure and components for your page.`);
-        return null;
+        return { feedback: null, syncedSchemaIds: [] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<void> {
-        // No feedback needed for page architecture
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+        return { syncedSchemaIds: [] };
     }
 
     private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<AgentPlanResponse<PageArchitecture>> {

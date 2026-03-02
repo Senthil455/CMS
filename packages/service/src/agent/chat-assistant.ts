@@ -1,19 +1,17 @@
-import type { ChatMessage, AgentName, AgentTaskRef, OnServerToClientEvent, ModelSelection } from '@cms/shared';
+import type { ChatMessage, AgentName, AgentTaskRef, ModelSelection } from '@cms/shared';
 
 export interface AgentContext {
     agentTaskItem?: AgentTaskRef | undefined;
-    userId: string;
     externalCookie: string;
     agentName: AgentName;
     selection: ModelSelection;
     schemaId?: string;
     saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
-    emitEvent: OnServerToClientEvent;
     signal?: AbortSignal;
 }
 
 /**
- * Payload composed by ChatService when an agent's act() returns non-null.
+ * Payload composed by ChatService when an agent's act() returns non-null feedback.
  * Sent to the frontend via AGENT_PLAN_TO_CONFIRM so the user can review & confirm.
  */
 export interface AgentFeedbackPayload<T = any> {
@@ -31,19 +29,28 @@ export interface AgentPlanResponse<T> {
     };
 }
 
+export interface AgentActResult<T> {
+    feedback: T | null;
+    syncedSchemaIds: string[];
+}
+
+export interface AgentFinalizeResult {
+    syncedSchemaIds: string[];
+}
+
 export interface Agent<T = any> {
     think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<T>>;
     /**
-     * Execute the plan. Return domain data if user feedback is needed before finalizing,
-     * or null if no feedback is needed and the pipeline can continue.
+     * Execute the plan. Return feedback data if user confirmation is needed,
+     * or null feedback if the pipeline can continue. Include any modified schema IDs.
      */
-    act(plan: T, context: AgentContext): Promise<T | null>;
+    act(plan: T, context: AgentContext): Promise<AgentActResult<T>>;
     /**
      * Called by the orchestrator after the user confirms the feedback.
      * Move post-confirmation logic here (e.g. commit entities, save pages, create tasks).
-     * Agents that don't need feedback can provide a no-op.
+     * Return any modified schema IDs.
      */
-    finalize(feedbackData: any, context: AgentContext): Promise<void>;
+    finalize(feedbackData: any, context: AgentContext): Promise<AgentFinalizeResult>;
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError } from './chat-assistant';
+import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
 import type { SystemRequirment } from '@cms/shared';
 import { TaskOperator } from '../operators/task-operator';
 
@@ -51,18 +51,18 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         }
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<SystemArchitectPlan | null> {
+    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<AgentActResult<SystemArchitectPlan>> {
         if (!plan || plan.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
-            return null;
+            return { feedback: null, syncedSchemaIds: [] };
         }
 
-        // Return plan as feedback data — ChatService will compose the payload and emit the event
-        return plan;
+        return { feedback: plan, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: SystemRequirment, context: AgentContext): Promise<void> {
+    async finalize(feedbackData: SystemRequirment, context: AgentContext): Promise<AgentFinalizeResult> {
         const task = await this.taskOperator.createSystemTask(feedbackData);
         context.agentTaskItem = { taskId: task.id!, index: 0 };
+        return { syncedSchemaIds: [] };
     }
 }
