@@ -2,8 +2,7 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
-import type { SystemRequirment } from '@cms/shared';
-import { TaskOperator } from '../operators/task-operator';
+import { type SystemRequirment, AGENT_NAMES } from '@cms/shared';
 
 export interface SystemPlanItem {
     type: 'entity' | 'query' | 'page';
@@ -19,7 +18,6 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         private readonly systemPrompt: string,
         private readonly prisma: PrismaClient,
         private readonly logger: ServiceLogger,
-        private readonly taskOperator: TaskOperator,
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
@@ -60,9 +58,44 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         return { feedback: plan, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: SystemRequirment, context: AgentContext): Promise<AgentFinalizeResult> {
-        const task = await this.taskOperator.createSystemTask(feedbackData);
-        context.agentTaskItem = { taskId: task.id!, index: 0 };
-        return { syncedSchemaIds: [] };
+    async finalize(feedbackData: SystemRequirment, _context: AgentContext): Promise<AgentFinalizeResult> {
+        const items = feedbackData.items || [];
+
+        const entityItems = items.filter(item => item.type === 'entity');
+        const queryItems = items.filter(item => item.type === 'query');
+        const pageItems = items.filter(item => item.type === 'page');
+
+        const followingTaskItems: AgentFinalizeResult['followingTaskItems'] = [];
+
+        // All entities => one task item
+        if (entityItems.length > 0) {
+            const description = entityItems.map(item => `entityName:${item.name}\n\tdescription: ${item.description}`).join('\n\n');
+            followingTaskItems!.push({
+                agentName: AGENT_NAMES.ENTITY_DESIGNER,
+                description: `Generate the following entities,\n\n${description}`,
+                status: 'pending'
+            });
+        }
+
+        // Each query => one task item
+        for (const item of queryItems) {
+            followingTaskItems!.push({
+                agentName: AGENT_NAMES.QUERY_BUILDER,
+                description: `Generate the following query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+        }
+
+        // Each page => one task item (page_planner)
+        for (const item of pageItems) {
+            followingTaskItems!.push({
+                agentName: AGENT_NAMES.PAGE_PLANNER,
+                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
+                status: 'pending'
+            });
+        }
+
+        return { syncedSchemaIds: [], followingTaskItems };
     }
 }
+

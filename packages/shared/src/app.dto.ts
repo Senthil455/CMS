@@ -17,7 +17,6 @@ export interface AgentTaskRef {
 
 export interface SchemaSummary {
     userInput: string;
-    agentTaskItem?: AgentTaskRef | undefined;
     summary: string;
     entities: (EntityDto & { schemaId?: string | null; })[];
     relationships: RelationshipDto[];
@@ -30,7 +29,6 @@ export interface ModelSelection {
 
 export interface TemplateSelectionRequest {
     userInput: string;
-    agentTaskItem?: AgentTaskRef | undefined;
     plan: PagePlan;
     selection: ModelSelection;
     templates: {

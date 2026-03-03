@@ -118,7 +118,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             plan.userInput,
             context.externalCookie
         );
-        summary.agentTaskItem = context.agentTaskItem;
 
         this.logger.info({ summary }, 'Summary prepared by EntityOperator');
 

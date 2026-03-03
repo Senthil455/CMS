@@ -1,10 +1,9 @@
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
-import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan } from '@cms/shared';
+import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { PageOperator } from '../operators/page-operator';
-import { TaskOperator } from '../operators/task-operator';
 
 export class PagePlanner implements Agent<TemplateSelectionRequest> {
     constructor(
@@ -14,7 +13,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         private readonly getTemplateOptions: () => Promise<{ id: string; name: string; description: string }[]>,
         private readonly cmsClient: CmsClient,
         private readonly pageOperator: PageOperator,
-        private readonly taskOperator: TaskOperator,
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<TemplateSelectionRequest>> {
@@ -59,7 +57,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
 
         return {
             plan: {
-                agentTaskItem: context.agentTaskItem,
                 userInput,
                 selection: context.selection,
                 plan: pagePlan,
@@ -86,16 +83,14 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             feedbackData.requestPayload.userInput,
             context.externalCookie
         );
-        let agentTaskItem = feedbackData.requestPayload?.agentTaskItem;
-        if (!agentTaskItem) {
-            const task = await this.taskOperator.createPageTask(feedbackData.requestPayload.userInput, schemaId);
-            agentTaskItem = { taskId: task.id!, index: 0 };
-        } else {
-            await this.taskOperator.appendPageTasks(agentTaskItem, feedbackData.requestPayload.userInput, schemaId);
-        }
-        // Store agentTaskItem on context so ChatService can continue the pipeline
-        context.agentTaskItem = agentTaskItem;
-        return { syncedSchemaIds: [] };
+        const userInput = feedbackData.requestPayload.userInput;
+        return {
+            syncedSchemaIds: [],
+            followingTaskItems: [
+                { agentName: AGENT_NAMES.PAGE_ARCHITECT, status: 'pending', description: userInput, schemaId },
+                { agentName: AGENT_NAMES.PAGE_BUILDER, status: 'pending', description: userInput, schemaId },
+            ]
+        };
     }
 
     private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<{ plan: PagePlan, developerMessage: string }> {
@@ -132,3 +127,4 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         }
     }
 }
+

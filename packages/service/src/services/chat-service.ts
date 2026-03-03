@@ -110,7 +110,7 @@ export class ChatService {
 
         if (pageBuilder && pageBuilder.modifySingleComponent) {
             const context = this.createContext(userId, externalCookie, selection,
-                AGENT_NAMES.PAGE_BUILDER, schemaId, undefined, onEvent);
+                AGENT_NAMES.PAGE_BUILDER, schemaId, onEvent);
             const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
             this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
         } else {
@@ -141,7 +141,7 @@ export class ChatService {
         }
 
         if (!agent) {
-            agent = await this.intentClassifier[selection.provider]?.resolve(content, this.createContext(userId, externalCookie, selection, AGENT_NAMES.INTENT_CLASSIFIER, undefined, undefined, onEvent)) ?? null;
+            agent = await this.intentClassifier[selection.provider]?.resolve(content, this.createContext(userId, externalCookie, selection, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent)) ?? null;
         }
 
         if (agent && this.chatHandlers[selection.provider]?.[agent]) {
@@ -149,7 +149,7 @@ export class ChatService {
             const abortController = new AbortController();
             this.activeRequests.set(userId, abortController);
             try {
-                const context = this.createContext(userId, externalCookie, selection, agent, undefined, undefined, onEvent, abortController.signal);
+                const context = this.createContext(userId, externalCookie, selection, agent, undefined, onEvent, abortController.signal);
                 await this.executeAgent(agent, content, context, userId, onEvent);
             } finally {
                 this.activeRequests.delete(userId);
@@ -183,16 +183,31 @@ export class ChatService {
         }
 
         try {
-            const agentTaskItem = feedbackData.agentTaskItem;
-            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, agentTaskItem, onEvent);
-            const { syncedSchemaIds } = await handler.finalize(feedbackData, context);
+            const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
+            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, onEvent);
+            const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
             this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
 
+            // Determine the task ref to continue with
+            let nextTaskItem: AgentTaskRef | undefined = existingTaskItem;
+
+            if (followingTaskItems && followingTaskItems.length > 0) {
+                if (existingTaskItem) {
+                    // Insert new items after the current index in the existing task
+                    await this.taskOperator.insertItemsAfter(existingTaskItem, followingTaskItems);
+                } else {
+                    // No existing task — create a new one
+                    const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
+                    nextTaskItem = { taskId: task.id!, index: -1 };
+                }
+            }
+
             // Continue pipeline if there's a pending task item
-            const resolvedTaskItem = context.agentTaskItem;
-            if (resolvedTaskItem) {
-                await this.taskOperator.commit(resolvedTaskItem);
-                await this.executePendingTaskItem(resolvedTaskItem, userId, externalCookie, selection, onEvent);
+            if (nextTaskItem) {
+                if (existingTaskItem) {
+                    await this.taskOperator.commit(existingTaskItem);
+                }
+                await this.executePendingTaskItem(nextTaskItem, userId, externalCookie, selection, onEvent);
             }
         } catch (error: any) {
             this.logger.error({ error: formatError(error), agentName }, 'Error handling agent feedback');
@@ -230,14 +245,11 @@ export class ChatService {
         selection: ModelSelection,
         agentName: AgentName,
         schemaId: string | undefined,
-        agentTaskItem: AgentTaskRef | undefined,
         onEvent: OnServerToClientEvent,
         signal?: AbortSignal,
     ): AgentContext {
         return {
-            agentTaskItem,
             externalCookie,
-            agentName,
             selection,
             ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
@@ -272,8 +284,8 @@ export class ChatService {
             this.activeRequests.set(userId, abortController);
             try {
                 const context = this.createContext(userId, externalCookie, selection, item.agentName,
-                    undefined, agentTaskItem, onEvent, abortController.signal);
-                await this.executeAgent(item.agentName, item.description || '', context, userId, onEvent);
+                    undefined, onEvent, abortController.signal);
+                await this.executeAgent(item.agentName, item.description || '', context, userId, onEvent, agentTaskItem);
             } finally {
                 this.activeRequests.delete(userId);
             }
@@ -285,7 +297,8 @@ export class ChatService {
         userInput: string,
         context: AgentContext,
         userId: string,
-        onEvent: OnServerToClientEvent
+        onEvent: OnServerToClientEvent,
+        agentTaskItem?: AgentTaskRef
     ): Promise<void> {
         const handler = this.chatHandlers[context.selection.provider]?.[agentName];
         if (!handler) {
@@ -294,7 +307,7 @@ export class ChatService {
         }
 
         this.statusService.updateStatus(userId, 'executing ' + agentName);
-        const agentContext = { ...context, agentName: agentName };
+        const agentContext = context;
 
         try {
             // Orchestrator owns the think → log → act pipeline
@@ -305,7 +318,7 @@ export class ChatService {
                 systemPrompt: prompts.systemPrompt || '',
                 developerMessage: prompts.developerMessage || '',
                 userInput: prompts.userInput || userInput,
-                agentTaskItem: context.agentTaskItem
+                agentTaskItem
             });
             await this.logRepository.saveAiResponseLog(
                 agentName,
@@ -325,19 +338,16 @@ export class ChatService {
                 const feedbackPayload: AgentFeedbackPayload = {
                     agentName,
                     data: feedback,
-                    ...(context.agentTaskItem ? { agentTaskItem: context.agentTaskItem } : {}),
+                    ...(agentTaskItem ? { agentTaskItem } : {}),
                 };
                 onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
                 return; // Wait for user feedback via handleAgentFeedback
             }
 
             // No feedback needed — commit and continue pipeline
-            if (context.agentTaskItem) {
-                await this.taskOperator.commit(context.agentTaskItem);
-            }
-
-            if (context.agentTaskItem) {
-                await this.executePendingTaskItem(context.agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
+            if (agentTaskItem) {
+                await this.taskOperator.commit(agentTaskItem);
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
             }
         } catch (error: any) {
             this.statusService.clearStatus(userId);
@@ -371,7 +381,8 @@ export class ChatService {
 
         const selection = { provider: log.providerName, model: log.modelName };
         const context = this.createContext(userId, externalCookie, selection,
-            handlerName as AgentName, log.schemaId, log.agentTaskItem, onEvent);
+            handlerName as AgentName, log.schemaId, onEvent);
+        const agentTaskItem = log.agentTaskItem;
 
         const plan = JSON.parse(responseContent);
         const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
@@ -379,10 +390,10 @@ export class ChatService {
 
         const { feedback, syncedSchemaIds } = await handler.act(plan, context);
         this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
-        if (continuePipeline && context.agentTaskItem) {
-            await this.taskOperator.reset(context.agentTaskItem);
+        if (continuePipeline && agentTaskItem) {
+            await this.taskOperator.reset(agentTaskItem);
             if (feedback === null) {
-                await this.executePendingTaskItem(context.agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
             }
         }
     }

@@ -138,9 +138,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger, entityOperator);
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
-            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient, pageOperator, taskOperator);
+            const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient, pageOperator);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
-            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger, taskOperator);
+            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger);
 
             const intentClassifier = new IntentClassifier(
                 provider,

@@ -13,18 +13,6 @@ export class TaskOperator {
         this.agentTaskModel = new AgentTaskModel();
     }
 
-    async createPageTask(userInput: string, schemaId?: string): Promise<AgentTask> {
-        this.logger.info({ userInput, schemaId }, 'Creating page task in TaskOperator');
-        const task = this.agentTaskModel.createPageTask(userInput, schemaId);
-        return await this.taskRepository.save(task);
-    }
-
-    async createSystemTask(requirement: SystemRequirment): Promise<AgentTask> {
-        this.logger.info({ requirement }, 'Creating system task in TaskOperator');
-        const task = this.agentTaskModel.createSystemTask(requirement);
-        return await this.taskRepository.save(task);
-    }
-
     async checkout(taskId: number): Promise<AgentTaskItem | null> {
         this.logger.info({ taskId }, 'Checking out task item in TaskOperator');
         const task = await this.taskRepository.findById(taskId);
@@ -66,15 +54,22 @@ export class TaskOperator {
         await this.taskRepository.update(task);
     }
 
-    async appendPageTasks(taskRef: AgentTaskRef, description: string, schemaId: string): Promise<void> {
-        this.logger.info({ taskRef, schemaId }, 'Appending page tasks in TaskOperator');
+
+    async createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[]): Promise<AgentTask> {
+        this.logger.info({ itemCount: items.length }, 'Creating task from items in TaskOperator');
+        const task = this.agentTaskModel.createTaskFromItems(items);
+        return await this.taskRepository.save(task);
+    }
+
+    async insertItemsAfter(taskRef: AgentTaskRef, items: Omit<AgentTaskItem, 'index'>[]): Promise<void> {
+        this.logger.info({ taskRef, itemCount: items.length }, 'Inserting items after current index in TaskOperator');
         const task = await this.taskRepository.findById(taskRef.taskId);
         if (!task) {
-            this.logger.warn({ taskRef }, 'Task not found during task appending');
+            this.logger.warn({ taskRef }, 'Task not found during item insertion');
             return;
         }
 
-        this.agentTaskModel.appendPageTasks(task, description, schemaId);
+        this.agentTaskModel.insertItemsAfter(task, taskRef.index, items);
         await this.taskRepository.update(task);
     }
 }

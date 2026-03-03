@@ -1,9 +1,8 @@
 import type { ChatMessage, AgentName, AgentTaskRef, ModelSelection } from '@cms/shared';
+import type { AgentTaskItem } from '../models/agent-task-model';
 
 export interface AgentContext {
-    agentTaskItem?: AgentTaskRef | undefined;
     externalCookie: string;
-    agentName: AgentName;
     selection: ModelSelection;
     schemaId?: string;
     saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
@@ -36,6 +35,7 @@ export interface AgentActResult<T> {
 
 export interface AgentFinalizeResult {
     syncedSchemaIds: string[];
+    followingTaskItems?: Omit<AgentTaskItem, 'index'>[];
 }
 
 export interface Agent<T = any> {

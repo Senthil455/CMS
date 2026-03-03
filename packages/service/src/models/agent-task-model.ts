@@ -41,32 +41,6 @@ export class AgentTaskModel {
         }
     }
 
-    public appendPageTasks(task: AgentTask, description: string, schemaId: string): void {
-        const newItems: Omit<AgentTaskItem, 'index'>[] = [
-            {
-                agentName: AGENT_NAMES.PAGE_ARCHITECT,
-                description,
-                status: 'pending',
-                schemaId
-            },
-            {
-                agentName: AGENT_NAMES.PAGE_BUILDER,
-                description,
-                status: 'pending',
-                schemaId
-            }
-        ];
-
-        const startingIndex = task.items.length;
-        const mappedItems = newItems.map((item, i) => ({
-            ...item,
-            index: startingIndex + i
-        })) as AgentTaskItem[];
-
-        task.items.push(...mappedItems);
-        task.status = 'pending'; // Ensure task is marked pending since we added new items
-    }
-
     public reset(task: AgentTask, index: number): void {
         task.items.forEach((item, i) => {
             if (i < index) {
@@ -84,53 +58,19 @@ export class AgentTaskModel {
         task.status = hasPendingItems ? 'pending' : 'finished';
     }
 
-    public createPageTask(userInput: string, schemaId?: string): AgentTask {
-        const task: AgentTask = {
-            status: 'pending',
-            items: []
-        };
-        this.appendPageTasks(task, userInput, schemaId || '');
-        return task;
-    }
-
-    public createSystemTask(requirement: SystemRequirment): AgentTask {
-        const entityItems = requirement.items.filter(item => item.type === 'entity');
-        const queryItems = requirement.items.filter(item => item.type === 'query');
-        const pageItems = requirement.items.filter(item => item.type === 'page');
-
-        const tasks: Omit<AgentTaskItem, 'index'>[] = [];
-
-        // 1. All entities => one task
-        if (entityItems.length > 0) {
-            const description = entityItems.map(item => `entityName:${item.name}\n\tdescription: ${item.description}`).join('\n\n');
-            tasks.push({
-                agentName: AGENT_NAMES.ENTITY_DESIGNER,
-                description: `Generate the following entities,\n\n${description}`,
-                status: 'pending'
-            });
-        }
-
-        // 2. Each query => one task
-        for (const item of queryItems) {
-            tasks.push({
-                agentName: AGENT_NAMES.QUERY_BUILDER,
-                description: `Generate the following query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
-                status: 'pending'
-            });
-        }
-
-        // 3. Each page => 3 tasks
-        for (const item of pageItems) {
-            tasks.push({
-                agentName: AGENT_NAMES.PAGE_PLANNER,
-                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
-                status: 'pending'
-            });
-        }
-
+    public createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[]): AgentTask {
         return {
             status: 'pending',
-            items: this.calculateIndices(tasks)
+            items: this.calculateIndices(items)
         };
+    }
+
+    public insertItemsAfter(task: AgentTask, afterIndex: number, items: Omit<AgentTaskItem, 'index'>[]): void {
+        const insertAt = afterIndex + 1;
+        const newItems = items.map(item => ({ ...item })) as AgentTaskItem[];
+        task.items.splice(insertAt, 0, ...newItems);
+        // Recalculate all indices
+        task.items.forEach((item, i) => { item.index = i; });
+        task.status = 'pending';
     }
 }
