@@ -40,32 +40,6 @@ export class ChatService {
         private readonly taskOperator: TaskOperator,
     ) { }
 
-    private toSelectionKey(selection: ModelSelection): string {
-        return `${selection.provider}/${selection.model}`;
-    }
-
-    private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent | undefined {
-        const exactKey = this.toSelectionKey(selection);
-        if (this.chatHandlers[exactKey]?.[agentName]) {
-            return this.chatHandlers[exactKey][agentName];
-        }
-        throw new Error(`Handler not found for agent ${agentName} and selection ${selection}`);
-
-    }
-
-    private resolveClassifier(selection: ModelSelection): IntentClassifier | undefined {
-        const exactKey = this.toSelectionKey(selection);
-        if (this.intentClassifier[exactKey]) {
-            return this.intentClassifier[exactKey];
-        }
-
-        // Fallback: first provider match
-        const fallbackKey = Object.keys(this.intentClassifier).find(k => k.startsWith(`${selection.provider}/`));
-        if (fallbackKey) {
-            return this.intentClassifier[fallbackKey];
-        }
-        throw new Error(`Classifier not found for selection ${selection}`);
-    }
 
     async cancelActiveRequest(userId: string): Promise<boolean> {
         if (this.activeRequests.has(userId)) {
@@ -266,7 +240,7 @@ export class ChatService {
         const responseContent = log.response;
         const handlerName = log.handler;
 
-        const selection = { provider: log.providerName, model: log.modelName };
+        const selection: ModelSelection = `${log.providerName}/${log.modelName}`;
         const context = this.createContext(userId, externalCookie,
             handlerName as AgentName, log.schemaId, onEvent);
         const agentTaskItem = log.agentTaskItem;
@@ -365,11 +339,12 @@ export class ChatService {
                 userInput: prompts.userInput || userInput,
                 agentTaskItem
             });
+            const [providerName, modelName] = selection.split('/');
             await this.logRepository.saveAiResponseLog(
                 agentName,
                 JSON.stringify({ ...plan, taskType: agentName }),
-                selection.provider,
-                selection.model,
+                providerName!,
+                modelName!,
                 context.schemaId,
                 inputLog
             );
@@ -435,5 +410,19 @@ export class ChatService {
         return this.messageRepository.save({ userId, content, role: 'assistant', payload });
     }
 
+    private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent | undefined {
+        if (this.chatHandlers[selection]?.[agentName]) {
+            return this.chatHandlers[selection][agentName];
+        }
+        throw new Error(`Handler not found for agent ${agentName} and selection ${selection}`);
+
+    }
+
+    private resolveClassifier(selection: ModelSelection): IntentClassifier | undefined {
+        if (this.intentClassifier[selection]) {
+            return this.intentClassifier[selection];
+        }
+        throw new Error(`Classifier not found for selection ${selection}`);
+    }
 
 }

@@ -17,7 +17,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
 
             socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, selection?: ModelSelection }) => {
                 try {
-                    const selection = data.selection || { provider: 'gemini', model: 'gemini-3-flash' };
+                    const selection = data.selection || 'gemini/gemini-2.5-flash';
                     await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, selection, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', formatError(error));
@@ -25,9 +25,9 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             });
 
             // Unified feedback response handler — replaces individual schema/template/system listeners
-            socket.on(SOCKET_EVENTS.CHAT.AGENT_FEEDBACK_RESPONSE, async (data: { agentName: string; feedbackData: any; selection?: any }) => {
+            socket.on(SOCKET_EVENTS.CHAT.AGENT_FEEDBACK_RESPONSE, async (data: { agentName: string; feedbackData: any; selection?: ModelSelection }) => {
                 try {
-                    const selection = data.selection || { provider: 'gemini', model: 'gemini-3-flash' };
+                    const selection = data.selection || 'gemini/gemini-2.5-flash';
                     await fastify.chatService.handleAgentFeedback(
                         userId,
                         data.agentName as AgentName,

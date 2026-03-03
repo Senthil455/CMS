@@ -22,10 +22,8 @@ export interface SchemaSummary {
     relationships: RelationshipDto[];
 }
 
-export interface ModelSelection {
-    provider: string;  // "gemini", "openai"
-    model: string;     // "gemini-3-flash", "gpt-5.2"
-}
+/** Provider/model key, e.g. "gemini/gemini-2.5-flash" or "openai/gpt-5.2" */
+export type ModelSelection = string;
 
 export interface TemplateSelectionRequest {
     userInput: string;
