@@ -73,6 +73,61 @@ export class ChatService {
             }
         }
     }
+    /**
+     * Unified handler for agent feedback responses from the frontend.
+     * Replaces handleSchemaSummaryResponse, handleTemplateSelectionResponse, handleSystemPlanResponse.
+     */
+    async handleAgentFeedback(
+        userId: string,
+        agentName: AgentName,
+        feedbackData: any,
+        externalCookie: string,
+        selection: ModelSelection,
+        onEvent: OnServerToClientEvent
+    ): Promise<void> {
+        const handler = this.chatHandlers[selection.provider]?.[agentName];
+        if (!handler) {
+            this.logger.error({ agentName }, 'Handler not found for agent feedback');
+            await this.saveAndEmitAgentMessage(userId, 'Unable to process your response. Agent handler not found.', onEvent);
+            return;
+        }
+
+        try {
+            const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
+            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, onEvent);
+            const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
+            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
+
+            // Determine the task ref to continue with
+            let nextTaskItem: AgentTaskRef | undefined = existingTaskItem;
+
+            if (followingTaskItems && followingTaskItems.length > 0) {
+                if (existingTaskItem) {
+                    // Insert new items after the current index in the existing task
+                    await this.taskOperator.insertItemsAfter(existingTaskItem, followingTaskItems);
+                } else {
+                    // No existing task — create a new one
+                    const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
+                    nextTaskItem = { taskId: task.id!, index: -1 };
+                }
+            }
+
+            // Continue pipeline if there's a pending task item
+            if (nextTaskItem) {
+                if (existingTaskItem) {
+                    await this.taskOperator.commit(existingTaskItem);
+                }
+                await this.executePendingTaskItem(nextTaskItem, userId, externalCookie, selection, onEvent);
+            }
+        } catch (error: any) {
+            this.logger.error({ error: formatError(error), agentName }, 'Error handling agent feedback');
+            const userMessage = error?.response?.data?.title
+                ? `Error: ${error.response.data.title}`
+                : 'I encountered an error while processing your confirmation. Please check the logs and try again.';
+            await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
+            this.statusService.clearStatus(userId);
+        }
+    }
 
     private async handleReplayCommand(
         userId: string,
@@ -163,80 +218,33 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
     }
 
-    /**
-     * Unified handler for agent feedback responses from the frontend.
-     * Replaces handleSchemaSummaryResponse, handleTemplateSelectionResponse, handleSystemPlanResponse.
-     */
-    async handleAgentFeedback(
-        userId: string,
-        agentName: AgentName,
-        feedbackData: any,
-        externalCookie: string,
-        selection: ModelSelection,
-        onEvent: OnServerToClientEvent
-    ): Promise<void> {
-        const handler = this.chatHandlers[selection.provider]?.[agentName];
-        if (!handler) {
-            this.logger.error({ agentName }, 'Handler not found for agent feedback');
-            await this.saveAndEmitAgentMessage(userId, 'Unable to process your response. Agent handler not found.', onEvent);
-            return;
+    private async actOnLog(logId: number, userId: string, externalCookie: string,
+        onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
+        const log = await this.logRepository.findAiResponseLogById(logId);
+        if (!log) {
+            throw new Error(`Log with ID ${logId} not found`);
         }
 
-        try {
-            const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
-            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, onEvent);
-            const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
-            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
+        const responseContent = log.response;
+        const handlerName = log.handler;
 
-            // Determine the task ref to continue with
-            let nextTaskItem: AgentTaskRef | undefined = existingTaskItem;
+        const selection = { provider: log.providerName, model: log.modelName };
+        const context = this.createContext(userId, externalCookie, selection,
+            handlerName as AgentName, log.schemaId, onEvent);
+        const agentTaskItem = log.agentTaskItem;
 
-            if (followingTaskItems && followingTaskItems.length > 0) {
-                if (existingTaskItem) {
-                    // Insert new items after the current index in the existing task
-                    await this.taskOperator.insertItemsAfter(existingTaskItem, followingTaskItems);
-                } else {
-                    // No existing task — create a new one
-                    const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
-                    nextTaskItem = { taskId: task.id!, index: -1 };
-                }
+        const plan = JSON.parse(responseContent);
+        const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
+        await this.saveAgentMessage(userId, "Manually triggering action from log...");
+
+        const { feedback, syncedSchemaIds } = await handler.act(plan, context);
+        this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
+        if (continuePipeline && agentTaskItem) {
+            await this.taskOperator.reset(agentTaskItem);
+            if (feedback === null) {
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
             }
-
-            // Continue pipeline if there's a pending task item
-            if (nextTaskItem) {
-                if (existingTaskItem) {
-                    await this.taskOperator.commit(existingTaskItem);
-                }
-                await this.executePendingTaskItem(nextTaskItem, userId, externalCookie, selection, onEvent);
-            }
-        } catch (error: any) {
-            this.logger.error({ error: formatError(error), agentName }, 'Error handling agent feedback');
-            const userMessage = error?.response?.data?.title
-                ? `Error: ${error.response.data.title}`
-                : 'I encountered an error while processing your confirmation. Please check the logs and try again.';
-            await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
-            this.statusService.clearStatus(userId);
         }
-    }
-
-    private async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
-        return this.messageRepository.save({ userId, content, role: 'user' });
-    }
-
-    private async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
-        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
-    }
-
-    // Helper method to save and emit assistant messages
-    private async saveAndEmitAgentMessage(
-        userId: string,
-        content: string,
-        onEvent: OnServerToClientEvent,
-        payload?: any
-    ): Promise<ChatMessage> {
-        const message = await this.saveAgentMessage(userId, content, payload);
-        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
-        return message;
     }
 
     private createContext(
@@ -369,32 +377,26 @@ export class ChatService {
         }
     }
 
-    private async actOnLog(logId: number, userId: string, externalCookie: string,
-        onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
-        const log = await this.logRepository.findAiResponseLogById(logId);
-        if (!log) {
-            throw new Error(`Log with ID ${logId} not found`);
-        }
 
-        const responseContent = log.response;
-        const handlerName = log.handler;
 
-        const selection = { provider: log.providerName, model: log.modelName };
-        const context = this.createContext(userId, externalCookie, selection,
-            handlerName as AgentName, log.schemaId, onEvent);
-        const agentTaskItem = log.agentTaskItem;
-
-        const plan = JSON.parse(responseContent);
-        const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
-        await this.saveAgentMessage(userId, "Manually triggering action from log...");
-
-        const { feedback, syncedSchemaIds } = await handler.act(plan, context);
-        this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
-        if (continuePipeline && agentTaskItem) {
-            await this.taskOperator.reset(agentTaskItem);
-            if (feedback === null) {
-                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
-            }
-        }
+    // Helper method to save and emit assistant messages
+    private async saveAndEmitAgentMessage(
+        userId: string,
+        content: string,
+        onEvent: OnServerToClientEvent,
+        payload?: any
+    ): Promise<ChatMessage> {
+        const message = await this.saveAgentMessage(userId, content, payload);
+        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
+        return message;
     }
+    private async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
+        return this.messageRepository.save({ userId, content, role: 'user' });
+    }
+
+    private async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
+        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
+    }
+
+
 }
