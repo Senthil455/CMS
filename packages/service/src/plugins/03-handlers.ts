@@ -77,19 +77,18 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
     for (const [providerName, provider] of Object.entries(providers)) {
         try {
-
             // DB-backed style lookup function
             const prisma = fastify.prisma;
             const getStylePrompt = async (styleName: string, pageType: string): Promise<string> => {
                 if (!styleName) return '';
-                const style = await prisma.designStyle.findUnique({ where: { name: styleName } });
+                const style = await (prisma as any).designStyle.findUnique({ where: { name: styleName } });
                 if (!style) return '';
                 return pageType === 'detail' ? (style.detailPrompt || '') : (style.listPrompt || '');
             };
 
             // Load template options from DB for PagePlanner
             const getTemplateOptions = async (): Promise<{ id: string; name: string; description: string }[]> => {
-                const styles = await prisma.designStyle.findMany({ orderBy: { name: 'asc' } });
+                const styles = await (prisma as any).designStyle.findMany({ orderBy: { name: 'asc' } });
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 

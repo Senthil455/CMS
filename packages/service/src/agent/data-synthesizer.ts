@@ -57,7 +57,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             this.systemPrompt,
             devMsg,
             userInput,
-            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

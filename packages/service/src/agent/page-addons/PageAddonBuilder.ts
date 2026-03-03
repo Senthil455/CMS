@@ -25,7 +25,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
     ) { }
 
     async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<ThinkResult<AddonPlan>> {
-        this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
+        // checked file, act is where I should look
 
         // 1. Extract Schema ID
         let schemaId = context.schemaId;

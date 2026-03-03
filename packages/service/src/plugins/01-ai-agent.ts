@@ -17,14 +17,14 @@ const aiAgentPlugin: FastifyPluginAsync = async (fastify) => {
     const openaiKey = (await systemSettingRepository.get('OPENAI_API_KEY')) || config.OPENAI_API_KEY || '';
 
     const providers: Record<string, AIProvider> = {
-        openai: new OpenAIProvider(
+        [`openai/${config.OPENAI_MODEL}`]: new OpenAIProvider(
             openaiKey,
             config.OPENAI_API_URL,
             config.OPENAI_MODEL,
             infraLogger
         ),
 
-        gemini: new GeminiProvider(
+        [`gemini/${config.GEMINI_MODEL}`]: new GeminiProvider(
             geminiKey,
             config.GEMINI_API_URL,
             config.GEMINI_MODEL,

@@ -162,7 +162,6 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 this.systemPrompt,
                 developerMessage,
                 originalInput,
-                context.selection.model,
                 context.signal ? { signal: context.signal } : undefined
             );
 
@@ -281,7 +280,6 @@ ${relevantQueryDetails}
             this.systemPrompt,
             developerMessage,
             userRequirement,
-            context.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

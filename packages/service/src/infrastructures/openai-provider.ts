@@ -35,14 +35,12 @@ export class OpenAIProvider implements AIProvider {
         return `...${this.apiKey.slice(-4)}`;
     }
 
-    async generate(system: string, developer: string, user: string, modelOverride?: string, options?: { signal?: AbortSignal }): Promise<any> {
+    async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal }): Promise<any> {
         try {
             this.logger.info('OpenAIProvider generating from roles using SDK');
 
-            const modelToUse = modelOverride || this.model;
-
             const response = await this.openai.chat.completions.create({
-                model: modelToUse,
+                model: this.model,
                 messages: [
                     { role: 'system', content: system },
                     { role: 'developer', content: developer } as any,

@@ -58,7 +58,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         return {
             plan: {
                 userInput,
-                selection: context.selection,
                 plan: pagePlan,
                 templates: templates
             },
@@ -109,7 +108,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             this.plannerSystemPrompt,
             developerMessage,
             userInput,
-            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

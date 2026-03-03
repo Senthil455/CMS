@@ -40,6 +40,33 @@ export class ChatService {
         private readonly taskOperator: TaskOperator,
     ) { }
 
+    private toSelectionKey(selection: ModelSelection): string {
+        return `${selection.provider}/${selection.model}`;
+    }
+
+    private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent | undefined {
+        const exactKey = this.toSelectionKey(selection);
+        if (this.chatHandlers[exactKey]?.[agentName]) {
+            return this.chatHandlers[exactKey][agentName];
+        }
+        throw new Error(`Handler not found for agent ${agentName} and selection ${selection}`);
+
+    }
+
+    private resolveClassifier(selection: ModelSelection): IntentClassifier | undefined {
+        const exactKey = this.toSelectionKey(selection);
+        if (this.intentClassifier[exactKey]) {
+            return this.intentClassifier[exactKey];
+        }
+
+        // Fallback: first provider match
+        const fallbackKey = Object.keys(this.intentClassifier).find(k => k.startsWith(`${selection.provider}/`));
+        if (fallbackKey) {
+            return this.intentClassifier[fallbackKey];
+        }
+        throw new Error(`Classifier not found for selection ${selection}`);
+    }
+
     async cancelActiveRequest(userId: string): Promise<boolean> {
         if (this.activeRequests.has(userId)) {
             const controller = this.activeRequests.get(userId)!;
@@ -57,11 +84,12 @@ export class ChatService {
         selection: ModelSelection,
         onEvent: OnServerToClientEvent): Promise<void> {
         try {
-            // Check for replay command: @replay <logId> [--continue]
-            const replayMatch = content.trim().match(/^@replay\s+(\d+)(\s+--continue)?$/i);
-            if (replayMatch) {
-                await this.handleReplayCommand(userId, content, externalCookie, onEvent, replayMatch);
-                return;
+            if (content && content.trim().startsWith('@replay')) {
+                const replayMatch = content.trim().match(/^@replay\s+(\d+)(\s+--continue)?$/i);
+                if (replayMatch && replayMatch[1]) {
+                    await this.handleReplayCommand(userId, content, externalCookie, onEvent, replayMatch);
+                    return;
+                }
             }
 
             // Check for modify-component command: @modify-component <schemaId> <componentId> <requirement>
@@ -95,16 +123,16 @@ export class ChatService {
         selection: ModelSelection,
         onEvent: OnServerToClientEvent
     ): Promise<void> {
-        const handler = this.chatHandlers[selection.provider]?.[agentName];
+        const handler = this.resolveHandler(selection, agentName);
         if (!handler) {
-            this.logger.error({ agentName }, 'Handler not found for agent feedback');
+            this.logger.error({ agentName, selection }, 'Handler not found for agent feedback');
             await this.saveAndEmitAgentMessage(userId, 'Unable to process your response. Agent handler not found.', onEvent);
             return;
         }
 
         try {
             const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
-            const context = this.createContext(userId, externalCookie, selection, agentName, undefined, onEvent);
+            const context = this.createContext(userId, externalCookie, agentName, undefined, onEvent);
             const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
             this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
 
@@ -171,10 +199,10 @@ export class ChatService {
         const userMessage = await this.saveUserMessage(userId, messageText);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
-        const pageBuilder = this.chatHandlers[selection.provider]?.[AGENT_NAMES.PAGE_BUILDER] as any;
+        const pageBuilder = this.resolveHandler(selection, AGENT_NAMES.PAGE_BUILDER) as any;
 
         if (pageBuilder && pageBuilder.modifySingleComponent) {
-            const context = this.createContext(userId, externalCookie, selection,
+            const context = this.createContext(userId, externalCookie,
                 AGENT_NAMES.PAGE_BUILDER, schemaId, onEvent);
             const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
             this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
@@ -206,16 +234,16 @@ export class ChatService {
         }
 
         if (!agent) {
-            agent = await this.intentClassifier[selection.provider]?.resolve(content, this.createContext(userId, externalCookie, selection, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent)) ?? null;
+            agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent)) ?? null;
         }
 
-        if (agent && this.chatHandlers[selection.provider]?.[agent]) {
+        if (agent && this.resolveHandler(selection, agent)) {
             this.logger.info('Executing resolved handler');
             const abortController = new AbortController();
             this.activeRequests.set(userId, abortController);
             try {
-                const context = this.createContext(userId, externalCookie, selection, agent, undefined, onEvent, abortController.signal);
-                await this.executeAgent(agent, content, context, userId, onEvent);
+                const context = this.createContext(userId, externalCookie, agent, undefined, onEvent, abortController.signal);
+                await this.executeAgent(agent, content, context, selection, userId, onEvent);
             } finally {
                 this.activeRequests.delete(userId);
             }
@@ -239,12 +267,12 @@ export class ChatService {
         const handlerName = log.handler;
 
         const selection = { provider: log.providerName, model: log.modelName };
-        const context = this.createContext(userId, externalCookie, selection,
+        const context = this.createContext(userId, externalCookie,
             handlerName as AgentName, log.schemaId, onEvent);
         const agentTaskItem = log.agentTaskItem;
 
         const plan = JSON.parse(responseContent);
-        const handler = this.chatHandlers[selection.provider]?.[handlerName as AgentName]!;
+        const handler = this.resolveHandler(selection, handlerName as AgentName)!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...");
 
         const { feedback, syncedSchemaIds } = await handler.act(plan, context);
@@ -252,7 +280,7 @@ export class ChatService {
         if (continuePipeline && agentTaskItem) {
             await this.taskOperator.reset(agentTaskItem);
             if (feedback === null) {
-                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent);
             }
         }
     }
@@ -260,7 +288,6 @@ export class ChatService {
     private createContext(
         userId: string,
         externalCookie: string,
-        selection: ModelSelection,
         agentName: AgentName,
         schemaId: string | undefined,
         onEvent: OnServerToClientEvent,
@@ -268,7 +295,6 @@ export class ChatService {
     ): AgentContext {
         return {
             externalCookie,
-            selection,
             ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
             saveAgentMessage: async (content: string, payload?: any) => {
@@ -301,9 +327,9 @@ export class ChatService {
             const abortController = new AbortController();
             this.activeRequests.set(userId, abortController);
             try {
-                const context = this.createContext(userId, externalCookie, selection, item.agentName,
+                const context = this.createContext(userId, externalCookie, item.agentName,
                     undefined, onEvent, abortController.signal);
-                await this.executeAgent(item.agentName, item.description || '', context, userId, onEvent, agentTaskItem);
+                await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
             } finally {
                 this.activeRequests.delete(userId);
             }
@@ -314,13 +340,14 @@ export class ChatService {
         agentName: AgentName,
         userInput: string,
         context: AgentContext,
+        selection: ModelSelection,
         userId: string,
         onEvent: OnServerToClientEvent,
         agentTaskItem?: AgentTaskRef
     ): Promise<void> {
-        const handler = this.chatHandlers[context.selection.provider]?.[agentName];
+        const handler = this.resolveHandler(selection, agentName);
         if (!handler) {
-            this.logger.error({ taskType: agentName, provider: context.selection.provider, model: context.selection.model }, 'Handler not found for task type');
+            this.logger.error({ taskType: agentName, selection }, 'Handler not found for task type');
             return;
         }
 
@@ -341,8 +368,8 @@ export class ChatService {
             await this.logRepository.saveAiResponseLog(
                 agentName,
                 JSON.stringify({ ...plan, taskType: agentName }),
-                context.selection.provider,
-                context.selection.model,
+                selection.provider,
+                selection.model,
                 context.schemaId,
                 inputLog
             );
@@ -365,7 +392,7 @@ export class ChatService {
             // No feedback needed — commit and continue pipeline
             if (agentTaskItem) {
                 await this.taskOperator.commit(agentTaskItem);
-                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, context.selection, onEvent);
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent);
             }
         } catch (error: any) {
             this.statusService.clearStatus(userId);

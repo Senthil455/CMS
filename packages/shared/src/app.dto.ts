@@ -30,7 +30,6 @@ export interface ModelSelection {
 export interface TemplateSelectionRequest {
     userInput: string;
     plan: PagePlan;
-    selection: ModelSelection;
     templates: {
         id: string;
         name: string;

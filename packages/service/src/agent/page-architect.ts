@@ -115,7 +115,6 @@ ${queryListContext}
             this.architectSystemPrompt,
             developerMessage,
             userInput,
-            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 

@@ -48,11 +48,10 @@ ${sdl}
         }
 
 
-        const response: QueryResponse = await this.aiProvider.generate(
+        const response = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
             userInput,
-            context?.selection.model,
             context.signal ? { signal: context.signal } : undefined
         );
 
