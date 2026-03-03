@@ -1,5 +1,5 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, AgentStopError, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type Agent, AgentStopError, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
 import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -15,7 +15,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         private readonly pageOperator: PageOperator,
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<TemplateSelectionRequest>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<TemplateSelectionRequest>> {
         let schemaId = '';
 
 
@@ -70,12 +70,12 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         };
     }
 
-    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<AgentActResult<TemplateSelectionRequest>> {
+    async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<ActResult<TemplateSelectionRequest>> {
         await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
         return { feedback: plan, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<FinalizeResult> {
         const schemaId = await this.pageOperator.savePlanAndUserInput(
             undefined,
             feedbackData.requestPayload.plan,

@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent, AgentStopError, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type ThinkResult, type Agent, AgentStopError, type ActResult, type FinalizeResult } from './chat-assistant';
 import { type SystemRequirment, AGENT_NAMES } from '@cms/shared';
 
 export interface SystemPlanItem {
@@ -20,7 +20,7 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<SystemArchitectPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<SystemArchitectPlan>> {
         const response = await this.aiProvider.generate(
             this.systemPrompt,
             'Generate a system plan identifying the required entities, queries, and pages based on user input.',
@@ -49,7 +49,7 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         }
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<AgentActResult<SystemArchitectPlan>> {
+    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<ActResult<SystemArchitectPlan>> {
         if (!plan || plan.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
             return { feedback: null, syncedSchemaIds: [] };
@@ -58,14 +58,14 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         return { feedback: plan, syncedSchemaIds: [] };
     }
 
-    async finalize(feedbackData: SystemRequirment, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(feedbackData: SystemRequirment, _context: AgentContext): Promise<FinalizeResult> {
         const items = feedbackData.items || [];
 
         const entityItems = items.filter(item => item.type === 'entity');
         const queryItems = items.filter(item => item.type === 'query');
         const pageItems = items.filter(item => item.type === 'page');
 
-        const followingTaskItems: AgentFinalizeResult['followingTaskItems'] = [];
+        const followingTaskItems: FinalizeResult['followingTaskItems'] = [];
 
         // All entities => one task item
         if (entityItems.length > 0) {

@@ -1,7 +1,7 @@
 import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from '../chat-assistant';
+import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from '../chat-assistant';
 import { type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 
@@ -24,7 +24,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
         private readonly pageOperator: PageOperator,
     ) { }
 
-    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<AgentPlanResponse<AddonPlan>> {
+    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<ThinkResult<AddonPlan>> {
         this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
 
         // 1. Extract Schema ID
@@ -99,7 +99,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
 
 
 
-    async act(plan: AddonPlan, context: AgentContext): Promise<AgentActResult<AddonPlan>> {
+    async act(plan: AddonPlan, context: AgentContext): Promise<ActResult<AddonPlan>> {
         const { schemaId, pageDto, layoutJson, newComponent } = plan;
 
         if (this.addonDef.id && !newComponent.addonId) {
@@ -123,7 +123,7 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
         return { feedback: null, syncedSchemaIds: [schemaId] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {
         return { syncedSchemaIds: [] };
     }
 

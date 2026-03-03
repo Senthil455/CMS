@@ -2,7 +2,7 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import { type PageMetadata, type LayoutJson } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 import { PageOperator } from '../operators/page-operator';
 
@@ -30,7 +30,7 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
     ) { }
 
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<PageBuilderPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<PageBuilderPlan>> {
         this.logger.info('PageBuilder think started');
 
         const schemaId = context.schemaId;
@@ -195,7 +195,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         };
     }
 
-    async act(plan: PageBuilderPlan, context: AgentContext): Promise<AgentActResult<PageBuilderPlan>> {
+    async act(plan: PageBuilderPlan, context: AgentContext): Promise<ActResult<PageBuilderPlan>> {
         const schemaId = context.schemaId;
         if (!schemaId) throw new Error("Schema ID missing in context during Act");
 
@@ -208,7 +208,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         return { feedback: null, syncedSchemaIds: [newSchemaId] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {
         return { syncedSchemaIds: [] };
     }
 

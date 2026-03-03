@@ -7,7 +7,7 @@ import {
     type AgentTaskRef,
     type ModelSelection
 } from '@cms/shared';
-import { AgentStopError, type Agent, type AgentContext, type AgentFeedbackPayload } from '../agent/chat-assistant';
+import { AgentStopError, type Agent, type AgentContext } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
@@ -17,6 +17,16 @@ import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../utils/user-visible-error';
+
+/**
+ * Payload composed by ChatService when an agent's act() returns non-null feedback.
+ * Sent to the frontend via AGENT_PLAN_TO_CONFIRM so the user can review & confirm.
+ */
+export interface AgentFeedbackPayload<T = any> {
+    agentName: AgentName;
+    data: T;
+    agentTaskItem?: AgentTaskRef;
+}
 
 export class ChatService {
     private activeRequests = new Map<string, AbortController>();

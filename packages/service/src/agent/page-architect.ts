@@ -2,7 +2,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
 import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
@@ -22,7 +22,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         private readonly pageOperator: PageOperator
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<ArchitectDesignerAgentPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<ArchitectDesignerAgentPlan>> {
         // Extract schemaId
         const schemaId = context.schemaId;
         if (!schemaId) {
@@ -63,7 +63,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         };
     }
 
-    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<AgentActResult<ArchitectDesignerAgentPlan>> {
+    async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<ActResult<ArchitectDesignerAgentPlan>> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
         // Also save componentInstructions into metadata at the top level
@@ -75,11 +75,11 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         return { feedback: null, syncedSchemaIds: [] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {
         return { syncedSchemaIds: [] };
     }
 
-    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<AgentPlanResponse<PageArchitecture>> {
+    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<ThinkResult<PageArchitecture>> {
         const queryListContext = availableQueries.map((q: any) =>
             `- ${q.name}: ${q.settings?.query?.source}
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}

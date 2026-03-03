@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, type AgentPlanResponse, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -23,7 +23,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<DataGeneratorPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<DataGeneratorPlan>> {
         await context.saveAgentMessage('I am data generator, I am fetching the latest schema and generating your data...');
 
         let entities: any[] = [];
@@ -82,7 +82,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         };
     }
 
-    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<AgentActResult<DataGeneratorPlan>> {
+    async act(plan: DataGeneratorPlan, context: AgentContext): Promise<ActResult<DataGeneratorPlan>> {
         const { entityName, data, targetEntity } = plan;
 
         if (!entityName || !Array.isArray(data) || data.length === 0) {
@@ -112,7 +112,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         return { feedback: null, syncedSchemaIds: [] };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {
         return { syncedSchemaIds: [] };
     }
 }

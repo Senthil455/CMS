@@ -1,7 +1,7 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 
-import { type AgentContext, type AgentPlanResponse, type Agent, type AgentActResult, type AgentFinalizeResult } from './chat-assistant';
+import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from './chat-assistant';
 import type { ServiceLogger } from '../types/logger';
 import { type QueryResponse, type SchemaDto, type SaveSchemaPayload, AGENT_NAMES } from '@cms/shared';
 
@@ -18,7 +18,7 @@ export class QueryGenerator implements Agent<QueryGeneratorPlan> {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<AgentPlanResponse<QueryGeneratorPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<QueryGeneratorPlan>> {
         let existingSchema: SchemaDto | null = null;
         let schemaId = '';
 
@@ -70,7 +70,7 @@ ${sdl}
         };
     }
 
-    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<AgentActResult<QueryGeneratorPlan>> {
+    async act(plan: QueryGeneratorPlan, context: AgentContext): Promise<ActResult<QueryGeneratorPlan>> {
 
         if (!plan.queries || Object.keys(plan.queries).length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid query configuration. Please try again with more details.");
@@ -108,7 +108,7 @@ ${sdl}
         return { feedback: null, syncedSchemaIds: schemaIds };
     }
 
-    async finalize(_feedbackData: any, _context: AgentContext): Promise<AgentFinalizeResult> {
+    async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {
         return { syncedSchemaIds: [] };
     }
 }
