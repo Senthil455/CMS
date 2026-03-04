@@ -13,7 +13,7 @@ interface ChatInputProps {
 
 const STORAGE_KEY = 'cms_selected_provider';
 
-const getDisplayName = (agent: string) => agent.match(/\(([^)]+)\)/)?.[1] || agent;
+const getDisplayName = (agent: string) => agent.split('/')[1] || agent;
 
 export function ChatInput({ onSend, disabled, draft, onDraftConsumed }: ChatInputProps) {
     const [input, setInput] = useState('');

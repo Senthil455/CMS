@@ -1,27 +1,23 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { config, GEMINI_MODELS, OPENAI_MODELS } from '../config';
+import { maskApiKey } from '../utils/mask-api-key';
+import { GeminiProvider } from '../infrastructures/gemini-provider';
+import { OpenAIProvider } from '../infrastructures/openai-provider';
 
 const configRouter: FastifyPluginAsync = async (fastify) => {
     // GET /cmsapi/config/gemini - Check status
     fastify.get('/cmsapi/config/gemini', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const geminiAgent = fastify.aiProvider['gemini'];
-        if (!geminiAgent) {
-            return {
-                success: true,
-                data: { configured: false, available: false }
-            };
-        }
 
-        const isConfigured = geminiAgent.hasApiKey ? geminiAgent.hasApiKey() : false;
-        const maskedKey = geminiAgent.getMaskedApiKey ? geminiAgent.getMaskedApiKey() : null;
+        const currentKey = await fastify.systemSettingRepository.get('GEMINI_API_KEY');
 
         return {
             success: true,
             data: {
-                configured: isConfigured,
-                maskedKey: maskedKey,
+                configured: !!currentKey,
+                maskedKey: maskApiKey(currentKey),
                 available: true
             }
         };
@@ -41,68 +37,79 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         const { apiKey } = body_.data;
-        const geminiAgent = fastify.aiProvider['gemini'];
+        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini')).map(([_, a]) => a);
 
-        if (!geminiAgent) {
+        if (geminiAgents.length === 0) {
             return reply.status(404).send({ error: 'Gemini agent not enabled' });
         }
 
-        if (geminiAgent.setApiKey) {
-            // Save to database
-            await (fastify as any).systemSettingRepository.upsert('GEMINI_API_KEY', apiKey);
+        // Save to database
+        await fastify.systemSettingRepository.upsert('GEMINI_API_KEY', apiKey);
 
-            // Update in-memory
-            geminiAgent.setApiKey(apiKey);
-            fastify.log.info('Gemini API Key updated via API and saved to DB');
-            return { success: true };
-        } else {
-            return reply.status(501).send({ error: 'Gemini agent does not support runtime configuration' });
+        // Update in-memory: Instantiate new GeminiProviders for each model
+        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+        for (const model of GEMINI_MODELS) {
+            fastify.aiProvider[`gemini/${model}`] = new GeminiProvider(
+                apiKey,
+                config.GEMINI_API_URL,
+                model,
+                infraLogger,
+                config.GEMINI_USE_CACHING
+            );
         }
+
+        fastify.log.info('Gemini API Key updated via API and saved to DB');
+        return { success: true };
     });
 
     // DELETE /cmsapi/config/gemini - Delete key
     fastify.delete('/cmsapi/config/gemini', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const geminiAgent = fastify.aiProvider['gemini'];
+        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini')).map(([_, a]) => a);
 
-        if (!geminiAgent) {
+        if (geminiAgents.length === 0) {
             return reply.status(404).send({ error: 'Gemini agent not enabled' });
         }
 
-        if (geminiAgent.setApiKey) {
-            // Remove from database
-            await (fastify as any).systemSettingRepository.delete('GEMINI_API_KEY');
+        // Remove from database
+        await fastify.systemSettingRepository.delete('GEMINI_API_KEY');
 
-            // Reset in-memory (empty string or revert to env if desired, but here we clear it to match user intent)
-            geminiAgent.setApiKey('');
-            fastify.log.info('Gemini API Key deleted via API');
-            return { success: true };
-        } else {
-            return reply.status(501).send({ error: 'Gemini agent does not support runtime configuration' });
+        // Reset in-memory: Instantiate empty providers
+        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+        for (const model of GEMINI_MODELS) {
+            fastify.aiProvider[`gemini/${model}`] = new GeminiProvider(
+                '',
+                config.GEMINI_API_URL,
+                model,
+                infraLogger,
+                config.GEMINI_USE_CACHING
+            );
         }
+
+        fastify.log.info('Gemini API Key deleted via API');
+        return { success: true };
     });
 
     // GET /cmsapi/config/openai - Check status
     fastify.get('/cmsapi/config/openai', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const openaiAgent = fastify.aiProvider['openai'];
-        if (!openaiAgent) {
+        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai')).map(([_, a]) => a);
+        if (openaiAgents.length === 0) {
             return {
                 success: true,
                 data: { configured: false, available: false }
             };
         }
 
-        const isConfigured = openaiAgent.hasApiKey ? openaiAgent.hasApiKey() : false;
-        const maskedKey = openaiAgent.getMaskedApiKey ? openaiAgent.getMaskedApiKey() : null;
+        const currentKey = await fastify.systemSettingRepository.get('OPENAI_API_KEY');
 
         return {
             success: true,
             data: {
-                configured: isConfigured,
-                maskedKey: maskedKey,
+                configured: !!currentKey,
+                maskedKey: maskApiKey(currentKey),
                 available: true
             }
         };
@@ -118,46 +125,55 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         const { apiKey } = body_.data;
-        const openaiAgent = fastify.aiProvider['openai'];
+        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai')).map(([_, a]) => a);
 
-        if (!openaiAgent) {
+        if (openaiAgents.length === 0) {
             return reply.status(404).send({ error: 'OpenAI agent not enabled' });
         }
 
-        if (openaiAgent.setApiKey) {
-            // Save to database
-            await (fastify as any).systemSettingRepository.upsert('OPENAI_API_KEY', apiKey);
+        // Save to database
+        await fastify.systemSettingRepository.upsert('OPENAI_API_KEY', apiKey);
 
-            // Update in-memory
-            openaiAgent.setApiKey(apiKey);
-            fastify.log.info('OpenAI API Key updated via API and saved to DB');
-            return { success: true };
-        } else {
-            return reply.status(501).send({ error: 'OpenAI agent does not support runtime configuration' });
+        // Update in-memory
+        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+        for (const model of OPENAI_MODELS) {
+            fastify.aiProvider[`openai/${model}`] = new OpenAIProvider(
+                apiKey,
+                config.OPENAI_API_URL,
+                model,
+                infraLogger
+            );
         }
+
+        fastify.log.info('OpenAI API Key updated via API and saved to DB');
+        return { success: true };
     });
 
     // DELETE /cmsapi/config/openai - Delete key
     fastify.delete('/cmsapi/config/openai', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const openaiAgent = fastify.aiProvider['openai'];
+        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai')).map(([_, a]) => a);
 
-        if (!openaiAgent) {
+        if (openaiAgents.length === 0) {
             return reply.status(404).send({ error: 'OpenAI agent not enabled' });
         }
 
-        if (openaiAgent.setApiKey) {
-            // Remove from database
-            await (fastify as any).systemSettingRepository.delete('OPENAI_API_KEY');
+        // Remove from database
+        await fastify.systemSettingRepository.delete('OPENAI_API_KEY');
 
-            // Reset in-memory
-            openaiAgent.setApiKey('');
-            fastify.log.info('OpenAI API Key deleted via API');
-            return { success: true };
-        } else {
-            return reply.status(501).send({ error: 'OpenAI agent does not support runtime configuration' });
+        // Reset in-memory
+        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
+        for (const model of OPENAI_MODELS) {
+            fastify.aiProvider[`openai/${model}`] = new OpenAIProvider(
+                '',
+                config.OPENAI_API_URL,
+                model,
+                infraLogger
+            );
         }
+        fastify.log.info('OpenAI API Key deleted via API');
+        return { success: true };
     });
 };
 
