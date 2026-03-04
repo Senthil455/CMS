@@ -2,70 +2,45 @@ import axios from 'axios';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { User } from '@cms/shared';
 
 import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS, CmsApiClient } from '@cms/shared';
+import { UserVisibleError } from '../utils/user-visible-error';
 
 export class CmsClient {
     private populatingPromise: Promise<void> | null = null;
     constructor(private readonly baseUrl: string) { }
 
     async getClient(externalCookie: string): Promise<CmsApiClient> {
-        // Filter to only include ASP.NET Identity cookie for Auth Headers
-        const authCookie = externalCookie.split(';')
-            .map(c => c.trim())
-            .find(c => c.startsWith('.AspNetCore.Identity.Application='));
+        return new CmsApiClient(this.getRawClient(externalCookie));
+    }
 
-        // Note: For some endpoints we might need the full externalCookie (if it contains other needed cookies?), 
-        // but getMe specifically checked for AspNetCore.Identity.
-        // The original code used `authCookie` for getMe, but `externalCookie` for others.
-        // Let's use `externalCookie` generally, but ensure we have headers.
-
-        // Actually, original getMe threw if no authCookie.
-        // Other methods just passed externalCookie. 
-        // We should probably preserve the 'throw if missing' for getMe if it's critical, 
-        // but createClient acts as a factory.
-
+    private getRawClient(externalCookie?: string) {
         const headers: Record<string, string> = {};
         if (externalCookie) {
             headers['Cookie'] = externalCookie;
         }
 
-        return new CmsApiClient(axios.create({
+        const instance = axios.create({
             baseURL: this.baseUrl,
             headers
-        }));
+        });
 
-        // TODO: Handle the specific authCookie check for getMe if strictly needed.
-        // Original code: if (!authCookie) throw Error... inside getMe.
-        // We can move that check to getMe wrapper or just let upstream 401.
+        instance.interceptors.response.use(
+            response => response,
+            error => {
+                const title = error.response?.data?.title;
+                if (title) {
+                    throw new UserVisibleError(title, error);
+                }
+                throw error;
+            }
+        );
+
+        return instance;
     }
 
     async getMe(externalCookie: string) {
-        // We use externalCookie directly to ensure all parts of potentially chunked Identity cookies (C1, C2...) are sent.
-        const client = new CmsApiClient(axios.create({
-            baseURL: this.baseUrl,
-            headers: { Cookie: externalCookie }
-        }));
-        return client.getMe();
-    }
-
-    async login(payload: any): Promise<{ cookie: string, user: User }> {
-        // We need special handling because we want the Set-Cookie header
-        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.AUTH.LOGIN}`, payload);
-        const setCookie = resp.headers['set-cookie'];
-        const externalUser = resp.data;
-        return {
-            cookie: setCookie ? setCookie.join('; ') : '',
-            user: {
-                id: externalUser.id,
-                username: externalUser.name || externalUser.email,
-                avatarUrl: this.baseUrl + externalUser.avatarUrl,
-                email: externalUser.email,
-                roles: externalUser.roles,
-                allowedMenus: externalUser.allowedMenus
-            } as User
-        };
+        return (await this.getClient(externalCookie)).getMe();
     }
 
     async getAllEntities(externalCookie: string): Promise<SchemaDto[]> {
@@ -101,21 +76,11 @@ export class CmsClient {
     }
 
     async saveEntityDefine(externalCookie: string, payload: SaveSchemaPayload) {
-        try {
-            return (await this.getClient(externalCookie)).saveEntityDefine(payload);
-        } catch (error: any) {
-            if (error.response?.data) throw error.response.data;
-            throw error;
-        }
+        return (await this.getClient(externalCookie)).saveEntityDefine(payload);
     }
 
     async saveSchema(externalCookie: string, payload: SaveSchemaPayload) {
-        try {
-            return (await this.getClient(externalCookie)).saveSchema(payload);
-        } catch (error: any) {
-            if (error.response?.data) throw error.response.data;
-            throw error;
-        }
+        return (await this.getClient(externalCookie)).saveSchema(payload);
     }
 
     async generateSDL(externalCookie: string): Promise<string> {
@@ -128,11 +93,7 @@ export class CmsClient {
         const { getIntrospectionQuery, buildClientSchema, printSchema } = await import('graphql');
         const query = getIntrospectionQuery();
 
-        // Use raw axios or client? Client doesn't have graphql method yet.
-        // Let's us raw axios for now as it's specialized.
-        const resp = await axios.post(`${this.baseUrl}${ENDPOINTS.GRAPHQL}`, { query }, {
-            headers: { Cookie: externalCookie }
-        });
+        const resp = await this.getRawClient(externalCookie).post(ENDPOINTS.GRAPHQL, { query });
 
         const introspectionResponse = resp.data.data;
         const schema = buildClientSchema(introspectionResponse);
@@ -170,12 +131,7 @@ export class CmsClient {
         delete data['updatedAt'];
         delete data['createdBy'];
 
-        try {
-            return (await this.getClient(externalCookie)).insertSingleData(entity.name, data);
-        } catch (error: any) {
-            if (error.response?.data) throw error.response.data;
-            throw error;
-        }
+        return (await this.getClient(externalCookie)).insertSingleData(entity.name, data);
     }
 
     async insertData(externalCookie: string, entity: XEntityDto, data: any, idMaps: Record<string, Record<string, any>> = {}) {
@@ -264,10 +220,7 @@ export class CmsClient {
                         const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
                         formData.append('Files', blob, file);
 
-                        await axios.post(`${this.baseUrl}/api/assets`, formData, {
-                            headers: {
-                                Cookie: externalCookie,
-                            },
+                        await this.getRawClient(externalCookie).post('/api/assets', formData, {
                             timeout: 30000,
                         });
                     }
