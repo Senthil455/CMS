@@ -6,7 +6,7 @@ import { useSocket } from '../../hooks/use-socket';
 import { useSchemas } from '../../hooks/use-schemas';
 import { useSocketContext } from '../../context/socket-provider';
 import { Loader2 } from 'lucide-react';
-import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest, type SystemRequirment } from '@cms/shared';
+import { type ChatMessage, type SchemaSummary, type SchemaDto, type SaveSchemaPayload, type TemplateSelectionRequest, type SystemRequirment, AGENT_NAMES } from '@cms/shared';
 import { StudioHeader } from './StudioHeader';
 import { Explorer } from './explorer-panel/Explorer';
 import { DetailView } from './detail-panel/DetailView';
@@ -30,10 +30,11 @@ export default function StudioPage() {
     const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const { user, logout } = useAuth();
     const { history, isLoading: chatLoading, size, setSize, isReachingEnd, isFetchingMore } = useChatHistory();
-    const { sendMessage, sendSchemaResponse, sendTemplateSelectionResponse, sendSystemPlanResponse, onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSystemPlanToConfirm, onSchemasSync } = useSocket();
+    const { sendMessage, onMessageReceived, onAgentPlanToConfirm, sendAgentFeedbackResponse, onSchemasSync } = useSocket();
     const [isDark, setIsDark] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
     const [showChat, setShowChat] = useState(true);
+    const [currentAgentTaskItem, setCurrentAgentTaskItem] = useState<any>(null);
 
     const isEditing = location.pathname.endsWith('/edit');
     const editTab = searchParams.get('tab') || 'settings';
@@ -118,44 +119,35 @@ export default function StudioPage() {
             setShowChat(true); // Auto-open chat on new message
         });
 
-        const unsubConfirm = onSchemaSummaryToConfirm((data) => {
-            console.log(data);
-            setConfirmationData(data);
-            setShowConfirmation(true);
+        const unsubAgentPlanToConfirm = onAgentPlanToConfirm((payload) => {
+            console.log('Agent plan to confirm:', payload);
+            setCurrentAgentTaskItem(payload.agentTaskItem);
+
+            if (payload.agentName === AGENT_NAMES.ENTITY_DESIGNER) {
+                setConfirmationData(payload.data);
+                setShowConfirmation(true);
+            } else if (payload.agentName === AGENT_NAMES.PAGE_PLANNER) {
+                setTemplateSelectionData(payload.data);
+                setShowTemplateSelection(true);
+            } else if (payload.agentName === AGENT_NAMES.SYSTEM_ARCHITECT) {
+                setSystemPlanData(payload.data);
+                setShowSystemPlanConfirmation(true);
+            }
         });
 
-        const unsubTemplateList = onTemplateSelectionListToConfirm((data: TemplateSelectionRequest) => {
-            console.log('Template selection (List) requested:', data);
-            setTemplateSelectionData(data);
-            setShowTemplateSelection(true);
-        });
 
-        const unsubTemplateDetail = onTemplateSelectionDetailToConfirm((data: TemplateSelectionRequest) => {
-            console.log('Template selection (Detail) requested:', data);
-            setTemplateSelectionData(data);
-            setShowTemplateSelection(true);
-        });
 
         const unsubSync = onSchemasSync((data) => {
             console.log('Schema sync received:', data);
             mutate();
         });
 
-        const unsubSystemPlan = onSystemPlanToConfirm((data) => {
-            console.log('System plan confirmation requested:', data);
-            setSystemPlanData(data);
-            setShowSystemPlanConfirmation(true);
-        });
-
         return () => {
             unsubReceived();
-            unsubConfirm();
-            unsubTemplateList();
-            unsubTemplateDetail();
-            unsubSystemPlan();
+            unsubAgentPlanToConfirm();
             unsubSync();
         };
-    }, [onMessageReceived, onSchemaSummaryToConfirm, onTemplateSelectionListToConfirm, onTemplateSelectionDetailToConfirm, onSystemPlanToConfirm, onSchemasSync, mutate]);
+    }, [onMessageReceived, onAgentPlanToConfirm, onSchemasSync, mutate]);
 
     const handleSend = (content: string, providerName: string) => {
         sendMessage(content, providerName);
@@ -163,26 +155,39 @@ export default function StudioPage() {
     };
 
     const handleConfirmSchema = (response: SchemaSummary) => {
-        sendSchemaResponse(response);
+        sendAgentFeedbackResponse({
+            agentName: AGENT_NAMES.ENTITY_DESIGNER,
+            feedbackData: { ...response, agentTaskItem: currentAgentTaskItem }
+        });
         setShowConfirmation(false);
         setConfirmationData(null);
+        setCurrentAgentTaskItem(null);
     };
 
     const handleConfirmTemplate = (selectedTemplateId: string) => {
         if (templateSelectionData) {
-            sendTemplateSelectionResponse({
-                selectedTemplate: selectedTemplateId,
-                requestPayload: templateSelectionData
+            sendAgentFeedbackResponse({
+                agentName: AGENT_NAMES.PAGE_PLANNER,
+                feedbackData: {
+                    selectedTemplate: selectedTemplateId,
+                    requestPayload: templateSelectionData,
+                    agentTaskItem: currentAgentTaskItem
+                }
             });
             setShowTemplateSelection(false);
             setTemplateSelectionData(null);
+            setCurrentAgentTaskItem(null);
         }
     };
 
     const handleConfirmSystemPlan = (plan: SystemRequirment) => {
-        sendSystemPlanResponse(plan);
+        sendAgentFeedbackResponse({
+            agentName: AGENT_NAMES.SYSTEM_ARCHITECT,
+            feedbackData: { ...plan, agentTaskItem: currentAgentTaskItem }
+        });
         setShowSystemPlanConfirmation(false);
         setSystemPlanData(null);
+        setCurrentAgentTaskItem(null);
     };
 
     const [chatDraft, setChatDraft] = useState<string | null>(null);

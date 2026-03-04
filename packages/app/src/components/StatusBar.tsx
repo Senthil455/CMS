@@ -28,7 +28,7 @@ export function StatusBar() {
 
         const interval = setInterval(() => {
             setDuration(Date.now() - createdAt);
-        }, 10000);
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [status, createdAt]);

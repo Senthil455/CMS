@@ -76,6 +76,7 @@ export class ChatService {
             // Normal message handling
             await this.handleNormalMessage(userId, content, externalCookie, selection, onEvent);
         } catch (error) {
+            this.statusService.clearStatus(userId, onEvent);
             this.logger.error({ error: formatError(error) }, 'Error handling user message');
 
             if (error instanceof UserVisibleError) {
@@ -208,6 +209,7 @@ export class ChatService {
         }
 
         if (!agent) {
+            this.statusService.setStatus(userId, AGENT_NAMES.INTENT_CLASSIFIER, onEvent);
             agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent)) ?? null;
         }
 
@@ -224,6 +226,7 @@ export class ChatService {
             return;
         }
 
+        this.statusService.clearStatus(userId, onEvent);
         // Fallback or default behavior if no command resolved
         const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
         const aiMessage = await this.saveAgentMessage(userId, helpMessage);
