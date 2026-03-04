@@ -57,11 +57,15 @@ export class ChatService {
         externalCookie: string,
         selection: ModelSelection,
         onEvent: OnServerToClientEvent): Promise<void> {
+
+        const abortController = new AbortController();
+        this.activeRequests.set(userId, abortController);
+
         try {
             if (content && content.trim().startsWith('@replay')) {
                 const replayMatch = content.trim().match(/^@replay\s+(\d+)(\s+--continue)?$/i);
                 if (replayMatch && replayMatch[1]) {
-                    await this.handleReplayCommand(userId, content, externalCookie, onEvent, replayMatch);
+                    await this.handleReplayCommand(userId, content, externalCookie, onEvent, replayMatch, abortController.signal);
                     return;
                 }
             }
@@ -69,21 +73,16 @@ export class ChatService {
             // Check for modify-component command: @modify-component <schemaId> <componentId> <requirement>
             const modifyMatch = content.trim().match(/^@modify-component\s+([\w-]+)\s+([\w-]+)(?:\s+(.*))?$/is);
             if (modifyMatch) {
-                await this.handleModifyComponentCommand(userId, selection, externalCookie, onEvent, modifyMatch);
+                await this.handleModifyComponentCommand(userId, selection, externalCookie, onEvent, modifyMatch, abortController.signal);
                 return;
             }
 
             // Normal message handling
-            await this.handleNormalMessage(userId, content, externalCookie, selection, onEvent);
-        } catch (error) {
-            this.statusService.clearStatus(userId, onEvent);
-            this.logger.error({ error: formatError(error) }, 'Error handling user message');
-
-            if (error instanceof UserVisibleError) {
-                await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
-            } else {
-                await this.saveAndEmitAgentMessage(userId, 'I encountered an error while processing your request. Please try again later.', onEvent);
-            }
+            await this.handleNormalMessage(userId, content, externalCookie, selection, onEvent, abortController.signal);
+        } catch (error: any) {
+            await this.handleError(userId, error, onEvent);
+        } finally {
+            this.activeRequests.delete(userId);
         }
     }
     /**
@@ -105,9 +104,12 @@ export class ChatService {
             return;
         }
 
+        const abortController = new AbortController();
+        this.activeRequests.set(userId, abortController);
+
         try {
             const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
-            const context = this.createContext(userId, externalCookie, agentName, undefined, onEvent);
+            const context = this.createContext(userId, externalCookie, agentName, undefined, onEvent, abortController.signal);
             const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
             this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
 
@@ -130,15 +132,12 @@ export class ChatService {
                 if (existingTaskItem) {
                     await this.taskOperator.commit(existingTaskItem);
                 }
-                await this.executePendingTaskItem(nextTaskItem, userId, externalCookie, selection, onEvent);
+                await this.executePendingTaskItem(nextTaskItem, userId, externalCookie, selection, onEvent, abortController.signal);
             }
         } catch (error: any) {
-            this.logger.error({ error: formatError(error), agentName }, 'Error handling agent feedback');
-            const userMessage = error?.response?.data?.title
-                ? `Error: ${error.response.data.title}`
-                : 'I encountered an error while processing your confirmation. Please check the logs and try again.';
-            await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
-            this.statusService.clearStatus(userId, onEvent);
+            await this.handleError(userId, error, onEvent, agentName);
+        } finally {
+            this.activeRequests.delete(userId);
         }
     }
 
@@ -147,14 +146,15 @@ export class ChatService {
         content: string,
         externalCookie: string,
         onEvent: OnServerToClientEvent,
-        replayMatch: RegExpMatchArray
+        replayMatch: RegExpMatchArray,
+        signal: AbortSignal
     ): Promise<void> {
         const logId = parseInt(replayMatch[1]!);
         const continuePipeline = !!replayMatch[2];
         // Save user message so it appears in chat
         const userMessage = await this.saveUserMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
-        await this.actOnLog(logId, userId, externalCookie, onEvent, continuePipeline);
+        await this.actOnLog(logId, userId, externalCookie, onEvent, signal, continuePipeline);
     }
 
     private async handleModifyComponentCommand(
@@ -162,7 +162,8 @@ export class ChatService {
         selection: ModelSelection,
         externalCookie: string,
         onEvent: OnServerToClientEvent,
-        modifyMatch: RegExpMatchArray
+        modifyMatch: RegExpMatchArray,
+        signal: AbortSignal
     ): Promise<void> {
         const schemaId = modifyMatch[1]!;
         const componentId = modifyMatch[2]!;
@@ -178,7 +179,7 @@ export class ChatService {
 
         if (pageBuilder && pageBuilder.modifySingleComponent) {
             const context = this.createContext(userId, externalCookie,
-                AGENT_NAMES.PAGE_BUILDER, schemaId, onEvent);
+                AGENT_NAMES.PAGE_BUILDER, schemaId, onEvent, signal);
             const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
             this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
         } else {
@@ -191,7 +192,8 @@ export class ChatService {
         content: string,
         externalCookie: string,
         selection: ModelSelection,
-        onEvent: OnServerToClientEvent
+        onEvent: OnServerToClientEvent,
+        signal: AbortSignal
     ): Promise<void> {
         // 1. Save and notify user message
         const userMessage = await this.saveUserMessage(userId, content);
@@ -210,31 +212,24 @@ export class ChatService {
 
         if (!agent) {
             this.statusService.setStatus(userId, AGENT_NAMES.INTENT_CLASSIFIER, onEvent);
-            agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent)) ?? null;
+            agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, AGENT_NAMES.INTENT_CLASSIFIER, undefined, onEvent, signal)) ?? null;
         }
 
         if (agent && this.resolveHandler(selection, agent)) {
-            this.logger.info('Executing resolved handler');
-            const abortController = new AbortController();
-            this.activeRequests.set(userId, abortController);
-            try {
-                const context = this.createContext(userId, externalCookie, agent, undefined, onEvent, abortController.signal);
-                await this.executeAgent(agent, content, context, selection, userId, onEvent);
-            } finally {
-                this.activeRequests.delete(userId);
-            }
+            this.logger.info({ agent }, 'Executing resolved handler');
+            const context = this.createContext(userId, externalCookie, agent, undefined, onEvent, signal);
+            await this.executeAgent(agent, content, context, selection, userId, onEvent);
             return;
         }
 
         this.statusService.clearStatus(userId, onEvent);
         // Fallback or default behavior if no command resolved
         const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
-        const aiMessage = await this.saveAgentMessage(userId, helpMessage);
-        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, aiMessage);
+        await this.saveAndEmitAgentMessage(userId, helpMessage, onEvent);
     }
 
     private async actOnLog(logId: number, userId: string, externalCookie: string,
-        onEvent: OnServerToClientEvent, continuePipeline: boolean = false): Promise<void> {
+        onEvent: OnServerToClientEvent, signal: AbortSignal, continuePipeline: boolean = false): Promise<void> {
         const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
             throw new Error(`Log with ID ${logId} not found`);
@@ -243,10 +238,16 @@ export class ChatService {
         const responseContent = log.response;
         const handlerName = log.handler;
 
-        const selection: ModelSelection = `${log.providerName}/${log.modelName}`;
+        const selection: ModelSelection = `${log.providerName}/${log.modelName}` as ModelSelection;
         const context = this.createContext(userId, externalCookie,
-            handlerName as AgentName, log.schemaId, onEvent);
-        const agentTaskItem = log.agentTaskItem;
+            handlerName as AgentName, log.schemaId ?? undefined, onEvent, signal);
+
+        let agentTaskItem: AgentTaskRef | undefined;
+        if (log.input) {
+            const parsedInput = JSON.parse(log.input);
+            agentTaskItem = parsedInput.agentTaskItem;
+        }
+
 
         const plan = JSON.parse(responseContent);
         const handler = this.resolveHandler(selection, handlerName as AgentName)!;
@@ -257,7 +258,7 @@ export class ChatService {
         if (continuePipeline && agentTaskItem) {
             await this.taskOperator.reset(agentTaskItem);
             if (feedback === null) {
-                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent);
+                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent, signal);
             }
         }
     }
@@ -295,21 +296,16 @@ export class ChatService {
         userId: string,
         externalCookie: string,
         selection: ModelSelection,
-        onEvent: OnServerToClientEvent
+        onEvent: OnServerToClientEvent,
+        signal: AbortSignal
     ): Promise<void> {
         const item = await this.taskOperator.checkout(agentTaskItem.taskId);
         if (item) {
             agentTaskItem = { ...agentTaskItem, index: item.index };
 
-            const abortController = new AbortController();
-            this.activeRequests.set(userId, abortController);
-            try {
-                const context = this.createContext(userId, externalCookie, item.agentName,
-                    undefined, onEvent, abortController.signal);
-                await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
-            } finally {
-                this.activeRequests.delete(userId);
-            }
+            const context = this.createContext(userId, externalCookie, item.agentName,
+                undefined, onEvent, signal);
+            await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
         }
     }
 
@@ -331,65 +327,67 @@ export class ChatService {
         this.statusService.setStatus(userId, agentName, onEvent);
         const agentContext = context;
 
-        try {
-            // Orchestrator owns the think → log → act pipeline
-            const { plan, prompts } = await handler.think(userInput, agentContext);
+        // Orchestrator owns the think → log → act pipeline
+        const { plan, prompts } = await handler.think(userInput, agentContext);
 
-            // Save AI response log
-            const inputLog = JSON.stringify({
-                systemPrompt: prompts.systemPrompt || '',
-                developerMessage: prompts.developerMessage || '',
-                userInput: prompts.userInput || userInput,
-                agentTaskItem
-            });
-            const [providerName, modelName] = selection.split('/');
-            await this.logRepository.saveAiResponseLog(
+        // Save AI response log
+        const inputLog = JSON.stringify({
+            systemPrompt: prompts.systemPrompt || '',
+            developerMessage: prompts.developerMessage || '',
+            userInput: prompts.userInput || userInput,
+            agentTaskItem
+        });
+        await this.logRepository.saveAiResponseLog(
+            agentName,
+            JSON.stringify({ ...plan, taskType: agentName }),
+            selection,
+            context.schemaId,
+            inputLog
+        );
+
+        const { feedback, syncedSchemaIds } = await handler.act(plan, agentContext);
+        this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
+        this.statusService.clearStatus(userId, onEvent);
+
+        if (feedback !== null) {
+            // Agent needs user feedback — compose payload and emit unified event
+            const feedbackPayload: AgentFeedbackPayload = {
                 agentName,
-                JSON.stringify({ ...plan, taskType: agentName }),
-                providerName!,
-                modelName!,
-                context.schemaId,
-                inputLog
-            );
-
-            const { feedback, syncedSchemaIds } = await handler.act(plan, agentContext);
-            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
-            this.statusService.clearStatus(userId, onEvent);
-
-            if (feedback !== null) {
-                // Agent needs user feedback — compose payload and emit unified event
-                const feedbackPayload: AgentFeedbackPayload = {
-                    agentName,
-                    data: feedback,
-                    ...(agentTaskItem ? { agentTaskItem } : {}),
-                };
-                onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
-                return; // Wait for user feedback via handleAgentFeedback
-            }
-
-            // No feedback needed — commit and continue pipeline
-            if (agentTaskItem) {
-                await this.taskOperator.commit(agentTaskItem);
-                await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent);
-            }
-        } catch (error: any) {
-            this.statusService.clearStatus(userId, onEvent);
-
-            // AgentStopError: agent intentionally stopped — send reason to user
-            if (error instanceof AgentStopError) {
-                this.logger.info({ agentName: agentName }, `Agent stopped: ${error.userMessage}`);
-                await this.saveAndEmitAgentMessage(userId, error.userMessage, onEvent);
-                return;
-            }
-
-            this.logger.error({ error: formatError(error), taskType: agentName }, 'Error executing agent');
-            const errorMessage = error.message || 'Unknown error occurred';
-            await this.saveAndEmitAgentMessage(
-                userId,
-                `I'm sorry, I encountered an error while processing your request:\n${errorMessage}`,
-                onEvent
-            );
+                data: feedback,
+                ...(agentTaskItem ? { agentTaskItem } : {}),
+            };
+            onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
+            return; // Wait for user feedback via handleAgentFeedback
         }
+
+        // No feedback needed — commit and continue pipeline
+        if (agentTaskItem) {
+            await this.taskOperator.commit(agentTaskItem);
+            await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent, context.signal!);
+        }
+    }
+
+    private async handleError(userId: string, error: any, onEvent: OnServerToClientEvent, agentName?: AgentName): Promise<void> {
+        this.statusService.clearStatus(userId, onEvent);
+
+        if (error instanceof AgentStopError) {
+            this.logger.info({ agentName }, `Agent stopped: ${error.userMessage}`);
+            await this.saveAndEmitAgentMessage(userId, error.userMessage, onEvent);
+            return;
+        }
+
+        if (error instanceof UserVisibleError) {
+            await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
+            return;
+        }
+
+        this.logger.error({ error: formatError(error), agentName }, 'Error in chat service');
+
+        const userMessage = error?.response?.data?.title
+            ? `Error: ${error.response.data.title}`
+            : (error.message || 'I encountered an error while processing your request. Please try again later.');
+
+        await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
     }
 
 
