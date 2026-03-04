@@ -70,6 +70,14 @@ export function useSocket() {
         socket?.emit(SOCKET_EVENTS.CHAT.SYSTEM_PLAN_RESPONSE, data);
     }, [socket]);
 
+    const onAgentStatus = useCallback((callback: (data: { agentName: string | null, createdAt?: number }) => void) => {
+        if (!socket) return () => { };
+        socket.on(SOCKET_EVENTS.CHAT.AGENT_STATUS, callback);
+        return () => {
+            socket.off(SOCKET_EVENTS.CHAT.AGENT_STATUS, callback);
+        };
+    }, [socket]);
+
     return {
         isConnected,
         sendMessage,
@@ -82,5 +90,6 @@ export function useSocket() {
         onTemplateSelectionDetailToConfirm,
         onSystemPlanToConfirm,
         onSchemasSync,
+        onAgentStatus,
     };
 }

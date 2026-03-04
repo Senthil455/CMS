@@ -15,6 +15,14 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 socket.emit(event, ...args);
             };
 
+            // Re-send latest status on connect
+            const currentStatus = fastify.statusService.getStatus(userId);
+            if (currentStatus) {
+                onEvent(SOCKET_EVENTS.CHAT.AGENT_STATUS, currentStatus);
+            } else {
+                onEvent(SOCKET_EVENTS.CHAT.AGENT_STATUS, { agentName: null });
+            }
+
             socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, selection?: ModelSelection }) => {
                 try {
                     const selection = data.selection || 'gemini/gemini-3-flash';

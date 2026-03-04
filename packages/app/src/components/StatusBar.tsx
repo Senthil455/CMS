@@ -1,70 +1,39 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
-import { ENDPOINTS } from '@cms/shared';
+import { useState, useEffect } from 'react';
 import { useSocket } from '../hooks/use-socket';
 
 export function StatusBar() {
     const [status, setStatus] = useState<string | null>(null);
+    const [createdAt, setCreatedAt] = useState<number | null>(null);
     const [duration, setDuration] = useState(0);
-    const [isPolling, setIsPolling] = useState(false);
-    const lastStatusRef = useRef<string | null>(null);
-    const emptyCountRef = useRef(0);
-    const { onMessageReceived } = useSocket();
+    const { onAgentStatus } = useSocket();
 
-    const fetchStatus = useCallback(async () => {
-        try {
-            const response = await axios.get(`${''}${ENDPOINTS.CHAT.STATUS}`, {
-                withCredentials: true
-            });
-
-            if (response.data.success && response.data.data.statuses) {
-                const statuses = response.data.data.statuses;
-                const latest = statuses.length > 0 ? statuses[statuses.length - 1] : null;
-
-                if (latest) {
-                    setIsPolling(true);
-                    emptyCountRef.current = 0;
-                    if (latest !== lastStatusRef.current) {
-                        setStatus(latest);
-                        setDuration(0);
-                        lastStatusRef.current = latest;
-                    } else {
-                        setDuration(prev => prev + 500);
-                    }
-                } else {
-                    emptyCountRef.current++;
-                    if (emptyCountRef.current >= 3) {
-                        setIsPolling(false);
-                        setStatus(null);
-                        setDuration(0);
-                        lastStatusRef.current = null;
-                    }
-                }
+    useEffect(() => {
+        const cleanup = onAgentStatus((data) => {
+            if (data.agentName) {
+                setStatus(data.agentName);
+                const start = data.createdAt || Date.now();
+                setCreatedAt(start);
+                setDuration(Date.now() - start);
+            } else {
+                setStatus(null);
+                setCreatedAt(null);
+                setDuration(0);
             }
-        } catch (error: any) {
-            // Don't stop polling on error, maybe backend recovers
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchStatus();
-    }, [fetchStatus]);
-
-    useEffect(() => {
-        const cleanup = onMessageReceived(() => {
-            emptyCountRef.current = 0;
-            setIsPolling(true);
         });
         return cleanup;
-    }, [onMessageReceived]);
+    }, [onAgentStatus]);
 
     useEffect(() => {
-        if (!isPolling) return;
-        const interval = setInterval(fetchStatus, 500);
-        return () => clearInterval(interval);
-    }, [isPolling, fetchStatus]);
+        if (!status || !createdAt) return;
 
-    const seconds = (duration / 1000).toFixed(1);
+        const interval = setInterval(() => {
+            setDuration(Date.now() - createdAt);
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [status, createdAt]);
+
+    const seconds = Math.floor(duration / 1000);
 
     return (
         <div className="flex flex-col gap-2 p-2 bg-gray-100 border-t border-gray-200">
@@ -76,11 +45,13 @@ export function StatusBar() {
                             <div className={`w-2 h-2 bg-white rounded-full ${status ? 'animate-bounce shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'opacity-50'}`} style={{ animationDelay: '150ms' }} />
                             <div className={`w-2 h-2 bg-white rounded-full ${status ? 'animate-bounce shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'opacity-50'}`} style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="truncate">{status ?? (isPolling ? 'Agent is working...' : 'Ready for next command')}</span>
+                        <span className="truncate">
+                            {status ? `Waiting for ${status} agent` : 'Ready for next message'}
+                        </span>
                     </div>
                     {status && (
                         <div className="opacity-90 tabular-nums shrink-0 ml-2 bg-white/20 px-2.5 py-1 rounded-full text-[10px] ring-1 ring-white/30 backdrop-blur-sm">
-                            {seconds}s
+                            for {seconds}s
                         </div>
                     )}
                 </div>

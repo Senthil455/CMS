@@ -39,7 +39,6 @@ export class EntityOperator {
         const summarySummaryText = `Proposed Schema Changes:\n${summaryText}`;
 
         return {
-            agentTaskItem: undefined,
             userInput: userInput,
             summary: summarySummaryText,
             entities: summaryEntities,

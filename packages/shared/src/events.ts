@@ -24,6 +24,7 @@ export const SOCKET_EVENTS = {
         TEMPLATE_SELECTION_RESPONSE: 'chat:template_selection_response',
         SYSTEM_PLAN_TO_CONFIRM: 'chat:system_plan_to_confirm',
         SYSTEM_PLAN_RESPONSE: 'chat:system_plan_response',
+        AGENT_STATUS: 'chat:agent_status',
     }
 } as const;
 
@@ -42,6 +43,7 @@ export interface ServerToClientEvents {
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_LIST_TO_CONFIRM]: (data: any) => void;
     [SOCKET_EVENTS.CHAT.TEMPLATE_SELECTION_DETAIL_TO_CONFIRM]: (data: any) => void;
     [SOCKET_EVENTS.CHAT.SYSTEM_PLAN_TO_CONFIRM]: (data: SystemRequirment) => void;
+    [SOCKET_EVENTS.CHAT.AGENT_STATUS]: (data: { agentName: string | null; createdAt?: number }) => void;
 }
 
 export interface ClientToServerEvents {

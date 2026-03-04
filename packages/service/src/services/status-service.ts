@@ -1,30 +1,21 @@
+import { SOCKET_EVENTS, type OnServerToClientEvent } from '@cms/shared';
+
 export class StatusService {
-    private userStatuses: Record<string, string[]> = {};
+    private userStatuses: Record<string, { agentName: string, createdAt: number } | null> = {};
 
-    public updateStatus(userId: string, status: string): void {
-        if (!this.userStatuses[userId]) {
-            this.userStatuses[userId] = [];
-        }
-
-        const history = this.userStatuses[userId];
-
-        // Only push if it's different from the last status to avoid noise
-        if (history.length === 0 || history[history.length - 1] !== status) {
-            history.push(status);
-        }
-
-        // Keep only top 3
-        if (history.length > 3) {
-            this.userStatuses[userId] = history.slice(-3);
-        }
+    public setStatus(userId: string, agentName: string, onEvent: OnServerToClientEvent): void {
+        const status = { agentName, createdAt: Date.now() };
+        this.userStatuses[userId] = status;
+        onEvent(SOCKET_EVENTS.CHAT.AGENT_STATUS, status);
     }
 
-    public getStatuses(userId: string): string[] {
-        return this.userStatuses[userId] || [];
+    public getStatus(userId: string): { agentName: string, createdAt: number } | null {
+        return this.userStatuses[userId] || null;
     }
 
-    public clearStatus(userId: string): void {
-        delete this.userStatuses[userId];
+    public clearStatus(userId: string, onEvent: OnServerToClientEvent): void {
+        this.userStatuses[userId] = null;
+        onEvent(SOCKET_EVENTS.CHAT.AGENT_STATUS, { agentName: null });
     }
 }
 

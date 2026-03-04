@@ -304,7 +304,7 @@ export default function StudioPage() {
                 isOpen={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
                 onConfirm={handleConfirmSchema}
-                schemaSummary={confirmationData || { agentTaskItem: undefined, userInput: '', summary: '', entities: [], relationships: [] }}
+                schemaSummary={confirmationData || { userInput: '', summary: '', entities: [], relationships: [] }}
             />
 
             <TemplateSelectionDialog

@@ -26,13 +26,6 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         return reply.send({ success: true, cancelled });
     });
 
-    fastify.get(ENDPOINTS.CHAT.STATUS, {
-        preHandler: [fastify.authenticate]
-    }, async (request) => {
-        const userId = request.user!.id.toString();
-        const statuses = fastify.statusService.getStatuses(userId);
-        return { success: true, data: { statuses } };
-    });
 
     // --- Page Addons ---
 

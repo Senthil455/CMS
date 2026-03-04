@@ -137,7 +137,7 @@ export class ChatService {
                 ? `Error: ${error.response.data.title}`
                 : 'I encountered an error while processing your confirmation. Please check the logs and try again.';
             await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
-            this.statusService.clearStatus(userId);
+            this.statusService.clearStatus(userId, onEvent);
         }
     }
 
@@ -325,7 +325,7 @@ export class ChatService {
             return;
         }
 
-        this.statusService.updateStatus(userId, 'executing ' + agentName);
+        this.statusService.setStatus(userId, agentName, onEvent);
         const agentContext = context;
 
         try {
@@ -351,7 +351,7 @@ export class ChatService {
 
             const { feedback, syncedSchemaIds } = await handler.act(plan, agentContext);
             this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
-            this.statusService.clearStatus(userId);
+            this.statusService.clearStatus(userId, onEvent);
 
             if (feedback !== null) {
                 // Agent needs user feedback — compose payload and emit unified event
@@ -370,7 +370,7 @@ export class ChatService {
                 await this.executePendingTaskItem(agentTaskItem, userId, context.externalCookie, selection, onEvent);
             }
         } catch (error: any) {
-            this.statusService.clearStatus(userId);
+            this.statusService.clearStatus(userId, onEvent);
 
             // AgentStopError: agent intentionally stopped — send reason to user
             if (error instanceof AgentStopError) {
