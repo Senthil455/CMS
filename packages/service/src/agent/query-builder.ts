@@ -79,8 +79,6 @@ ${sdl}
         const schemaIds: string[] = [];
 
         for (const [name, source] of Object.entries(plan.queries)) {
-            await context.saveAgentMessage(`Executing generated query "${name}":\n${source}`);
-
             let targetSchemaId = '';
             // If we are editing, check if name matches
             if (plan.existingSchema && (plan.existingSchema.name === name || plan.existingSchema.settings?.query?.name === name)) {
@@ -89,19 +87,15 @@ ${sdl}
 
             // We need to saveQuery which internally does saveSchema.
             // But CmsClient.saveQuery helper simplifies this.
-            try {
-                const newSchemaId = await this.cmsClient.saveQuery(context.externalCookie, targetSchemaId, name, source);
-                schemaIds.push(newSchemaId);
-            } catch (e: any) {
-                this.logger.error({ error: e }, 'Failed to save query');
-                await context.saveAgentMessage(`Failed to save query "${name}".`);
-            }
+            const newSchemaId = await this.cmsClient.saveQuery(context.externalCookie, targetSchemaId, name, source);
+            schemaIds.push(newSchemaId);
         }
 
         if (schemaIds.length > 0) {
+            const queryNames = Object.keys(plan.queries).join(', ');
             const finalMessage = plan.existingSchema
-                ? `I have updated the queries, you can view them in CMS.`
-                : `I have generated the queries, you can find them in CMS.`;
+                ? `I have updated the queries, you can view them in CMS: ${queryNames}`
+                : `I have generated the queries, you can find them in CMS: ${queryNames}`;
             await context.saveAgentMessage(finalMessage);
         }
         return { feedback: null, syncedSchemaIds: schemaIds };

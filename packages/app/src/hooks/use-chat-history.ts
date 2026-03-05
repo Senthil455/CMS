@@ -19,9 +19,9 @@ export function useChatHistory() {
         // first page, we don't have `beforeId`
         if (pageIndex === 0) return `${''}${ENDPOINTS.CHAT.HISTORY}?limit=10`;
 
-        // add `beforeId` to the query, using the last id of the previous page
-        const lastMessage = previousPageData.data![previousPageData.data!.length - 1];
-        return `${''}${ENDPOINTS.CHAT.HISTORY}?limit=10&beforeId=${lastMessage.id}`;
+        // add `beforeId` to the query, using the oldest id of the previous page
+        const firstMessage = previousPageData.data![0];
+        return `${''}${ENDPOINTS.CHAT.HISTORY}?limit=10&beforeId=${firstMessage.id}`;
     };
 
     const { data, error, size, setSize, mutate, isValidating } = useSWRInfinite<ApiResponse<ChatMessage[]>>(
@@ -37,7 +37,7 @@ export function useChatHistory() {
 
     // usage of useMemo is necessary to prevent infinite loops in useEffect dependencies
     const history = useMemo(() => {
-        return data ? data.flatMap(page => page.data || []).reverse() : [];
+        return data ? [...data].reverse().flatMap(page => page.data || []) : [];
     }, [data]);
     const isLoading = !error && !data;
     const isEmpty = data?.[0]?.data?.length === 0;

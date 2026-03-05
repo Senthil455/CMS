@@ -38,8 +38,6 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
             throw new Error("No page schema ID provided. Please provide the ID in the format #schemaId:");
         }
 
-        await context.saveAgentMessage(`Accessing page (ID: ${schemaId}) to add ${this.addonDef.label}...`);
-
         // 2. Fetch Page
         const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!schema || schema.type !== 'page' || !schema.settings.page) {

@@ -130,10 +130,10 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             await context.saveAgentMessage('No entities provided to commit.');
             return { syncedSchemaIds: [] };
         }
+        const entityNames = response.entities.map((e: any) => e.name).join(', ');
 
-        await context.saveAgentMessage(`Committing ${response.entities.length} entities to CMS...`);
         const schemaIds = await this.entityOperator.commit(response, context.externalCookie);
-        await context.saveAgentMessage('All confirmed entities have been successfully committed to CMS.');
+        await context.saveAgentMessage(`All confirmed entities have been successfully committed to CMS: ${entityNames}`);
         return { syncedSchemaIds: schemaIds };
     }
 }

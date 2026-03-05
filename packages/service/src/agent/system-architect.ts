@@ -63,7 +63,7 @@ export class SystemArchitect implements Agent<SystemRequirment> {
             const description = entityItems.map(item => `entityName:${item.name}\n\tdescription: ${item.description}`).join('\n\n');
             followingTaskItems!.push({
                 agentName: AGENT_NAMES.ENTITY_DESIGNER,
-                description: `Generate the following entities,\n\n${description}`,
+                description: `Generate the entities,\n\n${description}`,
                 status: 'pending'
             });
         }
@@ -72,7 +72,7 @@ export class SystemArchitect implements Agent<SystemRequirment> {
         for (const item of queryItems) {
             followingTaskItems!.push({
                 agentName: AGENT_NAMES.QUERY_BUILDER,
-                description: `Generate the following query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
+                description: `Generate the query,\n\tentityName:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });
         }
@@ -81,7 +81,7 @@ export class SystemArchitect implements Agent<SystemRequirment> {
         for (const item of pageItems) {
             followingTaskItems!.push({
                 agentName: AGENT_NAMES.PAGE_PLANNER,
-                description: `Generate the following query,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
+                description: `Generate the page plan,\n\tpage:${item.name}\n\tdescription: ${item.description}`,
                 status: 'pending'
             });
         }
