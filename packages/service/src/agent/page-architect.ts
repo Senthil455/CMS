@@ -140,25 +140,7 @@ ${queryListContext}
                 }
             };
         } catch (e) {
-            this.logger.error({ error: e, response }, 'Failed to parse PageArchitect response');
-            // Fallback plan
-            return {
-                plan: {
-                    pageTitle: 'Fallback Page',
-                    sections: [
-                        { preset: '12', columns: [{ span: 12, id: 'main-content' }] }
-                    ],
-                    selectedQueries: [
-                        { queryName: 'fallback_query', fieldName: 'data', type: 'list', description: 'Default query', args: {} }
-                    ],
-                    architectureHints: 'Generate a basic layout'
-                },
-                prompts: {
-                    systemPrompt: this.architectSystemPrompt,
-                    developerMessage,
-                    userInput
-                }
-            };
+            throw new UserVisibleError("I couldn't understand the generated architecture plan. Please try again.");
         }
     }
 }

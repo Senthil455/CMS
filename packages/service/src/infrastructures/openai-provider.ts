@@ -56,10 +56,6 @@ export class OpenAIProvider implements AIProvider {
 
             return null;
         } catch (error: any) {
-            this.logger.error({
-                error: error.message,
-                stack: error.stack
-            }, 'OpenAI SDK Error');
             throw new Error('Failed to generate via OpenAI SDK');
         }
     }

@@ -13,12 +13,6 @@ export class AuthService {
         try {
             return await this.client.getMe(externalCookie);
         } catch (error: any) {
-            const errorSummary = {
-                message: error.message,
-                status: error.response?.status,
-                url: error.config?.url
-            };
-            this.logger.error(errorSummary, 'External Profile Error');
             return null;
         }
     }

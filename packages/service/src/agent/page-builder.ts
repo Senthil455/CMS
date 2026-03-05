@@ -126,7 +126,7 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
                             continue; // Skip the standard generation path
                         }
                     } catch (err: any) {
-                        this.logger.warn({ err, addonId: instruction.addonId }, `Addon agent failed to generate component, falling back to general LLM`);
+                        // fallback to general LLM
                     }
                 }
             }

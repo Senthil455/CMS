@@ -5,6 +5,7 @@ import {
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
+import { UserVisibleError } from '../agent/user-visible-error';
 
 export class PageOperator {
     constructor(
@@ -35,10 +36,10 @@ export class PageOperator {
                 try {
                     metadata = pageSettings.metadata ? (typeof pageSettings.metadata === 'string' ? JSON.parse(pageSettings.metadata) : pageSettings.metadata) : {};
                 } catch (e) {
-                    this.logger.warn({ schemaId, error: e }, 'Failed to parse page metadata');
+                    throw new UserVisibleError(`Failed to parse page metadata for schema ${schemaId}`);
                 }
             } else {
-                throw new Error(`Page with schemaId ${schemaId} not found`);
+                throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
             }
         }
 
@@ -73,7 +74,7 @@ export class PageOperator {
     async saveArchitecture(schemaId: string, architecture: any, externalCookie: string): Promise<void> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
-            throw new Error(`Page with schemaId ${schemaId} not found`);
+            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
         }
 
         const pageSettings = schema.settings.page;
@@ -106,7 +107,7 @@ export class PageOperator {
     ): Promise<string> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
-            throw new Error(`Page with schemaId ${schemaId} not found`);
+            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
         }
 
         const pageSettings = schema.settings.page;
@@ -120,7 +121,7 @@ export class PageOperator {
         try {
             compiledHtml = LayoutCompiler.compile(layoutJson, components, title || pageSettings.title, { enableVisitTrack: metadata.enableVisitTrack });
         } catch (e) {
-            this.logger.warn({ schemaId, error: e }, 'Failed to compile HTML from AI-generated components');
+            throw new UserVisibleError("Failed to compile HTML layout from the generated components.");
         }
 
         const payload: SaveSchemaPayload = {
@@ -147,7 +148,7 @@ export class PageOperator {
     async saveHtml(schemaId: string, html: string, title: string | undefined, externalCookie: string): Promise<string> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
-            throw new Error(`Page with schemaId ${schemaId} not found`);
+            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
         }
 
         const pageSettings = schema.settings.page;
@@ -174,7 +175,7 @@ export class PageOperator {
     async saveComponentInstructions(schemaId: string, componentInstructions: any[], externalCookie: string): Promise<void> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
-            throw new Error(`Page with schemaId ${schemaId} not found`);
+            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
         }
 
         const pageSettings = schema.settings.page;

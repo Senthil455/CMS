@@ -33,7 +33,6 @@ export class QueryGenerator implements Agent<QueryGeneratorPlan> {
                     await context.saveAgentMessage(`I found the existing query "${qName}". I will fetch the latest schema and help you modify it...`);
                 }
             } catch (e) {
-                this.logger.warn({ schemaId }, 'Existing query not found for modification');
                 await context.saveAgentMessage(`I couldn't find the existing query with ID "${schemaId}". I will generate a new query for you...`);
             }
         }

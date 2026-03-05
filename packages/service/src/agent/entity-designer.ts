@@ -76,7 +76,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
                     await context.saveAgentMessage(`I found the existing entity "${ent.name}". I'll fetch its schema and help you modify it...`);
                 }
             } catch (e) {
-                this.logger.warn({ schemaId }, 'Existing entity not found for modification');
                 await context.saveAgentMessage(`I couldn't find an existing entity with ID "${schemaId}". I'll proceed with generating what you need...`);
             }
         } else {

@@ -37,7 +37,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
                     }
                 }
             } catch (e) {
-                this.logger.warn({ schemaId, error: e }, 'Failed to fetch existing schema for routing');
+                // fall through
             }
         }
 
@@ -121,7 +121,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             }
             return { plan, developerMessage };
         } catch (e) {
-            this.logger.error({ error: e, response }, 'Failed to parse PagePlanner response');
             throw new UserVisibleError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
     }

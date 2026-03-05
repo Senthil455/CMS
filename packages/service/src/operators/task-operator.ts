@@ -17,7 +17,6 @@ export class TaskOperator {
         this.logger.info({ taskId }, 'Checking out task item in TaskOperator');
         const task = await this.taskRepository.findById(taskId);
         if (!task) {
-            this.logger.warn({ taskId }, 'Task not found during checkout');
             return null;
         }
 
@@ -28,7 +27,6 @@ export class TaskOperator {
         this.logger.info({ taskRef }, 'Committing task item in TaskOperator');
         const task = await this.taskRepository.findById(taskRef.taskId);
         if (!task) {
-            this.logger.warn({ taskRef }, 'Task not found during commit');
             return;
         }
 
@@ -43,7 +41,6 @@ export class TaskOperator {
         this.logger.info({ taskRef }, 'Resetting task in TaskOperator');
         const task = await this.taskRepository.findById(taskRef.taskId);
         if (!task) {
-            this.logger.warn({ taskRef }, 'Task not found during reset');
             return;
         }
 
@@ -65,7 +62,6 @@ export class TaskOperator {
         this.logger.info({ taskRef, itemCount: items.length }, 'Inserting items after current index in TaskOperator');
         const task = await this.taskRepository.findById(taskRef.taskId);
         if (!task) {
-            this.logger.warn({ taskRef }, 'Task not found during item insertion');
             return;
         }
 

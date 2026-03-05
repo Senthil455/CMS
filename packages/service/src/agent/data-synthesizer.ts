@@ -2,6 +2,7 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
+import { UserVisibleError } from './user-visible-error';
 
 import { AGENT_NAMES } from '@cms/shared';
 
@@ -104,6 +105,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
                 successCount++;
             } catch (e) {
                 this.logger.error({ error: e, item }, 'Failed to insert item');
+                throw new UserVisibleError(`Failed to insert synthetic data: ${e instanceof Error ? e.message : 'Unknown error'}`);
             }
         }
 

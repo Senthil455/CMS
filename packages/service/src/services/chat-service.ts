@@ -315,8 +315,7 @@ export class ChatService {
     ): Promise<void> {
         const handler = this.resolveHandler(selection, agentName);
         if (!handler) {
-            this.logger.error({ taskType: agentName, selection }, 'Handler not found for task type');
-            return;
+            throw new Error(`Handler not found for task type: ${agentName}`);
         }
 
         this.statusService.setStatus(userId, agentName, onEvent);
@@ -367,11 +366,10 @@ export class ChatService {
 
 
         if (error instanceof UserVisibleError || error instanceof CmsError || error instanceof AgentProviderError) {
-            this.logger.error({ error: formatError(error.cause || error), agentName }, 'User visible error');
             await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
             return;
         }
-
+        // this error will not bubbleup, should log it
         this.logger.error({ error: formatError(error), agentName }, 'Internal chat service error');
         await this.saveAndEmitAgentMessage(userId, 'I encountered an internal error while processing your request. Please try again later.', onEvent);
     }

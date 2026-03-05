@@ -58,7 +58,6 @@ export class GeminiProvider implements AIProvider {
             if (!resp.ok) {
                 const text = await resp.text();
                 // If cache creation fails (e.g. too many caches), we fall back to normal generation
-                this.logger.warn({ status: resp.status, text }, 'Failed to create Gemini context cache, falling back to non-cached');
                 return null;
             }
 
@@ -70,7 +69,6 @@ export class GeminiProvider implements AIProvider {
                 return cacheName;
             }
         } catch (error) {
-            this.logger.error({ error }, 'Error creating Gemini context cache');
         }
         return null;
     }
@@ -140,25 +138,17 @@ export class GeminiProvider implements AIProvider {
             const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
             if (!content) {
-                this.logger.warn({ data }, 'Gemini returned empty content');
                 return null;
             }
 
             try {
                 return JSON.parse(content);
             } catch (e) {
-                this.logger.error({ content, error: e }, 'Failed to parse Gemini JSON response');
                 // Return raw content as fallback if it's supposed to be JSON but fails
                 return content;
             }
 
         } catch (error: any) {
-            this.logger.error({
-                model: currentModel,
-                durationMs: Date.now() - start,
-                error: error?.message ?? error
-            }, 'Gemini generate failed');
-
             // This might throw AgentProviderError
             this.transformError(error);
 

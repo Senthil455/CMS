@@ -36,7 +36,6 @@ export class SystemArchitect implements Agent<SystemRequirment> {
                 }
             };
         } catch (e) {
-            this.logger.error({ error: e, response }, 'Failed to parse SystemArchitect response');
             throw new UserVisibleError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
     }

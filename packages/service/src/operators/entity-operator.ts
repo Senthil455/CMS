@@ -8,6 +8,7 @@ import {
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { RelationshipModel } from '../models/relationship-model';
+import { UserVisibleError } from '../agent/user-visible-error';
 
 export class EntityOperator {
     constructor(
@@ -68,7 +69,6 @@ export class EntityOperator {
                     }
                     this.logger.info({ entityName: item.name }, 'Successfully committed entity via EntityOperator');
                 } catch (saveError: any) {
-                    this.logger.error({ error: saveError, entityName: item.name, payload }, 'Failed to commit entity');
                     throw saveError;
                 }
             }
@@ -106,7 +106,7 @@ export class EntityOperator {
                     modifiedEntitiesMap.set(entity.schemaId!, entity);
                 }
             } catch (error) {
-                this.logger.error({ error, relationship: rel }, 'Failed to apply relationship to entities');
+                throw new UserVisibleError(`Failed to apply relationship to entities: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
         }
 
@@ -122,7 +122,7 @@ export class EntityOperator {
                 await this.cmsClient.saveEntityDefine(externalCookie, payload);
                 this.logger.info({ entityName: entity.name }, 'Successfully updated entity for relationship');
             } catch (saveError) {
-                this.logger.error({ error: saveError, entityName: entity.name, payload }, 'Failed to update entity for relationship');
+                throw saveError;
             }
         }
 
