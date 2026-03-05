@@ -49,6 +49,7 @@ export interface ChatMessage {
     role: 'user' | 'assistant';
     createdAt: string;
     payload?: any;
+    agentName?: string;
 }
 
 export interface SaveMessageRequest {

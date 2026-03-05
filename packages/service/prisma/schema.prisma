@@ -13,6 +13,7 @@ model ChatMessage {
   userId    String
   content   String
   role      String   // 'user' or 'assistant'
+  agentName String?  // The agent that replied (e.g. 'entity_designer')
   payload   String?  // JSON stringified metadata
   createdAt DateTime @default(now())
 }

@@ -15,15 +15,24 @@ export class SqliteChatMessageRepository implements IChatMessageRepository {
                 userId: message.userId,
                 content: message.content,
                 role: message.role,
+                agentName: message.agentName || null,
                 payload: message.payload ? JSON.stringify(message.payload) : null,
             },
         });
-        return {
-            ...saved,
+        const result: ChatMessage = {
+            id: saved.id,
+            userId: saved.userId,
+            content: saved.content,
             role: saved.role as 'user' | 'assistant',
             createdAt: saved.createdAt.toISOString(),
-            payload: saved.payload ? JSON.parse(saved.payload) : undefined,
         };
+        if (saved.agentName) {
+            result.agentName = saved.agentName;
+        }
+        if (saved.payload) {
+            result.payload = JSON.parse(saved.payload);
+        }
+        return result;
     }
 
     async findAll(userId: string, limit: number, beforeId?: number): Promise<ChatMessage[]> {

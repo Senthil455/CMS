@@ -107,7 +107,7 @@ export class ChatService {
 
         try {
             const existingTaskItem: AgentTaskRef | undefined = feedbackData.agentTaskItem;
-            const context = this.createContext(userId, externalCookie, undefined, onEvent, abortController.signal);
+            const context = this.createContext(userId, externalCookie, undefined, onEvent, abortController.signal, agentName);
             const { syncedSchemaIds, followingTaskItems } = await handler.finalize(feedbackData, context);
             this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
 
@@ -176,7 +176,7 @@ export class ChatService {
         const pageBuilder = this.resolveHandler(selection, AGENT_NAMES.PAGE_BUILDER) as any;
 
         if (pageBuilder && pageBuilder.modifySingleComponent) {
-            const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal);
+            const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal, AGENT_NAMES.PAGE_BUILDER);
             const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
             this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
         } else {
@@ -209,12 +209,12 @@ export class ChatService {
 
         if (!agent) {
             this.statusService.setStatus(userId, AGENT_NAMES.INTENT_CLASSIFIER, onEvent);
-            agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, undefined, onEvent, signal)) ?? null;
+            agent = await this.resolveClassifier(selection)?.resolve(content, this.createContext(userId, externalCookie, undefined, onEvent, signal, AGENT_NAMES.INTENT_CLASSIFIER)) ?? null;
         }
 
         if (agent && this.resolveHandler(selection, agent)) {
             this.logger.info({ agent }, 'Executing resolved handler');
-            const context = this.createContext(userId, externalCookie, undefined, onEvent, signal);
+            const context = this.createContext(userId, externalCookie, undefined, onEvent, signal, agent);
             await this.executeAgent(agent, content, context, selection, userId, onEvent);
             return;
         }
@@ -222,7 +222,7 @@ export class ChatService {
         this.statusService.clearStatus(userId, onEvent);
         // Fallback or default behavior if no command resolved
         const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
-        await this.saveAndEmitAgentMessage(userId, helpMessage, onEvent);
+        await this.saveAndEmitAgentMessage(userId, helpMessage, onEvent, undefined, 'system');
     }
 
     private async actOnLog(logId: number, userId: string, externalCookie: string,
@@ -237,7 +237,7 @@ export class ChatService {
 
         const selection: ModelSelection = (log.modelSelection || 'gemini/gemini-3-flash') as ModelSelection;
         const context = this.createContext(userId, externalCookie,
-            log.schemaId ?? undefined, onEvent, signal);
+            log.schemaId ?? undefined, onEvent, signal, handlerName as AgentName);
 
         let agentTaskItem: AgentTaskRef | undefined;
         if (log.input) {
@@ -248,7 +248,7 @@ export class ChatService {
 
         const plan = JSON.parse(responseContent);
         const handler = this.resolveHandler(selection, handlerName as AgentName)!;
-        await this.saveAgentMessage(userId, "Manually triggering action from log...");
+        await this.saveAgentMessage(userId, "Manually triggering action from log...", undefined, 'system');
 
         const { feedback, syncedSchemaIds } = await handler.act(plan, context);
         this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
@@ -266,13 +266,14 @@ export class ChatService {
         schemaId: string | undefined,
         onEvent: OnServerToClientEvent,
         signal?: AbortSignal,
+        agentName?: string,
     ): AgentContext {
         return {
             externalCookie,
             ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
             saveAgentMessage: async (content: string, payload?: any) => {
-                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload);
+                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload, agentName);
             },
         };
     }
@@ -300,13 +301,13 @@ export class ChatService {
             const agentTaskItem = { taskId, index: item.index };
 
             const context = this.createContext(userId, externalCookie,
-                item.schemaId, onEvent, signal);
+                item.schemaId, onEvent, signal, item.agentName as AgentName);
             await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
         } else {
             // Task finished — send a walkthrough message
             const walkthrough = await this.taskOperator.getWalkthrough(taskId);
             if (walkthrough) {
-                await this.saveAndEmitAgentMessage(userId, walkthrough, onEvent);
+                await this.saveAndEmitAgentMessage(userId, walkthrough, onEvent, undefined, 'system');
             }
         }
     }
@@ -388,9 +389,10 @@ export class ChatService {
         userId: string,
         content: string,
         onEvent: OnServerToClientEvent,
-        payload?: any
+        payload?: any,
+        agentName?: string
     ): Promise<ChatMessage> {
-        const message = await this.saveAgentMessage(userId, content, payload);
+        const message = await this.saveAgentMessage(userId, content, payload, agentName);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
     }
@@ -398,8 +400,14 @@ export class ChatService {
         return this.messageRepository.save({ userId, content, role: 'user' });
     }
 
-    private async saveAgentMessage(userId: string, content: string, payload?: any): Promise<ChatMessage> {
-        return this.messageRepository.save({ userId, content, role: 'assistant', payload });
+    private async saveAgentMessage(userId: string, content: string, payload?: any, agentName?: string): Promise<ChatMessage> {
+        return this.messageRepository.save({
+            userId,
+            content,
+            role: 'assistant',
+            ...(payload !== undefined ? { payload } : {}),
+            ...(agentName !== undefined ? { agentName } : {})
+        });
     }
 
     private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent {
