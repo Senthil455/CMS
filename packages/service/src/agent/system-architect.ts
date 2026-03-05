@@ -2,17 +2,9 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type ThinkResult, type Agent, AgentStopError, type ActResult, type FinalizeResult } from './chat-assistant';
-import { type SystemRequirment, AGENT_NAMES } from '@cms/shared';
+import { type SystemRequirment, type SystemRequirmentItem, AGENT_NAMES } from '@cms/shared';
 
-export interface SystemPlanItem {
-    type: 'entity' | 'query' | 'page';
-    name: string;
-    description: string;
-}
-
-export type SystemArchitectPlan = SystemPlanItem[];
-
-export class SystemArchitect implements Agent<SystemArchitectPlan> {
+export class SystemArchitect implements Agent<SystemRequirment> {
     constructor(
         private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
@@ -20,7 +12,7 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         private readonly logger: ServiceLogger,
     ) { }
 
-    async think(userInput: string, context: AgentContext): Promise<ThinkResult<SystemArchitectPlan>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<SystemRequirment>> {
         const response = await this.aiProvider.generate(
             this.systemPrompt,
             'Generate a system plan identifying the required entities, queries, and pages based on user input.',
@@ -29,14 +21,14 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         );
 
         try {
-            let plan: SystemArchitectPlan;
+            let planItems: SystemRequirmentItem[];
             if (typeof response === 'string') {
-                plan = JSON.parse(response);
+                planItems = JSON.parse(response);
             } else {
-                plan = response as SystemArchitectPlan;
+                planItems = response as SystemRequirmentItem[];
             }
             return {
-                plan, prompts: {
+                plan: { items: planItems }, prompts: {
                     systemPrompt: this.systemPrompt,
                     developerMessage: 'Generate a system plan identifying the required entities, queries, and pages based on user input.',
                     userInput
@@ -48,8 +40,8 @@ export class SystemArchitect implements Agent<SystemArchitectPlan> {
         }
     }
 
-    async act(plan: SystemArchitectPlan, context: AgentContext): Promise<ActResult<SystemArchitectPlan>> {
-        if (!plan || plan.length === 0) {
+    async act(plan: SystemRequirment, context: AgentContext): Promise<ActResult<SystemRequirment>> {
+        if (!plan || !plan.items || plan.items.length === 0) {
             await context.saveAgentMessage("I couldn't generate a valid plan for this system request.");
             return { feedback: null, syncedSchemaIds: [] };
         }

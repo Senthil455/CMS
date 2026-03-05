@@ -98,11 +98,6 @@ export class ChatService {
         onEvent: OnServerToClientEvent
     ): Promise<void> {
         const handler = this.resolveHandler(selection, agentName);
-        if (!handler) {
-            this.logger.error({ agentName, selection }, 'Handler not found for agent feedback');
-            await this.saveAndEmitAgentMessage(userId, 'Unable to process your response. Agent handler not found.', onEvent);
-            return;
-        }
 
         const abortController = new AbortController();
         this.activeRequests.set(userId, abortController);
@@ -182,7 +177,7 @@ export class ChatService {
             const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
             this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
         } else {
-            await this.saveAndEmitAgentMessage(userId, 'Page builder is not available to modify components.', onEvent);
+            throw new UserVisibleError('Page editor is not available. Please try a different AI model.');
         }
     }
 
@@ -231,7 +226,7 @@ export class ChatService {
         onEvent: OnServerToClientEvent, signal: AbortSignal, continuePipeline: boolean = false): Promise<void> {
         const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
-            throw new Error(`Log with ID ${logId} not found`);
+            throw new UserVisibleError(`Unable to find the previous action log (ID: ${logId}).`);
         }
 
         const responseContent = log.response;
@@ -379,11 +374,8 @@ export class ChatService {
             return;
         }
 
-        this.logger.error({ error: formatError(error), agentName }, 'Error in chat service');
-
-        const userMessage = error.message || 'I encountered an error while processing your request. Please try again later.';
-
-        await this.saveAndEmitAgentMessage(userId, userMessage, onEvent);
+        this.logger.error({ error: formatError(error), agentName }, 'Internal chat service error');
+        await this.saveAndEmitAgentMessage(userId, 'I encountered an internal error while processing your request. Please try again later.', onEvent);
     }
 
 
@@ -407,19 +399,18 @@ export class ChatService {
         return this.messageRepository.save({ userId, content, role: 'assistant', payload });
     }
 
-    private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent | undefined {
+    private resolveHandler(selection: ModelSelection, agentName: AgentName): Agent {
         if (this.chatHandlers[selection]?.[agentName]) {
-            return this.chatHandlers[selection][agentName];
+            return this.chatHandlers[selection][agentName]!;
         }
-        throw new Error(`Handler not found for agent ${agentName} and selection ${selection}`);
-
+        throw new UserVisibleError(`The requested AI agent (${agentName}) is not available for the selected model (${selection}).`);
     }
 
-    private resolveClassifier(selection: ModelSelection): IntentClassifier | undefined {
+    private resolveClassifier(selection: ModelSelection): IntentClassifier {
         if (this.intentClassifier[selection]) {
-            return this.intentClassifier[selection];
+            return this.intentClassifier[selection]!;
         }
-        throw new Error(`Classifier not found for selection ${selection}`);
+        throw new UserVisibleError(`The intent classifier is not available for the selected model (${selection}).`);
     }
 
 }

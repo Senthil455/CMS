@@ -19,7 +19,8 @@ export function SystemPlanConfirmationModal({
 
     useEffect(() => {
         if (isOpen && plan) {
-            setEditablePlan([...plan.items]);
+            const items = Array.isArray(plan.items) ? plan.items : [];
+            setEditablePlan([...items]);
         }
     }, [isOpen, plan]);
 
