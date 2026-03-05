@@ -108,7 +108,7 @@
 }
 
 .markdown-content code {
-    background: var(--app-muted);
+    background: var(--bg-muted);
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-family: inherit;
@@ -116,7 +116,7 @@
 }
 
 .markdown-content pre {
-    background: var(--app-muted);
+    background: var(--bg-muted);
     padding: 1rem;
     border-radius: 8px;
     overflow-x: auto;

@@ -19,6 +19,7 @@ import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../agent/user-visible-error';
 import { CmsError } from '../infrastructures/cms-error';
 import { AgentProviderError } from '../infrastructures/agent-provider-error';
+import { type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
 
 /**
  * Payload composed by ChatService when an agent's act() returns non-null feedback.
@@ -301,6 +302,12 @@ export class ChatService {
             const context = this.createContext(userId, externalCookie,
                 item.schemaId, onEvent, signal);
             await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
+        } else {
+            // Task finished — send a walkthrough message
+            const walkthrough = await this.taskOperator.getWalkthrough(taskId);
+            if (walkthrough) {
+                await this.saveAndEmitAgentMessage(userId, walkthrough, onEvent);
+            }
         }
     }
 

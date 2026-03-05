@@ -73,4 +73,17 @@ export class AgentTaskModel {
         task.items.forEach((item, i) => { item.index = i; });
         task.status = 'pending';
     }
+
+    public buildWalkthroughMessage(task: AgentTask): string {
+        const finishedItems = task.items.filter(item => item.status === 'finished');
+        if (finishedItems.length === 0) return 'Task completed.';
+
+        let message = '✅ **Task Complete!**\n\nHere is what I have done:\n\n';
+        finishedItems.forEach((item, idx) => {
+            const agentLabel = item.agentName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            message += `${idx + 1}. **${agentLabel}** — ${item.description}\n`;
+        });
+        message += '\nFeel free to ask if you need anything else!';
+        return message;
+    }
 }

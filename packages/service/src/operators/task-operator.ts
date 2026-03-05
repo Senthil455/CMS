@@ -23,6 +23,14 @@ export class TaskOperator {
         return this.agentTaskModel.checkout(task);
     }
 
+    async getWalkthrough(taskId: number): Promise<string | null> {
+        const task = await this.taskRepository.findById(taskId);
+        if (!task) {
+            return null;
+        }
+        return this.agentTaskModel.buildWalkthroughMessage(task);
+    }
+
     async commit(taskRef: AgentTaskRef): Promise<void> {
         this.logger.info({ taskRef }, 'Committing task item in TaskOperator');
         const task = await this.taskRepository.findById(taskRef.taskId);
