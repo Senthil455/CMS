@@ -3,7 +3,8 @@ import { type ChatMessage } from '@cms/shared';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { AiLogsList } from './AiLogsList';
-import { MessageSquare, Database, AlertTriangle, Settings, Loader2, PanelRightClose } from 'lucide-react';
+import { TasksList } from './TasksList';
+import { MessageSquare, Database, AlertTriangle, Settings, Loader2, PanelRightClose, ListChecks } from 'lucide-react';
 import { StatusBar } from '../../../components/StatusBar';
 import { Link } from 'react-router-dom';
 
@@ -30,7 +31,7 @@ export function ChatPanel({
     onDraftConsumed,
     onClose
 }: ChatPanelProps) {
-    const [activeTab, setActiveTab] = useState<'chat' | 'logs'>('chat');
+    const [activeTab, setActiveTab] = useState<'chat' | 'logs' | 'tasks'>('chat');
     const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
 
     const checkConfig = async () => {
@@ -76,6 +77,13 @@ export function ChatPanel({
                         Chat
                     </button>
                     <button
+                        onClick={() => setActiveTab('tasks')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'tasks' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
+                    >
+                        <ListChecks className="w-3.5 h-3.5" />
+                        Tasks
+                    </button>
+                    <button
                         onClick={() => setActiveTab('logs')}
                         className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'logs' ? 'bg-app-surface text-primary shadow-sm' : 'text-primary-muted hover:text-primary'}`}
                     >
@@ -93,7 +101,7 @@ export function ChatPanel({
             </div>
 
             <div className="flex-1 overflow-hidden relative flex flex-col">
-                {activeTab === 'chat' ? (
+                {activeTab === 'chat' && (
                     <MessageList
                         messages={messages}
                         isLoading={isLoading}
@@ -101,7 +109,11 @@ export function ChatPanel({
                         isFetchingMore={isFetchingMore}
                         onLoadMore={onLoadMore}
                     />
-                ) : (
+                )}
+                {activeTab === 'tasks' && (
+                    <TasksList onSwitchToChat={() => setActiveTab('chat')} onSend={onSend} />
+                )}
+                {activeTab === 'logs' && (
                     <AiLogsList onSwitchToChat={() => setActiveTab('chat')} onSend={onSend} />
                 )}
             </div>

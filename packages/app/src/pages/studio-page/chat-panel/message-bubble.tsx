@@ -7,26 +7,31 @@ interface Props {
     message: ChatMessage;
 }
 
+export function getAgentIcon(agentName: string | undefined, content?: string) {
+    let AgentIcon = Bot;
+    if (agentName === 'query_builder') {
+        AgentIcon = Database;
+    } else if (agentName === 'entity_designer') {
+        AgentIcon = LayoutTemplate;
+    } else if (agentName === 'page_architect') {
+        AgentIcon = PenTool;
+    } else if (agentName === 'page_builder') {
+        AgentIcon = Code2;
+    } else if (agentName === 'system_architect') {
+        AgentIcon = Network;
+    } else if ((content && content.includes('Task Complete')) || agentName === 'system') {
+        AgentIcon = Sparkles;
+    }
+    return AgentIcon;
+}
+
 export function MessageBubble({ message }: Props) {
     const isUser = message.role === 'user';
     const dateStr = new Date(message.createdAt).toLocaleDateString();
     const timeStr = new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 
     // Determine agent icon based on agentName
-    let AgentIcon = Bot;
-    if (message.agentName === 'query_builder') {
-        AgentIcon = Database;
-    } else if (message.agentName === 'entity_designer') {
-        AgentIcon = LayoutTemplate;
-    } else if (message.agentName === 'page_architect') {
-        AgentIcon = PenTool;
-    } else if (message.agentName === 'page_builder') {
-        AgentIcon = Code2;
-    } else if (message.agentName === 'system_architect') {
-        AgentIcon = Network;
-    } else if (message.content.includes('Task Complete') || message.agentName === 'system') {
-        AgentIcon = Sparkles;
-    }
+    const AgentIcon = getAgentIcon(message.agentName, message.content);
 
     return (
         <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} border-b border-border py-4 px-4 animate-in fade-in group gap-3`}>

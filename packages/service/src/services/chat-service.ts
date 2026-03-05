@@ -73,6 +73,21 @@ export class ChatService {
                 }
             }
 
+            // Check for execute-task command: @execute-task <taskId> <index>
+            const executeMatch = content.trim().match(/^@execute-task\s+(\d+)\s+(\d+)$/i);
+            if (executeMatch && executeMatch[1] && executeMatch[2]) {
+                await this.handleExecuteTaskCommand(
+                    userId,
+                    externalCookie,
+                    selection,
+                    onEvent,
+                    parseInt(executeMatch[1], 10),
+                    parseInt(executeMatch[2], 10),
+                    abortController.signal
+                );
+                return;
+            }
+
             // Check for modify-component command: @modify-component <schemaId> <componentId> <requirement>
             const modifyMatch = content.trim().match(/^@modify-component\s+([\w-]+)\s+([\w-]+)(?:\s+(.*))?$/is);
             if (modifyMatch) {
@@ -153,6 +168,32 @@ export class ChatService {
         const userMessage = await this.saveUserMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
         await this.actOnLog(logId, userId, externalCookie, onEvent, signal, continuePipeline);
+    }
+
+    private async handleExecuteTaskCommand(
+        userId: string,
+        externalCookie: string,
+        selection: ModelSelection,
+        onEvent: OnServerToClientEvent,
+        taskId: number,
+        index: number,
+        signal: AbortSignal
+    ): Promise<void> {
+        // Find the task items first
+        const task = await this.taskOperator.checkout(taskId); // just to ensure task exists, we'll reset it anyway
+        if (!task) {
+            throw new UserVisibleError(`Unable to find the task (ID: ${taskId}).`);
+        }
+        const userMessage = await this.saveUserMessage(userId, `Executing task ${taskId} from item ${index}...`);
+        onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
+
+        const agentTaskItem: AgentTaskRef = { taskId, index };
+
+        // Reset the item to pending
+        await this.taskOperator.reset(agentTaskItem);
+
+        // Start execution
+        await this.executePendingTaskItem(taskId, userId, externalCookie, selection, onEvent, signal);
     }
 
     private async handleModifyComponentCommand(
