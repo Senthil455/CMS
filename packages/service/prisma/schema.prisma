@@ -18,11 +18,10 @@ model ChatMessage {
 }
 
 model AiResponseLog {
-  id           Int      @id @default(autoincrement())
-  handler      String
-  providerName String?  // 'openai' | 'gemini' etc.
-  modelName    String?  // 'gpt-5.2' | 'gemini-3-flash' etc.
-  input        String?  // Full prompt (system + developer + user)
+  id             Int      @id @default(autoincrement())
+  handler        String
+  modelSelection String?  // e.g. 'openai/gpt-4o'
+  input          String?  // Full prompt (system + developer + user)
   response     String
   schemaId     String?
   timestamp    DateTime @default(now())

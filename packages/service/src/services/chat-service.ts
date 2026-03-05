@@ -232,7 +232,7 @@ export class ChatService {
         const responseContent = log.response;
         const handlerName = log.handler;
 
-        const selection: ModelSelection = `${log.providerName}/${log.modelName}` as ModelSelection;
+        const selection: ModelSelection = (log.modelSelection || 'gemini/gemini-3-flash') as ModelSelection;
         const context = this.createContext(userId, externalCookie,
             log.schemaId ?? undefined, onEvent, signal);
 

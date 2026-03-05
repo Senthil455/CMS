@@ -13,21 +13,11 @@ export class SqliteAiResponseLogRepository implements IAiResponseLogRepository {
     constructor(private prisma: PrismaClient) { }
 
     async saveAiResponseLog(handler: string, response: string, selection?: ModelSelection, schemaId?: string, input?: string): Promise<void> {
-        let providerName: string | null = null;
-        let modelName: string | null = null;
-
-        if (selection) {
-            const parts = selection.split('/');
-            providerName = parts[0] || null;
-            modelName = parts[1] || null;
-        }
-
         await this.prisma.aiResponseLog.create({
             data: {
                 handler,
                 response,
-                providerName,
-                modelName,
+                modelSelection: selection || null,
                 schemaId: schemaId || null,
                 input: input || null,
             },
