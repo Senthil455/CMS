@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Check } from 'lucide-react';
 import { type ChatMessage } from '@cms/shared';
+import { Calendar, Clock } from 'lucide-react';
 
 interface Props {
     message: ChatMessage;
@@ -10,52 +9,50 @@ interface Props {
 
 export function MessageBubble({ message }: Props) {
     const isUser = message.role === 'user';
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(message.content);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-        }
-    };
+    const dateStr = new Date(message.createdAt).toLocaleDateString();
+    const timeStr = new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 
     return (
-        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-in fade-in slide-in-from-bottom-2 group`}>
-            <div
-                className={`relative max-w-[100%] md:max-w-[85%] rounded-2xl px-4 py-3 shadow-sm border ${isUser
-                    ? 'bg-primary text-app border-primary'
-                    : 'bg-app-surface text-primary border-border'
-                    }`}
-            >
-                <button
-                    onClick={handleCopy}
-                    className={`absolute top-2 right-2 p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100 ${isUser
-                        ? 'text-app hover:bg-white/10'
-                        : 'text-primary-muted hover:bg-primary/5'
-                        }`}
-                    title="Copy message"
-                >
-                    {copied ? (
-                        <Check className="w-3.5 h-3.5" />
-                    ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                    )}
-                </button>
-                <div className="markdown-content text-sm md:text-base leading-relaxed overflow-x-auto pr-6">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                    </ReactMarkdown>
+        <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} border-b border-border py-4 px-4 animate-in fade-in group`}>
+            {isUser ? (
+                // User Message Styling (Matching IDE chat user prompt style)
+                <div className="flex flex-col items-end max-w-[85%]">
+                    <div className="relative rounded-lg px-3 py-2 bg-secondary text-secondary-foreground text-[13px] shadow-sm mb-2">
+                        <div className="whitespace-pre-wrap leading-relaxed pr-2">
+                            {message.content}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-primary-muted opacity-80">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{dateStr}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{timeStr}</span>
+                        </div>
+                    </div>
                 </div>
-                <div
-                    className={`text-[10px] mt-1 opacity-70 ${isUser ? 'text-app' : 'text-primary-muted'
-                        }`}
-                >
-                    {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            ) : (
+                // Agent Message Styling (Matching IDE chat assistant response style)
+                <div className="relative w-full text-primary text-[13px]">
+                    <div className="markdown-content leading-relaxed overflow-x-auto pr-2 mb-2">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                        </ReactMarkdown>
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-primary-muted opacity-80">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{dateStr}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{timeStr}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

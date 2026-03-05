@@ -109,9 +109,9 @@ export function ChatPanel({
             {activeTab === 'chat' && (
                 <div className="border-t border-border bg-app-surface/50 backdrop-blur-sm relative z-10">
                     <StatusBar />
-                    <div className="p-4">
+                    <div className="p-2">
                         {isConfigured === null ? (
-                            <div className="flex justify-center p-4">
+                            <div className="flex justify-center p-2">
                                 <Loader2 className="w-5 h-5 animate-spin text-primary-muted" />
                             </div>
                         ) : isConfigured ? (
