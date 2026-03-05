@@ -7,18 +7,13 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.HISTORY, {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        try {
-            const { limit, beforeId } = request.query as { limit?: string; beforeId?: string };
-            const history = await fastify.chatMessageRepository.findAll(
-                request.user!.id.toString(),
-                limit ? parseInt(limit) : 10,
-                beforeId ? parseInt(beforeId) : undefined
-            );
-            return { success: true, data: history };
-        } catch (error) {
-            fastify.log.error(formatError(error));
-            return reply.status(500).send({ success: false, error: 'Failed to fetch history' });
-        }
+        const { limit, beforeId } = request.query as { limit?: string; beforeId?: string };
+        const history = await fastify.chatMessageRepository.findAll(
+            request.user!.id.toString(),
+            limit ? parseInt(limit) : 10,
+            beforeId ? parseInt(beforeId) : undefined
+        );
+        return { success: true, data: history };
     });
 
     fastify.post(ENDPOINTS.CHAT.CANCEL, { preHandler: [fastify.authenticate] }, async (request, reply) => {

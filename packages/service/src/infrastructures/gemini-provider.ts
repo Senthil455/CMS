@@ -1,6 +1,6 @@
 import type { AIProvider } from './ai-provider.interface';
 import type { ServiceLogger } from '../types/logger';
-import { UserVisibleError } from '../utils/user-visible-error';
+import { AgentProviderError } from './agent-provider-error';
 
 export class GeminiProvider implements AIProvider {
     private cacheNames = new Map<string, string>();
@@ -159,7 +159,7 @@ export class GeminiProvider implements AIProvider {
                 error: error?.message ?? error
             }, 'Gemini generate failed');
 
-            // This might throw UserVisibleError
+            // This might throw AgentProviderError
             this.transformError(error);
 
             throw error;
@@ -168,7 +168,6 @@ export class GeminiProvider implements AIProvider {
     transformError(error: any): string {
         let errorMessage = error.message || 'Unknown error occurred';
 
-        // Handle Gemini 429 Quota Error
         if (errorMessage.includes('Gemini API error 429')) {
             try {
                 const jsonPart = errorMessage.substring(errorMessage.indexOf('{'));
@@ -180,7 +179,7 @@ export class GeminiProvider implements AIProvider {
                 // If parsing fails, just use the original message or a cleaner fallback
                 errorMessage = 'You exceeded your current AI quota. Please wait a few seconds and try again.';
             }
-            throw new UserVisibleError(errorMessage);
+            throw new AgentProviderError(errorMessage);
         } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
         }

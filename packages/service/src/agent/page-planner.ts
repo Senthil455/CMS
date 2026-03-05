@@ -1,5 +1,6 @@
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type Agent, AgentStopError, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
+import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
+import { UserVisibleError } from './user-visible-error';
 import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
@@ -45,7 +46,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         // If the planner couldn't match an entity, stop the pipeline
         if (!pagePlan.entityName) {
             const reason = (pagePlan as any).reason || 'No matching entity was found for your request.';
-            throw new AgentStopError(reason);
+            throw new UserVisibleError(reason);
         }
 
         await context.saveAgentMessage(`I have determined that you want to create a "${pagePlan.pageType}" page${pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : ''}. I've also designed a route: ${pagePlan.pageName}`);
@@ -121,7 +122,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             return { plan, developerMessage };
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse PagePlanner response');
-            throw new AgentStopError("I couldn't understand the plan generated. Please try rephrasing your request.");
+            throw new UserVisibleError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
     }
 }

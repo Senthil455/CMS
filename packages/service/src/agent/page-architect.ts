@@ -7,6 +7,7 @@ import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
 import { type PageArchitecture, type PagePlan } from '@cms/shared';
 import { PAGE_ADDON_REGISTRY } from './page-addons/index';
+import { UserVisibleError } from './user-visible-error';
 
 export interface ArchitectDesignerAgentPlan extends PageArchitecture {
     userInput: string;
@@ -26,12 +27,12 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         // Extract schemaId
         const schemaId = context.schemaId;
         if (!schemaId) {
-            throw new Error("Architecture Designer requires a valid schema ID in context.");
+            throw new UserVisibleError("Architecture Designer requires a valid schema ID in context.");
         }
 
         const existingSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingSchema || !existingSchema.settings?.page?.metadata) {
-            throw new Error("Schema not found or missing metadata for architecture planning.");
+            throw new UserVisibleError("Schema not found or missing metadata for architecture planning.");
         }
 
 
@@ -40,7 +41,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         const actualUserInput = metadata.userInput || userInput;
 
         if (!routingPlan) {
-            throw new Error("Routing plan not found in page metadata.");
+            throw new UserVisibleError("Routing plan not found in page metadata.");
         }
 
         await context.saveAgentMessage(`Planning architecture for ${routingPlan.pageType} page...`);

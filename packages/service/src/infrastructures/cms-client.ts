@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { type SchemaDto, type SaveSchemaPayload, type XEntityDto, type AssetListResponse, ENDPOINTS, CmsApiClient } from '@cms/shared';
-import { UserVisibleError } from '../utils/user-visible-error';
+import { CmsError } from './cms-error';
 
 export class CmsClient {
     private populatingPromise: Promise<void> | null = null;
@@ -30,7 +30,7 @@ export class CmsClient {
             error => {
                 const title = error.response?.data?.title;
                 if (title) {
-                    throw new UserVisibleError(title, error);
+                    throw new CmsError(title, error);
                 }
                 throw error;
             }

@@ -5,6 +5,7 @@ import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from './chat-assistant';
 import { PageAddonBuilder } from './page-addons/PageAddonBuilder';
 import { PageOperator } from '../operators/page-operator';
+import { UserVisibleError } from './user-visible-error';
 
 
 export interface ComponentHtmlResponse {
@@ -35,13 +36,13 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
 
         const schemaId = context.schemaId;
         if (!schemaId) {
-            throw new Error("PageBuilder requires a valid schema ID in context.");
+            throw new UserVisibleError("PageBuilder requires a valid schema ID in context.");
         }
 
         // Fetch Schema
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
-            throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
+            throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${schemaId}`);
         }
 
         const metadata: PageMetadata = existingPageSchema.settings.page.metadata;
@@ -51,11 +52,11 @@ export class PageBuilder implements Agent<PageBuilderPlan> {
         const componentInstructions = metadata.componentInstructions || architecturePlan?.componentInstructions || [];
 
         if (!pagePlan || !architecturePlan) {
-            throw new Error("Required plans (routing or architecture) not found in page metadata.");
+            throw new UserVisibleError("Required plans (routing or architecture) not found in page metadata.");
         }
 
         if (componentInstructions.length === 0) {
-            throw new Error("No component instructions found in page metadata. The architect must generate componentInstructions.");
+            throw new UserVisibleError("No component instructions found in page metadata. The architect must generate componentInstructions.");
         }
 
         const templateStyle = metadata.templateId || '';
@@ -196,7 +197,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
 
     async act(plan: PageBuilderPlan, context: AgentContext): Promise<ActResult<PageBuilderPlan>> {
         const schemaId = context.schemaId;
-        if (!schemaId) throw new Error("Schema ID missing in context during Act");
+        if (!schemaId) throw new UserVisibleError("Schema ID missing in context during Act");
 
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
@@ -215,11 +216,11 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         this.logger.info({ componentId }, 'PageBuilder modifySingleComponent started');
 
         const schemaId = context.schemaId;
-        if (!schemaId) throw new Error("PageBuilder requires a valid schema ID in context.");
+        if (!schemaId) throw new UserVisibleError("PageBuilder requires a valid schema ID in context.");
 
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!existingPageSchema || !existingPageSchema.settings?.page?.metadata) {
-            throw new Error(`Page schema not found or missing metadata for ID: ${schemaId}`);
+            throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${schemaId}`);
         }
 
         const metadata: PageMetadata = existingPageSchema.settings.page.metadata;
@@ -227,14 +228,14 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const architecturePlan = metadata.architecture;
         const componentInstructions = metadata.componentInstructions || architecturePlan?.componentInstructions || [];
 
-        if (!pagePlan || !architecturePlan) throw new Error("Required plans (routing or architecture) not found in page metadata.");
+        if (!pagePlan || !architecturePlan) throw new UserVisibleError("Required plans (routing or architecture) not found in page metadata.");
 
         const targetInstruction = componentInstructions.find(i => i.id === componentId);
         if (!targetInstruction) {
             //
             // Note: Addons don't have instructions, so we might need a fallback.
             // But for now, user is modifying visually generated components.
-            throw new Error(`Component instruction not found for ID: ${componentId}`);
+            throw new UserVisibleError(`Component instruction not found for ID: ${componentId}`);
         }
 
         const templateStyle = metadata.templateId || '';

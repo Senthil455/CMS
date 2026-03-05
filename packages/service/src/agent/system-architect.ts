@@ -1,7 +1,8 @@
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { PrismaClient } from '@prisma/client';
 import type { ServiceLogger } from '../types/logger';
-import { type AgentContext, type ThinkResult, type Agent, AgentStopError, type ActResult, type FinalizeResult } from './chat-assistant';
+import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from './chat-assistant';
+import { UserVisibleError } from './user-visible-error';
 import { type SystemRequirment, type SystemRequirmentItem, AGENT_NAMES } from '@cms/shared';
 
 export class SystemArchitect implements Agent<SystemRequirment> {
@@ -36,7 +37,7 @@ export class SystemArchitect implements Agent<SystemRequirment> {
             };
         } catch (e) {
             this.logger.error({ error: e, response }, 'Failed to parse SystemArchitect response');
-            throw new AgentStopError("I couldn't understand the plan generated. Please try rephrasing your request.");
+            throw new UserVisibleError("I couldn't understand the plan generated. Please try rephrasing your request.");
         }
     }
 

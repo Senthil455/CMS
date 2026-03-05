@@ -7,7 +7,7 @@ import {
     type AgentTaskRef,
     type ModelSelection
 } from '@cms/shared';
-import { AgentStopError, type Agent, type AgentContext } from '../agent/chat-assistant';
+import { type Agent, type AgentContext } from '../agent/chat-assistant';
 
 import type { IChatMessageRepository } from '../repositories/chat-message-repository';
 import type { IAiResponseLogRepository } from '../repositories/ai-response-log-repository';
@@ -16,7 +16,9 @@ import { IntentClassifier } from '../agent/intent-classifier';
 import { TaskOperator } from '../operators/task-operator';
 import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
-import { UserVisibleError } from '../utils/user-visible-error';
+import { UserVisibleError } from '../agent/user-visible-error';
+import { CmsError } from '../infrastructures/cms-error';
+import { AgentProviderError } from '../infrastructures/agent-provider-error';
 
 /**
  * Payload composed by ChatService when an agent's act() returns non-null feedback.
@@ -363,12 +365,8 @@ export class ChatService {
     private async handleError(userId: string, error: any, onEvent: OnServerToClientEvent, agentName?: AgentName): Promise<void> {
         this.statusService.clearStatus(userId, onEvent);
 
-        if (error instanceof AgentStopError) {
-            await this.saveAndEmitAgentMessage(userId, error.userMessage, onEvent);
-            return;
-        }
 
-        if (error instanceof UserVisibleError) {
+        if (error instanceof UserVisibleError || error instanceof CmsError || error instanceof AgentProviderError) {
             this.logger.error({ error: formatError(error.cause || error), agentName }, 'User visible error');
             await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
             return;

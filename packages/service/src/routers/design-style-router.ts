@@ -31,15 +31,8 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
         if (!body.success) {
             return reply.status(400).send({ error: 'Invalid request body', details: body.error.flatten() });
         }
-        try {
-            const style = await repository.createDesignStyle(body.data);
-            return { success: true, data: style };
-        } catch (e: any) {
-            if (e.code === 'P2002') {
-                return reply.status(409).send({ error: `Style name "${body.data.name}" already exists` });
-            }
-            throw e;
-        }
+        const style = await repository.createDesignStyle(body.data);
+        return { success: true, data: style };
     });
 
     // PUT /cmsapi/design-styles/:id
@@ -59,20 +52,13 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
         if (!body.success) {
             return reply.status(400).send({ error: 'Invalid request body', details: body.error.flatten() });
         }
-        try {
-            // Strip undefined values to satisfy Prisma's exactOptionalPropertyTypes
-            const updateData: Record<string, any> = {};
-            for (const [key, val] of Object.entries(body.data)) {
-                if (val !== undefined) updateData[key] = val;
-            }
-            const style = await repository.updateDesignStyle(parseInt(id), updateData);
-            return { success: true, data: style };
-        } catch (e: any) {
-            if (e.code === 'P2025') {
-                return reply.status(404).send({ error: 'Style not found' });
-            }
-            throw e;
+        // Strip undefined values to satisfy Prisma's exactOptionalPropertyTypes
+        const updateData: Record<string, any> = {};
+        for (const [key, val] of Object.entries(body.data)) {
+            if (val !== undefined) updateData[key] = val;
         }
+        const style = await repository.updateDesignStyle(parseInt(id), updateData);
+        return { success: true, data: style };
     });
 
     // DELETE /cmsapi/design-styles/:id
@@ -80,15 +66,8 @@ const designStyleRouter: FastifyPluginAsync = async (fastify) => {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         const { id } = request.params as { id: string };
-        try {
-            await repository.deleteDesignStyle(parseInt(id));
-            return { success: true };
-        } catch (e: any) {
-            if (e.code === 'P2025') {
-                return reply.status(404).send({ error: 'Style not found' });
-            }
-            throw e;
-        }
+        await repository.deleteDesignStyle(parseInt(id));
+        return { success: true };
     });
 };
 

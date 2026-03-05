@@ -12,6 +12,9 @@ import { dirname, join } from 'path';
 import { config } from './config';
 import proxy from '@fastify/http-proxy';
 import { createReadStream } from 'fs';
+import { UserVisibleError } from './agent/user-visible-error';
+import { CmsError } from './infrastructures/cms-error';
+import { AgentProviderError } from './infrastructures/agent-provider-error';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,7 +131,28 @@ async function start() {
         });
 
 
-        console.log("8. Setting Not Found Handler...");
+        console.log("8. Setting Global Error Handler...");
+        server.setErrorHandler((error, request, reply) => {
+            if (error.validation) {
+                return reply.status(400).send({ error: 'Validation failed', details: error.validation });
+            }
+
+            if (error instanceof UserVisibleError || error instanceof CmsError || error instanceof AgentProviderError) {
+                return reply.status(400).send({ success: false, error: error.message });
+            }
+
+            if ((error as any).code === 'P2002') {
+                return reply.status(409).send({ success: false, error: 'Resource conflict or already exists' });
+            }
+            if ((error as any).code === 'P2025') {
+                return reply.status(404).send({ success: false, error: 'Resource not found' });
+            }
+
+            server.log.error(error);
+            reply.status(500).send({ success: false, error: 'I encountered an internal error while processing your request. Please try again later.' });
+        });
+
+        console.log("9. Setting Not Found Handler...");
         server.setNotFoundHandler((request, reply) => {
             if (request.url.startsWith('/admin')) {
                 reply.type('text/html');

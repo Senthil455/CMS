@@ -4,6 +4,7 @@ import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from '../chat-assistant';
 import { type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type SaveSchemaPayload, type LayoutJson, LayoutCompiler } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
+import { UserVisibleError } from '../user-visible-error';
 
 export interface AddonPlan {
     schemaId: string;
@@ -35,13 +36,13 @@ export class PageAddonBuilder implements Agent<AddonPlan> {
         }
 
         if (!schemaId) {
-            throw new Error("No page schema ID provided. Please provide the ID in the format #schemaId:");
+            throw new UserVisibleError("No page schema ID provided. Please provide the ID in the format #schemaId:");
         }
 
         // 2. Fetch Page
         const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         if (!schema || schema.type !== 'page' || !schema.settings.page) {
-            throw new Error(`Page schema not found or invalid type for ID: ${schemaId}`);
+            throw new UserVisibleError(`Page schema not found or invalid type for ID: ${schemaId}`);
         }
 
         const pageDto = schema.settings.page;

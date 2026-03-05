@@ -42,14 +42,3 @@ export interface Agent<T = any> {
      */
     finalize(feedbackData: any, context: AgentContext): Promise<FinalizeResult>;
 }
-
-/**
- * Throw this from think() to stop the agent pipeline and send a user-facing message.
- * The orchestrator catches it, sends the message via websocket, and skips act().
- */
-export class AgentStopError extends Error {
-    constructor(public readonly userMessage: string) {
-        super(userMessage);
-        this.name = 'AgentStopError';
-    }
-}
