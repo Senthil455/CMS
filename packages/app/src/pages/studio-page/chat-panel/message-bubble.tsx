@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { type ChatMessage } from '@cms/shared';
-import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network } from 'lucide-react';
+import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network, Beaker } from 'lucide-react';
 
 interface Props {
     message: ChatMessage;
@@ -19,6 +19,8 @@ export function getAgentIcon(agentName: string | undefined, content?: string) {
         AgentIcon = Code2;
     } else if (agentName === 'system_architect') {
         AgentIcon = Network;
+    } else if (agentName === 'data_synthesizer') {
+        AgentIcon = Beaker;
     } else if ((content && content.includes('Task Complete')) || agentName === 'system') {
         AgentIcon = Sparkles;
     }
@@ -37,11 +39,11 @@ export function MessageBubble({ message }: Props) {
         <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} border-b border-border py-4 px-4 animate-in fade-in group gap-3`}>
             {isUser ? (
                 // User Message Styling
-                <div className="flex flex-col items-end max-w-[85%] w-full">
-                    <div className="flex gap-3 w-full justify-end">
-                        <div className="flex flex-col items-end w-full">
-                            <div className="relative rounded-lg px-3 py-2 bg-secondary text-secondary-foreground text-[13px] shadow-sm mb-2">
-                                <div className="whitespace-pre-wrap leading-relaxed pr-2">
+                <div className="flex flex-col items-end max-w-[85%] w-full min-w-0">
+                    <div className="flex gap-3 w-full justify-end min-w-0">
+                        <div className="flex flex-col items-end w-full min-w-0">
+                            <div className="relative rounded-lg px-3 py-2 bg-secondary text-secondary-foreground text-[13px] shadow-sm mb-2 max-w-full">
+                                <div className="whitespace-pre-wrap break-words leading-relaxed pr-2">
                                     {message.content}
                                 </div>
                             </div>
@@ -63,12 +65,12 @@ export function MessageBubble({ message }: Props) {
                 </div>
             ) : (
                 // Agent Message Styling
-                <div className="flex gap-3 w-full">
+                <div className="flex gap-3 w-full min-w-0">
                     <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-1">
                         <AgentIcon className="w-4 h-4 text-blue-500" />
                     </div>
-                    <div className="flex flex-col w-full text-primary text-[13px]">
-                        <div className="markdown-content leading-relaxed overflow-x-auto pr-2 mb-2">
+                    <div className="flex flex-col w-full text-primary text-[13px] min-w-0">
+                        <div className="markdown-content break-words leading-relaxed overflow-x-auto pr-2 mb-2">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {message.content}
                             </ReactMarkdown>

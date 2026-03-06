@@ -25,8 +25,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<ThinkResult<DataGeneratorPlan>> {
-        await context.saveAgentMessage('Fetching the latest schema and generating your data...');
-
         let entities: any[] = [];
         let specificEntityName: string | undefined;
 
@@ -40,7 +38,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
                     specificEntityName = schema.settings.entity.name;
                     const xEntity = await this.cmsClient.getXEntity(context.externalCookie, specificEntityName);
                     entities = [xEntity];
-                    await context.saveAgentMessage(`I found the entity "${specificEntityName}". Generating data based on its schema...`);
                 } else {
                     entities = await this.cmsClient.getAllXEntity(context.externalCookie);
                 }
@@ -51,6 +48,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
         } else {
             entities = await this.cmsClient.getAllXEntity(context.externalCookie);
         }
+
 
         const devMsg = `\nSCHEMA DEFINITION:\n${JSON.stringify(entities, null, 2)}`;
 
@@ -95,8 +93,6 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             return { feedback: null, syncedSchemaIds: [] };
         }
 
-        await context.saveAgentMessage(`Generated ${data.length} items for "${entityName}". Inserting into the system...`);
-
         let successCount = 0;
         const idMaps: Record<string, Record<string, any>> = {};
         for (const item of data) {
@@ -109,7 +105,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             }
         }
 
-        await context.saveAgentMessage(`Successfully inserted ${successCount} out of ${data.length} items for "${entityName}".`);
+        await context.saveAgentMessage(`Successfully generated and inserted ${successCount} out of ${data.length} items for "${entityName}".`);
         return { feedback: null, syncedSchemaIds: [] };
     }
 
