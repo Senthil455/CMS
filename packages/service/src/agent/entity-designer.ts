@@ -79,7 +79,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
                 await context.saveAgentMessage(`I couldn't find an existing entity with ID "${schemaId}". I'll proceed with generating what you need...`);
             }
         } else {
-            await context.saveAgentMessage('I am entity generator, I am analyzing your requirements and generating the schema...');
+            await context.saveAgentMessage('Analyzing your requirements and generating the schema...');
         }
 
         const { response: resp, developerMessage } = await this.create(userInput, existingContext, context);
@@ -117,8 +117,6 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             context.externalCookie
         );
 
-        this.logger.info({ summary }, 'Summary prepared by EntityOperator');
-
         // Return summary as feedback data — ChatService will compose the payload and emit the event
         return { feedback: summary, syncedSchemaIds: [] };
     }
@@ -132,7 +130,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
         const entityNames = response.entities.map((e: any) => e.name).join(', ');
 
         const schemaIds = await this.entityOperator.commit(response, context.externalCookie);
-        await context.saveAgentMessage(`All confirmed entities have been successfully committed to CMS: ${entityNames}`);
+        await context.saveAgentMessage(`All confirmed entities have been committed to the system: ${entityNames}`);
         return { syncedSchemaIds: schemaIds };
     }
 }

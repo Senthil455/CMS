@@ -92,9 +92,7 @@ ${sdl}
 
         if (schemaIds.length > 0) {
             const queryNames = Object.keys(plan.queries).join(', ');
-            const finalMessage = plan.existingSchema
-                ? `I have updated the queries, you can view them in CMS: ${queryNames}`
-                : `I have generated the queries, you can find them in CMS: ${queryNames}`;
+            const finalMessage = `All confirmed queries have been committed to the system: ${queryNames}`;
             await context.saveAgentMessage(finalMessage);
         }
         return { feedback: null, syncedSchemaIds: schemaIds };

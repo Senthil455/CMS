@@ -158,6 +158,7 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 developerMessage += `\n\nEXISTING COMPONENT HTML:\n${metadata.components[instruction.id]!.html}`;
             }
 
+            await context.saveAgentMessage(`I am building ${i + 1}/${componentInstructions.length} component: ${instruction.id}`);
             overallDeveloperMessage = developerMessage;
             const aiResponse = await this.aiProvider.generate(
                 this.systemPrompt,
@@ -177,8 +178,6 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
                 html: componentResponse.html,
                 addonId: instruction.addonId ?? '',
             };
-
-            this.logger.info({ componentId: instruction.id }, `Generated component ${i + 1}/${componentInstructions.length}`);
         }
 
         return {
@@ -202,8 +201,15 @@ ARCHITECTURE HINTS: ${architecturePlan.architectureHints}
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, plan.layoutJson, plan.components, plan.title, context.externalCookie);
 
         // Completion
-        const componentCount = Object.keys(plan.components).length;
-        const finalMessage = `I have generated ${componentCount} component(s) and compiled them into your page layout. You can find it in explorer.`;
+        const componentIds = Object.keys(plan.components);
+        const componentCount = componentIds.length;
+
+        let finalMessage = `I've built ${componentCount} component(s):\n`;
+        componentIds.forEach(id => {
+            finalMessage += `- ${id}\n`;
+        });
+        finalMessage += `\nI have compiled them into your page layout. You can find it in explorer.`;
+
         await context.saveAgentMessage(finalMessage);
         return { feedback: null, syncedSchemaIds: [newSchemaId] };
     }

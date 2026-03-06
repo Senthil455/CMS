@@ -49,7 +49,11 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             throw new UserVisibleError(reason);
         }
 
-        await context.saveAgentMessage(`I have determined that you want to create a "${pagePlan.pageType}" page${pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : ''}. I've also designed a route: ${pagePlan.pageName}`);
+        const entityPart = pagePlan.entityName ? ` for entity "${pagePlan.entityName}"` : '';
+        const message = `I have determined that you want to create a "${pagePlan.pageType}" page${entityPart}. ` +
+            `I've also designed a route: ${pagePlan.pageName}. ` +
+            `Please select a design template to proceed with generation.`;
+        await context.saveAgentMessage(message);
 
         // Load templates from DB and prepend "No Style" option
         const dbTemplates = await this.getTemplateOptions();
@@ -71,7 +75,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
     }
 
     async act(plan: TemplateSelectionRequest, context: AgentContext): Promise<ActResult<TemplateSelectionRequest>> {
-        await context.saveAgentMessage("I have analyzed your request. Please select a design template to proceed with generation.");
         return { feedback: plan, syncedSchemaIds: [] };
     }
 

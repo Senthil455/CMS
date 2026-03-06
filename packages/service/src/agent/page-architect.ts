@@ -44,8 +44,6 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
             throw new UserVisibleError("Routing plan not found in page metadata.");
         }
 
-        await context.saveAgentMessage(`Planning architecture for ${routingPlan.pageType} page...`);
-
         // Pass pageType from metadata if available to guide architect
         const existingArchitecture = metadata.architecture || {};
 
@@ -72,7 +70,15 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
             await this.pageOperator.saveComponentInstructions(plan.schemaId, plan.componentInstructions, context.externalCookie);
         }
 
-        await context.saveAgentMessage(`I've planned the structure and components for your page.`);
+        const componentCount = plan.componentInstructions ? plan.componentInstructions.length : 0;
+        let message = `I've planned the structure and components for your page.\n\n**Components Plan (${componentCount}):**\n`;
+        if (componentCount > 0) {
+            plan.componentInstructions!.forEach(comp => {
+                message += `- **${comp.id}**: ${comp.instruction}\n`;
+            });
+        }
+
+        await context.saveAgentMessage(message);
         return { feedback: null, syncedSchemaIds: [] };
     }
 
@@ -109,8 +115,6 @@ ${queryListContext}
         }
 
         developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
-
-        await context.saveAgentMessage(`Designing page architecture...`);
 
         const response = await this.aiProvider.generate(
             this.architectSystemPrompt,
