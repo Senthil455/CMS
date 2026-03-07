@@ -21,6 +21,7 @@ import { CmsError } from '../infrastructures/cms-error';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { AgentProviderError } from '../infrastructures/agent-provider-error';
 import { type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
+import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components';
 
 /**
  * Payload composed by ChatService when an agent's act() returns non-null feedback.
@@ -226,33 +227,17 @@ export class ChatService {
 
         let agentToInvoke: AgentName = AGENT_NAMES.COMPONENT_BUILDER;
         if (addonId) {
-            const addon = (await import('../agent/page-components/index')).PAGE_COMPONENT_REGISTRY.find(a => a.id === addonId);
+            const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === addonId);
             if (addon) {
                 agentToInvoke = addon.agentName as AgentName;
             }
         }
 
-        const builder = this.resolveHandler(selection, agentToInvoke) as any;
+        const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal, agentToInvoke, { componentId });
+        await this.executeAgent(agentToInvoke, requirement, context, selection, userId, onEvent);
+    }
 
-        // Create a temporary task item context to pass down the componentId
-        const taskItems = [{
-            agentName: agentToInvoke,
-            status: 'pending',
-            description: requirement,
-            schemaId,
-            metadata: { componentId }
-        } as Omit<AgentTaskItem, 'index'>];
-
-        const task = await this.taskOperator.createTaskFromItems(taskItems);
-        // The task operator returns a full Task instance including items.
-        // We need the full item to pass down the metadata, but executeAgent signature takes AgentTaskRef.
-        // wait, let's just pass the context metadata directly in createContext and pass the ref for executeAgent.
-        const agentTaskRef = { taskId: task.id!, index: 0 };
-        const agentTaskItemRecord = task.items?.[0];
-
-        const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal, agentToInvoke, agentTaskItemRecord?.metadata);
-        await this.executeAgent(agentToInvoke, requirement, context, selection, userId, onEvent, agentTaskRef);
-    } private async handleNormalMessage(
+    private async handleNormalMessage(
         userId: string,
         content: string,
         externalCookie: string,

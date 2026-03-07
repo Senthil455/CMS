@@ -15,7 +15,7 @@ import { PagePlanner } from '../agent/page-planner';
 import { PageArchitect } from '../agent/page-architect';
 import { DataGenerator } from '../agent/data-synthesizer';
 import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components/index';
-import { PageAddonBuilder } from '../agent/page-components/PageAddonBuilder';
+import { PageComponentBuilder } from '../agent/page-components/page-component-builder';
 import type { Agent } from '../agent/chat-assistant';
 import { SystemArchitect } from '../agent/system-architect';
 import { EntityOperator } from '../operators/entity-operator';
@@ -89,14 +89,12 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 
-            const pageAddonsDir = path.join(__dirname, '../agent/page-components');
+            const pageAddonsDir = path.join(__dirname, 'agent/page-components');
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, Agent<any>> = {};
             const entityOperator = new EntityOperator(cmsClient, modelLogger);
             const pageOperator = new PageOperator(cmsClient, modelLogger);
-            const agentTaskRepository = new SqliteAgentTaskRepository(fastify.prisma);
-            const taskOperator = new TaskOperator(agentTaskRepository, modelLogger);
 
             for (const addon of PAGE_COMPONENT_REGISTRY) {
                 let prompt = '';
@@ -115,7 +113,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                     }
                 }
 
-                addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger, pageOperator, config.CMS_BASE_URL, getStylePrompt);
+                addonHandlers[addon.agentName] = new PageComponentBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger, pageOperator, config.CMS_BASE_URL, getStylePrompt);
             }
 
             const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger, pageOperator);

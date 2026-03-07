@@ -14,7 +14,7 @@ export interface ComponentBuilderPlan {
     layoutJson?: LayoutJson; // Addons might modify layoutJson
 }
 
-export class PageAddonBuilder implements Agent<ComponentBuilderPlan> {
+export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
     constructor(
         private readonly addonDef: PageAddonDefinition,
         private readonly aiProvider: AIProvider,
@@ -28,7 +28,7 @@ export class PageAddonBuilder implements Agent<ComponentBuilderPlan> {
     ) { }
 
     async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<ThinkResult<ComponentBuilderPlan>> {
-        this.logger.info(`PageAddonBuilder[${this.addonDef.id}] think started`);
+        this.logger.info(`PageComponentBuilder[${this.addonDef.id}] think started`);
 
         let schemaId = context.schemaId;
         if (!schemaId) {
@@ -196,7 +196,6 @@ export class PageAddonBuilder implements Agent<ComponentBuilderPlan> {
 
         const newSchemaId = await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, plan.title, context.externalCookie);
 
-        await context.saveAgentMessage(`I've built the component: ${plan.componentId}`);
         return { feedback: null, syncedSchemaIds: [newSchemaId] };
     }
 

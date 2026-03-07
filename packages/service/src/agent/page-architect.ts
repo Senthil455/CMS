@@ -104,22 +104,24 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
             for (const instruction of plan.componentInstructions) {
                 if (instruction.addonId) {
                     const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === instruction.addonId);
-                    followingTaskItems.push({
-                        agentName: (addon?.agentName || AGENT_NAMES.COMPONENT_BUILDER) as AgentName,
-                        status: 'pending',
-                        description: instruction.instruction,
-                        schemaId: plan.schemaId,
-                        metadata: { componentId: instruction.id }
-                    });
-                } else {
-                    followingTaskItems.push({
-                        agentName: AGENT_NAMES.COMPONENT_BUILDER as AgentName,
-                        status: 'pending',
-                        description: instruction.instruction,
-                        schemaId: plan.schemaId,
-                        metadata: { componentId: instruction.id }
-                    });
+                    if (addon) {
+                        followingTaskItems.push({
+                            agentName: addon.agentName as AgentName,
+                            status: 'pending',
+                            description: instruction.instruction,
+                            schemaId: plan.schemaId,
+                            metadata: { componentId: instruction.id }
+                        });
+                        continue;
+                    }
                 }
+                followingTaskItems.push({
+                    agentName: AGENT_NAMES.COMPONENT_BUILDER as AgentName,
+                    status: 'pending',
+                    description: instruction.instruction,
+                    schemaId: plan.schemaId,
+                    metadata: { componentId: instruction.id }
+                });
             }
         }
 
@@ -143,18 +145,18 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         ).join('\n');
 
         let developerMessage = `
-${templateStyle ? `DESIGN TEMPLATE: ${templateStyle}\n` : ''}
-ROUTING PLAN:
-- Planned Path: ${pagePlan.pageName}
-- Parameters: ${pagePlan.primaryParameter || 'None'}
-- Linking Rules: ${pagePlan.linkingRules?.join(', ') || 'None'}
+            ${templateStyle ? `DESIGN TEMPLATE: ${templateStyle}\n` : ''}
+            ROUTING PLAN:
+            - Planned Path: ${pagePlan.pageName}
+            - Parameters: ${pagePlan.primaryParameter || 'None'}
+            - Linking Rules: ${pagePlan.linkingRules?.join(', ') || 'None'}
 
-AVAILABLE ADD-ONS:
-${addonsListContext}
+            AVAILABLE ADD-ONS:
+            ${addonsListContext}
 
-AVAILABLE QUERIES:
-${queryListContext}
-`;
+            AVAILABLE QUERIES:
+            ${queryListContext}
+        `;
 
         if (existingArchitecture) {
             developerMessage += `\nEXISTING STRUCTURE:\n${JSON.stringify(existingArchitecture, null, 2)}\nPreserve the existing structure unless changes are requested.`;
