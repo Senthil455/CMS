@@ -11,7 +11,7 @@ import {
     type AgentName,
     AGENT_NAMES
 } from '@cms/shared';
-import { PAGE_ADDON_REGISTRY } from './page-addons/index';
+import { PAGE_COMPONENT_REGISTRY } from './page-components/index';
 import { UserVisibleError } from './user-visible-error';
 
 export interface ArchitectDesignerAgentPlan extends PageArchitecture {
@@ -103,7 +103,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         if (plan.componentInstructions) {
             for (const instruction of plan.componentInstructions) {
                 if (instruction.addonId) {
-                    const addon = PAGE_ADDON_REGISTRY.find(a => a.id === instruction.addonId);
+                    const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === instruction.addonId);
                     followingTaskItems.push({
                         agentName: (addon?.agentName || AGENT_NAMES.COMPONENT_BUILDER) as AgentName,
                         status: 'pending',
@@ -138,7 +138,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
              arguments: ${JSON.stringify(q.settings?.query?.arguments)}
             `).join('\n');
 
-        const addonsListContext = PAGE_ADDON_REGISTRY.map(addon =>
+        const addonsListContext = PAGE_COMPONENT_REGISTRY.map(addon =>
             `- ${addon.id}: ${addon.label} (${addon.pageTypes.join(', ')} pages) - ${addon.chatMessage}`
         ).join('\n');
 

@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { ENDPOINTS, SOCKET_EVENTS, AGENT_NAMES } from '@cms/shared';
 import { formatError } from '../utils/error-formatter';
-import { PAGE_ADDON_REGISTRY } from '../agent/page-addons/index';
+import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components/index';
 
 const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.HISTORY, {
@@ -28,7 +28,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.get(ENDPOINTS.CHAT.PAGE_ADDONS, {
         preHandler: [fastify.authenticate]
     }, async () => {
-        return { success: true, data: PAGE_ADDON_REGISTRY };
+        return { success: true, data: PAGE_COMPONENT_REGISTRY };
     });
 
 };

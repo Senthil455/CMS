@@ -226,7 +226,7 @@ export class ChatService {
 
         let agentToInvoke: AgentName = AGENT_NAMES.COMPONENT_BUILDER;
         if (addonId) {
-            const addon = (await import('../agent/page-addons/index')).PAGE_ADDON_REGISTRY.find(a => a.id === addonId);
+            const addon = (await import('../agent/page-components/index')).PAGE_COMPONENT_REGISTRY.find(a => a.id === addonId);
             if (addon) {
                 agentToInvoke = addon.agentName as AgentName;
             }

@@ -1,6 +1,18 @@
 import { AGENT_NAMES, type PageAddonDefinition } from '@cms/shared';
 
-export const PAGE_ADDON_REGISTRY: PageAddonDefinition[] = [
+export const PAGE_COMPONENT_REGISTRY: PageAddonDefinition[] = [
+    {
+        id: 'common_component',
+        agentName: AGENT_NAMES.COMPONENT_BUILDER,
+        label: 'Common Component',
+        icon: 'Code2', // Using same icon
+        color: 'gray',
+        pageTypes: ['detail', 'list'],
+        resourceDir: 'common-component',
+        hasSnippet: false,
+        needQueries: true,
+        chatMessage: 'Modify component',
+    },
     {
         id: 'engagement_bar',
         agentName: AGENT_NAMES.PAGE_ENGAGEMENT_BAR_BUILDER,

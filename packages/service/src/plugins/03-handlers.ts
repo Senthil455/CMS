@@ -13,10 +13,9 @@ import { QueryGenerator } from '../agent/query-builder';
 import { PagePlanner } from '../agent/page-planner';
 // PageArchitect import removed
 import { PageArchitect } from '../agent/page-architect';
-import { ComponentBuilder } from '../agent/component-builder';
 import { DataGenerator } from '../agent/data-synthesizer';
-import { PAGE_ADDON_REGISTRY } from '../agent/page-addons/index';
-import { PageAddonBuilder } from '../agent/page-addons/PageAddonBuilder';
+import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components/index';
+import { PageAddonBuilder } from '../agent/page-components/PageAddonBuilder';
 import type { Agent } from '../agent/chat-assistant';
 import { SystemArchitect } from '../agent/system-architect';
 import { EntityOperator } from '../operators/entity-operator';
@@ -33,9 +32,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
 
     // Resolve directories
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const agentsDir = path.join(__dirname, '../agent');
-    const schemasDir = path.join(__dirname, '../../resources/schemas');
+    const __dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const agentsDir = path.join(__dirname, 'agent');
+    const schemasDir = path.join(__dirname, '../resources/schemas');
 
     // Load common schemas
     const [entitySchema, attributeSchema, relationshipSchema] = await Promise.all([
@@ -60,7 +59,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         dataGeneratorPrompt,
         pageArchitectPrompt,
         pagePlannerPrompt,
-        htmlGeneratorPrompt,
         systemArchitectPrompt,
     ] = await Promise.all([
         loadPrompt('entity-designer.md'),
@@ -69,7 +67,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         loadPrompt('data-synthesizer.md'),
         loadPrompt('page-architect.md'),
         loadPrompt('page-planner.md'),
-        loadPrompt('component-builder.md'),
         loadPrompt('system-architect.md'),
     ]);
 
@@ -92,7 +89,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 return styles.map((s: any) => ({ id: s.name, name: s.displayName, description: s.description }));
             };
 
-            const pageAddonsDir = path.join(__dirname, '../agent/page-addons');
+            const pageAddonsDir = path.join(__dirname, '../agent/page-components');
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, Agent<any>> = {};
@@ -101,7 +98,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const agentTaskRepository = new SqliteAgentTaskRepository(fastify.prisma);
             const taskOperator = new TaskOperator(agentTaskRepository, modelLogger);
 
-            for (const addon of PAGE_ADDON_REGISTRY) {
+            for (const addon of PAGE_COMPONENT_REGISTRY) {
                 let prompt = '';
                 try {
                     prompt = await fs.readFile(path.join(pageAddonsDir, addon.resourceDir, 'prompt.md'), 'utf-8');
@@ -118,12 +115,10 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                     }
                 }
 
-                addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger, pageOperator);
+                addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger, pageOperator, config.CMS_BASE_URL, getStylePrompt);
             }
 
             const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger, pageOperator);
-
-            const componentBuilderAgent = new ComponentBuilder(provider, htmlGeneratorPrompt, getStylePrompt, cmsClient, modelLogger, config.CMS_BASE_URL, pageOperator);
 
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger, entityOperator);
@@ -155,7 +150,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.QUERY_BUILDER]: queryGenerator,
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
                 [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
-                [AGENT_NAMES.COMPONENT_BUILDER]: componentBuilderAgent,
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
                 [AGENT_NAMES.SYSTEM_ARCHITECT]: systemArchitect,
                 ...addonHandlers,
