@@ -64,7 +64,7 @@ export interface ComponentInstruction {
     id: string;
     instruction: string;
     queriesToUse: string[];
-    addonId?: string; // matches PageAddonDefinition.id when this is a known add-on
+    componentTypeId?: string; // matches PageComponentDefinition.id when this is a known component type
 }
 
 export interface LayoutBlock {
@@ -86,7 +86,7 @@ export interface LayoutJson {
     sections: LayoutSection[];
 }
 
-export interface PageAddonDefinition {
+export interface PageComponentDefinition {
     id: string;
     agentName: string;
     label: string;

@@ -1,5 +1,5 @@
 import { AuthService } from '../services/auth-service';
-import { ChatService } from '../services/chat-service';
+import { OrchestratorService } from '../services/orchestrator-service';
 import { SocketService } from '../services/socket-service';
 import { StatusService } from '../services/status-service';
 import { IntentClassifier } from '../models/agents/intent-classifier';
@@ -19,7 +19,7 @@ declare module 'fastify' {
     interface FastifyInstance {
         prisma: PrismaClient;
         io: Server<ClientToServerEvents, ServerToClientEvents>;
-        chatService: ChatService;
+        orchestratorService: OrchestratorService;
         authService: AuthService;
         socketService: SocketService;
         statusService: StatusService;

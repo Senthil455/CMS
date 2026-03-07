@@ -16,17 +16,20 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
         const created = await this.prisma.agentTask.create({
             data: {
                 status: task.status,
-                description: task.description,
+                ...(task.description !== undefined ? { description: task.description } : {}),
                 items: JSON.stringify(task.items),
             },
         });
 
-        return {
+        const result: AgentTask = {
             id: created.id,
             status: created.status as 'pending' | 'finished',
-            description: created.description ?? undefined,
             items: JSON.parse(created.items) as AgentTaskItem[],
         };
+        if (created.description) {
+            result.description = created.description;
+        }
+        return result;
     }
 
     async findById(id: number): Promise<AgentTask | null> {
@@ -36,12 +39,15 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
 
         if (!task) return null;
 
-        return {
+        const result: AgentTask = {
             id: task.id,
             status: task.status as 'pending' | 'finished',
-            description: task.description ?? undefined,
             items: JSON.parse(task.items) as AgentTaskItem[],
         };
+        if (task.description) {
+            result.description = task.description;
+        }
+        return result;
     }
 
     async findLatest(limit: number): Promise<AgentTask[]> {
@@ -50,12 +56,17 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
             take: limit,
         });
 
-        return tasks.map(task => ({
-            id: task.id,
-            status: task.status as 'pending' | 'finished',
-            description: task.description ?? undefined,
-            items: JSON.parse(task.items) as AgentTaskItem[],
-        }));
+        return tasks.map(task => {
+            const result: AgentTask = {
+                id: task.id,
+                status: task.status as 'pending' | 'finished',
+                items: JSON.parse(task.items) as AgentTaskItem[],
+            };
+            if (task.description) {
+                result.description = task.description;
+            }
+            return result;
+        });
     }
 
     async update(task: AgentTask): Promise<void> {
@@ -64,7 +75,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
             where: { id: task.id },
             data: {
                 status: task.status,
-                description: task.description,
+                ...(task.description !== undefined ? { description: task.description } : {}),
                 items: JSON.stringify(task.items),
             },
         });

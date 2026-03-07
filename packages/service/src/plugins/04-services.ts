@@ -5,7 +5,7 @@ import { SqliteAiResponseLogRepository } from '../repositories/ai-response-log-r
 import { SqliteDesignStyleRepository } from '../repositories/design-style-repository';
 import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
 import { SqliteAgentTaskRepository } from '../repositories/agent-task-repository';
-import { ChatService } from '../services/chat-service';
+import { OrchestratorService } from '../services/orchestrator-service';
 import { AuthService } from '../services/auth-service';
 import { SocketService } from '../services/socket-service';
 import { statusService } from '../services/status-service';
@@ -32,7 +32,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const cmsClient = fastify.cms;
     const intentClassifier = fastify.intentClassifier;
 
-    const chatService = new ChatService(
+    const orchestratorService = new OrchestratorService(
         messageRepository,
         logRepository,
         intentClassifier,
@@ -52,7 +52,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.decorate('systemSettingRepository', systemSettingRepository);
     fastify.decorate('agentTaskRepository', agentTaskRepository);
 
-    fastify.decorate('chatService', chatService);
+    fastify.decorate('orchestratorService', orchestratorService);
     fastify.decorate('authService', authService);
     fastify.decorate('socketService', socketService);
     fastify.decorate('statusService', statusService);

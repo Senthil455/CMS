@@ -102,8 +102,8 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
 
         if (plan.componentInstructions) {
             for (const instruction of plan.componentInstructions) {
-                if (instruction.addonId) {
-                    const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === instruction.addonId);
+                if (instruction.componentTypeId) {
+                    const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === instruction.componentTypeId);
                     if (addon) {
                         followingTaskItems.push({
                             agentName: addon.agentName as AgentName,

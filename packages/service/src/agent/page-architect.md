@@ -39,7 +39,7 @@ You must output ONLY a valid JSON object with this structure:
         "id": "string", // MUST match a column `id` from the sections above
       "instruction": "string", // Detailed description of the UI component to build for this slot. Describe layout, visual style, interactions, and content structure.
       "queriesToUse": ["string"], // Array of queryName values from selectedQueries that this component needs
-      "addonId": "string" // (OPTIONAL) If this component exactly matches one of the "AVAILABLE ADD-ONS" listed below, provide its ID here (e.g. "engagement_bar").
+      "componentTypeId": "string" // (OPTIONAL) If this component exactly matches one of the "AVAILABLE PAGE COMPONENTS" listed below, provide its ID here (e.g. "engagement_bar").
     }
   ],
   "architectureHints": "string" // Overall design guidance for the page builder
@@ -70,9 +70,9 @@ You must output ONLY a valid JSON object with this structure:
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
 - **Follow the design template**: The template style (e.g., "modern", "classic", "minimal") should influence your section structure. A "modern" template might use a hero section + bento grid, while a "minimal" template might use a clean single-column layout.
 
-### Known Add-ons
-- If the user explicitly requests a feature that matches an "AVAILABLE ADD-ON" (e.g. they ask for a search bar, and "search_bar" is available), you MUST include the `addonId` in that component's instruction.
-- Only use `addonId` for components that exactly match the provided add-ons. Do not invent add-on IDs.
+### Known Page Components
+- If the user explicitly requests a feature that matches an "AVAILABLE PAGE COMPONENTS" (e.g. they ask for a search bar, and "search_bar" is available), you MUST include the `componentTypeId` in that component's instruction.
+- Only use `componentTypeId` for components that exactly match the provided types. Do not invent component type IDs.
 
 ## Context
 You will be provided with:

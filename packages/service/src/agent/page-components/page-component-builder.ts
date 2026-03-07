@@ -2,7 +2,7 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from '../chat-assistant';
-import { type ComponentInstruction, type PageAddonDefinition, type PageDto, type PageMetadata, type LayoutJson, type PageArchitecture } from '@cms/shared';
+import { type ComponentInstruction, type PageComponentDefinition, type PageDto, type PageMetadata, type LayoutJson, type PageArchitecture } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 import { UserVisibleError } from '../user-visible-error';
 
@@ -10,13 +10,13 @@ export interface ComponentBuilderPlan {
     title: string;
     componentId: string;
     html: string;
-    addonId?: string;
+    componentTypeId?: string;
     layoutJson?: LayoutJson; // Addons might modify layoutJson
 }
 
 export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
     constructor(
-        private readonly addonDef: PageAddonDefinition,
+        private readonly addonDef: PageComponentDefinition,
         private readonly aiProvider: AIProvider,
         private readonly systemPrompt: string,
         private readonly snippet: string | undefined,
@@ -167,7 +167,7 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
                 title: architecturePlan.pageTitle,
                 componentId: responseComponentId,
                 html: newHtml,
-                ...(this.addonDef.id !== 'common_component' && { addonId: this.addonDef.id }),
+                ...(this.addonDef.id !== 'common_component' && { componentTypeId: this.addonDef.id }),
                 ...(layoutJsonToSave && { layoutJson: layoutJsonToSave })
             },
             prompts: {
@@ -189,8 +189,8 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
         if (!metadata.components) metadata.components = {};
 
         const componentData: any = { html: plan.html };
-        if (plan.addonId) {
-            componentData.addonId = plan.addonId;
+        if (plan.componentTypeId) {
+            componentData.componentTypeId = plan.componentTypeId;
         }
         metadata.components[plan.componentId] = componentData;
 

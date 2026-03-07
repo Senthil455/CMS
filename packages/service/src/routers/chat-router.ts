@@ -17,7 +17,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     });
 
     fastify.post(ENDPOINTS.CHAT.CANCEL, { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        const cancelled = await fastify.chatService.cancelActiveRequest(request.user!.id.toString());
+        const cancelled = await fastify.orchestratorService.cancelActiveRequest(request.user!.id.toString());
         return reply.send({ success: true, cancelled });
     });
 

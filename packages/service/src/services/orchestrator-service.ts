@@ -33,7 +33,7 @@ export interface AgentFeedbackPayload<T = any> {
     agentTaskItem?: AgentTaskRef;
 }
 
-export class ChatService {
+export class OrchestratorService {
     private activeRequests = new Map<string, AbortController>();
     constructor(
         private readonly messageRepository: IChatMessageRepository,
@@ -57,7 +57,7 @@ export class ChatService {
         return false;
     }
 
-    async handleUserMessage(
+    async processInput(
         userId: string,
         content: string,
         externalCookie: string,
@@ -99,7 +99,7 @@ export class ChatService {
             }
 
             // Normal message handling
-            await this.handleNormalMessage(userId, content, externalCookie, selection, onEvent, abortController.signal);
+            await this.processGenericInput(userId, content, externalCookie, selection, onEvent, abortController.signal);
         } catch (error: any) {
             await this.handleError(userId, error, onEvent);
         } finally {
@@ -166,7 +166,7 @@ export class ChatService {
     ): Promise<void> {
         const logId = parseInt(replayMatch[1]!);
         // Save user message so it appears in chat
-        const userMessage = await this.saveUserMessage(userId, content);
+        const userMessage = await this.saveInputMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
         await this.actOnLog(logId, userId, externalCookie, onEvent, signal);
     }
@@ -185,7 +185,7 @@ export class ChatService {
         if (!task) {
             throw new UserVisibleError(`Unable to find the task (ID: ${taskId}).`);
         }
-        const userMessage = await this.saveUserMessage(userId, `Executing task ${taskId} from item ${index}...`);
+        const userMessage = await this.saveInputMessage(userId, `Executing task ${taskId} from item ${index}...`);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         const agentTaskItem: AgentTaskRef = { taskId, index };
@@ -212,7 +212,7 @@ export class ChatService {
         const messageText = requirement
             ? `Modify component "${componentId}": ${requirement}`
             : `Modify component "${componentId}"`;
-        const userMessage = await this.saveUserMessage(userId, messageText);
+        const userMessage = await this.saveInputMessage(userId, messageText);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
@@ -221,13 +221,13 @@ export class ChatService {
         }
 
         const component = schema.settings.page.metadata.components?.[componentId];
-        const addonId = component?.addonId;
+        const componentTypeId = component?.componentTypeId;
 
         let agentToInvoke: AgentName = AGENT_NAMES.COMPONENT_BUILDER;
-        if (addonId) {
-            const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === addonId);
-            if (addon) {
-                agentToInvoke = addon.agentName as AgentName;
+        if (componentTypeId) {
+            const componentType = PAGE_COMPONENT_REGISTRY.find(a => a.id === componentTypeId);
+            if (componentType) {
+                agentToInvoke = componentType.agentName as AgentName;
             }
         }
 
@@ -235,7 +235,7 @@ export class ChatService {
         await this.executeAgent(agentToInvoke, requirement, context, selection, userId, onEvent);
     }
 
-    private async handleNormalMessage(
+    private async processGenericInput(
         userId: string,
         content: string,
         externalCookie: string,
@@ -244,7 +244,7 @@ export class ChatService {
         signal: AbortSignal
     ): Promise<void> {
         // 1. Save and notify user message
-        const userMessage = await this.saveUserMessage(userId, content);
+        const userMessage = await this.saveInputMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
         // 2. Intent Classifier
@@ -455,7 +455,7 @@ export class ChatService {
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
     }
-    private async saveUserMessage(userId: string, content: string): Promise<ChatMessage> {
+    private async saveInputMessage(userId: string, content: string): Promise<ChatMessage> {
         return this.messageRepository.save({ userId, content, role: 'user' });
     }
 

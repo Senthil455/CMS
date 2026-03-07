@@ -26,7 +26,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, selection?: ModelSelection }) => {
                 try {
                     const selection = data.selection || 'gemini/gemini-3-flash';
-                    await fastify.chatService.handleUserMessage(userId, data.content, socket.data.externalCookie, selection, onEvent);
+                    await fastify.orchestratorService.processInput(userId, data.content, socket.data.externalCookie, selection, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', formatError(error));
                 }
@@ -36,7 +36,7 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             socket.on(SOCKET_EVENTS.CHAT.AGENT_FEEDBACK_RESPONSE, async (data: { agentName: string; feedbackData: any; selection?: ModelSelection }) => {
                 try {
                     const selection = data.selection || 'gemini/gemini-3-flash';
-                    await fastify.chatService.handleAgentFeedback(
+                    await fastify.orchestratorService.handleAgentFeedback(
                         userId,
                         data.agentName as AgentName,
                         data.feedbackData,

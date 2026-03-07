@@ -117,7 +117,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             context.externalCookie
         );
 
-        // Return summary as feedback data — ChatService will compose the payload and emit the event
+        // Return summary as feedback data — OrchestratorService will compose the payload and emit the event
         return { feedback: summary, syncedSchemaIds: [] };
     }
 
