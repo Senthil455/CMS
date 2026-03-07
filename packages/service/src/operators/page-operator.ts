@@ -98,6 +98,32 @@ export class PageOperator {
         this.logger.info({ schemaId }, 'Successfully saved architecture via PageOperator');
     }
 
+    async saveLayoutJson(schemaId: string, layoutJson: LayoutJson, externalCookie: string): Promise<void> {
+        const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
+        if (!schema || !schema.settings.page) {
+            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
+        }
+
+        const pageSettings = schema.settings.page;
+        let metadata: any = pageSettings.metadata || {};
+
+        metadata.layoutJson = layoutJson;
+
+        const payload: SaveSchemaPayload = {
+            schemaId: schemaId,
+            type: 'page',
+            settings: {
+                page: {
+                    ...pageSettings,
+                    metadata: metadata,
+                }
+            }
+        };
+
+        await this.cmsClient.saveSchema(externalCookie, payload);
+        this.logger.info({ schemaId }, 'Successfully saved layoutJson via PageOperator');
+    }
+
     async saveComponents(
         schemaId: string,
         layoutJson: LayoutJson,

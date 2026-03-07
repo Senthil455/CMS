@@ -91,7 +91,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             syncedSchemaIds: [],
             followingTaskItems: [
                 { agentName: AGENT_NAMES.PAGE_ARCHITECT, status: 'pending', description: userInput, schemaId },
-                { agentName: AGENT_NAMES.PAGE_BUILDER, status: 'pending', description: userInput, schemaId },
             ]
         };
     }

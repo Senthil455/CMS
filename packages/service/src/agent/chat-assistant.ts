@@ -6,6 +6,7 @@ export interface AgentContext {
     schemaId?: string;
     saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
     signal?: AbortSignal;
+    metadata?: Record<string, unknown>;
 }
 
 
@@ -21,6 +22,7 @@ export interface ThinkResult<T> {
 export interface ActResult<T> {
     feedback: T | null;
     syncedSchemaIds: string[];
+    followingTaskItems?: Omit<AgentTaskItem, 'index'>[];
 }
 
 export interface FinalizeResult {

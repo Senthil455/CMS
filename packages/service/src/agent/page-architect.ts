@@ -3,9 +3,14 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
-import { AGENT_NAMES } from '@cms/shared';
 import { PageOperator } from '../operators/page-operator';
-import { type PageArchitecture, type PagePlan } from '@cms/shared';
+import { type AgentTaskItem } from '../models/agent-task-model';
+import {
+    type PageArchitecture,
+    type PagePlan,
+    type AgentName,
+    AGENT_NAMES
+} from '@cms/shared';
 import { PAGE_ADDON_REGISTRY } from './page-addons/index';
 import { UserVisibleError } from './user-visible-error';
 
@@ -65,13 +70,25 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
     async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<ActResult<ArchitectDesignerAgentPlan>> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
+        // Build layoutJson from sections
+        const layoutJson: any = {
+            sections: plan.sections.map(section => ({
+                preset: section.preset,
+                columns: section.columns.map(col => ({
+                    span: col.span,
+                    blocks: [{ id: col.id, type: 'component' }]
+                }))
+            }))
+        };
+        await this.pageOperator.saveLayoutJson(plan.schemaId, layoutJson, context.externalCookie);
+
         // Also save componentInstructions into metadata at the top level
         if (plan.componentInstructions && plan.componentInstructions.length > 0) {
             await this.pageOperator.saveComponentInstructions(plan.schemaId, plan.componentInstructions, context.externalCookie);
         }
 
         const componentCount = plan.componentInstructions ? plan.componentInstructions.length : 0;
-        let message = `I've planned the structure and components for your page.\n\n**Components Plan (${componentCount}):**\n`;
+        let message = `I have finished designing the page architecture. I will now create tasks for building each component.\n\n**Components Plan (${componentCount}):**\n`;
         if (componentCount > 0) {
             plan.componentInstructions!.forEach(comp => {
                 message += `- **${comp.id}**: ${comp.instruction}\n`;
@@ -79,7 +96,36 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         }
 
         await context.saveAgentMessage(message);
-        return { feedback: null, syncedSchemaIds: [] };
+
+        // Generate following tasks for components
+        const followingTaskItems: Omit<AgentTaskItem, 'index'>[] = [];
+
+        if (plan.componentInstructions) {
+            for (const instruction of plan.componentInstructions) {
+                if (instruction.addonId) {
+                    const addon = PAGE_ADDON_REGISTRY.find(a => a.id === instruction.addonId);
+                    followingTaskItems.push({
+                        agentName: (addon?.agentName || AGENT_NAMES.COMPONENT_BUILDER) as AgentName,
+                        status: 'pending',
+                        description: instruction.instruction,
+                        schemaId: plan.schemaId,
+                        metadata: { componentId: instruction.id }
+                    });
+                } else {
+                    followingTaskItems.push({
+                        agentName: AGENT_NAMES.COMPONENT_BUILDER as AgentName,
+                        status: 'pending',
+                        description: instruction.instruction,
+                        schemaId: plan.schemaId,
+                        metadata: { componentId: instruction.id }
+                    });
+                }
+            }
+        }
+
+        // Return early with the components, LayoutBuilder is removed.
+
+        return { feedback: null, syncedSchemaIds: [], followingTaskItems };
     }
 
     async finalize(_feedbackData: any, _context: AgentContext): Promise<FinalizeResult> {

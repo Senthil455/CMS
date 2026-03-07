@@ -4,7 +4,7 @@ export const AGENT_NAMES = {
     PAGE_PLANNER: 'page_planner',
     QUERY_BUILDER: 'query_builder',
     DATA_SYNTHESIZER: 'data_synthesizer',
-    PAGE_BUILDER: 'page_builder',
+    COMPONENT_BUILDER: 'component_builder',
     PAGE_ENGAGEMENT_BAR_BUILDER: 'page_engagement_bar_builder',
     PAGE_ARCHITECT: 'page_architect',
     PAGE_USER_AVATAR_BUILDER: 'page_user_avatar_builder',

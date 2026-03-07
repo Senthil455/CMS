@@ -18,6 +18,7 @@ import { StatusService } from './status-service';
 import { formatError } from '../utils/error-formatter';
 import { UserVisibleError } from '../agent/user-visible-error';
 import { CmsError } from '../infrastructures/cms-error';
+import type { CmsClient } from '../infrastructures/cms-client';
 import { AgentProviderError } from '../infrastructures/agent-provider-error';
 import { type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
 
@@ -41,6 +42,7 @@ export class ChatService {
         private readonly statusService: StatusService,
         private readonly logger: ServiceLogger,
         private readonly taskOperator: TaskOperator,
+        private readonly cmsClient: CmsClient,
     ) { }
 
 
@@ -214,18 +216,43 @@ export class ChatService {
         const userMessage = await this.saveUserMessage(userId, messageText);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
 
-        const pageBuilder = this.resolveHandler(selection, AGENT_NAMES.PAGE_BUILDER) as any;
-
-        if (pageBuilder && pageBuilder.modifySingleComponent) {
-            const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal, AGENT_NAMES.PAGE_BUILDER);
-            const syncedSchemaIds = await pageBuilder.modifySingleComponent(componentId, requirement, context);
-            this.emitSchemasSync(syncedSchemaIds, AGENT_NAMES.PAGE_BUILDER, onEvent);
-        } else {
-            throw new UserVisibleError('Page editor is not available. Please try a different AI model.');
+        const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
+        if (!schema || !schema.settings?.page?.metadata) {
+            throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${schemaId}`);
         }
-    }
 
-    private async handleNormalMessage(
+        const component = schema.settings.page.metadata.components?.[componentId];
+        const addonId = component?.addonId;
+
+        let agentToInvoke: AgentName = AGENT_NAMES.COMPONENT_BUILDER;
+        if (addonId) {
+            const addon = (await import('../agent/page-addons/index')).PAGE_ADDON_REGISTRY.find(a => a.id === addonId);
+            if (addon) {
+                agentToInvoke = addon.agentName as AgentName;
+            }
+        }
+
+        const builder = this.resolveHandler(selection, agentToInvoke) as any;
+
+        // Create a temporary task item context to pass down the componentId
+        const taskItems = [{
+            agentName: agentToInvoke,
+            status: 'pending',
+            description: requirement,
+            schemaId,
+            metadata: { componentId }
+        } as Omit<AgentTaskItem, 'index'>];
+
+        const task = await this.taskOperator.createTaskFromItems(taskItems);
+        // The task operator returns a full Task instance including items.
+        // We need the full item to pass down the metadata, but executeAgent signature takes AgentTaskRef.
+        // wait, let's just pass the context metadata directly in createContext and pass the ref for executeAgent.
+        const agentTaskRef = { taskId: task.id!, index: 0 };
+        const agentTaskItemRecord = task.items?.[0];
+
+        const context = this.createContext(userId, externalCookie, schemaId, onEvent, signal, agentToInvoke, agentTaskItemRecord?.metadata);
+        await this.executeAgent(agentToInvoke, requirement, context, selection, userId, onEvent, agentTaskRef);
+    } private async handleNormalMessage(
         userId: string,
         content: string,
         externalCookie: string,
@@ -307,12 +334,14 @@ export class ChatService {
         schemaId: string | undefined,
         onEvent: OnServerToClientEvent,
         signal?: AbortSignal,
-        agentName?: string,
+        agentName?: AgentName,
+        metadata?: Record<string, unknown>
     ): AgentContext {
         return {
             externalCookie,
             ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
+            ...(metadata ? { metadata } : {}),
             saveAgentMessage: async (content: string, payload?: any) => {
                 return this.saveAndEmitAgentMessage(userId, content, onEvent, payload, agentName);
             },
@@ -367,8 +396,12 @@ export class ChatService {
             throw new Error(`Handler not found for task type: ${agentName}`);
         }
 
+        const agentTaskItemRecord = agentTaskItem
+            ? await this.taskOperator.checkout(agentTaskItem.taskId)
+            : undefined;
+
         this.statusService.setStatus(userId, agentName, onEvent);
-        const agentContext = context;
+        const agentContext = this.createContext(userId, context.externalCookie, context.schemaId, onEvent, context.signal, agentName, agentTaskItemRecord?.metadata);
 
         // Orchestrator owns the think → log → act pipeline
         const { plan, prompts } = await handler.think(userInput, agentContext);
@@ -388,9 +421,18 @@ export class ChatService {
             inputLog
         );
 
-        const { feedback, syncedSchemaIds } = await handler.act(plan, agentContext);
+        const { feedback, syncedSchemaIds, followingTaskItems } = await handler.act(plan, agentContext);
         this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
         this.statusService.clearStatus(userId, onEvent);
+
+        if (followingTaskItems && followingTaskItems.length > 0) {
+            if (agentTaskItem) {
+                await this.taskOperator.insertItemsAfter(agentTaskItem, followingTaskItems);
+            } else {
+                const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
+                agentTaskItem = { taskId: task.id!, index: -1 };
+            }
+        }
 
         if (feedback !== null) {
             // Agent needs user feedback — compose payload and emit unified event

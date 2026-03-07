@@ -40,7 +40,8 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         fastify.chatHandlers,
         statusService,
         serviceLogger,
-        new TaskOperator(agentTaskRepository, serviceLogger)
+        new TaskOperator(agentTaskRepository, serviceLogger),
+        cmsClient
     );
     const authService = new AuthService(cmsClient, serviceLogger);
     const socketService = new SocketService(fastify.io);

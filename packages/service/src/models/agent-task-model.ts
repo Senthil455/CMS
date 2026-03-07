@@ -16,6 +16,7 @@ export interface AgentTaskItem {
     status: 'pending' | 'finished';
     description?: string;
     schemaId?: string | undefined;
+    metadata?: Record<string, any>;
 }
 
 export class AgentTaskModel {

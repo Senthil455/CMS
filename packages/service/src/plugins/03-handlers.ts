@@ -13,7 +13,7 @@ import { QueryGenerator } from '../agent/query-builder';
 import { PagePlanner } from '../agent/page-planner';
 // PageArchitect import removed
 import { PageArchitect } from '../agent/page-architect';
-import { PageBuilder } from '../agent/page-builder';
+import { ComponentBuilder } from '../agent/component-builder';
 import { DataGenerator } from '../agent/data-synthesizer';
 import { PAGE_ADDON_REGISTRY } from '../agent/page-addons/index';
 import { PageAddonBuilder } from '../agent/page-addons/PageAddonBuilder';
@@ -69,7 +69,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
         loadPrompt('data-synthesizer.md'),
         loadPrompt('page-architect.md'),
         loadPrompt('page-planner.md'),
-        loadPrompt('page-builder.md'),
+        loadPrompt('component-builder.md'),
         loadPrompt('system-architect.md'),
     ]);
 
@@ -121,18 +121,9 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 addonHandlers[addon.agentName] = new PageAddonBuilder(addon, provider, prompt, snippet, cmsClient, modelLogger, pageOperator);
             }
 
-            // Create a map of addon handlers keyed by their ID for the PageBuilder
-            const addonHandlersById: Record<string, Agent<any>> = {};
-            for (const addon of PAGE_ADDON_REGISTRY) {
-                const handler = addonHandlers[addon.agentName];
-                if (handler) {
-                    addonHandlersById[addon.id] = handler;
-                }
-            }
-
             const pageArchitectAgent = new PageArchitect(provider, pageArchitectPrompt, cmsClient, modelLogger, pageOperator);
 
-            const pageBuilderAgent = new PageBuilder(provider, htmlGeneratorPrompt, getStylePrompt, cmsClient, modelLogger, config.CMS_BASE_URL, pageOperator, addonHandlersById);
+            const componentBuilderAgent = new ComponentBuilder(provider, htmlGeneratorPrompt, getStylePrompt, cmsClient, modelLogger, config.CMS_BASE_URL, pageOperator);
 
             const entityGenerator = new EntityGenerator(provider, entityGeneratorPrompt,
                 entitySchema, attributeSchema, relationshipSchema, cmsClient, modelLogger, entityOperator);
@@ -164,7 +155,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
                 [AGENT_NAMES.QUERY_BUILDER]: queryGenerator,
                 [AGENT_NAMES.PAGE_PLANNER]: pagePlannerAgent,
                 [AGENT_NAMES.DATA_SYNTHESIZER]: dataGenerator,
-                [AGENT_NAMES.PAGE_BUILDER]: pageBuilderAgent,
+                [AGENT_NAMES.COMPONENT_BUILDER]: componentBuilderAgent,
                 [AGENT_NAMES.PAGE_ARCHITECT]: pageArchitectAgent,
                 [AGENT_NAMES.SYSTEM_ARCHITECT]: systemArchitect,
                 ...addonHandlers,

@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { type ChatMessage } from '@cms/shared';
-import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network, Beaker } from 'lucide-react';
+import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network, Beaker, LayoutGrid } from 'lucide-react';
 
 interface Props {
     message: ChatMessage;
@@ -15,7 +15,7 @@ export function getAgentIcon(agentName: string | undefined, content?: string) {
         AgentIcon = LayoutTemplate;
     } else if (agentName === 'page_architect') {
         AgentIcon = PenTool;
-    } else if (agentName === 'page_builder') {
+    } else if (agentName === 'component_builder') {
         AgentIcon = Code2;
     } else if (agentName === 'system_architect') {
         AgentIcon = Network;
