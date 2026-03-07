@@ -7,11 +7,9 @@ import { PageOperator } from '../../operators/page-operator';
 import { UserVisibleError } from '../user-visible-error';
 
 export interface ComponentBuilderPlan {
-    title: string;
     componentId: string;
     html: string;
     componentTypeId?: string;
-    layoutJson?: LayoutJson; // Addons might modify layoutJson
 }
 
 export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
@@ -73,9 +71,6 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
         const pageType = pagePlan.pageType;
         const stylePrompt = this.getStylePrompt ? await this.getStylePrompt(templateStyle, pageType) : '';
 
-        const existingLayoutJson = metadata.layoutJson || { sections: [] };
-        const existingComponentIds = metadata.components ? Object.keys(metadata.components) : [];
-
         // Build base developer message text (used for common_components mostly)
         let developerMessageText = `\n${stylePrompt ? stylePrompt + '\n' : ''}COMPONENT ID: ${instruction.id}\n`;
 
@@ -86,12 +81,12 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
         }
 
         developerMessageText += `\nOVERALL PAGE CONTEXT:
-- Page Type: ${pageType}
-- Page Title: ${architecturePlan.pageTitle}
-- Route: ${pagePlan.pageName}
-- Parameters: ${pagePlan.primaryParameter || 'None'}
-- Architecture Hints: ${architecturePlan.architectureHints}
-`;
+            - Page Type: ${pageType}
+            - Page Title: ${architecturePlan.pageTitle}
+            - Route: ${pagePlan.pageName}
+            - Parameters: ${pagePlan.primaryParameter || 'None'}
+            - Architecture Hints: ${architecturePlan.architectureHints}
+        `;
 
         // Either specific text queries (common component) or JSON queries (addons)
         const relevantQueryDetailsText = await this.fetchQueryDetailsForCommon(architecturePlan.selectedQueries, instruction, context.externalCookie);
@@ -103,8 +98,6 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
 
         // Build JSON developer message for addons
         const addonDeveloperMessage: Record<string, any> = {
-            existingLayoutJson,
-            existingComponentIds,
             pageUrl: `/${pageDto.name}`,
             componentInstruction: instruction.instruction,
         };
@@ -118,10 +111,8 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
             addonDeveloperMessage.queries = await this.fetchQueryDetailsForAddon(metadata, context, instruction);
         }
 
-        // Choose which developer message to send based on whether it's the common_component or a specific addon
-        const finalDeveloperMessage = this.addonDef.id === 'common_component'
-            ? developerMessageText
-            : `ADDITIONAL CONTEXT (from layout):\n${developerMessageText}\n\nJSON CONTEXT FOR ADDON:\n${JSON.stringify(addonDeveloperMessage, null, 2)}`;
+        // Always use combined context for addons
+        const finalDeveloperMessage = `\n${developerMessageText}\n\nJSON CONTEXT FOR ADDON:\n${JSON.stringify(addonDeveloperMessage, null, 2)}`;
 
         await context.saveAgentMessage(`I am building component: ${instruction.id} (${this.addonDef.label})`);
 
@@ -145,30 +136,14 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
         }
 
         // Normalize response plan
-        let newHtml = '';
-        let layoutJsonToSave: LayoutJson | undefined = undefined;
-        let responseComponentId = instruction.id;
-
-        if (this.addonDef.id === 'common_component') {
-            newHtml = parsedResponse.html || '';
-            // layoutJson stays unchanged
-        } else {
-            newHtml = parsedResponse.component?.html || parsedResponse.html || '';
-            if (parsedResponse.component?.id) {
-                responseComponentId = parsedResponse.component.id;
-            }
-            if (parsedResponse.layoutJson) {
-                layoutJsonToSave = parsedResponse.layoutJson;
-            }
-        }
+        const responseComponentId = parsedResponse.component?.id || instruction.id;
+        const newHtml = parsedResponse.component?.html || parsedResponse.html || '';
 
         return {
             plan: {
-                title: architecturePlan.pageTitle,
                 componentId: responseComponentId,
                 html: newHtml,
                 ...(this.addonDef.id !== 'common_component' && { componentTypeId: this.addonDef.id }),
-                ...(layoutJsonToSave && { layoutJson: layoutJsonToSave })
             },
             prompts: {
                 systemPrompt: this.systemPrompt,
@@ -184,7 +159,7 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
 
         const existingPageSchema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
         const metadata: PageMetadata = existingPageSchema.settings.page.metadata;
-        const layoutJson = plan.layoutJson || metadata.layoutJson || { sections: [] };
+        const layoutJson = metadata.layoutJson || { sections: [] };
 
         if (!metadata.components) metadata.components = {};
 
@@ -194,7 +169,7 @@ export class PageComponentBuilder implements Agent<ComponentBuilderPlan> {
         }
         metadata.components[plan.componentId] = componentData;
 
-        const newSchemaId = await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, plan.title, context.externalCookie);
+        const newSchemaId = await this.pageOperator.saveComponents(schemaId, layoutJson, metadata.components, undefined, context.externalCookie);
 
         return { feedback: null, syncedSchemaIds: [newSchemaId] };
     }
