@@ -60,9 +60,9 @@ export class TaskOperator {
     }
 
 
-    async createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[]): Promise<AgentTask> {
-        this.logger.info({ itemCount: items.length }, 'Creating task from items in TaskOperator');
-        const task = this.agentTaskModel.createTaskFromItems(items);
+    async createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[], description?: string): Promise<AgentTask> {
+        this.logger.info({ itemCount: items.length, description }, 'Creating task from items in TaskOperator');
+        const task = this.agentTaskModel.createTaskFromItems(items, description);
         return await this.taskRepository.save(task);
     }
 

@@ -69,7 +69,7 @@ export class ChatService {
 
         try {
             if (content && content.trim().startsWith('@replay')) {
-                const replayMatch = content.trim().match(/^@replay\s+(\d+)(\s+--continue)?$/i);
+                const replayMatch = content.trim().match(/^@replay\s+(\d+)$/i);
                 if (replayMatch && replayMatch[1]) {
                     await this.handleReplayCommand(userId, content, externalCookie, onEvent, replayMatch, abortController.signal);
                     return;
@@ -137,8 +137,7 @@ export class ChatService {
                     // Insert new items after the current index in the existing task
                     await this.taskOperator.insertItemsAfter(existingTaskItem, followingTaskItems);
                 } else {
-                    // No existing task — create a new one
-                    const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
+                    const task = await this.taskOperator.createTaskFromItems(followingTaskItems, feedbackData?.userInput);
                     nextTaskItem = { taskId: task.id!, index: -1 };
                 }
             }
@@ -166,11 +165,10 @@ export class ChatService {
         signal: AbortSignal
     ): Promise<void> {
         const logId = parseInt(replayMatch[1]!);
-        const continuePipeline = !!replayMatch[2];
         // Save user message so it appears in chat
         const userMessage = await this.saveUserMessage(userId, content);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, userMessage);
-        await this.actOnLog(logId, userId, externalCookie, onEvent, signal, continuePipeline);
+        await this.actOnLog(logId, userId, externalCookie, onEvent, signal);
     }
 
     private async handleExecuteTaskCommand(
@@ -279,7 +277,7 @@ export class ChatService {
     }
 
     private async actOnLog(logId: number, userId: string, externalCookie: string,
-        onEvent: OnServerToClientEvent, signal: AbortSignal, continuePipeline: boolean = false): Promise<void> {
+        onEvent: OnServerToClientEvent, signal: AbortSignal): Promise<void> {
         const log = await this.logRepository.findAiResponseLogById(logId);
         if (!log) {
             throw new UserVisibleError(`Unable to find the previous action log (ID: ${logId}).`);
@@ -298,19 +296,12 @@ export class ChatService {
             agentTaskItem = parsedInput.agentTaskItem;
         }
 
-
         const plan = JSON.parse(responseContent);
         const handler = this.resolveHandler(selection, handlerName as AgentName)!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...", undefined, 'system');
 
-        const { feedback, syncedSchemaIds } = await handler.act(plan, context);
+        const { syncedSchemaIds } = await handler.act(plan, context);
         this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
-        if (continuePipeline && agentTaskItem) {
-            await this.taskOperator.reset(agentTaskItem);
-            if (feedback === null) {
-                await this.executePendingTaskItem(agentTaskItem.taskId, userId, context.externalCookie, selection, onEvent, signal);
-            }
-        }
     }
 
     private createContext(
@@ -414,7 +405,7 @@ export class ChatService {
             if (agentTaskItem) {
                 await this.taskOperator.insertItemsAfter(agentTaskItem, followingTaskItems);
             } else {
-                const task = await this.taskOperator.createTaskFromItems(followingTaskItems);
+                const task = await this.taskOperator.createTaskFromItems(followingTaskItems, userInput);
                 agentTaskItem = { taskId: task.id!, index: -1 };
             }
         }

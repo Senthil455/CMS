@@ -1,13 +1,11 @@
-import { ulid } from 'ulid';
 import type {
     AgentName,
-    SystemRequirment,
 } from '@cms/shared';
-import { AGENT_NAMES } from '@cms/shared';
 
 export interface AgentTask {
     id?: number;
     status: 'pending' | 'finished';
+    description?: string;
     items: AgentTaskItem[];
 }
 export interface AgentTaskItem {
@@ -59,9 +57,10 @@ export class AgentTaskModel {
         task.status = hasPendingItems ? 'pending' : 'finished';
     }
 
-    public createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[]): AgentTask {
+    public createTaskFromItems(items: Omit<AgentTaskItem, 'index'>[], description?: string): AgentTask {
         return {
             status: 'pending',
+            ...(description !== undefined ? { description } : {}),
             items: this.calculateIndices(items)
         };
     }

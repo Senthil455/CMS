@@ -52,11 +52,9 @@ export function AiLogsList({ onSwitchToChat, onSend }: { onSwitchToChat?: () => 
         setTimeout(() => setCopied(null), 2000);
     };
 
-    const handleAct = (log: AiLog, continuePipeline: boolean = false) => {
+    const handleAct = (log: AiLog) => {
         if (!onSend) return;
-        const command = continuePipeline
-            ? `@replay ${log.id} --continue`
-            : `@replay ${log.id}`;
+        const command = `@replay ${log.id}`;
         onSend(command, 'gemini');
         onSwitchToChat?.();
     };
@@ -117,18 +115,11 @@ export function AiLogsList({ onSwitchToChat, onSend }: { onSwitchToChat?: () => 
                         <div className="p-3 bg-app-muted/20 text-xs border-t border-border animate-in slide-in-from-top-2 duration-200">
                             <div className="flex gap-2 mb-3">
                                 <button
-                                    onClick={() => handleAct(log, false)}
+                                    onClick={() => handleAct(log)}
                                     className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95"
                                 >
                                     <Play className="w-3.5 h-3.5" />
                                     Act
-                                </button>
-                                <button
-                                    onClick={() => handleAct(log, true)}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg font-bold hover:shadow-md transition-all active:scale-95"
-                                >
-                                    <Play className="w-3.5 h-3.5" />
-                                    Act & Continue
                                 </button>
                                 <button
                                     onClick={() => handleCopy(log.id, log)}

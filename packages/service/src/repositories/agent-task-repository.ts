@@ -16,6 +16,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
         const created = await this.prisma.agentTask.create({
             data: {
                 status: task.status,
+                description: task.description,
                 items: JSON.stringify(task.items),
             },
         });
@@ -23,6 +24,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
         return {
             id: created.id,
             status: created.status as 'pending' | 'finished',
+            description: created.description ?? undefined,
             items: JSON.parse(created.items) as AgentTaskItem[],
         };
     }
@@ -37,6 +39,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
         return {
             id: task.id,
             status: task.status as 'pending' | 'finished',
+            description: task.description ?? undefined,
             items: JSON.parse(task.items) as AgentTaskItem[],
         };
     }
@@ -50,6 +53,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
         return tasks.map(task => ({
             id: task.id,
             status: task.status as 'pending' | 'finished',
+            description: task.description ?? undefined,
             items: JSON.parse(task.items) as AgentTaskItem[],
         }));
     }
@@ -60,6 +64,7 @@ export class SqliteAgentTaskRepository implements IAgentTaskRepository {
             where: { id: task.id },
             data: {
                 status: task.status,
+                description: task.description,
                 items: JSON.stringify(task.items),
             },
         });

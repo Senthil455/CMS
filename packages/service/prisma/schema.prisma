@@ -46,9 +46,10 @@ model DesignStyle {
 
 
 model AgentTask {
-  id        Int      @id @default(autoincrement())
-  status    String   @default("pending") // 'pending' | 'finished'
-  items     String   // JSON stringified AgentTaskItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  status      String   @default("pending") // 'pending' | 'finished'
+  description String?
+  items       String   // JSON stringified AgentTaskItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

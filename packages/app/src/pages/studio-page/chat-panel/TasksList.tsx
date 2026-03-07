@@ -18,6 +18,7 @@ interface AgentTaskItem {
 interface AgentTask {
     id: number;
     status: 'pending' | 'finished';
+    description?: string;
     items: AgentTaskItem[];
 }
 
@@ -103,6 +104,11 @@ export function TasksList({ onSwitchToChat, onSend }: TasksListProps) {
                                     {task.status.toUpperCase()}
                                 </div>
                             </div>
+                            {task.description && (
+                                <div className="pl-6 mb-1 text-[11px] text-primary truncate" title={task.description}>
+                                    {task.description}
+                                </div>
+                            )}
                             <div className="pl-6 text-[10px] text-primary-muted flex items-center gap-2">
                                 <span>{task.items.length} items</span>
                                 <span>•</span>
