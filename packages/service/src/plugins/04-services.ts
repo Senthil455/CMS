@@ -32,6 +32,8 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     const cmsClient = fastify.cms;
     const intentClassifier = fastify.intentClassifier;
 
+    const taskOperator = new TaskOperator(agentTaskRepository, serviceLogger);
+
     const orchestratorService = new OrchestratorService(
         messageRepository,
         logRepository,
@@ -40,7 +42,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
         fastify.chatHandlers,
         statusService,
         serviceLogger,
-        new TaskOperator(agentTaskRepository, serviceLogger),
+        taskOperator,
         cmsClient
     );
     const authService = new AuthService(cmsClient, serviceLogger);
@@ -52,6 +54,7 @@ const servicesPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.decorate('systemSettingRepository', systemSettingRepository);
     fastify.decorate('agentTaskRepository', agentTaskRepository);
 
+    fastify.decorate('taskOperator', taskOperator);
     fastify.decorate('orchestratorService', orchestratorService);
     fastify.decorate('authService', authService);
     fastify.decorate('socketService', socketService);

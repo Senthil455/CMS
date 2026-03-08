@@ -40,6 +40,23 @@ export class AgentTaskModel {
         }
     }
 
+    public toggleItemStatus(task: AgentTask, index: number): void {
+        console.log(`TOGGLING ITEM index: ${index} in task: ${task.id}`);
+        const item = task.items.find(i => i.index === index);
+        if (item) {
+            const oldStatus = item.status;
+            item.status = item.status === 'finished' ? 'pending' : 'finished';
+            console.log(`ITEM ${index} STATUS: ${oldStatus} -> ${item.status}`);
+        } else {
+            console.log(`ITEM ${index} NOT FOUND in task ${task.id}. Available indices: ${task.items.map(i => i.index).join(', ')}`);
+        }
+
+        const hasPendingItems = task.items.some(item => item.status === 'pending');
+        const oldTaskStatus = task.status;
+        task.status = hasPendingItems ? 'pending' : 'finished';
+        console.log(`TASK ${task.id} STATUS: ${oldTaskStatus} -> ${task.status}`);
+    }
+
     public reset(task: AgentTask, index: number): void {
         task.items.forEach((item, i) => {
             if (i < index) {

@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Cpu, ChevronDown, Square } from 'lucide-react';
 import { useAIProviders } from '../../../hooks/use-ai-agents';
+import { useAgentStatus } from '../../../hooks/use-agent-status';
 import { ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 
 interface ChatInputProps {
     onSend: (message: string, providerName: string) => void;
-    disabled?: boolean;
     draft?: string | null;
     onDraftConsumed?: () => void;
 }
@@ -15,9 +15,11 @@ const STORAGE_KEY = 'cms_selected_provider';
 
 const getDisplayName = (agent: string) => agent.split('/')[1] || agent;
 
-export function ChatInput({ onSend, disabled, draft, onDraftConsumed }: ChatInputProps) {
+export function ChatInput({ onSend, draft, onDraftConsumed }: ChatInputProps) {
     const [input, setInput] = useState('');
     const { providers } = useAIProviders();
+    const { isAgentActive } = useAgentStatus();
+    const disabled = isAgentActive;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [selectedProvider, setSelectedProvider] = useState<string>(() => {
         return localStorage.getItem(STORAGE_KEY) || 'gemini';

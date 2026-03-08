@@ -58,6 +58,7 @@ export const ENDPOINTS = {
     },
     APP_TASKS: {
         LATEST: '/cmsapi/tasks',
+        TOGGLE_ITEM: '/cmsapi/tasks/:taskId/items/:index/toggle',
     },
     ENTITIES: {
         LIST: '/api/entities/:schemaName',

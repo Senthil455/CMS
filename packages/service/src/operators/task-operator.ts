@@ -23,6 +23,10 @@ export class TaskOperator {
         return this.agentTaskModel.checkout(task);
     }
 
+    async getTask(taskId: number): Promise<AgentTask | null> {
+        return this.taskRepository.findById(taskId);
+    }
+
     async getWalkthrough(taskId: number): Promise<string | null> {
         const task = await this.taskRepository.findById(taskId);
         if (!task) {
@@ -42,6 +46,22 @@ export class TaskOperator {
             this.agentTaskModel.commit(task, taskRef.index);
         }
 
+        await this.taskRepository.update(task);
+    }
+
+    async toggleItemStatus(taskId: number, index: number): Promise<void> {
+        this.logger.info({ taskId, index }, 'Toggling task item status in TaskOperator');
+        const task = await this.taskRepository.findById(taskId);
+        if (!task) {
+            this.logger.warn({ taskId }, 'Task not found in toggleItemStatus');
+            return;
+        }
+
+        const item = task.items.find(i => i.index === index);
+        this.logger.info({ taskId, index, oldStatus: item?.status }, 'Found item for toggle');
+
+        this.agentTaskModel.toggleItemStatus(task, index);
+        this.logger.info({ taskId, index, newStatus: task.items.find(i => i.index === index)?.status }, 'Toggled item status');
         await this.taskRepository.update(task);
     }
 

@@ -13,6 +13,7 @@ import { IAiResponseLogRepository } from '../repositories/ai-response-log-reposi
 import { IDesignStyleRepository } from '../repositories/design-style-repository';
 import { ISystemSettingRepository } from '../repositories/system-setting-repository';
 import { IAgentTaskRepository } from '../repositories/agent-task-repository';
+import { TaskOperator } from '../operators/task-operator';
 import '@fastify/session';
 
 declare module 'fastify' {
@@ -20,6 +21,7 @@ declare module 'fastify' {
         prisma: PrismaClient;
         io: Server<ClientToServerEvents, ServerToClientEvents>;
         orchestratorService: OrchestratorService;
+        taskOperator: TaskOperator;
         authService: AuthService;
         socketService: SocketService;
         statusService: StatusService;

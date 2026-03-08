@@ -1,30 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useSocket } from '../hooks/use-socket';
+import { useAgentStatus } from '../hooks/use-agent-status';
 
 export function StatusBar() {
-    const [status, setStatus] = useState<string | null>(null);
-    const [createdAt, setCreatedAt] = useState<number | null>(null);
+    const { status, createdAt } = useAgentStatus();
     const [duration, setDuration] = useState(0);
-    const { onAgentStatus } = useSocket();
 
     useEffect(() => {
-        const cleanup = onAgentStatus((data) => {
-            if (data.agentName) {
-                setStatus(data.agentName);
-                const start = data.createdAt || Date.now();
-                setCreatedAt(start);
-                setDuration(Date.now() - start);
-            } else {
-                setStatus(null);
-                setCreatedAt(null);
-                setDuration(0);
-            }
-        });
-        return cleanup;
-    }, [onAgentStatus]);
-
-    useEffect(() => {
-        if (!status || !createdAt) return;
+        if (!status) {
+            setDuration(0);
+            return;
+        }
+        if (!createdAt) return;
 
         const interval = setInterval(() => {
             setDuration(Date.now() - createdAt);
