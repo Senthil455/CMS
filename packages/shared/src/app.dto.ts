@@ -42,13 +42,7 @@ export interface TemplateSelectionResponse {
 
 export interface PageArchitecture {
     pageTitle: string;
-    sections: Array<{
-        preset: string;
-        columns: Array<{
-            span: number;
-            id: string;
-        }>;
-    }>;
+    sections: LayoutSection[];
     selectedQueries: Array<{
         queryName: string;
         fieldName: string;
@@ -67,24 +61,15 @@ export interface ComponentInstruction {
     componentTypeId?: string; // matches PageComponentDefinition.id when this is a known component type
 }
 
-export interface LayoutBlock {
-    id: string;
-    type: string;
-}
-
 export interface LayoutColumn {
     span: number;
-    blocks: LayoutBlock[];
+    id: string;
 }
 
 export interface LayoutSection {
-    preset: string;
     columns: LayoutColumn[];
 }
 
-export interface LayoutJson {
-    sections: LayoutSection[];
-}
 
 export interface PageComponentDefinition {
     id: string;
@@ -102,7 +87,6 @@ export interface PageComponentDefinition {
 export interface PageMetadata {
     plan?: PagePlan;
     architecture?: PageArchitecture;
-    layoutJson?: LayoutJson;
     componentInstructions?: ComponentInstruction[];
     components?: Record<string, { html: string; props?: any }>;
     userInput?: string;
@@ -112,11 +96,10 @@ export interface PageMetadata {
 
 export interface PagePlan {
     pageName: string;
+    pageTitle: string;
     entityName: string | null;
     pageType: 'list' | 'detail';
     primaryParameter: string | null;
-    linkingRules: string[];
-    reason?: string | null;
 }
 
 export interface SystemRequirmentItem {

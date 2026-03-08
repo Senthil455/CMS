@@ -9,7 +9,8 @@ import {
     type PageArchitecture,
     type PagePlan,
     type AgentName,
-    AGENT_NAMES
+    AGENT_NAMES,
+    type LayoutJson
 } from '@cms/shared';
 import { PAGE_COMPONENT_REGISTRY } from './page-components/index';
 import { UserVisibleError } from './user-visible-error';
@@ -71,7 +72,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
         // Build layoutJson from sections
-        const layoutJson: any = {
+        const layoutJson: LayoutJson = {
             sections: plan.sections.map(section => ({
                 preset: section.preset,
                 columns: section.columns.map(col => ({

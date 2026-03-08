@@ -26,20 +26,16 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         const existingPageNames = schemas.filter((s: any) => s.type === 'page' && s.settings?.page?.name).map((s: any) => s.settings.page.name) as string[];
 
         let existingPagePlan: PagePlan | undefined = undefined;
-        //todo: system arichitect can not pre assign schemaId
         if (schemaId) {
-            try {
-                const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
-                if (schema && schema.settings.page && schema.settings.page.metadata) {
-                    const metadata = schema.settings.page.metadata;
-                    if (metadata.plan) {
-                        existingPagePlan = metadata.plan;
-                    }
+            const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
+            if (schema && schema.settings.page && schema.settings.page.metadata) {
+                const metadata = schema.settings.page.metadata;
+                if (metadata.plan) {
+                    existingPagePlan = metadata.plan;
                 }
-            } catch (e) {
-                // fall through
             }
         }
+
 
         const { plan: pagePlan, developerMessage } = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
 
