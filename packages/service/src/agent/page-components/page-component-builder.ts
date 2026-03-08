@@ -2,11 +2,10 @@ import type { AIProvider } from '../../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../../infrastructures/cms-client';
 import type { ServiceLogger } from '../../types/logger';
 import { type AgentContext, type ThinkResult, type Agent, type ActResult, type FinalizeResult } from '../chat-assistant';
-import { type ComponentInstruction, type PageComponentDefinition, type PageDto, type PageMetadata } from '@cms/shared';
+import { type ComponentInstruction, type PageComponentDefinition, type PageMetadata } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 import { UserVisibleError } from '../user-visible-error';
 import type { PageComponent } from '@cms/shared';
-import { json } from 'stream/consumers';
 
 
 export class PageComponentBuilder implements Agent<PageComponent> {

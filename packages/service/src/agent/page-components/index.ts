@@ -8,7 +8,7 @@ export const PAGE_COMPONENT_REGISTRY: PageComponentDefinition[] = [
         label: 'Common Component',
         icon: 'Code2', // Using same icon
         color: 'gray',
-        pageTypes: ['detail', 'list'],
+        pageTypes: [],
         resourceDir: 'common-component',
         hasSnippet: false,
         needQueries: true,

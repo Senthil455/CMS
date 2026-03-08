@@ -220,7 +220,7 @@ export class OrchestratorService {
             throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${schemaId}`);
         }
 
-        const component = schema.settings.page.metadata.components?.[componentId];
+        const component = schema.settings.page.metadata.components!.find(a => a.id === componentId);
         const componentTypeId = component?.componentTypeId;
 
         let agentToInvoke: AgentName = AGENT_NAMES.COMPONENT_BUILDER;

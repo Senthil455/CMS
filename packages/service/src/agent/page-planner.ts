@@ -17,8 +17,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<ThinkResult<TemplateSelectionRequest>> {
-        let schemaId = '';
-
+        const schemaId = '';
 
         // Fetch existing entities to help planner
         const schemas = await this.cmsClient.getAllEntities(context.externalCookie);
@@ -27,17 +26,22 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
 
         let existingPagePlan: PagePlan | undefined = undefined;
         if (schemaId) {
-            const schema = await this.cmsClient.getSchemaBySchemaId(context.externalCookie, schemaId);
-            if (schema && schema.settings.page && schema.settings.page.metadata) {
-                const metadata = schema.settings.page.metadata;
-                if (metadata.plan) {
-                    existingPagePlan = metadata.plan;
-                }
-            }
+            const schema = schemas.find((s: any) => s.id === schemaId);
+            existingPagePlan = schema!.settings!.page!.metadata.plan;
         }
+        const messages = {
+            entityNames,
+            existingPageNames,
+            existingPagePlan
+        }
+        const developerMessage = JSON.stringify(messages);
 
-
-        const { plan: pagePlan, developerMessage } = await this.plan(userInput, context, entityNames, existingPageNames, existingPagePlan);
+        const pagePlan: PagePlan = await this.aiProvider.generate(
+            this.plannerSystemPrompt,
+            developerMessage,
+            userInput,
+            context.signal ? { signal: context.signal } : undefined
+        );
 
         // If the planner couldn't match an entity, stop the pipeline
         if (!pagePlan.entityName) {
@@ -90,37 +94,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             ]
         };
     }
-
-    private async plan(userInput: string, context: AgentContext, entityNames: string[] = [], existingPageNames: string[] = [], existingPlan?: PagePlan): Promise<{ plan: PagePlan, developerMessage: string }> {
-        const entitiesList = entityNames.length > 0 ? entityNames.join(", ") : "None";
-        const existingPagesList = existingPageNames.length > 0 ? existingPageNames.join(", ") : "None";
-
-        let developerMessage = `Existing Entities: [${entitiesList}]\nExisting Pages: [${existingPagesList}]\n\nDETERMINE THE PAGE TYPE, RELEVANT ENTITY, AND THE ROUTING STRUCTURE.`;
-
-        if (existingPlan) {
-            developerMessage += `\n\nEXISTING ROUTING PLAN:\n${JSON.stringify(existingPlan, null, 2)}\nPreserve the general structure unless changes are requested.`;
-        }
-
-
-
-        const response = await this.aiProvider.generate(
-            this.plannerSystemPrompt,
-            developerMessage,
-            userInput,
-            context.signal ? { signal: context.signal } : undefined
-        );
-
-        try {
-            let plan: PagePlan;
-            if (typeof response === 'string') {
-                plan = JSON.parse(response);
-            } else {
-                plan = response as PagePlan;
-            }
-            return { plan, developerMessage };
-        } catch (e) {
-            throw new UserVisibleError("I couldn't understand the plan generated. Please try rephrasing your request.");
-        }
-    }
 }
+
 
