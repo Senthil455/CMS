@@ -37,15 +37,15 @@ export class PageComponentBuilder implements Agent<PageComponent> {
         const stylePrompt = this.getStylePrompt ? await this.getStylePrompt(templateStyle, metadata.plan!.pageType) : '';
         const message = {
             ...metadata.plan,
-            instruction,
-            stylePrompt,
+            "Architect INSTRUCTION": instruction,
+            "DESIGN STYLE INSTRUCTION": stylePrompt,
             querys: await this.filterQuery(metadata, instruction!, context),
             existingHtml: metadata.components?.find(x => x.id == componentId)?.html,
             snippet: this.snippet?.replace(/{{entityName}}/g, metadata.plan?.entityName ?? "")
         };
 
         await context.saveAgentMessage(`I am building component: ${instruction!.id} (${this.addonDef.label})`);
-        const developerMessage = JSON.stringify(message);
+        const developerMessage = JSON.stringify(message, undefined, 2);
 
         const res = await this.aiProvider.generate(
             this.systemPrompt,

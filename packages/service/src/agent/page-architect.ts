@@ -40,9 +40,9 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         const queries = await this.cmsClient.getAllQueries(context.externalCookie);
 
         const message = {
-            existingArchitecture,
-            queries: queries.map(x => ({ name: x.name, source: x.settings.query?.source, arguments: x.settings.query?.variables })),
-            addones: PAGE_COMPONENT_REGISTRY.filter(x => x.pageTypes.includes(metadata.plan!.pageType!))
+            "EXISTING STRUCTURE": existingArchitecture,
+            "AVAILABLE QUERIES": queries.map(x => ({ name: x.name, source: x.settings.query?.source, arguments: x.settings.query?.variables })),
+            "AVAILABLE Components": PAGE_COMPONENT_REGISTRY.filter(x => x.pageTypes.includes(metadata.plan!.pageType!))
                 .map(x => ({ id: x.id, label: x.label, desc: x.chatMessage })),
             ...metadata.plan!
         }

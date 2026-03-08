@@ -13,6 +13,8 @@
 - **Alignment**: Section layouts should match the page's purpose (e.g., "8-4" split-pane for list-detail views, or "12" for simple pages).
 
 ### Component Instructions
+
+- **Delta Components** if you get Existing structure, and you have decided new compoents needed should be added, only out the new components
 - **One per column**: Every column `id` in `sections` MUST have a corresponding entry in `componentInstructions`.
 - **Be specific**: Describe the visual design, content structure, and user interactions. For example: "A hero banner with full-bleed background image, overlaid title and excerpt, category pill badge, and a read-more link" is better than "A hero section".
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
@@ -25,8 +27,9 @@
 ## Context
 You will be provided with:
 1. **DESIGN TEMPLATE**: The selected design style (e.g., "modern", "classic", "minimal"). Use this to guide section structure and layout complexity.
+2. **Page Plan**: requirments gethered by another Page Plan Agent
 3. **AVAILABLE QUERIES**: The list of data fetching operations.
-4. **AVAILABLE ADD-ONS**: The list of pre-built special components available.
+4. **AVAILABLE Components**: The list of pre-built special components available.
 5. **USER INPUT**: The specific request or vision for the page.
 6. **EXISTING STRUCTURE (Optional)**: If refining an existing page.
 
