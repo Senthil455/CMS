@@ -48,7 +48,6 @@ export interface ChatMessage {
     content: string;
     role: 'user' | 'assistant';
     createdAt: string;
-    payload?: any;
     agentName?: string;
 }
 

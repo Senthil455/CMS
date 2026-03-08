@@ -20,7 +20,6 @@ import { UserVisibleError } from '../agent/user-visible-error';
 import { CmsError } from '../infrastructures/cms-error';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { AgentProviderError } from '../infrastructures/agent-provider-error';
-import { type AgentTask, type AgentTaskItem } from '../models/agent-task-model';
 import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components';
 
 /**
@@ -266,7 +265,7 @@ export class OrchestratorService {
         this.statusService.clearStatus(userId, onEvent);
         // Fallback or default behavior if no command resolved
         const helpMessage = `I'm not sure how to help with that. Could you try rephrasing?\n\nHere are some things I can help you with:\n- **Entity Management**: Create or modify entities, content types, or relationships.\n- **Data Generation**: Generate example content for your entities.\n- **Query Generation**: Create GraphQL queries for your API.\n- **Page Planning**: Design and generate HTML pages.`;
-        await this.saveAndEmitAgentMessage(userId, helpMessage, onEvent, undefined, 'system');
+        await this.saveAndEmitAgentMessage(userId, helpMessage, onEvent, 'system');
     }
 
     private async actOnLog(logId: number, userId: string, externalCookie: string,
@@ -285,7 +284,7 @@ export class OrchestratorService {
 
         const plan = JSON.parse(responseContent);
         const handler = this.resolveHandler(selection, agentName)!;
-        await this.saveAgentMessage(userId, "Manually triggering action from log...", undefined, 'system');
+        await this.saveAgentMessage(userId, "Manually triggering action from log...", 'system');
 
         const { syncedSchemaIds, feedback } = await handler.act(plan, context);
         if (feedback !== null) {
@@ -314,8 +313,8 @@ export class OrchestratorService {
             ...(signal ? { signal } : {}),
             ...(schemaId ? { schemaId } : {}),
             ...(metadata ? { metadata } : {}),
-            saveAgentMessage: async (content: string, payload?: any) => {
-                return this.saveAndEmitAgentMessage(userId, content, onEvent, payload, agentName);
+            saveAgentMessage: async (content: string) => {
+                this.saveAndEmitAgentMessage(userId, content, onEvent, agentName ?? '');
             },
         };
     }
@@ -341,14 +340,13 @@ export class OrchestratorService {
         const item = await this.taskOperator.checkout(taskId);
         if (item) {
             const agentTaskItem = { taskId, index: item.index };
-            const context = this.createContext(userId, externalCookie,
-                item.schemaId, onEvent, signal, item.agentName as AgentName);
+            const context = this.createContext(userId, externalCookie, item.schemaId, onEvent, signal, item.agentName as AgentName, item.metadata);
             await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
         } else {
             // Task finished — send a walkthrough message
             const walkthrough = await this.taskOperator.getWalkthrough(taskId);
             if (walkthrough) {
-                await this.saveAndEmitAgentMessage(userId, walkthrough, onEvent, undefined, 'system');
+                await this.saveAndEmitAgentMessage(userId, walkthrough, onEvent, 'system');
             }
         }
     }
@@ -367,15 +365,9 @@ export class OrchestratorService {
             throw new Error(`Handler not found for task type: ${agentName}`);
         }
 
-        const agentTaskItemRecord = agentTaskItem
-            ? await this.taskOperator.checkout(agentTaskItem.taskId)
-            : undefined;
-
         this.statusService.setStatus(userId, agentName, onEvent);
-        const agentContext = this.createContext(userId, context.externalCookie, context.schemaId, onEvent, context.signal, agentName, agentTaskItemRecord?.metadata);
-
         // Orchestrator owns the think → log → act pipeline
-        const { plan, prompts } = await handler.think(userInput, agentContext);
+        const { plan, prompts } = await handler.think(userInput, context);
 
         // Save AI response log
         const inputLog = JSON.stringify({
@@ -394,7 +386,7 @@ export class OrchestratorService {
 
         this.statusService.clearStatus(userId, onEvent);
 
-        const { feedback, syncedSchemaIds, followingTaskItems } = await handler.act(plan, agentContext);
+        const { feedback, syncedSchemaIds, followingTaskItems } = await handler.act(plan, context);
         if (feedback !== null) {
             // Agent needs user feedback — compose payload and emit unified event
             const feedbackPayload: AgentFeedbackPayload = {
@@ -430,17 +422,17 @@ export class OrchestratorService {
         this.statusService.clearStatus(userId, onEvent);
 
         if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') {
-            await this.saveAndEmitAgentMessage(userId, 'Request cancelled.', onEvent);
+            await this.saveAndEmitAgentMessage(userId, 'Request cancelled.', onEvent, "system");
             return;
         }
 
         if (error instanceof UserVisibleError || error instanceof CmsError || error instanceof AgentProviderError) {
-            await this.saveAndEmitAgentMessage(userId, error.message, onEvent);
+            await this.saveAndEmitAgentMessage(userId, error.message, onEvent, "system");
             return;
         }
         // this error will not bubbleup, should log it
         this.logger.error({ error: formatError(error), agentName }, 'Internal chat service error');
-        await this.saveAndEmitAgentMessage(userId, 'I encountered an internal error while processing your request. Please try again later.', onEvent);
+        await this.saveAndEmitAgentMessage(userId, 'I encountered an internal error while processing your request. Please try again later.', onEvent, "system");
     }
 
 
@@ -450,10 +442,9 @@ export class OrchestratorService {
         userId: string,
         content: string,
         onEvent: OnServerToClientEvent,
-        payload?: any,
-        agentName?: string
+        agentName: string
     ): Promise<ChatMessage> {
-        const message = await this.saveAgentMessage(userId, content, payload, agentName);
+        const message = await this.saveAgentMessage(userId, content, agentName);
         onEvent(SOCKET_EVENTS.CHAT.MESSAGE_RECEIVED, message);
         return message;
     }
@@ -461,12 +452,11 @@ export class OrchestratorService {
         return this.messageRepository.save({ userId, content, role: 'user' });
     }
 
-    private async saveAgentMessage(userId: string, content: string, payload?: any, agentName?: string): Promise<ChatMessage> {
+    private async saveAgentMessage(userId: string, content: string, agentName: string): Promise<ChatMessage> {
         return this.messageRepository.save({
             userId,
             content,
             role: 'assistant',
-            ...(payload !== undefined ? { payload } : {}),
             ...(agentName !== undefined ? { agentName } : {})
         });
     }

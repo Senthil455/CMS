@@ -1,10 +1,9 @@
-import type { ChatMessage } from '@cms/shared';
 import type { AgentTaskItem } from '../models/agent-task-model';
 
 export interface AgentContext {
     externalCookie: string;
     schemaId?: string;
-    saveAgentMessage: (content: string, payload?: any) => Promise<ChatMessage>;
+    saveAgentMessage: (content: string) => Promise<void>;
     signal?: AbortSignal;
     metadata?: Record<string, unknown>;
 }

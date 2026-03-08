@@ -19,7 +19,6 @@ export function PageComponentsSection({ metadata, schemaId, selectedComponentId,
 
     if (!components || Object.keys(components).length === 0) return null;
 
-    const componentIds = Object.keys(components);
 
     return (
         <section className="space-y-4 shrink-0">
@@ -28,15 +27,16 @@ export function PageComponentsSection({ metadata, schemaId, selectedComponentId,
                     <Layers className="w-4 h-4" />
                     Components
                 </h3>
-                <span className="text-[10px] font-bold text-primary-muted">{componentIds.length} component{componentIds.length !== 1 ? 's' : ''}</span>
+                <span className="text-[10px] font-bold text-primary-muted">{components.length} component{components.length !== 1 ? 's' : ''}</span>
             </div>
             <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap gap-2">
-                    {componentIds.map(id => {
+                    {components.map(com => {
+                        const id = com.id
                         const isSelected = selectedComponentId === id;
 
                         return (
-                            <div key={id} className="relative flex flex-col group gap-2 border rounded-lg p-2 transition-all">
+                            <div key={com.id} className="relative flex flex-col group gap-2 border rounded-lg p-2 transition-all">
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => onSelectComponent(isSelected ? null : id)}

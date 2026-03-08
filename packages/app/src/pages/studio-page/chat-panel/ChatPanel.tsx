@@ -65,6 +65,12 @@ export function ChatPanel({
         checkConfig();
     }, []);
 
+    useEffect(() => {
+        if (chatDraft) {
+            setActiveTab('chat');
+        }
+    }, [chatDraft]);
+
     return (
         <div className="w-96 shrink-0 flex flex-col h-full bg-app-surface border-l border-border relative">
             <div className="p-3 border-b border-border flex items-center justify-between bg-app-surface gap-3">

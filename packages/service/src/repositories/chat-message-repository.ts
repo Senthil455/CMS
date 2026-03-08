@@ -16,7 +16,6 @@ export class SqliteChatMessageRepository implements IChatMessageRepository {
                 content: message.content,
                 role: message.role,
                 agentName: message.agentName || null,
-                payload: message.payload ? JSON.stringify(message.payload) : null,
             },
         });
         const result: ChatMessage = {
@@ -29,9 +28,7 @@ export class SqliteChatMessageRepository implements IChatMessageRepository {
         if (saved.agentName) {
             result.agentName = saved.agentName;
         }
-        if (saved.payload) {
-            result.payload = JSON.parse(saved.payload);
-        }
+
         return result;
     }
 

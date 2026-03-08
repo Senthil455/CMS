@@ -21,7 +21,7 @@ export class PageComponentBuilder implements Agent<PageComponent> {
         private readonly getStylePrompt?: (styleName: string, pageType: string) => Promise<string>,
     ) { }
 
-    async think(_userInput: string, context: AgentContext): Promise<ThinkResult<PageComponent>> {
+    async think(userInput: string, context: AgentContext): Promise<ThinkResult<PageComponent>> {
         this.logger.info(`PageComponentBuilder[${this.addonDef.id}] think started`);
 
         const existingPageSchema = context.schemaId && await this.cmsClient.getSchemaBySchemaId(context.externalCookie, context.schemaId);
@@ -50,7 +50,7 @@ export class PageComponentBuilder implements Agent<PageComponent> {
         const res = await this.aiProvider.generate(
             this.systemPrompt,
             developerMessage,
-            "",
+            userInput,
             context.signal ? { signal: context.signal } : undefined
         ) as { html: string };
 
@@ -63,7 +63,7 @@ export class PageComponentBuilder implements Agent<PageComponent> {
             prompts: {
                 systemPrompt: this.systemPrompt,
                 developerMessage,
-                userInput: ""
+                userInput
             }
         };
     }
