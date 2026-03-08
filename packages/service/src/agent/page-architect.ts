@@ -86,6 +86,11 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
 
         if (plan.componentInstructions) {
             for (const instruction of plan.componentInstructions) {
+                if (instruction.needsBuild === false) {
+                    this.logger.info({ componentId: instruction.id }, 'Skipping build task for unchanged component');
+                    continue;
+                }
+
                 if (instruction.componentTypeId) {
                     const addon = PAGE_COMPONENT_REGISTRY.find(a => a.id === instruction.componentTypeId);
                     if (addon) {

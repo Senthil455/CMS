@@ -60,6 +60,7 @@ export interface ComponentInstruction {
     instruction: string;
     queriesToUse: string[];
     componentTypeId?: string; // matches PageComponentDefinition.id when this is a known component type
+    needsBuild?: boolean; // true if this component needs to be rebuilt
 }
 
 export interface LayoutColumn {

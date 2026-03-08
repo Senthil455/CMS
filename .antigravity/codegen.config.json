@@ -20,5 +20,6 @@
     ],
     "themeStrategy": "dark-class",
     "responsive": "mobile-first",
-    "forbidInlineStyle": true
+    "forbidInlineStyle": true,
+    "preferTypeInference": true
 }

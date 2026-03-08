@@ -22,8 +22,8 @@
             const firstCursor = firstMarker.getAttribute('data-cursor');
             const lastCursor = lastMarker.getAttribute('data-cursor');
             
-            this.hasPrev = firstMarker.getAttribute('data-has-previous-page') === 'true';
-            this.hasNext = lastMarker.getAttribute('data-has-next-page') === 'true';
+            this.hasPrev = firstMarker.getAttribute('data-has-previous-page').toLowerCase() === 'true';
+            this.hasNext = lastMarker.getAttribute('data-has-next-page').toLowerCase() === 'true';
 
             if (this.hasPrev && firstCursor) {
                 const prevParams = new URLSearchParams(window.location.search);

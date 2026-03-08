@@ -12,10 +12,13 @@
 ### Layout
 - **Alignment**: Section layouts should match the page's purpose (e.g., "8-4" split-pane for list-detail views, or "12" for simple pages).
 
-### Component Instructions
+### Component Instructions & State Management
 
-- **Delta Components** If you get Existing structure, and you have decided new compoents needed should be added, only output the new components,  new component id should not be in existing structure `componentInstructions`.
-
+- **Full State Output**: Whether you are creating a new page or modifying an existing one, you MUST always output the FULL `sections` and FULL `selectedQueries` array. This ensures page integrity.
+- **Selective Building (needsBuild flag)**:
+    - Set `needsBuild: true` for any new component being added.
+    - Set `needsBuild: true` for any existing component whose visual design, content structure, or queries have been modified in your instruction.
+    - Set `needsBuild: false` for unchanged components to avoid redundant build tasks.
 - **One per column**: Every column `id` in `sections` MUST have a corresponding entry in `componentInstructions`.
 - **Be specific**: Describe the visual design, content structure, and user interactions. For example: "A hero banner with full-bleed background image, overlaid title and excerpt, category pill badge, and a read-more link" is better than "A hero section".
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
@@ -62,7 +65,8 @@ You must output ONLY a valid JSON object with this structure:
       "id": "string", // MUST match a column `id` from the sections above
       "instruction": "string", // Detailed description of the UI component to build for this slot. Describe layout, visual style, interactions, and content structure.
       "queriesToUse": ["string"], // Array of queryName values from selectedQueries that this component needs
-      "componentTypeId": "string" // (OPTIONAL) If this component exactly matches one of the "AVAILABLE PAGE COMPONENTS" listed below, provide its ID here (e.g. "engagement_bar").
+      "componentTypeId": "string", // (OPTIONAL) If this component exactly matches one of the "AVAILABLE PAGE COMPONENTS" listed below, provide its ID here (e.g. "engagement_bar").
+      "needsBuild": boolean // Set to true if this component is new or modified and needs to be built/rebuilt
     }
   ],
 }
