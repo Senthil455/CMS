@@ -63,7 +63,7 @@ export interface ComponentInstruction {
 
 export interface LayoutColumn {
     span: number;
-    id: string;
+    ids: string[];
 }
 
 export interface LayoutSection {
@@ -84,11 +84,16 @@ export interface PageComponentDefinition {
     chatMessage: string;
 }
 
+export interface PageComponent {
+    id: string;
+    html: string;
+    componentTypeId?: string;
+}
+
 export interface PageMetadata {
     plan?: PagePlan;
     architecture?: PageArchitecture;
-    componentInstructions?: ComponentInstruction[];
-    components?: Record<string, { html: string; props?: any }>;
+    components?: PageComponent[];
     userInput?: string;
     templateId?: string;
     enableVisitTrack?: boolean;
@@ -121,4 +126,8 @@ export interface DesignStyle {
     detailPrompt: string;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface QueryResponse {
+    queries: Record<string, string>;
 }

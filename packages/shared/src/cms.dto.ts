@@ -1,3 +1,5 @@
+import { PageDto } from "./app.dto";
+
 export interface XAttributeDto {
     field: string;
     header: string;
@@ -103,7 +105,7 @@ export interface SchemaDto {
     settings: {
         entity?: EntityDto | null;
         query?: QueryDto | null;
-        page?: any | null; // Placeholder to avoid circular dependency with PageDto in app.dto.ts if needed, but PageDto is usually in app.dto
+        page?: PageDto | null;
     };
 }
 
@@ -126,10 +128,7 @@ export type SaveSchemaPayload = {
     type: 'page';
     description?: string;
     settings: {
-        page: any; // Placeholder for PageDto
+        page: PageDto;
     };
 };
 
-export interface QueryResponse {
-    queries: Record<string, string>;
-}

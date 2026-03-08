@@ -40,7 +40,7 @@ You must output ONLY a valid JSON object with this structure:
       "columns": [
         { 
           "span": 8, // Corresponding to a 12-column grid system
-          "id": "main-content" // Unique ID for the column to be populated by the builder
+          "ids": ["string"] // Unique IDs for the column to be populated by the builder, out put an array even only one component
         }
       ]
     }

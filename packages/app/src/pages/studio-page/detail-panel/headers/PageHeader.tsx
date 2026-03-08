@@ -3,7 +3,7 @@ import {
     Trash2, Edit2, Layout, Sparkles, ChevronDown, Code,
     MessageSquarePlus, UserCircle, Eye, TrendingUp, Plus, Puzzle
 } from 'lucide-react';
-import { type PageDto, AGENT_NAMES, type PageMetadata, type PageAddonDefinition, ENDPOINTS } from '@cms/shared';
+import { type PageDto, AGENT_NAMES, type PageMetadata, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { HeaderLayout } from './HeaderLayout';
@@ -41,7 +41,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit, onChatAction }: PageHeaderProps) {
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const [addons, setAddons] = useState<PageAddonDefinition[]>([]);
+    const [addons, setAddons] = useState<PageComponentDefinition[]>([]);
     const addMenuRef = useRef<HTMLDivElement>(null);
 
     let metadata: PageMetadata = {};
@@ -75,10 +75,10 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const [selectedAddon, setSelectedAddon] = useState<PageAddonDefinition | null>(null);
+    const [selectedAddon, setSelectedAddon] = useState<PageComponentDefinition | null>(null);
     const [customReq, setCustomReq] = useState('');
 
-    const handleTriggerAddon = (addon: PageAddonDefinition, customRequirement: string) => {
+    const handleTriggerAddon = (addon: PageComponentDefinition, customRequirement: string) => {
         setIsAddMenuOpen(false);
         setSelectedAddon(null);
         setCustomReq('');

@@ -1,7 +1,8 @@
 import {
     type SaveSchemaPayload,
-    type LayoutJson,
-    LayoutCompiler
+    LayoutCompiler,
+    type PageMetadata,
+    type PageComponent
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
@@ -98,37 +99,9 @@ export class PageOperator {
         this.logger.info({ schemaId }, 'Successfully saved architecture via PageOperator');
     }
 
-    async saveLayoutJson(schemaId: string, layoutJson: LayoutJson, externalCookie: string): Promise<void> {
-        const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
-        if (!schema || !schema.settings.page) {
-            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
-        }
-
-        const pageSettings = schema.settings.page;
-        let metadata: any = pageSettings.metadata || {};
-
-        metadata.layoutJson = layoutJson;
-
-        const payload: SaveSchemaPayload = {
-            schemaId: schemaId,
-            type: 'page',
-            settings: {
-                page: {
-                    ...pageSettings,
-                    metadata: metadata,
-                }
-            }
-        };
-
-        await this.cmsClient.saveSchema(externalCookie, payload);
-        this.logger.info({ schemaId }, 'Successfully saved layoutJson via PageOperator');
-    }
-
     async saveComponents(
         schemaId: string,
-        layoutJson: LayoutJson,
-        components: Record<string, { html: string; props?: any }>,
-        title: string | undefined,
+        component: PageComponent,
         externalCookie: string
     ): Promise<string> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
@@ -137,15 +110,21 @@ export class PageOperator {
         }
 
         const pageSettings = schema.settings.page;
-        let metadata: any = pageSettings.metadata || {};
+        let metadata: PageMetadata = pageSettings.metadata || {};
 
-        metadata.layoutJson = layoutJson;
+        const components = metadata.components || [];
+        const existingIdx = components.findIndex(c => c.id === component.id);
+        if (existingIdx > -1) {
+            components[existingIdx] = component;
+        } else {
+            components.push(component);
+        }
         metadata.components = components;
 
         // Compile final HTML from layout + components
         let compiledHtml = pageSettings.html;
         try {
-            compiledHtml = LayoutCompiler.compile(layoutJson, components, title || pageSettings.title, { enableVisitTrack: metadata.enableVisitTrack });
+            compiledHtml = LayoutCompiler.compile(metadata.architecture?.sections || [], components, pageSettings.title, { enableVisitTrack: metadata.enableVisitTrack ?? false });
         } catch (e) {
             throw new UserVisibleError("Failed to compile HTML layout from the generated components.");
         }
@@ -156,10 +135,8 @@ export class PageOperator {
             settings: {
                 page: {
                     ...pageSettings,
-                    title: title || pageSettings.title,
                     html: compiledHtml,
                     metadata: metadata,
-                    source: 'ai'
                 }
             }
         };
@@ -198,29 +175,4 @@ export class PageOperator {
         return newSchemaId;
     }
 
-    async saveComponentInstructions(schemaId: string, componentInstructions: any[], externalCookie: string): Promise<void> {
-        const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
-        if (!schema || !schema.settings.page) {
-            throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
-        }
-
-        const pageSettings = schema.settings.page;
-        let metadata: any = pageSettings.metadata || {};
-
-        metadata.componentInstructions = componentInstructions;
-
-        const payload: SaveSchemaPayload = {
-            schemaId: schemaId,
-            type: 'page',
-            settings: {
-                page: {
-                    ...pageSettings,
-                    metadata: metadata,
-                }
-            }
-        };
-
-        await this.cmsClient.saveSchema(externalCookie, payload);
-        this.logger.info({ schemaId }, 'Successfully saved component instructions via PageOperator');
-    }
 }

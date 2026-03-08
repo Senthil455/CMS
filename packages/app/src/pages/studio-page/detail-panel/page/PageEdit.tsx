@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, LayoutCompiler, type LayoutJson } from '@cms/shared';
+import { type SchemaDto, type SaveSchemaPayload, type ParsedPageDto, LayoutCompiler } from '@cms/shared';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { useSocket } from '../../../../hooks/use-socket';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
@@ -56,27 +56,15 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
 
             let htmlToSave = pageForm.html;
 
-            // Compile the LayoutJson into Tailwind Grid HTML if using the Layout Editor
-            if (pageForm.metadata?.layoutJson) {
-                const layoutJson = pageForm.metadata.layoutJson as LayoutJson;
-
-                // Use AI-generated components from metadata, falling back to HTML_BLOCKS
-                const componentsMap: Record<string, { html: string; props?: any }> = {};
-                const metadataComponents = pageForm.metadata.components || {};
-
-                layoutJson.sections.forEach(section => {
-                    section.columns.forEach(col => {
-                        col.blocks.forEach(block => {
-                            if (metadataComponents[block.id]) {
-                                componentsMap[block.id] = metadataComponents[block.id];
-                            } else {
-                                componentsMap[block.id] = { html: `<!-- Generating component ${block.type} -->`, props: {} };
-                            }
-                        });
-                    });
-                });
-
-                htmlToSave = LayoutCompiler.compile(layoutJson, componentsMap, pageForm.title, { enableVisitTrack: pageForm.metadata?.enableVisitTrack });
+            // Compile the architecture into Tailwind Grid HTML if it exists
+            if (pageForm.metadata?.architecture?.sections) {
+                const components = pageForm.metadata.components || [];
+                htmlToSave = LayoutCompiler.compile(
+                    pageForm.metadata.architecture.sections,
+                    components,
+                    pageForm.title,
+                    { enableVisitTrack: pageForm.metadata.enableVisitTrack }
+                );
             }
 
             const payload: SaveSchemaPayload = {
@@ -124,24 +112,14 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
         let updatedForm = { ...pageForm, [field]: value };
 
         // Auto-recompile HTML when title or metadata (e.g. tracking toggle) changes
-        if ((field === 'title' || field === 'metadata') && updatedForm.metadata && updatedForm.metadata.layoutJson) {
-            const layoutJson = updatedForm.metadata.layoutJson as LayoutJson;
-            const componentsMap: Record<string, { html: string; props?: any }> = {};
-            const metadataComponents = updatedForm.metadata.components || {};
-
-            layoutJson.sections.forEach(section => {
-                section.columns.forEach(col => {
-                    col.blocks.forEach(block => {
-                        if (metadataComponents[block.id]) {
-                            componentsMap[block.id] = metadataComponents[block.id];
-                        } else {
-                            componentsMap[block.id] = { html: `<!-- Generating component ${block.type} -->`, props: {} };
-                        }
-                    });
-                });
-            });
-
-            updatedForm.html = LayoutCompiler.compile(layoutJson, componentsMap, updatedForm.title, { enableVisitTrack: updatedForm.metadata?.enableVisitTrack });
+        if ((field === 'title' || field === 'metadata') && updatedForm.metadata?.architecture?.sections) {
+            const components = updatedForm.metadata.components || [];
+            updatedForm.html = LayoutCompiler.compile(
+                updatedForm.metadata.architecture.sections,
+                components,
+                updatedForm.title,
+                { enableVisitTrack: updatedForm.metadata.enableVisitTrack }
+            );
         }
 
         setPageForm(updatedForm);

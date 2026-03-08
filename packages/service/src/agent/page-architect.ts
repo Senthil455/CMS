@@ -10,10 +10,10 @@ import {
     type PagePlan,
     type AgentName,
     AGENT_NAMES,
-    type LayoutJson
 } from '@cms/shared';
 import { PAGE_COMPONENT_REGISTRY } from './page-components/index';
 import { UserVisibleError } from './user-visible-error';
+import type { LayoutSection, SchemaDto } from '@cms/shared';
 
 export interface ArchitectDesignerAgentPlan extends PageArchitecture {
     userInput: string;
@@ -71,23 +71,6 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
     async act(plan: ArchitectDesignerAgentPlan, context: AgentContext): Promise<ActResult<ArchitectDesignerAgentPlan>> {
         await this.pageOperator.saveArchitecture(plan.schemaId, plan, context.externalCookie);
 
-        // Build layoutJson from sections
-        const layoutJson: LayoutJson = {
-            sections: plan.sections.map(section => ({
-                preset: section.preset,
-                columns: section.columns.map(col => ({
-                    span: col.span,
-                    blocks: [{ id: col.id, type: 'component' }]
-                }))
-            }))
-        };
-        await this.pageOperator.saveLayoutJson(plan.schemaId, layoutJson, context.externalCookie);
-
-        // Also save componentInstructions into metadata at the top level
-        if (plan.componentInstructions && plan.componentInstructions.length > 0) {
-            await this.pageOperator.saveComponentInstructions(plan.schemaId, plan.componentInstructions, context.externalCookie);
-        }
-
         const componentCount = plan.componentInstructions ? plan.componentInstructions.length : 0;
         let message = `I have finished designing the page architecture. I will now create tasks for building each component.\n\n**Components Plan (${componentCount}):**\n`;
         if (componentCount > 0) {
@@ -135,35 +118,17 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         return { syncedSchemaIds: [] };
     }
 
-    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: any[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<ThinkResult<PageArchitecture>> {
-        const queryListContext = availableQueries.map((q: any) =>
-            `- ${q.name}: ${q.settings?.query?.source}
-             arguments: ${JSON.stringify(q.settings?.query?.arguments)}
-            `).join('\n');
+    private async generateArchitecturePlan(userInput: string, context: AgentContext, availableQueries: SchemaDto[], pagePlan: PagePlan, templateStyle: string, existingArchitecture?: Partial<PageArchitecture>): Promise<ThinkResult<PageArchitecture>> {
 
-        const addonsListContext = PAGE_COMPONENT_REGISTRY.map(addon =>
-            `- ${addon.id}: ${addon.label} (${addon.pageTypes.join(', ')} pages) - ${addon.chatMessage}`
-        ).join('\n');
+        const message = {
+            existingArchitecture,
+            queries: availableQueries.map(x => ({ name: x.name, source: x.settings.query?.source, arguments: x.settings.query?.variables })),
+            addones: PAGE_COMPONENT_REGISTRY.filter(x => x.id != "common_component").map(x => ({ id: x.id, label: x.label, desc: x.chatMessage })),
+            ...pagePlan
 
-        let developerMessage = `
-            ${templateStyle ? `DESIGN TEMPLATE: ${templateStyle}\n` : ''}
-            ROUTING PLAN:
-            - Planned Path: ${pagePlan.pageName}
-            - Parameters: ${pagePlan.primaryParameter || 'None'}
-            - Linking Rules: ${pagePlan.linkingRules?.join(', ') || 'None'}
-
-            AVAILABLE ADD-ONS:
-            ${addonsListContext}
-
-            AVAILABLE QUERIES:
-            ${queryListContext}
-        `;
-
-        if (existingArchitecture) {
-            developerMessage += `\nEXISTING STRUCTURE:\n${JSON.stringify(existingArchitecture, null, 2)}\nPreserve the existing structure unless changes are requested.`;
         }
 
-        developerMessage += '\n\nIDENTIFY THE PAGE TYPE AND PLAN THE STRUCTURE. Use the parameters from routing plan to select appropriate queries.';
+        const developerMessage = JSON.stringify(message);
 
         const response = await this.aiProvider.generate(
             this.architectSystemPrompt,

@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { type ChatMessage } from '@cms/shared';
-import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network, Beaker, LayoutGrid } from 'lucide-react';
+import { Calendar, Clock, User, Bot, Sparkles, Database, LayoutTemplate, PenTool, Code2, Network, Beaker } from 'lucide-react';
 
 interface Props {
     message: ChatMessage;

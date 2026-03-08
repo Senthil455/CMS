@@ -23,7 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { X, Save, Loader2, Maximize2, Minimize2, Plus, Trash2 } from 'lucide-react';
-import { type SchemaDto, type ParsedPageDto, type LayoutJson, type LayoutSection, type LayoutColumn, type LayoutBlock } from '@cms/shared';
+import { type SchemaDto, type ParsedPageDto, type LayoutSection, type LayoutColumn, type PageArchitecture } from '@cms/shared';
 import { PagePreviewSection } from './PagePreviewSection';
 
 import { useRef } from 'react';
@@ -85,10 +85,10 @@ function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
 
 
 
-function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, onSelect, onRemove }: { block: LayoutBlock; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove?: () => void; onModify?: (id: string, req: string) => void }) {
+function SortableBlockItem({ blockId, sectionIdx, colIdx, blockIndex, isSelected, onSelect, onRemove }: { blockId: string; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove?: () => void; onModify?: (id: string, req: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: block.id,
-        data: { type: block.type, sectionIdx, colIdx, blockIndex, isToolbox: false }
+        id: blockId,
+        data: { sectionIdx, colIdx, blockIndex, isToolbox: false }
     });
 
     const style = {
@@ -97,7 +97,7 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, 
         opacity: isDragging ? 0.3 : 1,
     };
 
-    const blockLabel = block.id;
+    const blockLabel = blockId;
 
     return (
         <div
@@ -126,7 +126,7 @@ function SortableBlockItem({ block, sectionIdx, colIdx, blockIndex, isSelected, 
                     </button>
                 )}
             </div>
-            <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {block.id}</div>
+            <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {blockId}</div>
         </div>
     );
 }
@@ -149,23 +149,23 @@ function ColumnZone({ sectionIdx, colIdx, col, isLast, selectedBlockId, onSelect
 
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Col span-{col.span}</div>
 
-            <SortableContext items={col.blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                {col.blocks.map((block, bIdx) => (
+            <SortableContext items={col.ids} strategy={verticalListSortingStrategy}>
+                {col.ids.map((blockId, bIdx) => (
                     <SortableBlockItem
-                        key={block.id}
-                        block={block}
+                        key={blockId}
+                        blockId={blockId}
                         blockIndex={bIdx}
                         sectionIdx={sectionIdx}
                         colIdx={colIdx}
-                        isSelected={selectedBlockId === block.id}
-                        onSelect={() => onSelectBlock(block.id)}
-                        onRemove={() => onRemoveBlock(sectionIdx, colIdx, block.id)}
+                        isSelected={selectedBlockId === blockId}
+                        onSelect={() => onSelectBlock(blockId)}
+                        onRemove={() => onRemoveBlock(sectionIdx, colIdx, blockId)}
                         onModify={onModifyBlock}
                     />
                 ))}
             </SortableContext>
 
-            {col.blocks.length === 0 && (
+            {col.ids.length === 0 && (
                 <div className="flex-1 flex items-center justify-center border-2 border-transparent text-gray-400 text-xs italic pointer-events-none">
                     Drop blocks here
                 </div>
@@ -224,34 +224,37 @@ export function PageEditLayout({
 
     const selectedHtml = useMemo(() => {
         if (!selectedBlockId) return '';
-        return pageForm.metadata?.components?.[selectedBlockId]?.html || '';
+        return pageForm.metadata?.components?.find(c => c.id === selectedBlockId)?.html || '';
     }, [pageForm.metadata?.components, selectedBlockId]);
 
     const handleHtmlChange = (newHtml: string) => {
         if (!selectedBlockId) return;
         const metadata = { ...(pageForm.metadata || {}) };
-        if (!metadata.components) metadata.components = {};
-        metadata.components = {
-            ...metadata.components,
-            [selectedBlockId]: {
-                ...(metadata.components[selectedBlockId] || {}),
-                html: newHtml
-            }
-        };
+        const components = metadata.components ? [...metadata.components] : [];
+        const index = components.findIndex(c => c.id === selectedBlockId);
+        if (index > -1) {
+            components[index] = { ...components[index], html: newHtml };
+        } else {
+            components.push({ id: selectedBlockId, html: newHtml });
+        }
+        metadata.components = components;
         onUpdateField('metadata', metadata);
     };
 
-    // Initialize layout state safely
-    const layout: LayoutJson = useMemo(() => {
-        if (pageForm.metadata?.layoutJson?.sections) {
-            return pageForm.metadata.layoutJson as LayoutJson;
+    // Initialize architecture state safely
+    const architecture: PageArchitecture = useMemo(() => {
+        if (pageForm.metadata?.architecture) {
+            return pageForm.metadata.architecture;
         }
-        return { sections: [] };
-    }, [pageForm.metadata?.layoutJson]);
+        return { pageTitle: '', sections: [], selectedQueries: [], architectureHints: '' };
+    }, [pageForm.metadata?.architecture]);
 
-    const updateLayout = useCallback((newLayout: LayoutJson) => {
+    const updateArchitecture = useCallback((newSections: LayoutSection[]) => {
         const metadata = { ...(pageForm.metadata || {}) };
-        metadata.layoutJson = newLayout;
+        metadata.architecture = {
+            ...(metadata.architecture || { pageTitle: '', sections: [], selectedQueries: [], architectureHints: '' }),
+            sections: newSections
+        };
         onUpdateField('metadata', metadata);
     }, [onUpdateField, pageForm.metadata]);
 
@@ -265,26 +268,25 @@ export function PageEditLayout({
     const addSection = (presetId: string) => {
         const preset = SECTION_PRESETS.find(p => p.id === presetId)!;
         const newSection: LayoutSection = {
-            preset: preset.id,
-            columns: preset.columns.map(span => ({ span, blocks: [] }))
+            columns: preset.columns.map(span => ({ span, ids: [] }))
         };
-        updateLayout({ sections: [...layout.sections, newSection] });
+        updateArchitecture([...architecture.sections, newSection]);
     };
 
     const removeSection = (index: number) => {
-        const newSections = [...layout.sections];
+        const newSections = [...architecture.sections];
         newSections.splice(index, 1);
-        updateLayout({ sections: newSections });
+        updateArchitecture(newSections);
     };
 
     const removeBlock = (sectionIdx: number, colIdx: number, blockId: string) => {
-        const newSections = [...layout.sections];
-        newSections[sectionIdx].columns[colIdx].blocks = newSections[sectionIdx].columns[colIdx].blocks.filter(b => b.id !== blockId);
-        updateLayout({ sections: newSections });
+        const newSections = [...architecture.sections];
+        newSections[sectionIdx].columns[colIdx].ids = newSections[sectionIdx].columns[colIdx].ids.filter(id => id !== blockId);
+        updateArchitecture(newSections);
     };
 
     const resizeColumn = (sectionIdx: number, colIdx: number, deltaSpan: number) => {
-        const newSections = [...layout.sections];
+        const newSections = [...architecture.sections];
         const section = newSections[sectionIdx];
 
         const leftCol = section.columns[colIdx];
@@ -296,12 +298,11 @@ export function PageEditLayout({
         const newRightSpan = rightCol.span - deltaSpan;
 
         if (newLeftSpan >= 1 && newRightSpan >= 1) {
-            // Reconstruct array to avoid mutating object reference directly if strict mode is active, though deep copy is better.
             const newCols = [...section.columns];
             newCols[colIdx] = { ...leftCol, span: newLeftSpan };
             newCols[colIdx + 1] = { ...rightCol, span: newRightSpan };
             newSections[sectionIdx] = { ...section, columns: newCols };
-            updateLayout({ sections: newSections });
+            updateArchitecture(newSections);
         }
     };
 
@@ -325,11 +326,11 @@ export function PageEditLayout({
         if (activeData && activeData.sectionIdx !== undefined) {
             return { sIdx: activeData.sectionIdx, cIdx: activeData.colIdx, bIdx: activeData.blockIndex };
         }
-        for (let sIdx = 0; sIdx < layout.sections.length; sIdx++) {
-            const section = layout.sections[sIdx];
+        for (let sIdx = 0; sIdx < architecture.sections.length; sIdx++) {
+            const section = architecture.sections[sIdx];
             for (let cIdx = 0; cIdx < section.columns.length; cIdx++) {
                 const col = section.columns[cIdx];
-                const bIdx = col.blocks.findIndex(b => b.id === id);
+                const bIdx = col.ids.findIndex(targetId => targetId === id);
                 if (bIdx > -1) {
                     return { sIdx, cIdx, bIdx };
                 }
@@ -362,21 +363,19 @@ export function PageEditLayout({
             return;
         }
 
-        const newSections = [...layout.sections];
+        const newSections = [...architecture.sections];
         const sourceCol = newSections[activeLoc.sIdx].columns[activeLoc.cIdx];
         const destCol = newSections[overLoc.sIdx].columns[overLoc.cIdx];
 
-        const blockToMove = sourceCol.blocks[activeLoc.bIdx!];
+        sourceCol.ids = sourceCol.ids.filter(id => id !== activeIdStr);
 
-        sourceCol.blocks = sourceCol.blocks.filter(b => b.id !== activeIdStr);
-
-        let targetIndex = destCol.blocks.length;
+        let targetIndex = destCol.ids.length;
         if (overLoc.bIdx !== undefined) {
             targetIndex = overLoc.bIdx;
         }
 
-        destCol.blocks.splice(targetIndex, 0, blockToMove);
-        updateLayout({ sections: newSections });
+        destCol.ids.splice(targetIndex, 0, activeIdStr);
+        updateArchitecture(newSections);
 
         if (active.data.current) {
             active.data.current.sectionIdx = overLoc.sIdx;
@@ -399,10 +398,10 @@ export function PageEditLayout({
         const overLoc = findLocation(overIdStr, over.data.current);
 
         if (activeLoc && overLoc && activeLoc.sIdx === overLoc.sIdx && activeLoc.cIdx === overLoc.cIdx) {
-            const newSections = [...layout.sections];
+            const newSections = [...architecture.sections];
             const col = newSections[activeLoc.sIdx].columns[activeLoc.cIdx];
-            col.blocks = arrayMove(col.blocks, activeLoc.bIdx!, overLoc.bIdx!);
-            updateLayout({ sections: newSections });
+            col.ids = arrayMove(col.ids, activeLoc.bIdx!, overLoc.bIdx!);
+            updateArchitecture(newSections);
         }
     };
 
@@ -461,7 +460,7 @@ export function PageEditLayout({
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-6 z-10 space-y-6">
-                                {layout.sections.length === 0 ? (
+                                {architecture.sections.length === 0 ? (
                                     <div className="h-full w-full flex flex-col items-center justify-center text-center">
                                         <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
                                             <Plus className="w-8 h-8" />
@@ -470,7 +469,7 @@ export function PageEditLayout({
                                         <p className="text-sm text-gray-500 max-w-sm">Design your page by adding a layout section from the top toolbar, then drag components into the columns.</p>
                                     </div>
                                 ) : (
-                                    layout.sections.map((section, sIdx) => (
+                                    architecture.sections.map((section, sIdx) => (
                                         <div key={sIdx} className="bg-white border border-border shadow-sm rounded-xl p-4 relative group">
                                             <button onClick={() => removeSection(sIdx)} className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-20">
                                                 <Trash2 className="w-4 h-4" />

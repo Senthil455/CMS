@@ -1,6 +1,4 @@
 import type { ChatMessage } from './contracts.js';
-import { SchemaSummary, SystemRequirmentItem, SystemRequirment } from './app.dto.js';
-import type { LayoutJson } from './app.dto.js';
 import type { AgentName } from './constants.js';
 
 export const SOCKET_EVENTS = {

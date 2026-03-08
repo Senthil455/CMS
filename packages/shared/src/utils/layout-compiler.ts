@@ -1,4 +1,4 @@
-import type { LayoutJson } from '../app.dto.js';
+import type { LayoutSection, PageComponent } from '../app.dto.js';
 
 export interface CompileOptions {
     enableVisitTrack?: boolean;
@@ -33,8 +33,8 @@ export class LayoutCompiler {
     /**
      * Compile layout + components into a full HTML document.
      */
-    static compile(layoutJson: LayoutJson, componentsMap: Record<string, { html: string; props?: any }>, title?: string, options?: CompileOptions): string {
-        const body = this.compileBody(layoutJson, componentsMap);
+    static compile(lsections: LayoutSection[], components: PageComponent[], title?: string, options?: CompileOptions): string {
+        const body = this.compileBody(lsections, components);
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,27 +50,20 @@ ${body}
     /**
      * Compile layout + components into just the body grid HTML (no wrapper).
      */
-    static compileBody(layoutJson: LayoutJson, componentsMap: Record<string, { html: string; props?: any }>): string {
-        if (!layoutJson || !layoutJson.sections) {
-            return '';
-        }
-
+    static compileBody(lsections: LayoutSection[], components: PageComponent[]): string {
         let compiledHtml = '';
 
-        for (const section of layoutJson.sections) {
+        for (const section of lsections) {
             // Setup a generic Tailwind Grid wrapper
             compiledHtml += '\n<div class="grid grid-cols-12 gap-6 w-full max-w-7xl mx-auto px-4">';
 
             // Render columns
             for (const col of section.columns) {
                 compiledHtml += '\n    <div class="col-span-12 md:col-span-' + col.span + '">';
-
-                // Render blocks inside column
-                for (const block of col.blocks) {
-                    const compHtml = componentsMap[block.id]?.html || '';
-                    compiledHtml += '\n        <div data-component-id="' + block.id + '">' + compHtml + '</div>';
+                for (const id of col.ids) {
+                    const compHtml = components.find(c => c.id === id)?.html || '';
+                    compiledHtml += '\n        <div data-component-id="' + id + '">' + compHtml + '</div>';
                 }
-
                 compiledHtml += '\n    </div>';
             }
 

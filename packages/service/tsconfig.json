@@ -37,5 +37,11 @@
     "skipLibCheck": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@cms/shared": [
+        "../shared/src/index.ts"
+      ]
+    }
   }
 }
