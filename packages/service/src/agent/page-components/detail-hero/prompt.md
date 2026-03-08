@@ -42,10 +42,7 @@ Choose the most appropriate hero style based on available data:
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "detail-hero",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

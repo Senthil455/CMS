@@ -32,10 +32,7 @@ You are a senior frontend engineer. Your responsibility is to add a "Related Ite
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "related-items",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

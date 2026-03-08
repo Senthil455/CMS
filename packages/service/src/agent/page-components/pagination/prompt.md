@@ -46,9 +46,6 @@ You must output ONLY a valid JSON object with this structure:
 
 ```json
 {
-  "component": {
-    "id": "pagination",
     "html": "string"
-  }
 }
 ```

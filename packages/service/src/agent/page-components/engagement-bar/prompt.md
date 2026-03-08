@@ -14,10 +14,7 @@ You must output ONLY a valid JSON object with this structure:
 
 ```json
 {
-  "component": {
-    "id": "engagement-bar",
     "html": "string"
-  }
 }
 ```
 - NO explanations.

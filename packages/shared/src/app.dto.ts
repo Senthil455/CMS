@@ -39,16 +39,18 @@ export interface TemplateSelectionResponse {
     requestPayload: TemplateSelectionRequest;
 }
 
+export interface SelectedQuery {
+    queryName: string;
+    fieldName: string;
+    type: 'single' | 'list';
+    description: string;
+    args: Record<string, 'fromPath' | 'fromQuery'>;
+}
+
 export interface PageArchitecture {
     pageTitle: string;
     sections: LayoutSection[];
-    selectedQueries: Array<{
-        queryName: string;
-        fieldName: string;
-        type: 'single' | 'list';
-        description: string;
-        args: Record<string, 'fromPath' | 'fromQuery'>;
-    }>;
+    selectedQueries: SelectedQuery[];
     architectureHints: string;
     componentInstructions?: ComponentInstruction[];
 }

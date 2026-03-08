@@ -88,10 +88,7 @@ The `x-collapse` directive provides smooth height animations. It is available vi
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "faq-accordion",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

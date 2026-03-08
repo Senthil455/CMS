@@ -35,10 +35,7 @@ You are a senior frontend engineer. Your responsibility is to add a "Table View"
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "table-view",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

@@ -5,7 +5,7 @@ import { type AgentContext, type ThinkResult, type Agent, type ActResult, type F
 import { type ComponentInstruction, type PageComponentDefinition, type PageMetadata } from '@cms/shared';
 import { PageOperator } from '../../operators/page-operator';
 import { UserVisibleError } from '../user-visible-error';
-import type { PageComponent } from '@cms/shared';
+import type { PageComponent, SelectedQuery } from '@cms/shared';
 
 
 export class PageComponentBuilder implements Agent<PageComponent> {
@@ -21,7 +21,7 @@ export class PageComponentBuilder implements Agent<PageComponent> {
         private readonly getStylePrompt?: (styleName: string, pageType: string) => Promise<string>,
     ) { }
 
-    async think(userInput: string, context: AgentContext, componentInstruction?: ComponentInstruction): Promise<ThinkResult<PageComponent>> {
+    async think(_userInput: string, context: AgentContext): Promise<ThinkResult<PageComponent>> {
         this.logger.info(`PageComponentBuilder[${this.addonDef.id}] think started`);
 
         const existingPageSchema = context.schemaId && await this.cmsClient.getSchemaBySchemaId(context.externalCookie, context.schemaId);
@@ -29,43 +29,41 @@ export class PageComponentBuilder implements Agent<PageComponent> {
             throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${context.schemaId}`);
         }
 
-        const pageDto = existingPageSchema.settings.page;
-        const metadata = pageDto.metadata;
-        const originalInput = metadata.userInput || userInput;
+        const metadata = existingPageSchema.settings.page.metadata;
         const componentId = context.metadata?.componentId as string;
         const instruction = metadata.architecture?.componentInstructions?.find(x => x.id == componentId)
 
         const templateStyle = metadata.templateId || '';
         const stylePrompt = this.getStylePrompt ? await this.getStylePrompt(templateStyle, metadata.plan!.pageType) : '';
-        const developerMessage = {
+        const message = {
             ...metadata.plan,
-            componentInstruction,
+            instruction,
             stylePrompt,
-            querys: this.filterQuery(metadata, instruction!),
+            querys: await this.filterQuery(metadata, instruction!, context),
             existingHtml: metadata.components?.find(x => x.id == componentId)?.html,
             snippet: this.snippet?.replace(/{{entityName}}/g, metadata.plan?.entityName ?? "")
         };
 
         await context.saveAgentMessage(`I am building component: ${instruction!.id} (${this.addonDef.label})`);
-        const finalDeveloperMessage = JSON.stringify(developerMessage);
+        const developerMessage = JSON.stringify(message);
 
-        const aiResponse = await this.aiProvider.generate(
+        const res = await this.aiProvider.generate(
             this.systemPrompt,
-            finalDeveloperMessage,
-            componentId ? userInput : originalInput,
+            developerMessage,
+            "",
             context.signal ? { signal: context.signal } : undefined
         ) as { html: string };
 
         return {
             plan: {
                 id: componentId,
-                html: aiResponse.html,
+                html: res.html,
                 componentTypeId: this.addonDef.id,
             },
             prompts: {
                 systemPrompt: this.systemPrompt,
-                developerMessage: finalDeveloperMessage,
-                userInput: componentId ? userInput : originalInput
+                developerMessage,
+                userInput: ""
             }
         };
     }
@@ -79,15 +77,19 @@ export class PageComponentBuilder implements Agent<PageComponent> {
         return { syncedSchemaIds: [] };
     }
 
-    private async filterQuery(metadata: PageMetadata, componentInstruction: ComponentInstruction) {
-        return metadata.architecture?.selectedQueries || []
-            .filter((sq: any) => componentInstruction.queriesToUse.includes(sq.queryName))
-            .map((sq: any) => ({
+    private async filterQuery(metadata: PageMetadata, componentInstruction: ComponentInstruction, context: AgentContext) {
+        const qs = await this.cmsClient.getAllQueries(context.externalCookie);
+        const queries = metadata.architecture?.selectedQueries || []
+            .filter((sq: SelectedQuery) => componentInstruction.queriesToUse.includes(sq.queryName))
+            .map((sq: SelectedQuery) => ({
                 queryName: sq.queryName,
                 fieldName: sq.fieldName,
                 type: sq.type,
                 args: sq.args,
+                source: qs.find(x => x.name == sq.queryName)?.settings.query?.source
             }));
+
+        return queries;
     }
 }
 

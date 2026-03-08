@@ -98,10 +98,7 @@ Content-Type: application/json
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "contact-form",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

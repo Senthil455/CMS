@@ -79,10 +79,7 @@ The key challenge is bridging Handlebars (server-side) with Alpine.js (client-si
 ## Output Protocol (STRICT JSON)
 ```json
 {
-  "component": {
-    "id": "image-carousel",
     "html": "string"
-  }
 }
 ```
 - NO explanations. NO markdown code fences. Just the raw JSON.

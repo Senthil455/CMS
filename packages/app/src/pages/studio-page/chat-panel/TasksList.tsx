@@ -58,7 +58,9 @@ export function TasksList({ onSwitchToChat, onSend }: TasksListProps) {
             const url = ENDPOINTS.APP_TASKS.TOGGLE_ITEM
                 .replace(':taskId', taskId.toString())
                 .replace(':index', index.toString());
-            await axios.patch(url, {}, { withCredentials: true });
+            console.log('Sending PATCH to:', url);
+            const response = await axios.patch(url, {}, { withCredentials: true });
+            console.log('Toggle response:', response.data);
             mutate(); // Refresh the list
         } catch (err) {
             console.error('Failed to toggle item status', err);
@@ -165,7 +167,11 @@ export function TasksList({ onSwitchToChat, onSend }: TasksListProps) {
                                                         {item.agentName.replace(/_/g, ' ')}
                                                     </div>
                                                     <button
-                                                        onClick={() => toggleItemStatus(task.id, item.index)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            console.log('Toggle clicked for task', task.id, 'item index', item.index);
+                                                            toggleItemStatus(task.id, item.index);
+                                                        }}
                                                         className={`text-[9px] font-bold px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity ${item.status === 'finished' ? 'text-green-500 bg-green-500/10' : 'text-amber-500 bg-amber-500/10'}`}
                                                         title="Click to toggle status"
                                                     >
