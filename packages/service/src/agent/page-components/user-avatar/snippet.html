@@ -2,9 +2,15 @@
     user: null,
     unreadCount: 0,
     async init() {
-        if (!window.cmsSdk?.userService) return;
-        this.user = await window.cmsSdk.userService.fetchMe();
-        this.unreadCount = await window.cmsSdk.engagementService.getUnreadCount();
+        const doInit = async () => {
+            this.user = await window.cmsSdk.userService.fetchMe();
+            this.unreadCount = await window.cmsSdk.engagementService.getUnreadCount();
+        };
+        if (window.cmsSdk?.userService) {
+            await doInit();
+        } else {
+            window.addEventListener('cmsSdkReady', doInit, { once: true });
+        }
     },
     async handleClick() {
         if (!window.cmsSdk?.userService) return;

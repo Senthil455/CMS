@@ -10,8 +10,13 @@
     init() {
         if (this.loaded) return;
         this.loaded = true;
-        if (!window.cmsSdk?.engagementService) return;
-        window.cmsSdk.engagementService.getStats(this.entityName).then(data => this.stats = data);
+        if (window.cmsSdk?.engagementService) {
+            window.cmsSdk.engagementService.getStats(this.entityName).then(data => this.stats = data);
+        } else {
+            window.addEventListener('cmsSdkReady', () => {
+                window.cmsSdk.engagementService.getStats(this.entityName).then(data => this.stats = data);
+            }, { once: true });
+        }
     },
     toggle(type) {
         window.cmsSdk.engagementService.toggle(this.entityName, type, this.stats);

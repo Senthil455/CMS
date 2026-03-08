@@ -18,6 +18,7 @@ export class LayoutCompiler {
     <script type="module">
         import * as cmsSdk from '/static/index.js';
         window.cmsSdk = cmsSdk;${visitTrackSnippet}
+        window.dispatchEvent(new CustomEvent('cmsSdkReady'));
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }

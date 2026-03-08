@@ -4,8 +4,12 @@ import { bookmarkDialog } from '../components/bookmark-dialog.js';
 import { shareDialog } from '../components/share-dialog.js';
 
 export const engagementService = {
+    _getRecordId() {
+        const meta = document.querySelector('meta[name="record-id"]');
+        return meta?.content || window.location.pathname.split('/').filter(Boolean).pop();
+    },
     getStats(entityName) {
-        const recordId = window.location.pathname.split('/').filter(Boolean).pop();
+        const recordId = this._getRecordId();
         return engagementApi.getStats(entityName, recordId)
             .then(data => {
                 // Standardize the shape to match Alpine expectations
@@ -34,7 +38,7 @@ export const engagementService = {
             return;
         }
 
-        const recordId = window.location.pathname.split('/').filter(Boolean).pop();
+        const recordId = this._getRecordId();
 
         if (type === 'bookmark') {
             return this.saveBookmark(entityName, stats);
@@ -53,7 +57,7 @@ export const engagementService = {
     async saveBookmark(entityName, stats) {
         try {
             await userService.ensureLogin();
-            const recordId = window.location.pathname.split('/').filter(Boolean).pop();
+            const recordId = this._getRecordId();
             const folders = await engagementApi.fetchBookmarkFolders(entityName, recordId);
             const result = await bookmarkDialog.show(entityName, recordId, folders);
 
@@ -74,7 +78,7 @@ export const engagementService = {
     async share(entityName, stats) {
         try {
             const platform = await shareDialog.show(window.location.href, document.title);
-            const recordId = window.location.pathname.split('/').filter(Boolean).pop();
+            const recordId = this._getRecordId();
 
             await engagementApi.markActivity(entityName, recordId, 'share');
 

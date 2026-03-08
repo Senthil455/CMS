@@ -21,9 +21,11 @@ export class LayoutCompiler {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="record-id" content="{{id}}">
     <script type="module">
         import * as cmsSdk from '/static/index.js';
         window.cmsSdk = cmsSdk;${visitTrackSnippet}
+        window.dispatchEvent(new CustomEvent('cmsSdkReady'));
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
