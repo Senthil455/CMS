@@ -284,24 +284,27 @@ export class OrchestratorService {
         }
 
         const responseContent = log.response;
-        const handlerName = log.handler;
+        const agentName = log.handler as AgentName;
 
         const selection: ModelSelection = (log.modelSelection || 'gemini/gemini-3-flash') as ModelSelection;
         const context = this.createContext(userId, externalCookie,
-            log.schemaId ?? undefined, onEvent, signal, handlerName as AgentName);
-
-        let agentTaskItem: AgentTaskRef | undefined;
-        if (log.input) {
-            const parsedInput = JSON.parse(log.input);
-            agentTaskItem = parsedInput.agentTaskItem;
-        }
+            log.schemaId ?? undefined, onEvent, signal, agentName);
 
         const plan = JSON.parse(responseContent);
-        const handler = this.resolveHandler(selection, handlerName as AgentName)!;
+        const handler = this.resolveHandler(selection, agentName)!;
         await this.saveAgentMessage(userId, "Manually triggering action from log...", undefined, 'system');
 
-        const { syncedSchemaIds } = await handler.act(plan, context);
-        this.emitSchemasSync(syncedSchemaIds, handlerName as AgentName, onEvent);
+        const { syncedSchemaIds, feedback } = await handler.act(plan, context);
+        if (feedback !== null) {
+            // Agent needs user feedback — compose payload and emit unified event
+            const feedbackPayload: AgentFeedbackPayload = {
+                agentName,
+                data: feedback,
+            };
+            onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
+            return; // Wait for user feedback via handleAgentFeedback
+        }
+        this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
     }
 
     private createContext(
@@ -345,7 +348,6 @@ export class OrchestratorService {
         const item = await this.taskOperator.checkout(taskId);
         if (item) {
             const agentTaskItem = { taskId, index: item.index };
-
             const context = this.createContext(userId, externalCookie,
                 item.schemaId, onEvent, signal, item.agentName as AgentName);
             await this.executeAgent(item.agentName, item.description || '', context, selection, userId, onEvent, agentTaskItem);
@@ -397,19 +399,9 @@ export class OrchestratorService {
             inputLog
         );
 
-        const { feedback, syncedSchemaIds, followingTaskItems } = await handler.act(plan, agentContext);
-        this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
         this.statusService.clearStatus(userId, onEvent);
 
-        if (followingTaskItems && followingTaskItems.length > 0) {
-            if (agentTaskItem) {
-                await this.taskOperator.insertItemsAfter(agentTaskItem, followingTaskItems);
-            } else {
-                const task = await this.taskOperator.createTaskFromItems(followingTaskItems, userInput);
-                agentTaskItem = { taskId: task.id!, index: -1 };
-            }
-        }
-
+        const { feedback, syncedSchemaIds, followingTaskItems } = await handler.act(plan, agentContext);
         if (feedback !== null) {
             // Agent needs user feedback — compose payload and emit unified event
             const feedbackPayload: AgentFeedbackPayload = {
@@ -419,6 +411,19 @@ export class OrchestratorService {
             };
             onEvent(SOCKET_EVENTS.CHAT.AGENT_PLAN_TO_CONFIRM, feedbackPayload);
             return; // Wait for user feedback via handleAgentFeedback
+        }
+
+        if (syncedSchemaIds.length > 0) {
+            this.emitSchemasSync(syncedSchemaIds, agentName, onEvent);
+        }
+
+        if (followingTaskItems && followingTaskItems.length > 0) {
+            if (agentTaskItem) {
+                await this.taskOperator.insertItemsAfter(agentTaskItem, followingTaskItems);
+            } else {
+                const task = await this.taskOperator.createTaskFromItems(followingTaskItems, userInput);
+                agentTaskItem = { taskId: task.id!, index: -1 };
+            }
         }
 
         // No feedback needed — commit and continue pipeline

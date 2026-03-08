@@ -15,51 +15,25 @@ export class PageOperator {
     ) { }
 
     async savePlanAndUserInput(
-        schemaId: string | null | undefined,
         plan: any,
         templateId: string,
         userInput: string,
         externalCookie: string
     ): Promise<string> {
-        let pageSettings: any = {
-            name: plan.pageName,
-            title: `Generated Page ${Date.now()}`,
-            html: '',
-            source: 'ai',
-            metadata: '{}'
-        };
-        let metadata: any = {};
-
-        if (schemaId) {
-            const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
-            if (schema && schema.settings.page) {
-                pageSettings = schema.settings.page;
-                try {
-                    metadata = pageSettings.metadata ? (typeof pageSettings.metadata === 'string' ? JSON.parse(pageSettings.metadata) : pageSettings.metadata) : {};
-                } catch (e) {
-                    throw new UserVisibleError(`Failed to parse page metadata for schema ${schemaId}`);
-                }
-            } else {
-                throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
-            }
-        }
-
         const updatedMetadata = {
-            ...metadata,
             plan,
             templateId,
             userInput,
         };
 
         const payload: SaveSchemaPayload = {
-            schemaId: schemaId || null,
+            schemaId: null,
             type: 'page',
             settings: {
                 page: {
-                    name: plan.pageName || pageSettings.name,
-                    title: pageSettings.title,
-                    html: pageSettings.html,
-                    source: pageSettings.source,
+                    name: plan.pageName,
+                    title: plan.pageTitle,
+                    html: '',
                     metadata: updatedMetadata,
                 }
             }
@@ -163,7 +137,6 @@ export class PageOperator {
                     ...pageSettings,
                     title: title || pageSettings.title,
                     html: html,
-                    source: 'ai'
                 }
             }
         };

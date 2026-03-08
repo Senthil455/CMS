@@ -6,6 +6,8 @@ import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { PageOperator } from '../operators/page-operator';
 
+// we should never allow user change PagePlan, 
+// when frontend modify with UI, it only start with page architecture
 export class PagePlanner implements Agent<TemplateSelectionRequest> {
     constructor(
         private readonly aiProvider: AIProvider,
@@ -17,22 +19,15 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
     ) { }
 
     async think(userInput: string, context: AgentContext): Promise<ThinkResult<TemplateSelectionRequest>> {
-        const schemaId = '';
 
         // Fetch existing entities to help planner
         const schemas = await this.cmsClient.getAllEntities(context.externalCookie);
         const entityNames = schemas.filter((s: any) => s.type === 'entity').map((s: any) => s.name).filter(Boolean) as string[];
         const existingPageNames = schemas.filter((s: any) => s.type === 'page' && s.settings?.page?.name).map((s: any) => s.settings.page.name) as string[];
 
-        let existingPagePlan: PagePlan | undefined = undefined;
-        if (schemaId) {
-            const schema = schemas.find((s: any) => s.id === schemaId);
-            existingPagePlan = schema!.settings!.page!.metadata.plan;
-        }
         const messages = {
             entityNames,
             existingPageNames,
-            existingPagePlan
         }
         const developerMessage = JSON.stringify(messages);
 
@@ -80,7 +75,6 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
 
     async finalize(feedbackData: TemplateSelectionResponse, context: AgentContext): Promise<FinalizeResult> {
         const schemaId = await this.pageOperator.savePlanAndUserInput(
-            undefined,
             feedbackData.requestPayload.plan,
             feedbackData.selectedTemplate,
             feedbackData.requestPayload.userInput,

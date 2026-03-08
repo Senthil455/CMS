@@ -4,7 +4,6 @@ export interface PageDto {
     name: string;
     title: string;
     html: string;
-    source: string;
     metadata: PageMetadata;
 }
 
