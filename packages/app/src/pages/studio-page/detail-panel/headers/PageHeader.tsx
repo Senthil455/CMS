@@ -3,12 +3,10 @@ import {
     Trash2, Edit2, Layout, Sparkles, ChevronDown, Code,
     MessageSquarePlus, UserCircle, Eye, TrendingUp, Plus, Puzzle
 } from 'lucide-react';
-import { type PageDto, AGENT_NAMES, type PageMetadata, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
+import { type PageDto, type PageMetadata, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { HeaderLayout } from './HeaderLayout';
-import { FormField } from '../page/components/FormField';
-
 // Icon lookup for dynamic addon rendering
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
     MessageSquarePlus,
@@ -75,17 +73,10 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const [selectedAddon, setSelectedAddon] = useState<PageComponentDefinition | null>(null);
-    const [customReq, setCustomReq] = useState('');
-
-    const handleTriggerAddon = (addon: PageComponentDefinition, customRequirement: string) => {
+    const handleTriggerAddon = (addon: PageComponentDefinition) => {
         setIsAddMenuOpen(false);
-        setSelectedAddon(null);
-        setCustomReq('');
 
-        const message = customRequirement.trim()
-            ? `@${addon.agentName} #${schemaId}: ${addon.chatMessage} (Additional instruction: ${customRequirement.trim()})`
-            : `@${addon.agentName} #${schemaId}: ${addon.chatMessage}`;
+        const message = `@page_architect#${schemaId} add a component ${addon.id}`;
 
         onChatAction(message);
         toast.success(`${addon.label} requested. Check chat for progress.`);
@@ -130,7 +121,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             }
         >
             <button
-                onClick={() => onChatAction(`@${AGENT_NAMES.PAGE_PLANNER}#${schemaId}:`)}
+                onClick={() => onChatAction(`@page_architect#${schemaId}`)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-lg text-xs font-bold transition-all border border-purple-500/20"
             >
                 <Sparkles className="w-3.5 h-3.5 fill-current" />
@@ -140,10 +131,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
             {hasAddOptions && (
                 <div className="relative ml-1" ref={addMenuRef}>
                     <button
-                        onClick={() => {
-                            setIsAddMenuOpen(!isAddMenuOpen);
-                            setSelectedAddon(null);
-                        }}
+                        onClick={() => setIsAddMenuOpen(prev => !prev)}
                         className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-lg text-xs font-bold transition-all border border-blue-500/20"
                     >
                         <Sparkles className="w-3.5 h-3.5" />
@@ -153,58 +141,25 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
 
                     {isAddMenuOpen && (
                         <div className="absolute top-full left-0 mt-1 bg-app-surface border border-border rounded-lg shadow-lg z-50 min-w-[240px] py-1">
-                            {!selectedAddon ? (
-                                availableAddons.map(addon => {
-                                    const IconComponent = ICON_MAP[addon.icon] || Puzzle;
-                                    const colors = COLOR_MAP[addon.color] || COLOR_MAP.blue;
-                                    return (
-                                        <button
-                                            key={addon.id}
-                                            onClick={() => setSelectedAddon(addon)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-bold ${colors.text} ${colors.bg} transition-colors text-left`}
-                                        >
-                                            <IconComponent className="w-4 h-4" />
-                                            {addon.label}
-                                        </button>
-                                    );
-                                })
-                            ) : (
-                                <div className="px-3 py-2 flex flex-col gap-2">
-                                    <div className="flex items-center justify-between pointer-events-none mb-1">
-                                        <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-                                            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                                            Adding {selectedAddon.label}
-                                        </span>
-                                    </div>
-                                    <FormField label="Custom Instructions (Optional)" small>
-                                        <input
-                                            type="text"
-                                            value={customReq}
-                                            onChange={e => setCustomReq(e.target.value)}
-                                            placeholder="e.g., 'Make it dark mode'"
-                                            className="w-full bg-app text-primary px-2 py-1.5 rounded-md border border-border outline-none focus:border-blue-500 transition-colors text-xs"
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') {
-                                                    handleTriggerAddon(selectedAddon, customReq);
-                                                }
-                                            }}
-                                            autoFocus
-                                        />
-                                    </FormField>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleTriggerAddon(selectedAddon, customReq)}
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-md text-xs font-bold transition-colors"
-                                        >
-                                            Confirm
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                            {availableAddons.map(addon => {
+                                const IconComponent = ICON_MAP[addon.icon] || Puzzle;
+                                const colors = COLOR_MAP[addon.color] || COLOR_MAP.blue;
+                                return (
+                                    <button
+                                        key={addon.id}
+                                        onClick={() => handleTriggerAddon(addon)}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-bold ${colors.text} ${colors.bg} transition-colors text-left`}
+                                    >
+                                        <IconComponent className="w-4 h-4" />
+                                        {addon.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
             <div className="flex bg-app-muted p-0.5 rounded-lg ml-1">
                 <button
@@ -222,7 +177,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                     Edit Layout
                 </button>
             </div>
-        </HeaderLayout>
+        </HeaderLayout >
     );
 }
 

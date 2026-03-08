@@ -14,7 +14,8 @@
 
 ### Component Instructions
 
-- **Delta Components** if you get Existing structure, and you have decided new compoents needed should be added, only out the new components
+- **Delta Components** If you get Existing structure, and you have decided new compoents needed should be added, only output the new components,  new component id should not be in existing structure `componentInstructions`.
+
 - **One per column**: Every column `id` in `sections` MUST have a corresponding entry in `componentInstructions`.
 - **Be specific**: Describe the visual design, content structure, and user interactions. For example: "A hero banner with full-bleed background image, overlaid title and excerpt, category pill badge, and a read-more link" is better than "A hero section".
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.

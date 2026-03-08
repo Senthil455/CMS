@@ -242,11 +242,18 @@ export class OrchestratorService {
         // 2. Intent Classifier
         let agent: AgentName | null = null;
 
+        let explicitSchemaId: string | undefined;
+
         if (content.trim().startsWith('@')) {
-            // Check for explicit trigger (e.g. "@entity_designer")
+            // Check for explicit trigger (e.g. "@page_architect#FHzhVfdnWQ0j add a component foo")
             const explicitTrigger = Object.values(AGENT_NAMES).find(trigger => content.includes(`@${trigger}`));
             if (explicitTrigger) {
                 agent = explicitTrigger;
+                // Extract optional schemaId from @agentName#schemaId pattern
+                const schemaMatch = content.match(new RegExp(`@${explicitTrigger}#([\\w-]+)`));
+                if (schemaMatch) {
+                    explicitSchemaId = schemaMatch[1];
+                }
             }
         }
 
@@ -256,8 +263,8 @@ export class OrchestratorService {
         }
 
         if (agent && this.resolveHandler(selection, agent)) {
-            this.logger.info({ agent }, 'Executing resolved handler');
-            const context = this.createContext(userId, externalCookie, undefined, onEvent, signal, agent);
+            this.logger.info({ agent, schemaId: explicitSchemaId }, 'Executing resolved handler');
+            const context = this.createContext(userId, externalCookie, explicitSchemaId, onEvent, signal, agent);
             await this.executeAgent(agent, content, context, selection, userId, onEvent);
             return;
         }
