@@ -79,7 +79,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         const message = `@page_architect#${schemaId} add a component ${addon.id}`;
 
         onChatAction(message);
-        toast.success(`${addon.label} requested. Check chat for progress.`);
     };
 
     // Determine page type

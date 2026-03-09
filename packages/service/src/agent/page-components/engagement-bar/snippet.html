@@ -1,11 +1,5 @@
 <div x-data="{
     entityName: '{{entityName}}',
-    stats: {
-        view: { count: 0, active: false },
-        like: { count: 0, active: false },
-        share: { count: 0, active: false },
-        bookmark: { active: false }
-    },
     loaded: false,
     init() {
         if (this.loaded) return;
