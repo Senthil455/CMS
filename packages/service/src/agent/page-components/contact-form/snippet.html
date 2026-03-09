@@ -9,18 +9,17 @@
             this.status = 'sending';
             this.errorMsg = '';
             try {
-                const res = await fetch('/api/forms/contact', {
+                const res = await fetch('/api/entities/contact/insert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.form)
                 });
-                const data = await res.json();
-                if (data.success) {
+                if (res.ok) {
                     this.status = 'sent';
                     this.form = { name: '', email: '', subject: '', message: '' };
                 } else {
                     this.status = 'error';
-                    this.errorMsg = data.error || 'Something went wrong. Please try again.';
+                    this.errorMsg = 'Something went wrong. Please try again.';
                 }
             } catch (e) {
                 this.status = 'error';

@@ -45,8 +45,17 @@ export function PageComponentsSection({ metadata, schemaId, selectedComponentId,
                                             : 'bg-app-muted border-border text-primary-muted hover:border-blue-400 hover:text-blue-600'
                                             }`}
                                     >
-                                        <span className="text-sm">🧩</span>
-                                        {id}
+                                        <div className="flex flex-col items-start gap-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm">🧩</span>
+                                                <span>{id}</span>
+                                            </div>
+                                            {com.componentTypeId && (
+                                                <span className="text-[9px] font-bold text-primary-muted/60 bg-app-muted px-1 rounded border border-border/50 uppercase tracking-tighter">
+                                                    {com.componentTypeId}
+                                                </span>
+                                            )}
+                                        </div>
                                     </button>
 
                                     <button

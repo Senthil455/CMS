@@ -149,7 +149,7 @@ export const PAGE_COMPONENT_REGISTRY: PageComponentDefinition[] = [
         label: 'Image Carousel',
         icon: 'Images',
         color: 'violet',
-        pageTypes: ['detail', 'list'],
+        pageTypes: ['detail'],
         resourceDir: 'image-carousel',
         hasSnippet: true,
         needQueries: true,

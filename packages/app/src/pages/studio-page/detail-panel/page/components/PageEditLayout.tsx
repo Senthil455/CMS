@@ -22,7 +22,7 @@ import {
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { X, Save, Loader2, Maximize2, Minimize2, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Maximize2, Minimize2, Plus, Trash2, Layers } from 'lucide-react';
 import { type SchemaDto, type ParsedPageDto, type LayoutSection, type LayoutColumn, type PageArchitecture } from '@cms/shared';
 import { PagePreviewSection } from './PagePreviewSection';
 
@@ -85,7 +85,7 @@ function ColumnResizer({ onResize }: { onResize: (delta: number) => void }) {
 
 
 
-function SortableBlockItem({ blockId, sectionIdx, colIdx, blockIndex, isSelected, onSelect, onRemove }: { blockId: string; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove?: () => void; onModify?: (id: string, req: string) => void }) {
+function SortableBlockItem({ blockId, componentTypeId, sectionIdx, colIdx, blockIndex, isSelected, onSelect, onRemove }: { blockId: string; componentTypeId?: string; sectionIdx: number; colIdx: number; blockIndex: number; isSelected?: boolean; onSelect?: () => void; onRemove?: () => void; onModify?: (id: string, req: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: blockId,
         data: { sectionIdx, colIdx, blockIndex, isToolbox: false }
@@ -114,7 +114,14 @@ function SortableBlockItem({ blockId, sectionIdx, colIdx, blockIndex, isSelected
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 cursor-grab">
                     <span className="text-base">🧩</span>
-                    <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
+                    <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-bold text-gray-700 truncate">{blockLabel}</span>
+                        {componentTypeId && (
+                            <span className="text-[9px] font-bold text-blue-600/60 bg-blue-50 px-1 rounded border border-blue-100 uppercase tracking-tighter w-fit">
+                                {componentTypeId}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 {onRemove && (
                     <button
@@ -126,12 +133,12 @@ function SortableBlockItem({ blockId, sectionIdx, colIdx, blockIndex, isSelected
                     </button>
                 )}
             </div>
-            <div className="text-[10px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">ID: {blockId}</div>
+            <div className="text-[9px] text-gray-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap opacity-50">ID: {blockId}</div>
         </div>
     );
 }
 
-function ColumnZone({ sectionIdx, colIdx, col, isLast, selectedBlockId, onSelectBlock, onRemoveBlock, onModifyBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, selectedBlockId: string | null, onSelectBlock: (id: string) => void, onRemoveBlock: (s: number, c: number, id: string) => void, onModifyBlock?: (id: string, req: string) => void, onResize?: (delta: number) => void }) {
+function ColumnZone({ sectionIdx, colIdx, col, isLast, components, selectedBlockId, onSelectBlock, onRemoveBlock, onModifyBlock, onResize }: { sectionIdx: number, colIdx: number, col: LayoutColumn, isLast: boolean, components: any[], selectedBlockId: string | null, onSelectBlock: (id: string) => void, onRemoveBlock: (s: number, c: number, id: string) => void, onModifyBlock?: (id: string, req: string) => void, onResize?: (delta: number) => void }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `column-${sectionIdx}-${colIdx}`,
         data: { sectionIdx, colIdx, isColumn: true }
@@ -154,6 +161,7 @@ function ColumnZone({ sectionIdx, colIdx, col, isLast, selectedBlockId, onSelect
                     <SortableBlockItem
                         key={blockId}
                         blockId={blockId}
+                        componentTypeId={components.find(c => c.id === blockId)?.componentTypeId}
                         blockIndex={bIdx}
                         sectionIdx={sectionIdx}
                         colIdx={colIdx}
@@ -181,6 +189,7 @@ const SECTION_PRESETS = [
     { id: '1-11', label: 'Nav + Content (1-11)', columns: [1, 11] },
     { id: '6-6', label: 'Half & Half (6-6)', columns: [6, 6] },
     { id: '8-4', label: 'Content + Sidebar (8-4)', columns: [8, 4] },
+    { id: '4-8', label: 'Side + Main (4-8)', columns: [4, 8] },
     { id: '4-4-4', label: 'Three Columns (4-4-4)', columns: [4, 4, 4] },
     { id: '3-3-3-3', label: 'Four Columns (3-3-3-3)', columns: [3, 3, 3, 3] },
 ];
@@ -210,6 +219,28 @@ export function PageEditLayout({
     const [isFullScreen, setIsFullScreen] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(searchParams.get('block'));
+
+    // Component Library Logic
+    const architecture: PageArchitecture = useMemo(() => {
+        if (pageForm.metadata?.architecture) {
+            return pageForm.metadata.architecture;
+        }
+        return { pageTitle: '', sections: [], selectedQueries: [], architectureHints: '' };
+    }, [pageForm.metadata?.architecture]);
+
+    const placedIds = useMemo(() => {
+        const ids = new Set<string>();
+        architecture.sections.forEach(s => {
+            s.columns.forEach(c => {
+                c.ids.forEach(id => ids.add(id));
+            });
+        });
+        return ids;
+    }, [architecture]);
+
+    const unplacedComponents = useMemo(() => {
+        return (pageForm.metadata?.components || []).filter(c => !placedIds.has(c.id));
+    }, [pageForm.metadata?.components, placedIds]);
 
     // Update URL when block selection changes so it persists or can be cleared
     const handleSelectBlockId = (id: string | null) => {
@@ -241,13 +272,6 @@ export function PageEditLayout({
         onUpdateField('metadata', metadata);
     };
 
-    // Initialize architecture state safely
-    const architecture: PageArchitecture = useMemo(() => {
-        if (pageForm.metadata?.architecture) {
-            return pageForm.metadata.architecture;
-        }
-        return { pageTitle: '', sections: [], selectedQueries: [], architectureHints: '' };
-    }, [pageForm.metadata?.architecture]);
 
     const updateArchitecture = useCallback((newSections: LayoutSection[]) => {
         const metadata = { ...(pageForm.metadata || {}) };
@@ -319,6 +343,9 @@ export function PageEditLayout({
     type LocationInfo = { sIdx: number; cIdx: number; bIdx?: number } | null;
 
     const findLocation = (id: string, activeData: any): LocationInfo => {
+        if (id === 'toolbox') {
+            return { sIdx: -1, cIdx: -1 };
+        }
         if (id.startsWith('column-')) {
             const parts = id.split('-');
             return { sIdx: parseInt(parts[1], 10), cIdx: parseInt(parts[2], 10) };
@@ -335,6 +362,10 @@ export function PageEditLayout({
                     return { sIdx, cIdx, bIdx };
                 }
             }
+        }
+        // Check if it's in unplaced (toolbox)
+        if (unplacedComponents.some(c => c.id === id)) {
+            return { sIdx: -1, cIdx: -1 };
         }
         return null;
     };
@@ -359,29 +390,35 @@ export function PageEditLayout({
 
         if (!activeLoc || !overLoc) return;
 
+        // Moving to same col but potentially different index
         if (activeLoc.sIdx === overLoc.sIdx && activeLoc.cIdx === overLoc.cIdx) {
             return;
         }
 
         const newSections = [...architecture.sections];
-        const sourceCol = newSections[activeLoc.sIdx].columns[activeLoc.cIdx];
-        const destCol = newSections[overLoc.sIdx].columns[overLoc.cIdx];
 
-        sourceCol.ids = sourceCol.ids.filter(id => id !== activeIdStr);
-
-        let targetIndex = destCol.ids.length;
-        if (overLoc.bIdx !== undefined) {
-            targetIndex = overLoc.bIdx;
+        // Source column remove
+        if (activeLoc.sIdx !== -1) {
+            const sourceCol = newSections[activeLoc.sIdx].columns[activeLoc.cIdx];
+            sourceCol.ids = sourceCol.ids.filter(id => id !== activeIdStr);
         }
 
-        destCol.ids.splice(targetIndex, 0, activeIdStr);
+        // Dest column insert
+        if (overLoc.sIdx !== -1) {
+            const destCol = newSections[overLoc.sIdx].columns[overLoc.cIdx];
+            let targetIndex = destCol.ids.length;
+            if (overLoc.bIdx !== undefined) {
+                targetIndex = overLoc.bIdx;
+            }
+            destCol.ids.splice(targetIndex, 0, activeIdStr);
+            if (active.data.current) {
+                active.data.current.sectionIdx = overLoc.sIdx;
+                active.data.current.colIdx = overLoc.cIdx;
+                active.data.current.blockIndex = targetIndex;
+            }
+        }
+
         updateArchitecture(newSections);
-
-        if (active.data.current) {
-            active.data.current.sectionIdx = overLoc.sIdx;
-            active.data.current.colIdx = overLoc.cIdx;
-            active.data.current.blockIndex = targetIndex;
-        }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -397,7 +434,7 @@ export function PageEditLayout({
         const activeLoc = findLocation(activeIdStr, active.data.current);
         const overLoc = findLocation(overIdStr, over.data.current);
 
-        if (activeLoc && overLoc && activeLoc.sIdx === overLoc.sIdx && activeLoc.cIdx === overLoc.cIdx) {
+        if (activeLoc && overLoc && activeLoc.sIdx !== -1 && activeLoc.sIdx === overLoc.sIdx && activeLoc.cIdx === overLoc.cIdx) {
             const newSections = [...architecture.sections];
             const col = newSections[activeLoc.sIdx].columns[activeLoc.cIdx];
             col.ids = arrayMove(col.ids, activeLoc.bIdx!, overLoc.bIdx!);
@@ -407,26 +444,24 @@ export function PageEditLayout({
 
     return (
         <section className={`${isFullScreen ? 'fixed inset-0 z-50 bg-app p-4' : 'flex-1'} flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-            <div className="flex items-center justify-between border-b border-border pb-2 mb-4 shrink-0">
-                <div className="flex items-center gap-4">
-                    <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest flex items-center gap-2">
-                        Visual Layout Editor (Beta)
-                    </h3>
-                </div>
-
+            {/* Top bar: Title + Save/Exit actions */}
+            <div className="flex items-center justify-between border-b border-border pb-2 mb-3 shrink-0">
+                <h3 className="text-sm font-bold text-primary-muted uppercase tracking-widest">
+                    Visual Layout Editor
+                </h3>
                 <div className="flex items-center gap-2">
                     {isFullScreen && (
                         <>
-                            <button onClick={() => onSave(false)} disabled={isSaving} className="flex items-center gap-2 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50">
+                            <button onClick={() => onSave(false)} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-muted hover:bg-border rounded-lg text-[10px] font-bold transition-all disabled:opacity-50">
                                 {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                                 Save
                             </button>
-                            <button onClick={() => onSave(true)} disabled={isSaving} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all shadow-sm disabled:opacity-50">
+                            <button onClick={() => onSave(true)} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[10px] font-bold transition-all shadow-sm disabled:opacity-50">
                                 {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 text-white/80" />}
                                 Save & Exit
                             </button>
                             <div className="w-px h-5 bg-border mx-1" />
-                            <button onClick={onCancel} disabled={isSaving} className="flex items-center gap-2 px-3 py-1.5 hover:bg-app-muted rounded-lg text-[10px] font-bold transition-all text-primary-muted hover:text-primary disabled:opacity-50">
+                            <button onClick={onCancel} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-app-muted rounded-lg text-[10px] font-bold transition-all text-primary-muted hover:text-primary disabled:opacity-50">
                                 <X className="w-3 h-3" /> Exit
                             </button>
                         </>
@@ -438,43 +473,82 @@ export function PageEditLayout({
                 </div>
             </div>
 
+            {/* Main 4:8 Content Area */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-                <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
-                    <div className="flex-1 flex flex-row gap-4 min-h-0">
+                <div className="flex-1 flex flex-row gap-3 min-h-0">
 
-
-
-                        {/* CANVAS PANE */}
-                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative">
-                            <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                            <div className="p-4 border-b border-border bg-white z-10 flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">Layout Canvas</h4>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 font-medium mr-2">Add Section:</span>
-                                    {SECTION_PRESETS.map(preset => (
-                                        <button key={preset.id} onClick={() => addSection(preset.id)} className="px-2 py-1 bg-white border border-gray-200 hover:border-blue-500 hover:text-blue-600 rounded text-[10px] font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                            + {preset.label}
-                                        </button>
-                                    ))}
-                                </div>
+                    {/* LEFT: Layout Canvas (4 parts) */}
+                    <div className="flex flex-col min-h-0" style={{ flexBasis: '33.333%', flexShrink: 0 }}>
+                        {/* Canvas Header Bar 1: Components */}
+                        <div className="shrink-0 border border-border rounded-xl bg-app mb-2 shadow-sm">
+                            <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+                                <h4 className="text-[10px] font-bold text-primary-muted uppercase tracking-widest flex items-center gap-1.5">
+                                    <Layers className="w-3 h-3" />
+                                    Unplaced
+                                </h4>
+                                <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{unplacedComponents.length}</span>
                             </div>
-
-                            <div className="flex-1 overflow-y-auto p-6 z-10 space-y-6">
-                                {architecture.sections.length === 0 ? (
-                                    <div className="h-full w-full flex flex-col items-center justify-center text-center">
-                                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                                            <Plus className="w-8 h-8" />
+                            <div className="p-2">
+                                {unplacedComponents.length === 0 ? (
+                                    <p className="text-[10px] text-gray-400 italic text-center py-1">All placed ✓</p>
+                                ) : (
+                                    <SortableContext items={unplacedComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {unplacedComponents.map(com => (
+                                                <SortableBlockItem
+                                                    key={com.id}
+                                                    blockId={com.id}
+                                                    componentTypeId={com.componentTypeId}
+                                                    blockIndex={-1}
+                                                    sectionIdx={-1}
+                                                    colIdx={-1}
+                                                    isSelected={selectedBlockId === com.id}
+                                                    onSelect={() => handleSelectBlockId(com.id)}
+                                                />
+                                            ))}
                                         </div>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">Empty Layout</h3>
-                                        <p className="text-sm text-gray-500 max-w-sm">Design your page by adding a layout section from the top toolbar, then drag components into the columns.</p>
+                                    </SortableContext>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Canvas Header Bar 2: Section Presets */}
+                        <div className="shrink-0 border border-border rounded-xl bg-app mb-2 shadow-sm">
+                            <div className="px-3 py-2 border-b border-border">
+                                <h4 className="text-[10px] font-bold text-primary-muted uppercase tracking-widest">Add Section</h4>
+                            </div>
+                            <div className="p-2 flex flex-wrap gap-1.5">
+                                {SECTION_PRESETS.map(preset => (
+                                    <button
+                                        key={preset.id}
+                                        onClick={() => addSection(preset.id)}
+                                        className="px-2 py-1 bg-white border border-gray-200 hover:border-blue-500 hover:text-blue-600 rounded text-[10px] font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    >
+                                        + {preset.id}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Canvas Body: Sections & Columns */}
+                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm relative min-h-0">
+                            <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+                            <div className="flex-1 overflow-y-auto p-4 z-10 space-y-4">
+                                {architecture.sections.length === 0 ? (
+                                    <div className="h-full w-full flex flex-col items-center justify-center text-center py-12">
+                                        <div className="w-12 h-12 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-3">
+                                            <Plus className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-xs font-semibold text-gray-500">Add a section above</p>
+                                        <p className="text-[10px] text-gray-400 mt-1">Then drag components into the grid</p>
                                     </div>
                                 ) : (
                                     architecture.sections.map((section, sIdx) => (
-                                        <div key={sIdx} className="bg-white border border-border shadow-sm rounded-xl p-4 relative group">
-                                            <button onClick={() => removeSection(sIdx)} className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-20">
-                                                <Trash2 className="w-4 h-4" />
+                                        <div key={sIdx} className="bg-white border border-border shadow-sm rounded-xl p-3 relative group">
+                                            <button onClick={() => removeSection(sIdx)} className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-20">
+                                                <Trash2 className="w-3 h-3" />
                                             </button>
-                                            <div className="grid gap-4 w-full" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
+                                            <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
                                                 {section.columns.map((col, cIdx) => (
                                                     <ColumnZone
                                                         key={cIdx}
@@ -482,6 +556,7 @@ export function PageEditLayout({
                                                         colIdx={cIdx}
                                                         col={col}
                                                         isLast={cIdx === section.columns.length - 1}
+                                                        components={pageForm.metadata?.components || []}
                                                         selectedBlockId={selectedBlockId}
                                                         onSelectBlock={handleSelectBlockId}
                                                         onRemoveBlock={removeBlock}
@@ -495,9 +570,12 @@ export function PageEditLayout({
                                 )}
                             </div>
                         </div>
+                    </div>
 
-                        {/* PREVIEW PANE */}
-                        <div className="flex-1 border border-border rounded-xl bg-gray-50 flex flex-col h-full overflow-hidden shadow-sm relative p-4">
+                    {/* RIGHT: Preview + HTML Source (8 parts) */}
+                    <div className="flex flex-col gap-3 min-h-0 min-w-0" style={{ flexBasis: '66.666%', flexGrow: 1 }}>
+                        {/* Top: HTML Preview */}
+                        <div className={`border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm relative ${selectedBlockId ? 'flex-1' : 'flex-1'}`}>
                             <PagePreviewSection
                                 schema={item}
                                 html={pageForm.html}
@@ -505,43 +583,46 @@ export function PageEditLayout({
                                 highlightComponentId={selectedBlockId}
                             />
                         </div>
-                    </div>
 
-                    {/* HTML EDITOR PANE */}
-                    {selectedBlockId && (
-                        <div className="h-64 shrink-0 border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm relative mb-4">
-                            <div className="p-2 border-b border-border bg-white flex items-center justify-between z-10">
-                                <h4 className="text-xs font-bold text-primary-muted uppercase tracking-wider">HTML Source: {selectedBlockId}</h4>
-                                <button onClick={() => handleSelectBlockId(null)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
-                                    <X className="w-4 h-4" />
-                                </button>
+                        {/* Bottom: HTML Source (only when component is selected) */}
+                        {selectedBlockId && (
+                            <div className="h-72 shrink-0 border border-border rounded-xl bg-gray-50 flex flex-col overflow-hidden shadow-sm">
+                                <div className="px-3 py-2 border-b border-border bg-white flex items-center justify-between z-10 shrink-0">
+                                    <h4 className="text-[10px] font-bold text-primary-muted uppercase tracking-wider flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        HTML Source — {selectedBlockId}
+                                    </h4>
+                                    <button onClick={() => handleSelectBlockId(null)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+                                    <Editor
+                                        height="100%"
+                                        defaultLanguage="html"
+                                        value={selectedHtml}
+                                        onChange={(value) => handleHtmlChange(value || '')}
+                                        theme="vs-dark"
+                                        options={{
+                                            minimap: { enabled: false },
+                                            fontSize: 12,
+                                            padding: { top: 10, bottom: 10 },
+                                            scrollBeyondLastLine: false,
+                                            wordWrap: 'on',
+                                            automaticLayout: true,
+                                            tabSize: 2,
+                                        }}
+                                    />
+                                </div>
                             </div>
-                            <div className="flex-1 p-0 overflow-hidden bg-[#1e1e1e]">
-                                <Editor
-                                    height="100%"
-                                    defaultLanguage="html"
-                                    value={selectedHtml}
-                                    onChange={(value) => handleHtmlChange(value || '')}
-                                    theme="vs-dark"
-                                    options={{
-                                        minimap: { enabled: false },
-                                        fontSize: 12,
-                                        padding: { top: 12, bottom: 12 },
-                                        scrollBeyondLastLine: false,
-                                        wordWrap: 'on',
-                                        automaticLayout: true,
-                                        tabSize: 2,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
                     {activeId ? (
-                        <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-xl font-bold text-sm tracking-wide border-2 border-blue-400 rotate-3 cursor-grabbing flex items-center justify-center min-w-[150px]">
-                            Moving Block...
+                        <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-xl font-bold text-sm tracking-wide border-2 border-blue-400 rotate-2 cursor-grabbing flex items-center gap-2 min-w-[120px]">
+                            <span>🧩</span> Moving…
                         </div>
                     ) : null}
                 </DragOverlay>
@@ -549,3 +630,4 @@ export function PageEditLayout({
         </section>
     );
 }
+

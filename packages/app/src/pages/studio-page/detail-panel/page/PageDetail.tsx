@@ -1,5 +1,6 @@
-import { type SchemaDto, type PageMetadata, type ParsedPageDto } from '@cms/shared';
+import { type SchemaDto, type PageMetadata, type ParsedPageDto, type SaveSchemaPayload, LayoutCompiler } from '@cms/shared';
 import { useState, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { useSchemas } from '../../../../hooks/use-schemas';
 import { PublishConfirmDialog } from '../shared/PublishConfirmDialog';
 import { PagePublishSection } from './components/PagePublishSection';
@@ -15,7 +16,7 @@ interface PageDetailProps {
 export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailProps) {
     const page = schema.settings?.page!;
 
-    const { publishSchema } = useSchemas();
+    const { publishSchema, saveSchema, mutate } = useSchemas();
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
@@ -48,12 +49,15 @@ export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailPro
         if (!confirm(`Are you sure you want to delete component "${componentId}"?`)) return;
 
         try {
+            setIsPublishing(true);
             const updatedSchema = JSON.parse(JSON.stringify(schema));
             const metadata = updatedSchema.settings.page.metadata;
 
             // Remove from components map
             if (metadata.components) {
-                delete metadata.components[componentId];
+                metadata.components = metadata.components.filter(
+                    (c: any) => c.id !== componentId
+                );
             }
 
             // Remove from instructions
@@ -63,33 +67,48 @@ export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailPro
                 );
             }
 
-            // Remove from layoutJson blocks
-            if (metadata.layoutJson?.sections) {
-                metadata.layoutJson.sections.forEach((section: any) => {
+            // Remove from architecture sections (layout ids)
+            if (metadata.architecture?.sections) {
+                metadata.architecture.sections.forEach((section: any) => {
                     section.columns.forEach((col: any) => {
-                        col.blocks = col.blocks.filter((block: any) => block.id !== componentId);
+                        if (col.ids) {
+                            col.ids = col.ids.filter((id: string) => id !== componentId);
+                        }
                     });
                 });
             }
 
-            // Save immediately via API (publishSchema saves to DB in CMS context)
-            setIsPublishing(true);
-            // First we need to update the schema in the React Context or API directly
-            // In cms, modifying schema typically means saving via PageManager. Since we're frontend, 
-            // we will send it back to the schemas hook using a generic update or standard save.
-            // Using the raw API call to save schema here since publishSchema might just publish existing settings:
-            await fetch(`/api/meta/schema/${updatedSchema.schemaId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedSchema)
-            });
+            // Recompile HTML to reflect the removal
+            let htmlToSave = updatedSchema.settings.page.html;
+            if (metadata.architecture?.sections) {
+                htmlToSave = LayoutCompiler.compile(
+                    metadata.architecture.sections,
+                    metadata.components || [],
+                    updatedSchema.settings.page.title,
+                    { enableVisitTrack: metadata.enableVisitTrack }
+                );
+            }
+
+            const payload: SaveSchemaPayload = {
+                schemaId: updatedSchema.schemaId,
+                type: 'page',
+                settings: {
+                    page: {
+                        ...updatedSchema.settings.page,
+                        html: htmlToSave,
+                        metadata: metadata
+                    }
+                }
+            };
+
+            await saveSchema(payload);
+            await mutate();
 
             setSelectedComponentId(null);
-            alert('Component deleted successfully. The page will reload momentarily.');
-            window.location.reload();
+            toast.success('Component deleted successfully');
         } catch (e: any) {
             console.error(e);
-            alert('Failed to delete component.');
+            toast.error('Failed to delete component: ' + (e.message || 'Unknown error'));
         } finally {
             setIsPublishing(false);
         }
