@@ -58,6 +58,7 @@ export declare const ENDPOINTS: {
     };
     readonly APP_TASKS: {
         readonly LATEST: "/cmsapi/tasks";
+        readonly TOGGLE_ITEM: "/cmsapi/tasks/:taskId/items/:index/toggle";
     };
     readonly ENTITIES: {
         readonly LIST: "/api/entities/:schemaName";

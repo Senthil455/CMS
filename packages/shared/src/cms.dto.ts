@@ -1,4 +1,4 @@
-import { PageDto } from "./app.dto";
+import type { PageDto } from "./app.dto";
 
 export interface XAttributeDto {
     field: string;

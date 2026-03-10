@@ -3,7 +3,6 @@ export interface PageDto {
     name: string;
     title: string;
     html: string;
-    source: string;
     metadata: PageMetadata;
 }
 export type ParsedPageDto = PageDto;
@@ -34,16 +33,17 @@ export interface TemplateSelectionResponse {
     selectedTemplate: string;
     requestPayload: TemplateSelectionRequest;
 }
+export interface SelectedQuery {
+    queryName: string;
+    fieldName: string;
+    type: 'single' | 'list';
+    description: string;
+    args: Record<string, 'fromPath' | 'fromQuery'>;
+}
 export interface PageArchitecture {
     pageTitle: string;
     sections: LayoutSection[];
-    selectedQueries: Array<{
-        queryName: string;
-        fieldName: string;
-        type: 'single' | 'list';
-        description: string;
-        args: Record<string, 'fromPath' | 'fromQuery'>;
-    }>;
+    selectedQueries: SelectedQuery[];
     architectureHints: string;
     componentInstructions?: ComponentInstruction[];
 }
@@ -52,6 +52,7 @@ export interface ComponentInstruction {
     instruction: string;
     queriesToUse: string[];
     componentTypeId?: string;
+    needsBuild?: boolean;
 }
 export interface LayoutColumn {
     span: number;

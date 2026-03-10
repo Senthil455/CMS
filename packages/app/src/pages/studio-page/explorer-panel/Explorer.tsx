@@ -111,7 +111,6 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, us
                     page: {
                         name: name,
                         title: name,
-                        source: 'ai',
                         html: '',
                         metadata: {}
                     }

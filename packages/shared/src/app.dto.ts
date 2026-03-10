@@ -1,4 +1,4 @@
-import { EntityDto, RelationshipDto } from "./cms.dto";
+import type { EntityDto, RelationshipDto } from "./cms.dto";
 
 export interface PageDto {
     name: string;
