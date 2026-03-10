@@ -12,7 +12,8 @@ export class IntentClassifier {
         const response = await this.aiProvider.generate(
             this.systemPrompt,
             '',
-            userInput
+            userInput,
+            { parseJson: true }
         );
 
         if (response && typeof response === 'object') {

@@ -41,11 +41,5 @@ CMS uses **cursor-based pagination**, NOT offset/limit. The rules are:
 - Disabled/hidden state when not applicable
 
 
-## Output Protocol (STRICT JSON)
-You must output ONLY a valid JSON object with this structure:
-
-```json
-{
-    "html": "string"
-}
-```
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

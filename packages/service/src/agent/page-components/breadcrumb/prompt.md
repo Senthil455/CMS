@@ -30,10 +30,5 @@ You are a senior frontend engineer. Your responsibility is to add a breadcrumb n
 - Subtle hover effect on links
 - Wrap in a `<nav aria-label="Breadcrumb">` for accessibility
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

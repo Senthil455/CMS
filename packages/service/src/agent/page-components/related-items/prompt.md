@@ -29,10 +29,5 @@ You are a senior frontend engineer. Your responsibility is to add a "Related Ite
 - Section with top border or background change to visually separate from main content
 - Section heading: `text-2xl font-bold mb-6`
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

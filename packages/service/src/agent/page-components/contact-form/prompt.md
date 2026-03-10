@@ -34,10 +34,5 @@ You are a senior frontend engineer. Your responsibility is to add a contact/feed
 - If `componentInstruction` mentions pre-filling fields from page data, use `{{fieldName.property}}` syntax
 - Closing tags: `{{/if}}` — NO arguments
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

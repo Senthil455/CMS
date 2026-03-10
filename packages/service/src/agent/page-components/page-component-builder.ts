@@ -52,12 +52,12 @@ export class PageComponentBuilder implements Agent<PageComponent> {
             developerMessage,
             userInput,
             context.signal ? { signal: context.signal } : undefined
-        ) as { html: string };
+        ) as string;
 
         return {
             plan: {
                 id: componentId,
-                html: res.html,
+                html: res,
                 componentTypeId: this.addonDef.id,
             },
             prompts: {

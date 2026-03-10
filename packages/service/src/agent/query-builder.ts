@@ -51,7 +51,7 @@ ${sdl}
             this.systemPrompt,
             developerMessage,
             userInput,
-            context.signal ? { signal: context.signal } : undefined
+            { ...context.signal ? { signal: context.signal } : {}, parseJson: true }
         );
 
         return {

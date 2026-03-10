@@ -39,10 +39,5 @@ Choose the most appropriate hero style based on available data:
 - Responsive: stack vertically on mobile, side-by-side on desktop if applicable
 - Proper image handling: `object-cover`, aspect ratio constraints, rounded corners
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

@@ -18,7 +18,7 @@ export class SystemArchitect implements Agent<SystemRequirment> {
             this.systemPrompt,
             'Generate a system plan identifying the required entities, queries, and pages based on user input.',
             userInput,
-            context.signal ? { signal: context.signal } : undefined
+            { ...context.signal ? { signal: context.signal } : {}, parseJson: true }
         );
 
         try {

@@ -32,10 +32,5 @@ You are a senior frontend engineer. Your responsibility is to add a "Table View"
 - Optional: zebra striping with `even:bg-gray-50`
 - Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` semantic elements
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

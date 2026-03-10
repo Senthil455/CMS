@@ -33,10 +33,5 @@ You are a senior frontend engineer. Your responsibility is to add an FAQ / Accor
 - Answer text: `text-gray-600 leading-relaxed`
 - Chevron icon: rotates 180° on open with `transition-transform duration-300`
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

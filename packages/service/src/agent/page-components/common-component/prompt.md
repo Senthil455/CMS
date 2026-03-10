@@ -86,9 +86,5 @@ These are **value helpers** that output `true`/`false` as strings. They CANNOT b
 - Formatting (dates, numbers, etc.) is handled outside the template.
 - All data selection, filtering, and sorting is done server-side before reaching the template.
 
-### Example Output
-```json
-{
-  "html": "string"
-}
-```
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

@@ -35,7 +35,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
             this.plannerSystemPrompt,
             developerMessage,
             userInput,
-            context.signal ? { signal: context.signal } : undefined
+            { ...context.signal ? { signal: context.signal } : {}, parseJson: true }
         );
 
         // If the planner couldn't match an entity, stop the pipeline

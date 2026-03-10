@@ -56,7 +56,7 @@ export class DataGenerator implements Agent<DataGeneratorPlan> {
             this.systemPrompt,
             devMsg,
             userInput,
-            context.signal ? { signal: context.signal } : undefined
+            { ...context.signal ? { signal: context.signal } : {}, parseJson: true }
         );
 
         const { entityName, data } = response;

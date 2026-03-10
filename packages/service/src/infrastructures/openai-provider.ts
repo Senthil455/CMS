@@ -35,9 +35,10 @@ export class OpenAIProvider implements AIProvider {
         return `...${this.apiKey.slice(-4)}`;
     }
 
-    async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal }): Promise<any> {
+    async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal; parseJson?: boolean }): Promise<any> {
         try {
             this.logger.info('OpenAIProvider generating from roles using SDK');
+            const parseJson = options?.parseJson ?? false;
 
             const response = await this.openai.chat.completions.create({
                 model: this.model,
@@ -46,12 +47,12 @@ export class OpenAIProvider implements AIProvider {
                     { role: 'developer', content: developer } as any,
                     { role: 'user', content: user }
                 ],
-                response_format: { type: "json_object" }
-            }, options);
+                response_format: parseJson ? { type: "json_object" } : { type: "text" }
+            }, { signal: options?.signal });
 
             const content = response.choices?.[0]?.message?.content;
             if (content) {
-                return JSON.parse(content);
+                return parseJson ? JSON.parse(content) : content;
             }
 
             return null;

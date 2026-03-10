@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { type PageDto, type PageMetadata, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
-import toast from 'react-hot-toast';
 import { HeaderLayout } from './HeaderLayout';
 // Icon lookup for dynamic addon rendering
 const ICON_MAP: Record<string, React.ComponentType<any>> = {

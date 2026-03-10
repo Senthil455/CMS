@@ -73,7 +73,7 @@ export class GeminiProvider implements AIProvider {
         return null;
     }
 
-    async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal }): Promise<any> {
+    async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal; parseJson?: boolean }): Promise<any> {
         const start = Date.now();
         let currentModel = this.model;
         if (['gemini-3-pro', 'gemini-3-flash', 'gemini-3.1-pro'].includes(currentModel)) {
@@ -81,6 +81,7 @@ export class GeminiProvider implements AIProvider {
         }
 
         try {
+            const parseJson = options?.parseJson ?? false;
             let cacheName: string | null = null;
             if (this.useCaching) {
                 cacheName = await this.getOrCreateCache(system, developer, currentModel, options);
@@ -97,7 +98,7 @@ export class GeminiProvider implements AIProvider {
                 ],
                 generationConfig: {
                     temperature: 0,
-                    responseMimeType: "application/json"
+                    responseMimeType: parseJson ? "application/json" : "text/plain"
                 }
             };
 
@@ -141,12 +142,15 @@ export class GeminiProvider implements AIProvider {
                 return null;
             }
 
-            try {
-                return JSON.parse(content);
-            } catch (e) {
-                // Return raw content as fallback if it's supposed to be JSON but fails
-                return content;
+            if (parseJson) {
+                try {
+                    return JSON.parse(content);
+                } catch (e) {
+                    // Return raw content as fallback if it's supposed to be JSON but fails
+                    return content;
+                }
             }
+            return content;
 
         } catch (error: any) {
             // This might throw AgentProviderError

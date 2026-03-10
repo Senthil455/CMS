@@ -51,7 +51,7 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
             this.architectSystemPrompt,
             JSON.stringify(message),
             userInput,
-            context.signal ? { signal: context.signal } : undefined
+            { ...context.signal ? { signal: context.signal } : {}, parseJson: true }
         )
 
         return {

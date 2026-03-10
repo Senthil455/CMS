@@ -38,11 +38,5 @@ You are a senior frontend engineer. Your responsibility is to add a "Search Bar"
 - The page re-renders with the filtered query results
 
 
-## Output Protocol (STRICT JSON)
-You must output ONLY a valid JSON object with this structure:
-
-```json
-{
-    "html": "string"
-}
-```
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.

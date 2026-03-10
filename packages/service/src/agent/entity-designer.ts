@@ -46,7 +46,7 @@ export class EntityGenerator implements Agent<EntityGeneratorPlan> {
             this.systemPrompt,
             schemasText,
             userInput,
-            context?.signal ? { signal: context.signal } : undefined
+            { ...context?.signal ? { signal: context.signal } : {}, parseJson: true }
         );
 
         let responseJson: any;

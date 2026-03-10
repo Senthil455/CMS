@@ -38,10 +38,5 @@ The snippet uses `x-ref="track"` so Alpine.js can count the DOM children after H
 - Smooth opacity or slide transitions
 - Responsive: full-width on mobile, optionally constrained max-width on desktop
 
-## Output Protocol (STRICT JSON)
-```json
-{
-    "html": "string"
-}
-```
-- NO explanations. NO markdown code fences. Just the raw JSON.
+## Output Protocol
+Return ONLY the raw HTML string. No JSON wrapper, no markdown fences, no explanation.
