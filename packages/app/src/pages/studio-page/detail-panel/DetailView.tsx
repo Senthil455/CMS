@@ -4,7 +4,7 @@ import { Layout, AlertTriangle, Trash2 } from 'lucide-react';
 import { SchemaGraph } from './SchemaGraph';
 import { EntityDetail } from './entity/EntityDetail';
 import { QueryDetail } from './query/QueryDetail';
-import { PageDetail } from './page/PageDetail';
+import { PageDetail, type PageDetailRef } from './page/PageDetail';
 import { EntityHeader } from './headers/EntityHeader';
 import { QueryHeader } from './headers/QueryHeader';
 import { PageHeader } from './headers/PageHeader';
@@ -18,7 +18,18 @@ interface DetailViewProps {
     onChatAction: (action: string) => void;
 }
 
+import { useRef } from 'react';
+
 export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAction }: DetailViewProps) {
+    const pageDetailRef = useRef<PageDetailRef>(null);
+
+    const handleChatAction = (action: string) => {
+        if (action.startsWith('@add-custom-html#') && pageDetailRef.current) {
+            pageDetailRef.current.handleAddCustomHtml();
+        } else {
+            onChatAction(action);
+        }
+    };
 
     if (!item) {
         return (
@@ -89,7 +100,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     publicationStatus={item.publicationStatus}
                     onDelete={onDelete}
                     onEdit={onEdit}
-                    onChatAction={onChatAction}
+                    onChatAction={handleChatAction}
                 />
             )}
 
@@ -100,7 +111,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     publicationStatus={item.publicationStatus}
                     onDelete={onDelete}
                     onEdit={onEdit}
-                    onChatAction={onChatAction}
+                    onChatAction={handleChatAction}
                 />
             )}
 
@@ -111,7 +122,7 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
                     publicationStatus={item.publicationStatus}
                     onDelete={onDelete}
                     onEdit={onEdit}
-                    onChatAction={onChatAction}
+                    onChatAction={handleChatAction}
                 />
             )}
 
@@ -127,8 +138,9 @@ export function DetailView({ item, schemas, onEdit, onDelete, onSelect, onChatAc
 
                     {item.type === 'page' && item.settings?.page && (
                         <PageDetail
+                            ref={pageDetailRef}
                             schema={item}
-                            onChatAction={onChatAction}
+                            onChatAction={handleChatAction}
                             onEditSource={(id) => {
                                 // Transition to layout editor mode and pass block ID
                                 onEdit(`layout&block=${id}` as any);

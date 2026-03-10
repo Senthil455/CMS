@@ -90,7 +90,14 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         ? addons.filter(a => a.pageTypes.includes(currentPageType as 'detail' | 'list'))
         : [];
 
-    const hasAddOptions = availableAddons.length > 0 && metadata.plan?.entityName;
+    const hasAddOptions = (availableAddons.length > 0 && metadata.plan?.entityName) || !!schemaId;
+
+    const handleAddCustomHtml = () => {
+        setIsAddMenuOpen(false);
+        if (schemaId) {
+            onChatAction(`@add-custom-html#${schemaId}`);
+        }
+    };
 
     return (
         <HeaderLayout
@@ -153,11 +160,19 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                                     </button>
                                 );
                             })}
+                            
+                            <div className="h-px bg-border my-1" />
+                            <button
+                                onClick={handleAddCustomHtml}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-orange-600 hover:bg-orange-500/10 transition-colors text-left"
+                            >
+                                <Code className="w-4 h-4" />
+                                Add Custom HTML
+                            </button>
                         </div>
                     )}
                 </div>
-            )
-            }
+            )}
 
             <div className="flex bg-app-muted p-0.5 rounded-lg ml-1">
                 <button

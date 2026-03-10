@@ -7,13 +7,19 @@ import { PagePublishSection } from './components/PagePublishSection';
 import { PageComponentsSection } from './components/PageComponentsSection';
 import { PagePreviewSection } from './components/PagePreviewSection';
 
+import { forwardRef, useImperativeHandle } from 'react';
+
 interface PageDetailProps {
     schema: SchemaDto;
     onChatAction?: (action: string) => void;
     onEditSource?: (id: string) => void;
 }
 
-export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailProps) {
+export interface PageDetailRef {
+    handleAddCustomHtml: () => Promise<void>;
+}
+
+export const PageDetail = forwardRef<PageDetailRef, PageDetailProps>(({ schema, onChatAction, onEditSource }, ref) => {
     const page = schema.settings?.page!;
 
     const { publishSchema, saveSchema, mutate } = useSchemas();
@@ -44,6 +50,90 @@ export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailPro
             setIsPublishing(false);
         }
     };
+
+    const handleAddCustomHtml = async () => {
+        debugger;
+        try {
+            setIsPublishing(true);
+            const updatedSchema = JSON.parse(JSON.stringify(schema));
+            let metadata = updatedSchema.settings.page.metadata;
+            if (!metadata) {
+                metadata = {};
+                updatedSchema.settings.page.metadata = metadata;
+            }
+
+            // Find next custom_N id
+            const existingComponents = metadata.components || [];
+            let maxNum = 0;
+            for (const comp of existingComponents) {
+                const match = comp.id.match(/^custom_(\d{3})$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNum) maxNum = num;
+                }
+            }
+            const nextNum = String(maxNum + 1).padStart(3, '0');
+            const newId = `custom_${nextNum}`;
+
+            const newComponent = {
+                id: newId,
+                componentTypeId: 'common_component',
+                html: `<div>custom component ${nextNum}</div>`
+            };
+
+            // Add to components list
+            if (!metadata.components) {
+                metadata.components = [];
+            }
+            metadata.components.push(newComponent);
+
+            // Add a new section to architecture so it renders
+            if (!metadata.architecture) {
+                metadata.architecture = { pageTitle: updatedSchema.settings.page.title || 'Page', sections: [], selectedQueries: [], architectureHints: '' };
+            }
+            if (!metadata.architecture.sections) {
+                metadata.architecture.sections = [];
+            }
+            metadata.architecture.sections.push({
+                columns: [{ span: 12, ids: [newId] }]
+            });
+
+            // Recompile HTML
+            let htmlToSave = updatedSchema.settings.page.html;
+            htmlToSave = LayoutCompiler.compile(
+                metadata.architecture.sections,
+                metadata.components,
+                updatedSchema.settings.page.title,
+                { enableVisitTrack: metadata.enableVisitTrack }
+            );
+
+            const payload: SaveSchemaPayload = {
+                schemaId: updatedSchema.schemaId,
+                type: 'page',
+                settings: {
+                    page: {
+                        ...updatedSchema.settings.page,
+                        html: htmlToSave,
+                        metadata: metadata
+                    }
+                }
+            };
+
+            await saveSchema(payload);
+            await mutate();
+            setSelectedComponentId(newId);
+            toast.success('Custom HTML component added');
+        } catch (e: any) {
+            console.error(e);
+            toast.error('Failed to add custom component: ' + (e.message || 'Unknown error'));
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
+    useImperativeHandle(ref, () => ({
+        handleAddCustomHtml
+    }));
 
     const handleRemoveComponent = async (componentId: string) => {
         if (!confirm(`Are you sure you want to delete component "${componentId}"?`)) return;
@@ -147,4 +237,4 @@ export function PageDetail({ schema, onChatAction, onEditSource }: PageDetailPro
             />
         </div>
     );
-}
+});
