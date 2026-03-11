@@ -74,7 +74,6 @@ export class GeminiProvider implements AIProvider {
     }
 
     async generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal; parseJson?: boolean }): Promise<any> {
-        const start = Date.now();
         let currentModel = this.model;
         if (['gemini-3-pro', 'gemini-3-flash', 'gemini-3.1-pro'].includes(currentModel)) {
             currentModel = `${currentModel}-preview`;
@@ -132,6 +131,16 @@ export class GeminiProvider implements AIProvider {
                     const retryDelay = retryDetail?.retryDelay || '';
                     shortMsg = `Gemini ${resp.status}: ${msg}${retryDelay ? ` (retry in ${retryDelay})` : ''}`;
                 } catch { /* use shortMsg as-is */ }
+
+                if (resp.status === 403) {
+                    this.logger.error({
+                        model: currentModel,
+                        hasApiKey: !!this.apiKey,
+                        apiKeyLength: this.apiKey?.length ?? 0,
+                        maskedKey: this.getMaskedApiKey(),
+                    }, `Gemini 403 error – API key ${this.apiKey ? 'IS set' : 'is NOT set'} for model ${currentModel}`);
+                }
+
                 throw new Error(shortMsg);
             }
 

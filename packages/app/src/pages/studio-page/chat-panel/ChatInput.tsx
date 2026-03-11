@@ -22,7 +22,7 @@ export function ChatInput({ onSend, draft, onDraftConsumed }: ChatInputProps) {
     const disabled = isAgentActive;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [selectedProvider, setSelectedProvider] = useState<string>(() => {
-        return localStorage.getItem(STORAGE_KEY) || 'gemini';
+        return localStorage.getItem(STORAGE_KEY) || 'gemini/gemini-3-flash';
     });
     const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
 

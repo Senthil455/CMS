@@ -1,9 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { config, GEMINI_MODELS, OPENAI_MODELS } from '../config';
+import { config } from '../config';
 import { maskApiKey } from '../utils/mask-api-key';
-import { GeminiProvider } from '../infrastructures/gemini-provider';
-import { OpenAIProvider } from '../infrastructures/openai-provider';
 
 const configRouter: FastifyPluginAsync = async (fastify) => {
     // GET /cmsapi/config/gemini - Check status
@@ -37,7 +35,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         const { apiKey } = body_.data;
-        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini')).map(([_, a]) => a);
+        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini'));
 
         if (geminiAgents.length === 0) {
             return reply.status(404).send({ error: 'Gemini agent not enabled' });
@@ -46,16 +44,10 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         // Save to database
         await fastify.systemSettingRepository.upsert('GEMINI_API_KEY', apiKey);
 
-        // Update in-memory: Instantiate new GeminiProviders for each model
-        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
-        for (const model of GEMINI_MODELS) {
-            fastify.aiProvider[`gemini/${model}`] = new GeminiProvider(
-                apiKey,
-                config.GEMINI_API_URL,
-                model,
-                infraLogger,
-                config.GEMINI_USE_CACHING
-            );
+        // Update in-memory: call setApiKey on existing instances so all agent references stay valid
+        for (const [providerName, provider] of geminiAgents) {
+            provider.setApiKey(apiKey);
+            fastify.log.info(`Gemini API key updated for provider: ${providerName} (key ends with ...${apiKey.slice(-2)})`);
         }
 
         fastify.log.info('Gemini API Key updated via API and saved to DB');
@@ -66,7 +58,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
     fastify.delete('/cmsapi/config/gemini', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini')).map(([_, a]) => a);
+        const geminiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('gemini'));
 
         if (geminiAgents.length === 0) {
             return reply.status(404).send({ error: 'Gemini agent not enabled' });
@@ -75,16 +67,10 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         // Remove from database
         await fastify.systemSettingRepository.delete('GEMINI_API_KEY');
 
-        // Reset in-memory: Instantiate empty providers
-        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
-        for (const model of GEMINI_MODELS) {
-            fastify.aiProvider[`gemini/${model}`] = new GeminiProvider(
-                '',
-                config.GEMINI_API_URL,
-                model,
-                infraLogger,
-                config.GEMINI_USE_CACHING
-            );
+        // Reset in-memory: clear key on existing instances
+        for (const [providerName, provider] of geminiAgents) {
+            provider.setApiKey('');
+            fastify.log.info(`Gemini API key cleared for provider: ${providerName}`);
         }
 
         fastify.log.info('Gemini API Key deleted via API');
@@ -125,7 +111,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         }
 
         const { apiKey } = body_.data;
-        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai')).map(([_, a]) => a);
+        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai'));
 
         if (openaiAgents.length === 0) {
             return reply.status(404).send({ error: 'OpenAI agent not enabled' });
@@ -134,15 +120,10 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         // Save to database
         await fastify.systemSettingRepository.upsert('OPENAI_API_KEY', apiKey);
 
-        // Update in-memory
-        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
-        for (const model of OPENAI_MODELS) {
-            fastify.aiProvider[`openai/${model}`] = new OpenAIProvider(
-                apiKey,
-                config.OPENAI_API_URL,
-                model,
-                infraLogger
-            );
+        // Update in-memory: call setApiKey on existing instances
+        for (const [providerName, provider] of openaiAgents) {
+            provider.setApiKey(apiKey);
+            fastify.log.info(`OpenAI API key updated for provider: ${providerName} (key ends with ...${apiKey.slice(-2)})`);
         }
 
         fastify.log.info('OpenAI API Key updated via API and saved to DB');
@@ -153,7 +134,7 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
     fastify.delete('/cmsapi/config/openai', {
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
-        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai')).map(([_, a]) => a);
+        const openaiAgents = Object.entries(fastify.aiProvider).filter(([k]) => k.startsWith('openai'));
 
         if (openaiAgents.length === 0) {
             return reply.status(404).send({ error: 'OpenAI agent not enabled' });
@@ -162,16 +143,12 @@ const configRouter: FastifyPluginAsync = async (fastify) => {
         // Remove from database
         await fastify.systemSettingRepository.delete('OPENAI_API_KEY');
 
-        // Reset in-memory
-        const infraLogger = fastify.log.child({ component: 'INFRA' }, { level: config.LOG_LEVEL_INFRASTRUCTURE });
-        for (const model of OPENAI_MODELS) {
-            fastify.aiProvider[`openai/${model}`] = new OpenAIProvider(
-                '',
-                config.OPENAI_API_URL,
-                model,
-                infraLogger
-            );
+        // Reset in-memory: clear key on existing instances
+        for (const [providerName, provider] of openaiAgents) {
+            provider.setApiKey('');
+            fastify.log.info(`OpenAI API key cleared for provider: ${providerName}`);
         }
+
         fastify.log.info('OpenAI API Key deleted via API');
         return { success: true };
     });

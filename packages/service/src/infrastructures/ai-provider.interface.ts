@@ -6,4 +6,5 @@ export interface AgentMessage {
 export interface AIProvider {
     generate(system: string, developer: string, user: string, options?: { signal?: AbortSignal; parseJson?: boolean }): Promise<any>;
     transformError(error: any): string;
+    setApiKey(key: string): void;
 }

@@ -124,41 +124,39 @@ export function ChatPanel({
                 )}
             </div>
 
-            {activeTab === 'chat' && (
-                <div className="border-t border-border bg-app-surface/50 backdrop-blur-sm relative z-10">
-                    <StatusBar />
-                    <div className="p-2">
-                        {isConfigured === null ? (
-                            <div className="flex justify-center p-2">
-                                <Loader2 className="w-5 h-5 animate-spin text-primary-muted" />
-                            </div>
-                        ) : isConfigured ? (
-                            <ChatInput onSend={onSend} draft={chatDraft} onDraftConsumed={onDraftConsumed} />
-                        ) : (
-                            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
-                                            AI Not Configured
-                                        </h4>
-                                        <p className="text-xs text-amber-700 dark:text-amber-500 mt-1 mb-3">
-                                            To start chatting, you need to configure your AI provider API key.
-                                        </p>
-                                        <Link
-                                            to="/app/settings"
-                                            className="text-xs font-medium px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors inline-flex items-center gap-1.5"
-                                        >
-                                            <Settings className="w-3 h-3" />
-                                            Go to Settings
-                                        </Link>
-                                    </div>
+            <div className={`border-t border-border bg-app-surface/50 backdrop-blur-sm relative z-10 ${activeTab !== 'chat' ? 'hidden' : ''}`}>
+                <StatusBar />
+                <div className="p-2">
+                    {isConfigured === null ? (
+                        <div className="flex justify-center p-2">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary-muted" />
+                        </div>
+                    ) : isConfigured ? (
+                        <ChatInput onSend={onSend} draft={chatDraft} onDraftConsumed={onDraftConsumed} />
+                    ) : (
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                                <div>
+                                    <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                                        AI Not Configured
+                                    </h4>
+                                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-1 mb-3">
+                                        To start chatting, you need to configure your AI provider API key.
+                                    </p>
+                                    <Link
+                                        to="/app/settings"
+                                        className="text-xs font-medium px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors inline-flex items-center gap-1.5"
+                                    >
+                                        <Settings className="w-3 h-3" />
+                                        Go to Settings
+                                    </Link>
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }
