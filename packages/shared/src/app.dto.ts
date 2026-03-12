@@ -48,7 +48,6 @@ export interface SelectedQuery {
 }
 
 export interface PageArchitecture {
-    pageTitle: string;
     sections: LayoutSection[];
     selectedQueries: SelectedQuery[];
     architectureHints: string;
@@ -104,10 +103,9 @@ export interface PageMetadata {
 
 export interface PagePlan {
     pageName: string;
-    pageTitle: string;
     entityName: string | null;
     pageType: 'list' | 'detail';
-    primaryParameter: string | null;
+    pageTitle: string;
 }
 
 export interface SystemRequirmentItem {

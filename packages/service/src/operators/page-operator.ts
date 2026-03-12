@@ -2,11 +2,13 @@ import {
     type SaveSchemaPayload,
     LayoutCompiler,
     type PageMetadata,
-    type PageComponent
+    type PageComponent,
+    type PagePlan
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { UserVisibleError } from '../agent/user-visible-error';
+import type { PageArchitect } from 'src/agent/page-architect';
 
 export class PageOperator {
     constructor(
@@ -15,7 +17,7 @@ export class PageOperator {
     ) { }
 
     async savePlanAndUserInput(
-        plan: any,
+        plan: PagePlan,
         templateId: string,
         userInput: string,
         externalCookie: string
@@ -46,7 +48,7 @@ export class PageOperator {
         return newSchemaId;
     }
 
-    async saveArchitecture(schemaId: string, architecture: any, externalCookie: string): Promise<void> {
+    async saveArchitecture(schemaId: string, architecture: PageArchitect, externalCookie: string): Promise<void> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
             throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);
@@ -63,7 +65,6 @@ export class PageOperator {
             settings: {
                 page: {
                     ...pageSettings,
-                    title: architecture.pageTitle || pageSettings.title,
                     metadata: metadata,
                 }
             }

@@ -18,8 +18,6 @@
 - Use explicit names or conceptual matches.
 - If no entity is relevant, set `entityName` to `null` and provide a `reason` explaining why no entity matched the user's request.
 
-### Parameters 
-- **primaryParameter**: Define the dynamic placeholder name used in the path (e.g., `postId`).
 
 ## Final Output Protocol (STRICT JSON)
 Output ONLY a raw JSON object with this structure:
@@ -27,10 +25,9 @@ Output ONLY a raw JSON object with this structure:
 ```json
 {
   "pageName": "string",
-  "pageTitle": "string", // SEO-friendly title with Handlebars (e.g., "{{post.title}} - My Blog")
   "entityName": "string" | null,
   "pageType": "list" | "detail",
-  "primaryParameter": "string" | null,
+  "pageTitle": "string", // SEO-friendly title with Handlebars (e.g., "{{post.title}} - My Blog")
 }
 ```
 
