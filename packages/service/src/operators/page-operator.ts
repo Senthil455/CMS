@@ -3,12 +3,12 @@ import {
     LayoutCompiler,
     type PageMetadata,
     type PageComponent,
-    type PagePlanResponse
+    type PagePlanResponse,
+    type PageArchitecture
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
 import { UserVisibleError } from '../agent/user-visible-error';
-import type { PageArchitect } from 'src/agent/page-architect';
 
 export class PageOperator {
     constructor(
@@ -49,7 +49,7 @@ export class PageOperator {
         return newSchemaId;
     }
 
-    async saveArchitecture(schemaId: string, architecture: PageArchitect, externalCookie: string): Promise<void> {
+    async saveArchitecture(schemaId: string, architecture: PageArchitecture, externalCookie: string): Promise<void> {
         const schema = await this.cmsClient.getSchemaBySchemaId(externalCookie, schemaId);
         if (!schema || !schema.settings.page) {
             throw new UserVisibleError(`Page with schemaId ${schemaId} not found`);

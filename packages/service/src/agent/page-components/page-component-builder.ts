@@ -29,19 +29,23 @@ export class PageComponentBuilder implements Agent<PageComponent> {
             throw new UserVisibleError(`Page schema not found or missing metadata for ID: ${context.schemaId}`);
         }
 
-        const metadata = existingPageSchema.settings.page.metadata;
+        const page = existingPageSchema.settings.page;
+        const metadata = page.metadata;
         const componentId = context.metadata?.componentId as string;
         const instruction = metadata.architecture?.componentInstructions?.find(x => x.id == componentId)
 
         const templateStyle = metadata.templateId || '';
-        const stylePrompt = this.getStylePrompt ? await this.getStylePrompt(templateStyle, metadata.plan!.pageType) : '';
+        const stylePrompt = this.getStylePrompt ? await this.getStylePrompt(templateStyle, page.pageType ?? "") : '';
         const message = {
-            ...metadata.plan,
+            pageName: page.name,
+            pageTitle: page.title,
+            entityName: page.entityName ?? "",
+            pageType: page.pageType,
             "Architect INSTRUCTION": instruction,
             "DESIGN STYLE INSTRUCTION": stylePrompt,
             querys: await this.filterQuery(metadata, instruction!, context),
             existingHtml: metadata.components?.find(x => x.id == componentId)?.html,
-            snippet: this.snippet?.replace(/{{entityName}}/g, metadata.plan?.entityName ?? "")
+            snippet: this.snippet?.replace(/{{entityName}}/g, page.entityName ?? "")
         };
 
         await context.saveAgentMessage(`I am building component: ${instruction!.id} (${this.addonDef.label})`);

@@ -3,7 +3,7 @@ import {
     Trash2, Edit2, Layout, Sparkles, ChevronDown, Code,
     MessageSquarePlus, UserCircle, Eye, TrendingUp, Plus, Puzzle
 } from 'lucide-react';
-import { type PageDto, type PageMetadata, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
+import { type PageDto, type PageComponentDefinition, ENDPOINTS } from '@cms/shared';
 import axios from 'axios';
 import { HeaderLayout } from './HeaderLayout';
 // Icon lookup for dynamic addon rendering
@@ -40,15 +40,6 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [addons, setAddons] = useState<PageComponentDefinition[]>([]);
     const addMenuRef = useRef<HTMLDivElement>(null);
-
-    let metadata: PageMetadata = {};
-    try {
-        if (page.metadata) {
-            metadata = page.metadata;
-        }
-    } catch {
-        // ignore
-    }
 
     // Fetch available addons from backend
     useEffect(() => {
@@ -160,7 +151,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
                                     </button>
                                 );
                             })}
-                            
+
                             <div className="h-px bg-border my-1" />
                             <button
                                 onClick={handleAddCustomHtml}

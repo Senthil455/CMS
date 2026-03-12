@@ -33,7 +33,8 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
             throw new UserVisibleError("Schema not found or missing metadata for architecture planning.");
         }
 
-        const metadata = existingSchema.settings.page.metadata;
+        const page = existingSchema.settings.page;
+        const metadata = page.metadata;
         const actualUserInput = metadata.userInput || userInput;
         const existingArchitecture = metadata.architecture || {};
 
@@ -42,9 +43,12 @@ export class PageArchitect implements Agent<ArchitectDesignerAgentPlan> {
         const message = {
             "EXISTING STRUCTURE": existingArchitecture,
             "AVAILABLE QUERIES": queries.map(x => ({ name: x.name, source: x.settings.query?.source, arguments: x.settings.query?.variables })),
-            "AVAILABLE Components": PAGE_COMPONENT_REGISTRY.filter(x => x.pageTypes.includes(metadata.plan!.pageType!))
+            "AVAILABLE Components": PAGE_COMPONENT_REGISTRY.filter(x => x.pageTypes.includes(page.pageType || 'detail'))
                 .map(x => ({ id: x.id, label: x.label, desc: x.chatMessage })),
-            ...metadata.plan!
+            pageName: page.name,
+            pageTitle: page.title,
+            entityName: page.entityName ?? null,
+            pageType: page.pageType
         }
 
         const plan = await this.aiProvider.generate(
