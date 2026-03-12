@@ -39,6 +39,22 @@ export function PageEditSettings({ pageForm, onUpdateField }: PageEditSettingsPr
                         />
                     </div>
                 </FormField>
+                <FormField label="Page Type">
+                    <div className="flex rounded-lg overflow-hidden border border-border">
+                        {(['list', 'detail'] as const).map((type) => (
+                            <button
+                                key={type}
+                                type="button"
+                                onClick={() => onUpdateField('pageType', type)}
+                                className={`flex-1 py-2 text-sm font-bold capitalize transition-all ${pageForm.pageType === type
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'text-primary-muted hover:text-primary hover:bg-app-muted'}`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                </FormField>
             </div>
 
             <div className="mt-6 flex items-center justify-between p-4 bg-app/50 border border-border rounded-lg">

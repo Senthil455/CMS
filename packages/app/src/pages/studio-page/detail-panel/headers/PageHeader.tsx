@@ -81,8 +81,8 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
     };
 
     // Determine page type
-    const isDetailPage = metadata.plan?.pageType === 'detail';
-    const isListPage = metadata.plan?.pageType === 'list';
+    const isDetailPage = page.pageType === 'detail';
+    const isListPage = page.pageType === 'list';
     const currentPageType = isDetailPage ? 'detail' : isListPage ? 'list' : null;
 
     // Filter addons by current page type
@@ -90,7 +90,7 @@ export function PageHeader({ page, schemaId, publicationStatus, onDelete, onEdit
         ? addons.filter(a => a.pageTypes.includes(currentPageType as 'detail' | 'list'))
         : [];
 
-    const hasAddOptions = (availableAddons.length > 0 && metadata.plan?.entityName) || !!schemaId;
+    const hasAddOptions = (availableAddons.length > 0 && page.entityName) || !!schemaId;
 
     const handleAddCustomHtml = () => {
         setIsAddMenuOpen(false);

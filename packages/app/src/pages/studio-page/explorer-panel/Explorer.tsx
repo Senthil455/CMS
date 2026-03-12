@@ -112,6 +112,8 @@ export function Explorer({ onSelectItem, selectedItem, onChatAction, onClose, us
                         name: name,
                         title: name,
                         html: '',
+                        pageType: 'list',
+                        entityName: null,
                         metadata: {}
                     }
                 }

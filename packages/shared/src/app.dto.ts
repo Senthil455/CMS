@@ -5,6 +5,8 @@ export interface PageDto {
     title: string;
     html: string;
     metadata: PageMetadata;
+    entityName?: string | null;
+    pageType?: 'list' | 'detail';
 }
 
 export type ParsedPageDto = PageDto;
@@ -26,7 +28,7 @@ export type ModelSelection = string;
 
 export interface TemplateSelectionRequest {
     userInput: string;
-    plan: PagePlan;
+    plan: PagePlanResponse;
     templates: {
         id: string;
         name: string;
@@ -92,7 +94,6 @@ export interface PageComponent {
 }
 
 export interface PageMetadata {
-    plan?: PagePlan;
     architecture?: PageArchitecture;
     components?: PageComponent[];
     userInput?: string;
@@ -101,11 +102,12 @@ export interface PageMetadata {
     customHeader?: string;
 }
 
-export interface PagePlan {
+/** Ephemeral LLM output — maps to PageDto fields then discarded */
+export interface PagePlanResponse {
     pageName: string;
+    pageTitle: string;
     entityName: string | null;
     pageType: 'list' | 'detail';
-    pageTitle: string;
 }
 
 export interface SystemRequirmentItem {

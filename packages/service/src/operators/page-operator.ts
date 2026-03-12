@@ -3,7 +3,7 @@ import {
     LayoutCompiler,
     type PageMetadata,
     type PageComponent,
-    type PagePlan
+    type PagePlanResponse
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
@@ -17,13 +17,12 @@ export class PageOperator {
     ) { }
 
     async savePlanAndUserInput(
-        plan: PagePlan,
+        plan: PagePlanResponse,
         templateId: string,
         userInput: string,
         externalCookie: string
     ): Promise<string> {
-        const updatedMetadata = {
-            plan,
+        const metadata: PageMetadata = {
             templateId,
             userInput,
         };
@@ -35,8 +34,10 @@ export class PageOperator {
                 page: {
                     name: plan.pageName,
                     title: plan.pageTitle,
+                    entityName: plan.entityName,
+                    pageType: plan.pageType,
                     html: '',
-                    metadata: updatedMetadata,
+                    metadata,
                 }
             }
         };

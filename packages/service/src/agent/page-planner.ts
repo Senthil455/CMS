@@ -1,7 +1,7 @@
 import type { ServiceLogger } from '../types/logger';
 import { type AgentContext, type Agent, type ThinkResult, type ActResult, type FinalizeResult } from './chat-assistant';
 import { UserVisibleError } from './user-visible-error';
-import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlan, AGENT_NAMES } from '@cms/shared';
+import { type TemplateSelectionRequest, type TemplateSelectionResponse, type PagePlanResponse, AGENT_NAMES } from '@cms/shared';
 import type { AIProvider } from '../infrastructures/ai-provider.interface';
 import type { CmsClient } from '../infrastructures/cms-client';
 import { PageOperator } from '../operators/page-operator';
@@ -31,7 +31,7 @@ export class PagePlanner implements Agent<TemplateSelectionRequest> {
         }
         const developerMessage = JSON.stringify(messages);
 
-        const pagePlan: PagePlan = await this.aiProvider.generate(
+        const pagePlan: PagePlanResponse = await this.aiProvider.generate(
             this.plannerSystemPrompt,
             developerMessage,
             userInput,
