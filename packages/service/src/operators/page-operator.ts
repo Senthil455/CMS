@@ -98,7 +98,11 @@ export class PageOperator {
         // Compile final HTML from layout + components
         let compiledHtml = pageSettings.html;
         try {
-            compiledHtml = LayoutCompiler.compile(metadata.architecture?.sections || [], components, pageSettings.title, { enableVisitTrack: metadata.enableVisitTrack ?? false });
+            const compileOptions: any = { enableVisitTrack: metadata.enableVisitTrack ?? false };
+            if (metadata.customHeader) {
+                compileOptions.customHeader = metadata.customHeader;
+            }
+            compiledHtml = LayoutCompiler.compile(metadata.architecture?.sections || [], components, pageSettings.title, compileOptions);
         } catch (e) {
             throw new UserVisibleError("Failed to compile HTML layout from the generated components.");
         }

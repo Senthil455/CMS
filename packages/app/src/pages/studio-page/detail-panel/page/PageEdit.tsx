@@ -59,11 +59,15 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             // Compile the architecture into Tailwind Grid HTML if it exists
             if (pageForm.metadata?.architecture?.sections) {
                 const components = pageForm.metadata.components || [];
+                const compileOptions: any = { enableVisitTrack: pageForm.metadata.enableVisitTrack };
+                if (pageForm.metadata.customHeader) {
+                    compileOptions.customHeader = pageForm.metadata.customHeader;
+                }
                 htmlToSave = LayoutCompiler.compile(
                     pageForm.metadata.architecture.sections,
                     components,
                     pageForm.title,
-                    { enableVisitTrack: pageForm.metadata.enableVisitTrack }
+                    compileOptions
                 );
             }
 
@@ -114,11 +118,15 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
         // Auto-recompile HTML when title or metadata (e.g. tracking toggle) changes
         if ((field === 'title' || field === 'metadata') && updatedForm.metadata?.architecture?.sections) {
             const components = updatedForm.metadata.components || [];
+            const compileOptions: any = { enableVisitTrack: updatedForm.metadata.enableVisitTrack };
+            if (updatedForm.metadata.customHeader) {
+                compileOptions.customHeader = updatedForm.metadata.customHeader;
+            }
             updatedForm.html = LayoutCompiler.compile(
                 updatedForm.metadata.architecture.sections,
                 components,
                 updatedForm.title,
-                { enableVisitTrack: updatedForm.metadata.enableVisitTrack }
+                compileOptions
             );
         }
 

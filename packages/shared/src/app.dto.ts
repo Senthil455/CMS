@@ -99,6 +99,7 @@ export interface PageMetadata {
     userInput?: string;
     templateId?: string;
     enableVisitTrack?: boolean;
+    customHeader?: string;
 }
 
 export interface PagePlan {

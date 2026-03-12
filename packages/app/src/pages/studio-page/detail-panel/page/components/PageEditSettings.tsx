@@ -62,6 +62,27 @@ export function PageEditSettings({ pageForm, onUpdateField }: PageEditSettingsPr
                     <div className="w-9 h-5 bg-border rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
+
+            <div className="mt-6 p-4 bg-app/50 border border-border rounded-lg">
+                <div className="mb-3">
+                    <h4 className="text-sm font-medium text-primary">Custom Header (Scripts & Styles)</h4>
+                    <p className="text-xs text-primary-muted mt-1">
+                        Raw HTML injected verbatim into the <code>&lt;head&gt;</code> section during compilation. Useful for custom analytics, external scripts, or global styles.
+                    </p>
+                </div>
+                <textarea
+                    value={pageForm.metadata?.customHeader || ''}
+                    onChange={(e) => {
+                        const currentMetadata = pageForm.metadata || {};
+                        onUpdateField('metadata', {
+                            ...currentMetadata,
+                            customHeader: e.target.value
+                        });
+                    }}
+                    className="app-input w-full font-mono text-xs min-h-[120px] resize-y p-3"
+                    placeholder="<script src='https://example.com/script.js'></script>&#10;<style> body { color: red; } </style>"
+                />
+            </div>
         </section>
     );
 }

@@ -2,6 +2,7 @@ import type { LayoutSection, PageComponent } from '../app.dto.js';
 
 export interface CompileOptions {
     enableVisitTrack?: boolean;
+    customHeader?: string;
 }
 
 export class LayoutCompiler {
@@ -37,11 +38,12 @@ export class LayoutCompiler {
      */
     static compile(lsections: LayoutSection[], components: PageComponent[], title?: string, options?: CompileOptions): string {
         const body = this.compileBody(lsections, components);
+        const customHeader = options?.customHeader?.trim() ? `\n    ${options.customHeader}` : '';
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     ${this.buildHtmlHead(options)}
-    <title>${title || 'Page'}</title>
+    <title>${title || 'Page'}</title>${customHeader}
 </head>
 <body>
 ${body}

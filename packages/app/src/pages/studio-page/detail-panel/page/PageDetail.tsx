@@ -100,11 +100,15 @@ export const PageDetail = forwardRef<PageDetailRef, PageDetailProps>(({ schema, 
 
             // Recompile HTML
             let htmlToSave = updatedSchema.settings.page.html;
+            const compileOptions1: any = { enableVisitTrack: metadata.enableVisitTrack };
+            if (metadata.customHeader) {
+                compileOptions1.customHeader = metadata.customHeader;
+            }
             htmlToSave = LayoutCompiler.compile(
                 metadata.architecture.sections,
                 metadata.components,
                 updatedSchema.settings.page.title,
-                { enableVisitTrack: metadata.enableVisitTrack }
+                compileOptions1
             );
 
             const payload: SaveSchemaPayload = {
@@ -171,11 +175,15 @@ export const PageDetail = forwardRef<PageDetailRef, PageDetailProps>(({ schema, 
             // Recompile HTML to reflect the removal
             let htmlToSave = updatedSchema.settings.page.html;
             if (metadata.architecture?.sections) {
+                const compileOptions2: any = { enableVisitTrack: metadata.enableVisitTrack };
+                if (metadata.customHeader) {
+                    compileOptions2.customHeader = metadata.customHeader;
+                }
                 htmlToSave = LayoutCompiler.compile(
                     metadata.architecture.sections,
                     metadata.components || [],
                     updatedSchema.settings.page.title,
-                    { enableVisitTrack: metadata.enableVisitTrack }
+                    compileOptions2
                 );
             }
 
