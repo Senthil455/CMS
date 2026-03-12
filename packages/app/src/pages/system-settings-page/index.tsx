@@ -9,6 +9,8 @@ import { AddSpaSettings } from './components/AddSpaSettings';
 import { CorsSettings } from './components/CorsSettings';
 import { StyleSettings } from './components/StyleSettings';
 
+declare const __APP_BUILD_TIMESTAMP__: string;
+
 type SettingsTab = 'database' | 'admin' | 'ai' | 'spa' | 'cors' | 'styles';
 
 interface NavItem {
@@ -92,6 +94,12 @@ export default function SystemSettingsPage() {
                             </button>
                         ))}
                     </nav>
+
+                    <div className="p-4 border-t border-border mt-auto shrink-0">
+                        <div className="text-[10px] text-primary-muted text-center font-mono opacity-50">
+                            Build: {new Date(__APP_BUILD_TIMESTAMP__).toLocaleString()}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Right settings panel */}
