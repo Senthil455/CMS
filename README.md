@@ -67,7 +67,7 @@ Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from
 
 The easiest way to get CMS running. **No backend setup, no .NET, no database installation required.**
 
-> **🟢 Don't want to install?** Try the [live demo](https://example.com/app) instantly — login: `admin@example.com` / `Admin1!`
+> **🟢 Don't want to install?** Try the [live demo](https://senthil455.github.io/CMS/app) instantly — login: `admin@example.com` / `Admin1!`
 
 Pull and run from [Docker Hub](https://hub.docker.com/r/senthil455/cms-mono):
 
