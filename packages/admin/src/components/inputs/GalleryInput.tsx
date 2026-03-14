@@ -35,7 +35,9 @@ export function GalleryInput(props: GalleryInputProps) {
 
     return <InputPanel  {...props} childComponent={(field: any) => {
         const [activeIndex, setActiveIndex] = useState(0)
-        const paths: string[] = field.value ?? [];
+        // Force array type in case the backend or AI generated a string
+        const rawValue = field.value;
+        const paths: string[] = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
         const setPaths = (newPaths: string[]) => {
             setActiveIndex(0);
             field.onChange(newPaths);

@@ -1,16 +1,14 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { deleteItem, updateItem, useItemData, savePublicationSettings, aiGenerateData, fetchAiProviders } from "../services/entity";
+import { useAiGenerate } from "../hooks/useAiGenerate";
 import { Picklist } from "../containers/Picklist";
 import { useCheckError } from "../../hooks/useCheckError";
-import { createConfirm } from "../../hooks/createConfirm";
-import { FetchingStatus } from "../../containers/FetchingStatus";
 import { EditTable } from "../containers/EditTable";
 import { TreeContainer } from "../containers/TreeContainer";
 import { SetPublishStatusDialog } from "../containers/PublishDialog";
+import { createConfirm } from "../../hooks/createConfirm";
+import { FetchingStatus } from "../../containers/FetchingStatus";
 import { Dialog } from "primereact/dialog";
-import { Dropdown } from "primereact/dropdown";
-import { InputTextarea } from "primereact/inputtextarea";
-import { Button } from "primereact/button";
 import { DefaultAttributeNames } from "../types/defaultAttributeNames";
 import { PublicationStatus } from "../types/publicationStatus";
 import { SpecialQueryKeys } from "../types/specialQueryKeys";
@@ -124,7 +122,18 @@ export function useDataItemPage(
         const getCmsAssetUrl = useGetCmsAssetsUrl();
         const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
         const { register, handleSubmit, control, setValue, getValues } = useForm();
-        const { AiGenerateDialog } = useAiGenerate(schema, getValues, data, mutate);
+        const { AiGenerateDialog } = useAiGenerate(
+            schema, 
+            getValues, 
+            (generatedFields) => {
+                mutate({ ...data, ...generatedFields }, false);
+            },
+            handleErrorOrSuccess, 
+            CheckErrorStatus,
+            pageConfig,
+            visible,
+            setVisible
+        );
 
         async function onSubmit(formData: any) {
             formData[schema.primaryKey] = id
@@ -282,95 +291,5 @@ export function useDataItemPage(
         }
 
         return { handleDelete, ConfirmDelete, CheckDeleteStatus }
-    }
-
-    function useAiGenerate(schema: XEntity, getValues: any, data: any, mutate: any) {
-
-        const [loading, setLoading] = useState(false);
-        const [models, setModels] = useState<string[]>([]);
-        const [selectedModel, setSelectedModel] = useState<string | null>(null);
-        const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
-
-        const [requirement, setRequirement] = useState('');
-
-        const loadModels = async () => {
-            const list = await fetchAiProviders();
-            setModels(list);
-            if (list.length > 0 && !selectedModel) {
-                setSelectedModel(list[0]);
-            }
-        };
-
-        const handleGenerate = async () => {
-            setLoading(true);
-            try {
-                const currentData = getValues();
-                const { error, data: resData } = await aiGenerateData(schema.name, requirement, currentData, selectedModel ?? undefined);
-
-                await handleErrorOrSuccess(error, 'AI generation complete', () => {
-                    if (resData?.data) {
-                        const generatedFields = resData.data;
-                        mutate({ ...data, ...generatedFields }, false);
-                    }
-                    setVisible(false);
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const AiGenerateDialog = () => (
-            <Dialog
-                header={pageConfig.aiGenerateDialogHeader}
-                visible={visible}
-                style={{ width: '50vw' }}
-                onHide={() => {
-                    setRequirement('');
-                    setVisible(false)
-                }}
-                onShow={loadModels}
-            >
-                <CheckErrorStatus />
-                <div className="flex flex-column gap-2 mb-4">
-                    <label htmlFor="modelSelection" className="font-bold">{pageConfig.aiGenerateModelLabel}</label>
-                    <Dropdown
-                        id="modelSelection"
-                        value={selectedModel}
-                        options={models}
-                        onChange={(e) => setSelectedModel(e.value)}
-                        placeholder="Select a model"
-                        disabled={models.length === 0}
-                    />
-                </div>
-                <div className="flex flex-column gap-2 mb-4">
-                    <label htmlFor="requirement" className="font-bold">Requirement</label>
-                    <InputTextarea
-                        id="requirement"
-                        value={requirement}
-                        onChange={(e) => setRequirement(e.target.value)}
-                        rows={5}
-                        placeholder={pageConfig.aiGenerateRequirementPlaceholder}
-                        autoResize
-                    />
-                </div>
-                <div className="flex justify-content-end gap-2">
-                    <Button
-                        label={pageConfig.cancelButtonText}
-                        icon="pi pi-times"
-                        outlined
-                        onClick={() => setVisible(false)}
-                        disabled={loading}
-                    />
-                    <Button
-                        label={pageConfig.aiGenerateButtonText}
-                        icon="pi pi-sparkles"
-                        onClick={handleGenerate}
-                        loading={loading}
-                    />
-                </div>
-            </Dialog>
-        );
-
-        return { AiGenerateDialog };
     }
 }

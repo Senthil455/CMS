@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ButtonGroup } from "primereact/buttongroup";
 import { Button } from "primereact/button";
 import { GlobalStateKeys, useGlobalState, useLanguage } from "../../globalState";
@@ -66,7 +67,10 @@ export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRout
     } = useDataItemPage(componentConfig, schema, baseRouter, lan === 'en' ? undefined : cnPageConfig);
 
     const [_, setHeader] = useGlobalState<string>(GlobalStateKeys.Header, '');
-    setHeader(schema.displayName);
+
+    useEffect(() => {
+        setHeader(schema.displayName);
+    }, [schema.displayName, setHeader]);
     return (
         <>
             <br />
