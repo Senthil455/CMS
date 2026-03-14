@@ -124,7 +124,7 @@ export function useDataItemPage(
         const getCmsAssetUrl = useGetCmsAssetsUrl();
         const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
         const { register, handleSubmit, control, setValue, getValues } = useForm();
-        const { AiGenerateDialog } = useAiGenerate(schema, getValues, setValue);
+        const { AiGenerateDialog } = useAiGenerate(schema, getValues, data, mutate);
 
         async function onSubmit(formData: any) {
             formData[schema.primaryKey] = id
@@ -284,7 +284,7 @@ export function useDataItemPage(
         return { handleDelete, ConfirmDelete, CheckDeleteStatus }
     }
 
-    function useAiGenerate(schema: XEntity, getValues: any, setValue: any) {
+    function useAiGenerate(schema: XEntity, getValues: any, data: any, mutate: any) {
 
         const [loading, setLoading] = useState(false);
         const [models, setModels] = useState<string[]>([]);
@@ -310,16 +310,7 @@ export function useDataItemPage(
                 await handleErrorOrSuccess(error, 'AI generation complete', () => {
                     if (resData?.data) {
                         const generatedFields = resData.data;
-                        console.log(generatedFields);
-                        Object.keys(generatedFields).forEach(key => {
-                            if (generatedFields[key] !== undefined && generatedFields[key] !== null) {
-                                setValue(key, generatedFields[key], {
-                                    shouldDirty: true,
-                                    shouldTouch: true,
-                                    shouldValidate: true
-                                });
-                            }
-                        });
+                        mutate({ ...data, ...generatedFields }, false);
                     }
                     setVisible(false);
                 });
