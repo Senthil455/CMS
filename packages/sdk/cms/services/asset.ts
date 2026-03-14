@@ -54,3 +54,7 @@ export function deleteAsset(id: number) {
 export function updateAssetMeta(asset: any) {
     return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.META), asset))
 }
+
+export function downloadVideo(url: string) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.VIDEO), { url }))
+}

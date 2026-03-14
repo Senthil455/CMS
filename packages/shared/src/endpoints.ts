@@ -46,6 +46,7 @@ export const ENDPOINTS = {
         INFO: '/api/assets/base',
         DELETE: '/api/assets/delete/:id/',
         META: '/api/assets/meta/',
+        VIDEO: '/api/assets/video',
     },
     TASKS: {
         ENTITY: '/api/tasks/entity',
