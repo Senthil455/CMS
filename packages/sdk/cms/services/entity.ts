@@ -75,3 +75,20 @@ export function useLookupData(schemaName: string, query: string) {
     let res = useSWR<LookupListResponse>(fullCmsApiUrl(`${ENDPOINTS.ENTITIES.LOOKUP.replace(':schemaName', schemaName)}?query=${encodeURIComponent(query)}`), fetcher, swrConfig);
     return { ...res, error: decodeError(res.error) }
 }
+
+export async function fetchAiProviders(): Promise<string[]> {
+    const res = await catchResponse(() => axios.get<{ success: boolean; data: string[] }>(fullCmsApiUrl(ENDPOINTS.AI.PROVIDERS)));
+    return res.data?.data ?? [];
+}
+
+export async function aiGenerateData(schemaName: string, requirement: string, currentData: any, modelSelection?: string) {
+    return catchResponse(() => axios.post<{ success: boolean; data: Record<string, any> }>(
+        fullCmsApiUrl(ENDPOINTS.AI.GENERATE_DATA), 
+        {
+            entityName: schemaName,
+            requirement,
+            existingData: currentData,
+            modelSelection,
+        }
+    ))
+}

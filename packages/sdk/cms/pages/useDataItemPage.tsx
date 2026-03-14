@@ -1,25 +1,29 @@
-import {useNavigate, useParams} from "react-router-dom";
-import {deleteItem, updateItem, useItemData, savePublicationSettings} from "../services/entity";
-import {Picklist} from "../containers/Picklist";
-import {useCheckError} from "../../hooks/useCheckError";
-import {createConfirm} from "../../hooks/createConfirm";
-import {FetchingStatus} from "../../containers/FetchingStatus";
-import {EditTable} from "../containers/EditTable";
-import {TreeContainer} from "../containers/TreeContainer";
-import {SetPublishStatusDialog} from "../containers/PublishDialog";
-import {DefaultAttributeNames} from "../types/defaultAttributeNames";
-import {PublicationStatus} from "../types/publicationStatus";
-import {SpecialQueryKeys} from "../types/specialQueryKeys";
-import {getFileUploadURL, useGetCmsAssetsUrl} from "../services/asset";
-import {DefaultColumnNames} from "../types/defaultColumnNames";
-import {useState} from "react";
-import {getInputAttrs} from "../../types/attrUtils";
-import {createInput} from "../containers/createInput";
-import {useForm} from "react-hook-form";
-import {ArrayToObject} from "../../types/formatter";
-import {CmsComponentConfig} from "../cmsComponentConfig";
-import {XEntity} from "../../types/xEntity";
-import {GeneralComponentConfig} from "../../ComponentConfig";
+import { useNavigate, useParams } from "react-router-dom";
+import { deleteItem, updateItem, useItemData, savePublicationSettings, aiGenerateData, fetchAiProviders } from "../services/entity";
+import { Picklist } from "../containers/Picklist";
+import { useCheckError } from "../../hooks/useCheckError";
+import { createConfirm } from "../../hooks/createConfirm";
+import { FetchingStatus } from "../../containers/FetchingStatus";
+import { EditTable } from "../containers/EditTable";
+import { TreeContainer } from "../containers/TreeContainer";
+import { SetPublishStatusDialog } from "../containers/PublishDialog";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Button } from "primereact/button";
+import { DefaultAttributeNames } from "../types/defaultAttributeNames";
+import { PublicationStatus } from "../types/publicationStatus";
+import { SpecialQueryKeys } from "../types/specialQueryKeys";
+import { getFileUploadURL, useGetCmsAssetsUrl } from "../services/asset";
+import { DefaultColumnNames } from "../types/defaultColumnNames";
+import { useState } from "react";
+import { getInputAttrs } from "../../types/attrUtils";
+import { createInput } from "../containers/createInput";
+import { useForm } from "react-hook-form";
+import { ArrayToObject } from "../../types/formatter";
+import { CmsComponentConfig } from "../cmsComponentConfig";
+import { XEntity } from "../../types/xEntity";
+import { GeneralComponentConfig } from "../../ComponentConfig";
 
 export interface DataItemPageConfig {
     saveSuccess: string;
@@ -37,6 +41,10 @@ export interface DataItemPageConfig {
     cancelButtonText: string,
     submitButtonText: string,
     publishAtHeader: string,
+    aiGenerateDialogHeader: string,
+    aiGenerateRequirementPlaceholder: string,
+    aiGenerateButtonText: string,
+    aiGenerateModelLabel: string,
 }
 
 export function getDefaultDataItemPageConfig(): DataItemPageConfig {
@@ -50,10 +58,13 @@ export function getDefaultDataItemPageConfig(): DataItemPageConfig {
         publishDialogHeader: "Publish",
         scheduleSuccess: "Schedule Succeed",
         scheduleDialogHeader: "Schedule",
-
         cancelButtonText: "Cancel",
         submitButtonText: "Save",
         publishAtHeader: "Publish At",
+        aiGenerateDialogHeader: "AI Generate Content",
+        aiGenerateRequirementPlaceholder: "What kind of data do you want to generate?",
+        aiGenerateButtonText: "Generate",
+        aiGenerateModelLabel: "Model",
     }
 }
 
@@ -63,8 +74,8 @@ export function useDataItemPage(
     baseRouter: string,
     pageConfig: DataItemPageConfig = getDefaultDataItemPageConfig(),
 ) {
-    const {id} = useParams()
-    const {data, error, isLoading, mutate} = useItemData(schema.name, id)
+    const { id } = useParams()
+    const { data, error, isLoading, mutate } = useItemData(schema.name, id)
     const previewUrl = getPreviewUrl();
     const navigate = useNavigate();
     const currentUrl = `${baseRouter}/${schema.name}/${id}`;
@@ -76,8 +87,16 @@ export function useDataItemPage(
     const publishProps = usePublish(data, schema, mutate);
     const scheduleProps = useSchedule(data, schema, mutate);
     const unpublishProps = useUnpublish(data, schema, mutate);
+
+    const [visible, setVisible] = useState(false);
+    const handleShowAiGenerate = () => {
+        setVisible(true);
+    };
+
+
     return {
         formId,
+        handleShowAiGenerate,
         showUnpublish,
         previewUrl,
         handleGoBack,
@@ -103,8 +122,9 @@ export function useDataItemPage(
         const trees = schema.attributes.filter(x => x.displayType == 'tree');
         const inputAttrs = getInputAttrs(schema.attributes);
         const getCmsAssetUrl = useGetCmsAssetsUrl();
-        const {handleErrorOrSuccess, CheckErrorStatus} = useCheckError(componentConfig);
-        const {register, handleSubmit, control} = useForm();
+        const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
+        const { register, handleSubmit, control, setValue, getValues } = useForm();
+        const { AiGenerateDialog } = useAiGenerate(schema, getValues, setValue);
 
         async function onSubmit(formData: any) {
             formData[schema.primaryKey] = id
@@ -114,15 +134,16 @@ export function useDataItemPage(
                 formData[a.field] = ArrayToObject(formData[a.field]);
             });
 
-            const {error} = await updateItem(schema.name, formData)
+            const { error } = await updateItem(schema.name, formData)
             await handleErrorOrSuccess(error, pageConfig.saveSuccess, mutate)
         }
 
         return <>
             <FetchingStatus isLoading={isLoading} error={error} componentConfig={componentConfig} />
-            <div><CheckErrorStatus/></div>
+            <div><CheckErrorStatus /></div>
             {data && <div className="grid">
                 <div className={`col-12 md:col-12 lg:${trees.length > 0 ? "col-9" : "col-12"}`}>
+
                     <form onSubmit={handleSubmit(onSubmit)} id={formId}>
                         <div className="formgrid grid">
                             {
@@ -140,28 +161,31 @@ export function useDataItemPage(
                             }
                         </div>
                     </form>
+
+                    {AiGenerateDialog()}
+
                     {
                         (schema?.attributes?.filter(attr =>
-                            attr.displayType ==='picklist'
+                            attr.displayType === 'picklist'
                             || attr.displayType == 'editTable') ?? []).map((column) => {
-                            const props = {
-                                schema,
-                                data,
-                                column,
-                                getFullAssetsURL: getCmsAssetUrl,
-                                baseRouter,
-                                inputConfig: componentConfig
-                            }
-                            if (column.displayType === 'picklist') {
-                            }
-                            return <div key={column.field}>
-                                <hr/>
-                                {column.displayType === 'picklist' &&
-                                    <Picklist key={column.field} {...props} componentConfig={componentConfig}/>}
-                                {column.displayType === 'editTable' &&
-                                    <EditTable key={column.field} {...props} componentConfig={componentConfig} currentUrl={currentUrl}/>}
-                            </div>
-                        })
+                                const props = {
+                                    schema,
+                                    data,
+                                    column,
+                                    getFullAssetsURL: getCmsAssetUrl,
+                                    baseRouter,
+                                    inputConfig: componentConfig
+                                }
+                                if (column.displayType === 'picklist') {
+                                }
+                                return <div key={column.field}>
+                                    <hr />
+                                    {column.displayType === 'picklist' &&
+                                        <Picklist key={column.field} {...props} componentConfig={componentConfig} />}
+                                    {column.displayType === 'editTable' &&
+                                        <EditTable key={column.field} {...props} componentConfig={componentConfig} currentUrl={currentUrl} />}
+                                </div>
+                            })
                     }
                 </div>
                 {
@@ -170,8 +194,8 @@ export function useDataItemPage(
                             trees.map((column) => {
                                 return <div key={column.field}>
                                     <TreeContainer key={column.field} entity={schema} data={data}
-                                                   componentConfig={componentConfig} column={column}></TreeContainer>
-                                    <hr/>
+                                        componentConfig={componentConfig} column={column}></TreeContainer>
+                                    <hr />
                                 </div>
                             })
                         }
@@ -201,7 +225,7 @@ export function useDataItemPage(
                 newStatus={PublicationStatus.Published}
                 setVisible={setVisible}
             />
-        return {handleShowPublish, PublishDialog}
+        return { handleShowPublish, PublishDialog }
     }
 
     function useSchedule(data: any, schema: XEntity, mutate: any) {
@@ -224,39 +248,138 @@ export function useDataItemPage(
                 newStatus={PublicationStatus.Scheduled}
                 setVisible={setVisible}
             />
-        return {handleShowSchedule, ScheduleDialog}
+        return { handleShowSchedule, ScheduleDialog }
     }
 
     function useUnpublish(data: any, schema: XEntity, mutate: any) {
-        const {handleErrorOrSuccess, CheckErrorStatus: CheckUnpublishStatus} = useCheckError(componentConfig);
+        const { handleErrorOrSuccess, CheckErrorStatus: CheckUnpublishStatus } = useCheckError(componentConfig);
 
         async function onUnpublish() {
             const formData: any = {}
             formData[schema.primaryKey] = data[schema.primaryKey];
             formData[DefaultAttributeNames.PublicationStatus] = PublicationStatus.Unpublished;
 
-            const {error} = await savePublicationSettings(schema.name, formData)
+            const { error } = await savePublicationSettings(schema.name, formData)
             await handleErrorOrSuccess(error, pageConfig.unPublishSuccess, mutate)
         }
 
-        return {onUnpublish, CheckUnpublishStatus}
+        return { onUnpublish, CheckUnpublishStatus }
     }
 
     function useDelete(baseRouter: string, schema: XEntity, data: any) {
         const refUrl = new URLSearchParams(location.search).get("ref");
-        const {confirm, Confirm: ConfirmDelete} = createConfirm(`dataItemPage${schema.name}`, componentConfig);
-        const {handleErrorOrSuccess, CheckErrorStatus: CheckDeleteStatus} = useCheckError(componentConfig);
+        const { confirm, Confirm: ConfirmDelete } = createConfirm(`dataItemPage${schema.name}`, componentConfig);
+        const { handleErrorOrSuccess, CheckErrorStatus: CheckDeleteStatus } = useCheckError(componentConfig);
 
         async function handleDelete() {
             const label = data ? data[schema.labelAttributeName] : "";
             confirm(pageConfig.deleteConfirm(label), pageConfig.deleteConfirmHeader, async () => {
-                const {error} = await deleteItem(schema.name, data)
+                const { error } = await deleteItem(schema.name, data)
                 await handleErrorOrSuccess(error, pageConfig.deleteSuccess, () => {
                     window.location.href = refUrl ?? `${baseRouter}/${schema.name}`
                 });
             })
         }
 
-        return {handleDelete, ConfirmDelete, CheckDeleteStatus}
+        return { handleDelete, ConfirmDelete, CheckDeleteStatus }
+    }
+
+    function useAiGenerate(schema: XEntity, getValues: any, setValue: any) {
+
+        const [loading, setLoading] = useState(false);
+        const [models, setModels] = useState<string[]>([]);
+        const [selectedModel, setSelectedModel] = useState<string | null>(null);
+        const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
+
+        const [requirement, setRequirement] = useState('');
+
+        const loadModels = async () => {
+            const list = await fetchAiProviders();
+            setModels(list);
+            if (list.length > 0 && !selectedModel) {
+                setSelectedModel(list[0]);
+            }
+        };
+
+        const handleGenerate = async () => {
+            setLoading(true);
+            try {
+                const currentData = getValues();
+                const { error, data: resData } = await aiGenerateData(schema.name, requirement, currentData, selectedModel ?? undefined);
+
+                await handleErrorOrSuccess(error, 'AI generation complete', () => {
+                    if (resData?.data) {
+                        const generatedFields = resData.data;
+                        console.log(generatedFields);
+                        Object.keys(generatedFields).forEach(key => {
+                            if (generatedFields[key] !== undefined && generatedFields[key] !== null) {
+                                setValue(key, generatedFields[key], {
+                                    shouldDirty: true,
+                                    shouldTouch: true,
+                                    shouldValidate: true
+                                });
+                            }
+                        });
+                    }
+                    setVisible(false);
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const AiGenerateDialog = () => (
+            <Dialog
+                header={pageConfig.aiGenerateDialogHeader}
+                visible={visible}
+                style={{ width: '50vw' }}
+                onHide={() => {
+                    setRequirement('');
+                    setVisible(false)
+                }}
+                onShow={loadModels}
+            >
+                <CheckErrorStatus />
+                <div className="flex flex-column gap-2 mb-4">
+                    <label htmlFor="modelSelection" className="font-bold">{pageConfig.aiGenerateModelLabel}</label>
+                    <Dropdown
+                        id="modelSelection"
+                        value={selectedModel}
+                        options={models}
+                        onChange={(e) => setSelectedModel(e.value)}
+                        placeholder="Select a model"
+                        disabled={models.length === 0}
+                    />
+                </div>
+                <div className="flex flex-column gap-2 mb-4">
+                    <label htmlFor="requirement" className="font-bold">Requirement</label>
+                    <InputTextarea
+                        id="requirement"
+                        value={requirement}
+                        onChange={(e) => setRequirement(e.target.value)}
+                        rows={5}
+                        placeholder={pageConfig.aiGenerateRequirementPlaceholder}
+                        autoResize
+                    />
+                </div>
+                <div className="flex justify-content-end gap-2">
+                    <Button
+                        label={pageConfig.cancelButtonText}
+                        icon="pi pi-times"
+                        outlined
+                        onClick={() => setVisible(false)}
+                        disabled={loading}
+                    />
+                    <Button
+                        label={pageConfig.aiGenerateButtonText}
+                        icon="pi pi-sparkles"
+                        onClick={handleGenerate}
+                        loading={loading}
+                    />
+                </div>
+            </Dialog>
+        );
+
+        return { AiGenerateDialog };
     }
 }

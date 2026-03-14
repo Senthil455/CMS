@@ -1,6 +1,6 @@
 import { ButtonGroup } from "primereact/buttongroup";
 import { Button } from "primereact/button";
-import {GlobalStateKeys, useGlobalState, useLanguage} from "../../globalState";
+import { GlobalStateKeys, useGlobalState, useLanguage } from "../../globalState";
 import { cnComponentConfig } from "../../types/cnComponentConfig";
 import { XEntity, useDataItemPage, DataItemPageConfig, ComponentConfig } from "@cms/sdk";
 import { getDefaultComponentConfig } from "../../getDefaultComponentConfig";
@@ -13,7 +13,8 @@ const languageConfig = {
         publishUpdate: "Publish / Update Publish Time",
         scheduleReschedule: "Schedule / Reschedule",
         unpublish: "Unpublish",
-        preview: "Preview"
+        preview: "Preview",
+        aiGenerate: "AI Generate"
     },
     cn: {
         save: "保存",
@@ -22,7 +23,8 @@ const languageConfig = {
         publishUpdate: "发布 / 更新发布时间",
         scheduleReschedule: "预约发布 / 更新预约发布时间",
         unpublish: "取消发布",
-        preview: "预览"
+        preview: "预览",
+        aiGenerate: "AI 生成"
     }
 };
 
@@ -38,7 +40,11 @@ const cnPageConfig: DataItemPageConfig = {
     scheduleDialogHeader: "预约",
     scheduleSuccess: "预约成功",
     submitButtonText: "提交",
-    unPublishSuccess: "成功取消发布"
+    unPublishSuccess: "成功取消发布",
+    aiGenerateDialogHeader: "AI 生成内容",
+    aiGenerateRequirementPlaceholder: "您想要生成什么样的数据？",
+    aiGenerateButtonText: "智能生成",
+    aiGenerateModelLabel: "模型",
 };
 
 export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRouter: string }) {
@@ -49,6 +55,7 @@ export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRout
     const {
         formId,
         showUnpublish,
+        handleShowAiGenerate,
         previewUrl,
         deleteProps: { handleDelete, ConfirmDelete, CheckDeleteStatus },
         handleGoBack,
@@ -58,7 +65,7 @@ export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRout
         DataItemPageMain,
     } = useDataItemPage(componentConfig, schema, baseRouter, lan === 'en' ? undefined : cnPageConfig);
 
-    const [_, setHeader] = useGlobalState<string>( GlobalStateKeys.Header, '');
+    const [_, setHeader] = useGlobalState<string>(GlobalStateKeys.Header, '');
     setHeader(schema.displayName);
     return (
         <>
@@ -83,8 +90,9 @@ export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRout
                     icon="pi pi-chevron-left"
                     onClick={handleGoBack}
                 />
-            </ButtonGroup>
 
+            </ButtonGroup>
+            <span>&nbsp;</span>
             <ButtonGroup>
                 <Button
                     type="button"
@@ -108,10 +116,22 @@ export function DataItemPage({ schema, baseRouter }: { schema: XEntity; baseRout
                 )}
             </ButtonGroup>
 
+            <span>&nbsp;</span>
+            <ButtonGroup>
+                <Button
+                    type="button"
+                    label={langTexts.aiGenerate}
+                    icon="pi pi-sparkles"
+                    severity="info"
+                    outlined
+                    onClick={handleShowAiGenerate}
+                />
+            </ButtonGroup>
             {previewUrl && (
                 <Button
                     type="button"
                     label={langTexts.preview}
+                    outlined
                     onClick={() => window.location.href = previewUrl}
                 />
             )}
