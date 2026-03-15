@@ -19,6 +19,20 @@
   --sage-dark: #3a5a42;
   --stone-light: #f0ede8;
   --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.4);
+}
+
+.bg-glass {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.backdrop-blur-zen {
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+}
+
+.shadow-zen {
+  box-shadow: 0 8px 32px 0 rgba(106, 135, 115, 0.08);
 }
 
 * {

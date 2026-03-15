@@ -10,7 +10,9 @@ import { ContentViewer } from '@/components/ContentViewer'
 import { CacheStats } from '@/components/CacheStats'
 import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'
+import { TopBar } from '@/components/TopBar'
 import { AudioPlayer } from '@/components/AudioPlayer'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useUserInfo, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
 import axios from 'axios'
 import LoginPage from './pages/LoginPage'
@@ -24,7 +26,10 @@ import './App.css'
 const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? '';
 setAuthApiBaseUrl(apiBaseUrl);
 setActivityBaseUrl(apiBaseUrl);
+import { setCmsApiBaseUrl } from "@cms/sdk";
+setCmsApiBaseUrl(apiBaseUrl);
 axios.defaults.withCredentials = true;
+
 
 function AppContent() {
   const { data: userInfo, isLoading: isUserLoading } = useUserInfo()
@@ -107,23 +112,54 @@ function AppContent() {
         />
 
         <main className="page-container">
-          <header style={{ marginBottom: '24px' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--sage-dark)' }}>
-              Stash
-            </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Your offline content repository
-            </p>
-          </header>
+          <TopBar />
 
-          <Routes>
-            <Route path="/login" element={<Navigate to="/explore" replace />} />
-            <Route path="/" element={<Navigate to="/explore" replace />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/bookmarks" element={<BookmarksPage />} />
-            <Route path="/assets" element={<AssetsPage />} />
-            <Route path="/offline" element={<OfflinePage />} />
-          </Routes>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/login" element={<Navigate to="/explore" replace />} />
+              <Route path="/" element={<Navigate to="/explore" replace />} />
+              <Route path="/explore" element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ExplorePage />
+                </motion.div>
+              } />
+              <Route path="/bookmarks" element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <BookmarksPage />
+                </motion.div>
+              } />
+              <Route path="/assets" element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <AssetsPage />
+                </motion.div>
+              } />
+              <Route path="/offline" element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <OfflinePage />
+                </motion.div>
+              } />
+            </Routes>
+          </AnimatePresence>
         </main>
 
         <BottomNav />

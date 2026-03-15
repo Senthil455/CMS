@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLoginPage } from "@cms/sdk";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, LogIn, Github, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 interface LoginPageProps {
   baseRouter: string;
@@ -15,11 +15,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ baseRouter }) => {
     password,
     setPassword,
     handleLogin,
-    handleGitHubLogin,
     registerLink
   } = useLoginPage(baseRouter);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const onLoginClick = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,106 +31,195 @@ export const LoginPage: React.FC<LoginPageProps> = ({ baseRouter }) => {
     }
   };
 
-  const onDemoClick = () => {
-    setUsernameOrEmail('admin@example.com');
-    setPassword('Admin1!');
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '0.6rem 0.75rem',
+    borderRadius: '10px',
+    border: '1px solid var(--sage-light)',
+    background: 'rgba(255,255,255,0.6)',
+    fontSize: '0.8rem',
+    fontFamily: 'inherit',
+    color: 'var(--text-main)',
+    outline: 'none',
+    transition: 'border-color 0.2s',
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-8 zen-gradient-bg font-outfit">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-[420px] p-10 flex flex-col gap-8 rounded-[32px] shadow-zen bg-glass backdrop-blur-zen border border-glass-border"
+    <div className="flex justify-center items-center min-h-screen p-4 zen-gradient-bg font-outfit">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        style={{
+          width: '100%',
+          maxWidth: '340px',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          border: '1px solid rgba(255,255,255,0.6)',
+        }}
       >
-        <div className="text-center">
-          <h1 className="text-[2rem] font-extrabold text-sage-dark mb-2 tracking-tight">Welcome Back</h1>
-          <p className="text-gray-500 text-[0.95rem] font-medium">Sign in to your stash</p>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🧘</div>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--sage-dark)', margin: 0 }}>
+            Welcome Back
+          </h2>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+            Sign in to access your stash
+          </p>
         </div>
 
-        <form onSubmit={onLoginClick} className="flex flex-col gap-6">
+        {/* Tabs - Mocking Zen's tab switcher but linking to register for Sign Up */}
+        <div style={{
+          display: 'flex',
+          gap: '0.25rem',
+          marginBottom: '1rem',
+          background: 'var(--sage-light)',
+          borderRadius: '10px',
+          padding: '0.2rem',
+        }}>
+          <button
+            style={{
+              flex: 1,
+              padding: '0.4rem',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'default',
+              background: '#fff',
+              color: 'var(--sage-dark)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            }}
+          >
+            Login
+          </button>
+          <a
+            href={registerLink}
+            style={{
+              flex: 1,
+              padding: '0.4rem',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--sage-dark)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            Sign Up
+          </a>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={onLoginClick} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          <div>
+            <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+              Username or Email
+            </label>
+            <input
+              type="text"
+              value={usernameOrEmail}
+              onChange={(e) => setUsernameOrEmail(e.target.value)}
+              placeholder="Enter username or email"
+              style={inputStyle}
+              onFocus={(e) => e.target.style.borderColor = 'var(--primary-color)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--sage-light)'}
+              required
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+              Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                style={{ ...inputStyle, paddingRight: '2.25rem' }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--primary-color)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--sage-light)'}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '0.2rem',
+                }}
+              >
+                {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+
           <AnimatePresence>
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-red-500/10 border border-red-500/20 text-red-600 p-3 rounded-xl flex items-center gap-3 text-[0.85rem] font-semibold"
+                style={{
+                  fontSize: '0.7rem',
+                  color: '#d44',
+                  background: 'rgba(221,68,68,0.06)',
+                  padding: '0.5rem 0.65rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(221,68,68,0.15)',
+                }}
               >
-                <AlertCircle size={16} />
-                <span>{error}</span>
+                {error}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="email" className="text-[0.85rem] font-semibold text-sage-dark ml-1">Email</label>
-            <div className="flex items-center bg-white/60 border border-glass-border rounded-2xl transition-all duration-300 focus-within:bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 group">
-              <Mail className="ml-4 text-gray-400 flex-shrink-0 group-focus-within:text-primary transition-colors" size={18} />
-              <input
-                id="email"
-                type="text"
-                value={usernameOrEmail}
-                onChange={(e) => setUsernameOrEmail(e.target.value)}
-                placeholder="email@example.com"
-                className="w-full py-4 pl-3 pr-4 bg-transparent border-none outline-none text-[1rem] placeholder:text-gray-400"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="password" className="text-[0.85rem] font-semibold text-sage-dark ml-1">Password</label>
-            <div className="flex items-center bg-white/60 border border-glass-border rounded-2xl transition-all duration-300 focus-within:bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 group">
-              <Lock className="ml-4 text-gray-400 flex-shrink-0 group-focus-within:text-primary transition-colors" size={18} />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full py-4 pl-3 pr-4 bg-transparent border-none outline-none text-[1rem] placeholder:text-gray-400"
-                required
-              />
-            </div>
-          </div>
-
-          <button 
-            type="submit" 
-            className="mt-2 w-full py-4 bg-sage-dark text-white rounded-[18px] text-[1rem] font-bold flex items-center justify-center gap-3 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-sage-dark/20 disabled:opacity-70 disabled:cursor-not-allowed"
+          <button
+            type="submit"
             disabled={isLoading}
+            style={{
+              padding: '0.6rem',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              border: 'none',
+              cursor: isLoading ? 'default' : 'pointer',
+              background: 'var(--primary-color)',
+              color: '#fff',
+              opacity: isLoading ? 0.6 : 1,
+              transition: 'opacity 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              marginTop: '0.4rem',
+            }}
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <LogIn size={20} />}
-            <span>{isLoading ? 'Signing in...' : 'Sign In'}</span>
+            {isLoading && <Loader2 size={14} className="animate-spin" />}
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="flex items-center px-4">
-          <div className="flex-1 h-px bg-glass-border"></div>
-          <span className="px-4 text-[0.7rem] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">or continue with</span>
-          <div className="flex-1 h-px bg-glass-border"></div>
-        </div>
-
-        <div className="flex gap-4">
-          <button 
-            onClick={handleGitHubLogin} 
-            className="flex-1 py-3.5 bg-white/50 border border-glass-border rounded-2xl text-sage-dark text-[0.91rem] font-bold flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/80 hover:border-primary-light hover:translate-y-[-2px] hover:shadow-sm"
-          >
-            <Github size={18} />
-            <span>GitHub</span>
-          </button>
-
-          <button 
-            onClick={onDemoClick}
-            className="flex-1 py-3.5 bg-white/50 border border-glass-border rounded-2xl text-sage-dark text-[0.91rem] font-bold flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/80 hover:border-primary-light hover:translate-y-[-2px] hover:shadow-sm"
-          >
-            <span>Demo Account</span>
-          </button>
-        </div>
-
-        <div className="text-center text-[0.9rem] text-gray-500">
-          <p>Don't have an account? <a href={registerLink} className="text-primary font-bold hover:underline">Register</a></p>
+        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+           <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              Don't have an account? <a href={registerLink} style={{ color: 'var(--primary-color)', fontWeight: 700, textDecoration: 'none' }}>Register</a>
+           </p>
         </div>
       </motion.div>
     </div>
