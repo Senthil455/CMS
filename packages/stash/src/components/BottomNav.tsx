@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { Compass, Video, Music, FileText } from 'lucide-react'
+import { Compass, Bookmark, HardDrive, WifiOff } from 'lucide-react'
 
 export const BottomNav: React.FC = () => {
   return (
@@ -13,25 +13,25 @@ export const BottomNav: React.FC = () => {
         <span>Explore</span>
       </NavLink>
       <NavLink 
-        to="/video" 
+        to="/bookmarks" 
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
-        <Video size={20} />
-        <span>Video</span>
+        <Bookmark size={20} />
+        <span>Bookmarks</span>
       </NavLink>
       <NavLink 
-        to="/mp3" 
+        to="/assets" 
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
-        <Music size={20} />
-        <span>MP3</span>
+        <HardDrive size={20} />
+        <span>Assets</span>
       </NavLink>
       <NavLink 
-        to="/article" 
+        to="/offline" 
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
-        <FileText size={20} />
-        <span>Article</span>
+        <WifiOff size={20} />
+        <span>Offline</span>
       </NavLink>
     </nav>
   )

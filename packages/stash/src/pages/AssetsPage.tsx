@@ -1,0 +1,14 @@
+import React from 'react';
+
+const AssetsPage: React.FC = () => {
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-extrabold text-sage-dark tracking-tight">Assets</h1>
+      <div className="p-8 border-2 border-dashed border-sage-medium rounded-[32px] flex items-center justify-center bg-glass backdrop-blur-zen shadow-zen">
+        <p className="text-gray-500 font-medium italic">Your downloaded media and files.</p>
+      </div>
+    </div>
+  );
+};
+
+export default AssetsPage;

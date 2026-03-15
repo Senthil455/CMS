@@ -94,8 +94,28 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5176,
+    host: '127.0.0.1',
     open: true,
+    proxy: {
+      '/files': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+      '/graphql': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+      '/cmsapi': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
   build: {
     target: 'es2020',

@@ -11,9 +11,23 @@ import { CacheStats } from '@/components/CacheStats'
 import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'
 import { AudioPlayer } from '@/components/AudioPlayer'
+import { useUserInfo, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
+import axios from 'axios'
+import LoginPage from './pages/LoginPage'
+import ExplorePage from './pages/ExplorePage'
+import BookmarksPage from './pages/BookmarksPage'
+import AssetsPage from './pages/AssetsPage'
+import OfflinePage from './pages/OfflinePage'
 import './App.css'
 
+// Configure SDK
+const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? '';
+setAuthApiBaseUrl(apiBaseUrl);
+setActivityBaseUrl(apiBaseUrl);
+axios.defaults.withCredentials = true;
+
 function AppContent() {
+  const { data: userInfo, isLoading: isUserLoading } = useUserInfo()
   const [selectedContent, setSelectedContent] = useState<Content | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [syncStatus, setSyncStatus] = useState({
@@ -57,6 +71,30 @@ function AppContent() {
     setLocalAudio(null)
   }
 
+  if (isUserLoading) {
+    return (
+      <div className="zen-gradient-bg" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--sage-dark)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="animate-spin" style={{ marginBottom: '1rem' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          </div>
+          <p style={{ fontWeight: 600 }}>Loading Stash...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!userInfo) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage baseRouter="/stash" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    )
+  }
+
   return (
     <div className="zen-gradient-bg">
       <div className="app-shell">
@@ -79,81 +117,12 @@ function AppContent() {
           </header>
 
           <Routes>
+            <Route path="/login" element={<Navigate to="/explore" replace />} />
             <Route path="/" element={<Navigate to="/explore" replace />} />
-            <Route 
-              path="/explore" 
-              element={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <SearchBar onSearch={setSearchQuery} />
-                  <ContentList
-                    searchQuery={searchQuery}
-                    onSelectContent={setSelectedContent}
-                    selectedId={selectedContent?.id}
-                  />
-                  <CacheStats content={selectedContent || undefined} />
-                  {selectedContent && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <ContentViewer content={selectedContent} isOnline={offlineState.isOnline} />
-                    </div>
-                  )}
-                </div>
-              } 
-            />
-            <Route 
-              path="/video" 
-              element={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--sage-dark)' }}>Video Stash</h2>
-                  <ContentList
-                    typeFilter="video"
-                    onSelectContent={setSelectedContent}
-                    selectedId={selectedContent?.id}
-                  />
-                </div>
-              } 
-            />
-            <Route 
-              path="/mp3" 
-              element={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--sage-dark)' }}>Audio Stash</h2>
-                  </div>
-                  
-                  <label className="add-local-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px' }}>
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add Local File
-                    <input 
-                      type="file" 
-                      accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/m4a,.mp3,.m4a,.wav"
-                      style={{ display: 'none' }} 
-                      onChange={handleFileSelect}
-                    />
-                  </label>
-
-                  <ContentList
-                    typeFilter="mp3"
-                    onSelectContent={setSelectedContent}
-                    selectedId={selectedContent?.id}
-                  />
-                </div>
-              } 
-            />
-            <Route 
-              path="/article" 
-              element={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--sage-dark)' }}>Article Stash</h2>
-                  <ContentList
-                    typeFilter="article"
-                    onSelectContent={setSelectedContent}
-                    selectedId={selectedContent?.id}
-                  />
-                </div>
-              } 
-            />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/bookmarks" element={<BookmarksPage />} />
+            <Route path="/assets" element={<AssetsPage />} />
+            <Route path="/offline" element={<OfflinePage />} />
           </Routes>
         </main>
 
