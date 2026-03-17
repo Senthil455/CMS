@@ -19,7 +19,7 @@ export { userNewDataItemPage, getDefaultNewDataItemPageConfig } from "./cms/page
 // asset management
 export type { AssetListPageConfig } from "./cms/pages/useAssetListPage";
 export { useAssetListPage, getDefaultAssetListPageConfig } from "./cms/pages/useAssetListPage";
-export { downloadVideo, useAssets, useGetCmsAssetsUrl, deleteAsset } from "./cms/services/asset";
+export { downloadVideo, useAssets, useGetCmsAssetsUrl, deleteAsset, convertToMp3 } from "./cms/services/asset";
 
 
 export type { AssetEditPageConfig } from "./cms/pages/useAssetEditPage";

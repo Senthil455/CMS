@@ -27,3 +27,14 @@ export interface CacheConfig {
   maxItems?: number
   ttl?: number // time to live in milliseconds
 }
+
+export interface OfflineFile {
+  id: string
+  filename: string
+  title: string
+  type: string
+  size: number
+  addedAt: string
+  playProgress: number // in seconds
+  fileHandle?: any // FileSystemFileHandle for desktop
+}

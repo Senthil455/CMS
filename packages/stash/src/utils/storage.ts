@@ -4,8 +4,9 @@ import { Content } from '@/types'
 const DB_NAME = 'cms-stash'
 const STORE_NAME = 'content'
 const SYNC_STORE_NAME = 'sync-queue'
-const METADATA_STORE_NAME = 'metadata'
-const DB_VERSION = 1
+export const METADATA_STORE_NAME = 'metadata'
+export const OFFLINE_STORE_NAME = 'offline-files'
+const DB_VERSION = 2 // Incremented version to trigger upgrade
 
 let db: IDBPDatabase | null = null
 
@@ -13,7 +14,7 @@ export async function initializeDB(): Promise<IDBPDatabase> {
   if (db) return db
 
   db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, oldVersion, newVersion) {
       // Content store
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
@@ -29,6 +30,12 @@ export async function initializeDB(): Promise<IDBPDatabase> {
       // Metadata store
       if (!db.objectStoreNames.contains(METADATA_STORE_NAME)) {
         db.createObjectStore(METADATA_STORE_NAME, { keyPath: 'key' })
+      }
+
+      // Offline files store
+      if (!db.objectStoreNames.contains(OFFLINE_STORE_NAME)) {
+        const store = db.createObjectStore(OFFLINE_STORE_NAME, { keyPath: 'id' })
+        store.createIndex('addedAt', 'addedAt', { unique: false })
       }
     },
   })

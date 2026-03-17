@@ -58,3 +58,7 @@ export function updateAssetMeta(asset: any) {
 export function downloadVideo(url: string) {
     return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.VIDEO), { url }))
 }
+
+export function convertToMp3(id: number) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.CONVERT_MP3.replace(':id', id.toString()))))
+}
