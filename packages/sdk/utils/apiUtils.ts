@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from "axios";
+axios.defaults.withCredentials = true;
 import { SWRConfiguration } from "swr";
 export const swrConfig: SWRConfiguration = {
     revalidateOnFocus: false,

@@ -59,21 +59,24 @@ const OfflinePlayer: React.FC<OfflinePlayerProps> = ({ file, fileUrl, onClose, o
   return (
     <AnimatePresence>
       {file && (
-        <>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200]"
-            onClick={onClose}
-          />
-          <motion.div 
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl z-[210] p-6 pb-10 shadow-2xl flex flex-col gap-6"
-          >
+        <motion.div
+          key="player-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200]"
+          onClick={onClose}
+        />
+      )}
+      {file && (
+        <motion.div
+          key="player-sheet"
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl z-[210] p-6 pb-10 shadow-2xl flex flex-col gap-6"
+        >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button 
@@ -114,7 +117,7 @@ const OfflinePlayer: React.FC<OfflinePlayerProps> = ({ file, fileUrl, onClose, o
               {/* Progress Slider */}
               <div className="w-full h-2 bg-gray-100 rounded-full cursor-pointer relative">
                 <div 
-                  className="absolute inset-y-0 left-0 bg-primary-color rounded-full" 
+                  className="absolute inset-y-0 left-0 bg-sage-dark rounded-full" 
                   style={{ width: `${(currentTime / duration) * 100}%` }}
                 />
               </div>
@@ -140,7 +143,6 @@ const OfflinePlayer: React.FC<OfflinePlayerProps> = ({ file, fileUrl, onClose, o
               </div>
             </div>
           </motion.div>
-        </>
       )}
     </AnimatePresence>
   )

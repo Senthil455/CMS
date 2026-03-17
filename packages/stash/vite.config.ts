@@ -92,6 +92,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom', 'react-router-dom', 'swr'],
   },
   server: {
     port: 5176,
@@ -119,6 +120,6 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    sourcemap: false,
+    sourcemap: true,
   },
 })
