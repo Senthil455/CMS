@@ -60,25 +60,13 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
       return
     }
 
-    // 2. iOS/Mobile: Check if we have an in-memory blob
-    if (file.fileData) {
-      if (!audioUrl) {
-        const url = URL.createObjectURL(file.fileData)
-        setAudioUrl(url)
-        setIsPlaying(true)
-      } else if (audioRef.current) {
-        togglePlay()
-      }
-      return
-    }
-
-    // 3. Fallback: Prompt user to re-pick the file
+    // 2. iOS/Mobile: No handle — prompt re-pick if no URL yet
     if (!audioUrl) {
       reSelectFileRef.current?.click()
       return
     }
 
-    // 4. If we already have a URL (from a previous re-pick in this session)
+    // 3. If we already have a URL (from a previous re-pick in this session)
     if (audioRef.current) {
       togglePlay()
     }

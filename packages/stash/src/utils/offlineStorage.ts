@@ -5,9 +5,8 @@ export async function saveOfflineFile(file: OfflineFile): Promise<void> {
   const db = await initializeDB()
   const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
   
-  // Strip non-serializable or large data before saving to IDB
-  // We only want to persist metadata and progress
-  const { fileData, fileHandle, ...metadata } = file
+  // Strip non-serializable data before saving to IDB — only persist metadata and progress
+  const { fileHandle, ...metadata } = file
   
   await tx.store.put({
     ...metadata,
@@ -31,8 +30,8 @@ export async function updateOfflineFileProgress(id: string, progress: number): P
   const file = await db.get(OFFLINE_STORE_NAME, id)
   if (file) {
     const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
-    // Ensure we don't accidentally save fileData/fileHandle if they were somehow in the retrieved object
-    const { fileData, fileHandle, ...metadata } = file
+    // Ensure we don't accidentally save fileHandle if it was somehow in the retrieved object
+    const { fileHandle, ...metadata } = file
     await tx.store.put({
       ...metadata,
       playProgress: progress,

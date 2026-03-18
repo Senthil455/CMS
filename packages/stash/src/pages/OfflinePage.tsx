@@ -25,12 +25,7 @@ const OfflinePage: React.FC = () => {
     setIsLoading(true);
     try {
       const allFiles = await getAllOfflineFiles();
-      // Attach transient blobs that are still in memory
-      const filesWithBlobs = allFiles.map(f => ({
-        ...f,
-        fileData: transientBlobsRef.current[f.id] || f.fileData
-      }));
-      setFiles(filesWithBlobs.sort((a, b) => b.addedAt.localeCompare(a.addedAt)));
+      setFiles(allFiles.sort((a, b) => b.addedAt.localeCompare(a.addedAt)));
     } catch (error) {
       console.error('Failed to load offline files:', error);
     } finally {
@@ -84,7 +79,6 @@ const OfflinePage: React.FC = () => {
       addedAt: new Date().toISOString(),
       playProgress: 0,
       fileHandle: handle || null,
-      fileData: undefined, // Don't even try to pass to saveOfflineFile
     };
 
     if (!handle) {
@@ -111,7 +105,7 @@ const OfflinePage: React.FC = () => {
     // Auto-play immediately
     const url = URL.createObjectURL(picked);
     setFileUrl(url);
-    setSelectedFile({ ...pending, fileData: picked });
+    setSelectedFile({ ...pending });
     await loadFiles();
   };
 
@@ -132,9 +126,9 @@ const OfflinePage: React.FC = () => {
           alert('Please re-select the file to access it again.');
           return;
         }
-      } else if (file.fileData) {
-        // iOS/Mobile: Blob is still alive in this session
-        blob = file.fileData;
+      } else if (transientBlobsRef.current[file.id]) {
+        // iOS/Mobile: Blob still alive in this session
+        blob = transientBlobsRef.current[file.id];
       } else {
         // iOS: Blob was lost when the app was closed — ask user to re-pick the same file
         pendingPlayFileRef.current = file;
