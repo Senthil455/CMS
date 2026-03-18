@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, FolderOpen, AlertCircle, Info } from 'lucide-react';
+import { Plus, FolderOpen, Info } from 'lucide-react';
 import { OfflineFile } from '@/types';
 import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress } from '@/utils/offlineStorage';
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
@@ -12,6 +12,11 @@ const OfflinePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // iOS re-select flow: when Blob is lost after session, prompt user to re-pick
+  const reSelectFileRef = useRef<HTMLInputElement>(null);
+  const pendingPlayFileRef = useRef<OfflineFile | null>(null);
+  const transientBlobsRef = useRef<Record<string, Blob>>({});
+
   useEffect(() => {
     loadFiles();
   }, []);
@@ -20,7 +25,12 @@ const OfflinePage: React.FC = () => {
     setIsLoading(true);
     try {
       const allFiles = await getAllOfflineFiles();
-      setFiles(allFiles.sort((a, b) => b.addedAt.localeCompare(a.addedAt)));
+      // Attach transient blobs that are still in memory
+      const filesWithBlobs = allFiles.map(f => ({
+        ...f,
+        fileData: transientBlobsRef.current[f.id] || f.fileData
+      }));
+      setFiles(filesWithBlobs.sort((a, b) => b.addedAt.localeCompare(a.addedAt)));
     } catch (error) {
       console.error('Failed to load offline files:', error);
     } finally {
@@ -61,47 +71,74 @@ const OfflinePage: React.FC = () => {
     if (file) {
       await addFile(file);
     }
+    e.target.value = ''; // Reset so same file can be picked again
   };
 
   const addFile = async (file: File, handle?: any) => {
     const newFile: OfflineFile = {
       id: crypto.randomUUID(),
       filename: file.name,
-      title: file.name.replace(/\.[^/.]+$/, ""), // Friendly title
+      title: file.name.replace(/\.[^/.]+$/, ''),
       type: file.type,
       size: file.size,
       addedAt: new Date().toISOString(),
       playProgress: 0,
       fileHandle: handle || null,
+      fileData: undefined, // Don't even try to pass to saveOfflineFile
     };
-    
+
+    if (!handle) {
+      transientBlobsRef.current[newFile.id] = file;
+    }
+
     await saveOfflineFile(newFile);
+    await loadFiles();
+  };
+
+  // Called when user re-picks a file after iOS session cleared the Blob
+  const handleReSelectChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files?.[0];
+    const pending = pendingPlayFileRef.current;
+    e.target.value = '';
+
+    if (!picked || !pending) return;
+
+    // Persist fresh Blob in memory so next play in same session works without re-picking
+    transientBlobsRef.current[pending.id] = picked;
+    
+    pendingPlayFileRef.current = null;
+
+    // Auto-play immediately
+    const url = URL.createObjectURL(picked);
+    setFileUrl(url);
+    setSelectedFile({ ...pending, fileData: picked });
     await loadFiles();
   };
 
   const handlePlay = async (file: OfflineFile) => {
     try {
       let blob: Blob;
-      
+
       if (file.fileHandle) {
-        // Try to get file from handle (Desktop)
+        // Desktop: use FileSystemFileHandle
         try {
-          // Verify permission
           const status = await file.fileHandle.queryPermission({ mode: 'read' });
           if (status !== 'granted') {
             await file.fileHandle.requestPermission({ mode: 'read' });
           }
           blob = await file.fileHandle.getFile();
         } catch (e) {
-          console.warn('Could not access folder handle, prompting for re-open');
-          alert('Need to re-select the file to access it again.');
+          console.warn('Could not access file handle, prompting for re-open');
+          alert('Please re-select the file to access it again.');
           return;
         }
+      } else if (file.fileData) {
+        // iOS/Mobile: Blob is still alive in this session
+        blob = file.fileData;
       } else {
-        // Fallback for when we don't have a handle (iOS/Mobile or direct upload)
-        // In a real app, we might store the Blob in IDB if it's small, 
-        // but here we asked for "resume" so we'd need to re-pick on mobile.
-        alert('Please re-open this file from your device to continue.');
+        // iOS: Blob was lost when the app was closed — ask user to re-pick the same file
+        pendingPlayFileRef.current = file;
+        reSelectFileRef.current?.click();
         return;
       }
 
@@ -114,12 +151,10 @@ const OfflinePage: React.FC = () => {
   };
 
   const handleClosePlayer = () => {
-    if (fileUrl) {
-      URL.revokeObjectURL(fileUrl);
-    }
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
     setFileUrl(null);
     setSelectedFile(null);
-    loadFiles(); // Refresh to show updated progress
+    loadFiles();
   };
 
   const handleDelete = async (id: string) => {
@@ -129,11 +164,13 @@ const OfflinePage: React.FC = () => {
     }
   };
 
+  const isIOS = !('showOpenFilePicker' in window);
+
   return (
     <div className="flex flex-col gap-6 pb-24">
       <div className="flex items-center justify-between px-2">
         <h1 className="text-2xl font-extrabold text-sage-dark">Offline Library</h1>
-        <button 
+        <button
           onClick={handleUploadClick}
           className="flex items-center gap-2 px-4 py-2.5 bg-sage-dark text-white rounded-2xl font-bold text-sm shadow-lg shadow-sage-dark/20 active:scale-95 transition-all"
         >
@@ -142,12 +179,22 @@ const OfflinePage: React.FC = () => {
         </button>
       </div>
 
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
-        accept="video/*,audio/*"
-        onChange={handleFileInputChange} 
+      {/* Add new file */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="video/*,audio/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm"
+        onChange={handleFileInputChange}
+      />
+
+      {/* iOS re-select: triggered automatically when Blob is missing */}
+      <input
+        type="file"
+        ref={reSelectFileRef}
+        className="hidden"
+        accept="video/*,audio/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm"
+        onChange={handleReSelectChange}
       />
 
       {files.length === 0 && !isLoading ? (
@@ -163,10 +210,10 @@ const OfflinePage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {files.map(file => (
-            <OfflineFileCard 
-              key={file.id} 
-              file={file} 
-              onPlay={handlePlay} 
+            <OfflineFileCard
+              key={file.id}
+              file={file}
+              onPlay={handlePlay}
               onDelete={handleDelete}
               onProgressUpdate={updateOfflineFileProgress}
             />
@@ -174,7 +221,17 @@ const OfflinePage: React.FC = () => {
         </div>
       )}
 
-      {/* Persistence Note for Desktop */}
+      {/* iOS note about re-selection */}
+      {isIOS && files.length > 0 && (
+        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 text-amber-700">
+          <Info size={18} className="shrink-0 mt-0.5" />
+          <p className="text-[0.7rem] font-medium leading-relaxed">
+            On iPhone/iPad, files need to be re-selected after you close the app. Just tap <strong>Play</strong> and pick the same file — playback will resume where you left off.
+          </p>
+        </div>
+      )}
+
+      {/* Desktop note */}
       {'showOpenFilePicker' in window && files.length > 0 && (
         <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 flex gap-3 text-violet-700">
           <Info size={18} className="shrink-0" />
@@ -184,9 +241,9 @@ const OfflinePage: React.FC = () => {
         </div>
       )}
 
-      <OfflinePlayer 
-        file={selectedFile} 
-        fileUrl={fileUrl} 
+      <OfflinePlayer
+        file={selectedFile}
+        fileUrl={fileUrl}
         onClose={handleClosePlayer}
         onProgressUpdate={updateOfflineFileProgress}
       />

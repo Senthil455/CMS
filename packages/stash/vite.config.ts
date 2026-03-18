@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
-// https://vitejs.dev/config/
+
+
 export default defineConfig({
   base: '/stash/',
   plugins: [
@@ -117,6 +118,9 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toLocaleString()),
   },
   build: {
     target: 'es2020',

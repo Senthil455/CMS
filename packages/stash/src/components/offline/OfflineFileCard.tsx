@@ -21,6 +21,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const lastSavedPctRef = useRef<number>(file.playProgress || 0)
+  const reSelectFileRef = useRef<HTMLInputElement>(null)
 
   // Cleanup object URL on unmount
   useEffect(() => {
@@ -37,38 +38,72 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
 
   // --- Audio handlers ---
   const handleAudioPlay = async () => {
-    if (!file.fileHandle) {
-      alert('Please re-open this file from your device to play it.')
+    // 1. Desktop: Use File System Access API
+    if (file.fileHandle) {
+      if (!audioUrl) {
+        try {
+          const status = await file.fileHandle.queryPermission({ mode: 'read' })
+          if (status !== 'granted') {
+            await file.fileHandle.requestPermission({ mode: 'read' })
+          }
+          const blob = await file.fileHandle.getFile()
+          const url = URL.createObjectURL(blob)
+          setAudioUrl(url)
+          setIsPlaying(true)
+        } catch (e) {
+          console.error('Could not access file handle', e)
+          alert('Need to re-select the file to access it again.')
+        }
+      } else if (audioRef.current) {
+        togglePlay()
+      }
       return
     }
-    if (!audioUrl) {
-      // First play — get blob from file handle
-      try {
-        const status = await file.fileHandle.queryPermission({ mode: 'read' })
-        if (status !== 'granted') {
-          await file.fileHandle.requestPermission({ mode: 'read' })
-        }
-        const blob = await file.fileHandle.getFile()
-        const url = URL.createObjectURL(blob)
+
+    // 2. iOS/Mobile: Check if we have an in-memory blob
+    if (file.fileData) {
+      if (!audioUrl) {
+        const url = URL.createObjectURL(file.fileData)
         setAudioUrl(url)
-        // Play will be triggered by useEffect once audioUrl is set
         setIsPlaying(true)
-      } catch (e) {
-        console.error('Could not access file handle', e)
-        alert('Need to re-select the file to access it again.')
+      } else if (audioRef.current) {
+        togglePlay()
       }
-    } else {
-      // Toggle play/pause on existing audio
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.pause()
-          setIsPlaying(false)
-        } else {
-          audioRef.current.play()
-          setIsPlaying(true)
-        }
+      return
+    }
+
+    // 3. Fallback: Prompt user to re-pick the file
+    if (!audioUrl) {
+      reSelectFileRef.current?.click()
+      return
+    }
+
+    // 4. If we already have a URL (from a previous re-pick in this session)
+    if (audioRef.current) {
+      togglePlay()
+    }
+  }
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        audioRef.current.play()
+        setIsPlaying(true)
       }
     }
+  }
+
+  const handleReSelectChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files?.[0]
+    if (picked) {
+      const url = URL.createObjectURL(picked)
+      setAudioUrl(url)
+      setIsPlaying(true)
+    }
+    e.target.value = ''
   }
 
   // Once audioUrl is set, start playing
@@ -129,6 +164,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
           onEnded={() => setIsPlaying(false)}
         />
       )}
+
+      {/* Re-pick input for iOS */}
+      <input
+        type="file"
+        ref={reSelectFileRef}
+        className="hidden"
+        accept="audio/*,.mp3,.wav,.ogg,.m4a"
+        onChange={handleReSelectChange}
+      />
 
       <div className="flex items-center gap-3">
         {/* Icon */}

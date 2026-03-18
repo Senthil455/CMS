@@ -37,4 +37,5 @@ export interface OfflineFile {
   addedAt: string
   playProgress: number // in seconds
   fileHandle?: any // FileSystemFileHandle for desktop
+  fileData?: Blob // Store Blob for iOS/Mobile where handle is unsupported
 }

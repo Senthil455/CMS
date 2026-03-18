@@ -4,9 +4,14 @@ import { OfflineFile } from '@/types'
 export async function saveOfflineFile(file: OfflineFile): Promise<void> {
   const db = await initializeDB()
   const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
+  
+  // Strip non-serializable or large data before saving to IDB
+  // We only want to persist metadata and progress
+  const { fileData, fileHandle, ...metadata } = file
+  
   await tx.store.put({
-    ...file,
-    addedAt: file.addedAt || new Date().toISOString(),
+    ...metadata,
+    addedAt: metadata.addedAt || new Date().toISOString(),
   })
   await tx.done
 }
@@ -26,8 +31,10 @@ export async function updateOfflineFileProgress(id: string, progress: number): P
   const file = await db.get(OFFLINE_STORE_NAME, id)
   if (file) {
     const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
+    // Ensure we don't accidentally save fileData/fileHandle if they were somehow in the retrieved object
+    const { fileData, fileHandle, ...metadata } = file
     await tx.store.put({
-      ...file,
+      ...metadata,
       playProgress: progress,
     })
     await tx.done

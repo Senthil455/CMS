@@ -172,6 +172,22 @@ function AppContent() {
           />
         )}
       </div>
+
+      <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        fontSize: '0.7rem',
+        fontWeight: 'bold',
+        color: 'var(--sage-dark)',
+        background: 'rgba(255,255,255,0.7)',
+        padding: '2px 6px',
+        borderRadius: '6px',
+        pointerEvents: 'none',
+        zIndex: 9999
+      }}>
+        Build: {__BUILD_TIME__}
+      </div>
     </div>
   )
 }
