@@ -3,6 +3,7 @@ import { File, Video, Music, Trash2, Play, Pause } from 'lucide-react'
 import { OfflineFile } from '@/types'
 import { formatSize } from '@/utils/assetUtils'
 
+
 interface OfflineFileCardProps {
   file: OfflineFile
   onPlay: (file: OfflineFile) => void
@@ -12,7 +13,7 @@ interface OfflineFileCardProps {
 
 const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate }) => {
   const isVideo = file.type.startsWith('video/')
-  const isAudio = file.type.startsWith('audio/')
+  const isAudio = file.type.startsWith('audio/') || file.filename.toLowerCase().endsWith('.m4b')
 
   // --- Inline audio state ---
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -158,7 +159,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
         type="file"
         ref={reSelectFileRef}
         className="hidden"
-        accept="audio/*,.mp3,.wav,.ogg,.m4a"
+        
         onChange={handleReSelectChange}
       />
 
@@ -208,7 +209,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
           )}
           <button
             onClick={() => onDelete(file.id)}
-            className="w-9 h-9 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+            className="w-9 h-9 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full flex items-center justify-center transition-colors"
           >
             <Trash2 size={15} />
           </button>

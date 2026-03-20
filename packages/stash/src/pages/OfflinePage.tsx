@@ -5,6 +5,7 @@ import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFi
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
 import OfflinePlayer from '@/components/offline/OfflinePlayer';
 
+
 const OfflinePage: React.FC = () => {
   const [files, setFiles] = useState<OfflineFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<OfflineFile | null>(null);
@@ -44,6 +45,7 @@ const OfflinePage: React.FC = () => {
               accept: {
                 'video/*': ['.mp4', '.webm', '.ogg'],
                 'audio/*': ['.mp3', '.wav', '.ogg', '.m4a'],
+                'video/mp4': ['.m4b', '.m4a'],
               },
             },
           ],
@@ -64,6 +66,14 @@ const OfflinePage: React.FC = () => {
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const ext = file.name.toLowerCase()
+      const isSupported = file.type.startsWith('audio/') || file.type.startsWith('video/')
+        || /\.(mp3|wav|ogg|m4a|m4b|mp4|webm)$/.test(ext)
+      if (!isSupported) {
+        alert('Unsupported file type. Please select an audio or video file.')
+        e.target.value = ''
+        return
+      }
       await addFile(file);
     }
     e.target.value = ''; // Reset so same file can be picked again
@@ -99,7 +109,7 @@ const OfflinePage: React.FC = () => {
 
     // Persist fresh Blob in memory so next play in same session works without re-picking
     transientBlobsRef.current[pending.id] = picked;
-    
+
     pendingPlayFileRef.current = null;
 
     // Auto-play immediately
@@ -173,12 +183,11 @@ const OfflinePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Add new file */}
+      {/* Add new file — no accept filter so iOS can pick .m4b */}
       <input
         type="file"
         ref={fileInputRef}
         className="hidden"
-        accept="video/*,audio/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm"
         onChange={handleFileInputChange}
       />
 
@@ -187,7 +196,6 @@ const OfflinePage: React.FC = () => {
         type="file"
         ref={reSelectFileRef}
         className="hidden"
-        accept="video/*,audio/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm"
         onChange={handleReSelectChange}
       />
 

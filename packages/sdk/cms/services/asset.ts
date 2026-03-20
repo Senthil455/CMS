@@ -62,3 +62,11 @@ export function downloadVideo(url: string) {
 export function convertToMp3(id: number) {
     return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.CONVERT_MP3.replace(':id', id.toString()))))
 }
+
+export function convertToM4b(id: number) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.CONVERT_M4B.replace(':id', id.toString()))))
+}
+
+export function convertToM4a(id: number) {
+    return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.CONVERT_M4A.replace(':id', id.toString()))))
+}
