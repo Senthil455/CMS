@@ -139,8 +139,8 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   }
 
   // iOS: large blob URLs may not be seekable until enough is buffered.
-  // canplaythrough fires when the browser estimates it can play without stopping.
-  const handleCanPlayThrough = () => {
+  // canplay fires once the browser can begin playback (much sooner than canplaythrough).
+  const handleCanPlay = () => {
     const audio = audioRef.current
     if (!audio) return
 
@@ -150,7 +150,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
       try {
         audio.currentTime = startTime
       } catch (e) {
-        console.warn('Seek failed on canplaythrough', e)
+        console.warn('Seek failed on canplay', e)
       }
     }
 
@@ -198,7 +198,8 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
           ref={audioRef}
           preload="auto"
           onLoadedMetadata={handleLoadedMetadata}
-          onCanPlayThrough={handleCanPlayThrough}
+          onCanPlay={handleCanPlay}
+          onCanPlayThrough={handleCanPlay}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setIsPlaying(false); wantPlayRef.current = false }}
         />
