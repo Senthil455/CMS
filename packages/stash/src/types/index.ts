@@ -38,3 +38,20 @@ export interface OfflineFile {
   playProgress: number // in seconds
   fileHandle?: any // FileSystemFileHandle for desktop
 }
+
+export interface BookmarkItem {
+  id: number
+  updatedAt: string
+  image: string
+  title: string
+  subtitle: string
+  publishedAt: string
+  url: string
+}
+
+export interface BookmarkFolder {
+  id: number
+  name: string
+  description: string
+  userId?: string
+}

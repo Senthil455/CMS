@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
-import { saveContentBatch, setMetadata } from '@/utils/storage'
-import { fetchContentList } from '@/utils/api'
+import { setMetadata, clearBookmarks, clearBookmarkFolders, saveBookmarks, saveBookmarkFolders } from '@/utils/storage'
+import { engagementApi } from '@/utils/engagementApi'
 
 interface SyncManagerProps {
   isOnline: boolean
@@ -20,10 +20,23 @@ export const SyncManager: React.FC<SyncManagerProps> = ({ isOnline, onSyncStart,
       onSyncStart?.()
 
       try {
-        const contents = await fetchContentList()
-        await saveContentBatch(contents)
-        await setMetadata('lastSyncTime', Date.now())
+        try {
+          // Sync Bookmark Folders
+          const folders = await engagementApi.fetchAllBookmarkFolders()
+          await clearBookmarkFolders()
+          await saveBookmarkFolders(folders)
 
+          // Sync Bookmarks (limit 100 for now)
+          const listRes = await engagementApi.fetchBookmarkList(0, 0, 100)
+          await clearBookmarks()
+          await saveBookmarks(listRes.items || [])
+
+          await setMetadata('lastBookmarkSyncTime', Date.now())
+        } catch (e) {
+          console.warn('Bookmark sync neglected/failed:', e)
+        }
+        
+        await setMetadata('lastSyncTime', Date.now())
         onSyncEnd?.(true)
       } catch (error) {
         console.error('Sync failed:', error)

@@ -3,11 +3,13 @@ import React, { useState } from 'react'
 interface SearchBarProps {
   onSearch: (query: string) => void
   placeholder?: string
+  className?: string
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   placeholder = 'Search content...',
+  className = '',
 }) => {
   const [query, setQuery] = useState('')
 
@@ -24,6 +26,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <div
+      className={className}
       style={{
         padding: '12px',
         display: 'flex',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAssets, useGetCmsAssetsUrl, downloadVideo, convertToMp3, convertToM4b, convertToM4a, deleteAsset } from "@cms/sdk";
+import { useAssets, useGetCmsAssetsUrl, downloadVideo, convertToMp3, convertToM4a, deleteAsset } from "@cms/sdk";
 import AssetTabBar, { AssetTab } from "../components/assets/AssetTabBar";
 import AssetGrid from "../components/assets/AssetGrid";
 import AddAssetFab from "../components/assets/AddAssetFab";
@@ -62,18 +62,7 @@ const AssetsPage: React.FC = () => {
     }
   };
 
-  const handleConvertToM4b = async (id: number) => {
-    setIsConverting(true);
-    try {
-      await convertToM4b(id);
-      mutate();
-      setSelectedAsset(null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsConverting(false);
-    }
-  };
+
 
   const handleConvertToM4a = async (id: number) => {
     setIsConverting(true);
@@ -134,7 +123,6 @@ const AssetsPage: React.FC = () => {
         isConverting={isConverting} 
         onClose={() => setSelectedAsset(null)} 
         onConvertToMp3={handleConvertToMp3} 
-        onConvertToM4b={handleConvertToM4b}
         onConvertToM4a={handleConvertToM4a}
         onDelete={handleDeleteAsset}
       />

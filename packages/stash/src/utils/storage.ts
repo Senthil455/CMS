@@ -6,7 +6,9 @@ const STORE_NAME = 'content'
 const SYNC_STORE_NAME = 'sync-queue'
 export const METADATA_STORE_NAME = 'metadata'
 export const OFFLINE_STORE_NAME = 'offline-files'
-const DB_VERSION = 2 // Incremented version to trigger upgrade
+export const BOOKMARKS_STORE_NAME = 'bookmarks'
+export const BOOKMARK_FOLDERS_STORE_NAME = 'bookmark-folders'
+const DB_VERSION = 3 // Incremented version to trigger upgrade
 
 let db: IDBPDatabase | null = null
 
@@ -36,6 +38,17 @@ export async function initializeDB(): Promise<IDBPDatabase> {
       if (!db.objectStoreNames.contains(OFFLINE_STORE_NAME)) {
         const store = db.createObjectStore(OFFLINE_STORE_NAME, { keyPath: 'id' })
         store.createIndex('addedAt', 'addedAt', { unique: false })
+      }
+
+      // Bookmarks store
+      if (!db.objectStoreNames.contains(BOOKMARKS_STORE_NAME)) {
+        const store = db.createObjectStore(BOOKMARKS_STORE_NAME, { keyPath: 'id' })
+        store.createIndex('updatedAt', 'updatedAt', { unique: false })
+      }
+
+      // Bookmark folders store
+      if (!db.objectStoreNames.contains(BOOKMARK_FOLDERS_STORE_NAME)) {
+        db.createObjectStore(BOOKMARK_FOLDERS_STORE_NAME, { keyPath: 'id' })
       }
     },
   })
@@ -156,4 +169,45 @@ export async function getContentStats(): Promise<{
     lastSyncTime: lastSyncTime || null,
     cacheSize,
   }
+}
+
+// Bookmark CRUD functions
+export async function saveBookmarks(items: any[]): Promise<void> {
+  if (!db) await initializeDB()
+  const tx = db!.transaction(BOOKMARKS_STORE_NAME, 'readwrite')
+  for (const item of items) {
+    await tx.store.put(item)
+  }
+  await tx.done
+}
+
+export async function getAllBookmarks(): Promise<any[]> {
+  if (!db) await initializeDB()
+  const items = await db!.getAll(BOOKMARKS_STORE_NAME)
+  // Sort descending by id
+  return items.sort((a, b) => b.id - a.id)
+}
+
+export async function clearBookmarks(): Promise<void> {
+  if (!db) await initializeDB()
+  await db!.clear(BOOKMARKS_STORE_NAME)
+}
+
+export async function saveBookmarkFolders(folders: any[]): Promise<void> {
+  if (!db) await initializeDB()
+  const tx = db!.transaction(BOOKMARK_FOLDERS_STORE_NAME, 'readwrite')
+  for (const folder of folders) {
+    await tx.store.put(folder)
+  }
+  await tx.done
+}
+
+export async function getAllBookmarkFolders(): Promise<any[]> {
+  if (!db) await initializeDB()
+  return db!.getAll(BOOKMARK_FOLDERS_STORE_NAME)
+}
+
+export async function clearBookmarkFolders(): Promise<void> {
+  if (!db) await initializeDB()
+  await db!.clear(BOOKMARK_FOLDERS_STORE_NAME)
 }

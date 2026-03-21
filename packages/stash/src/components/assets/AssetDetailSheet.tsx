@@ -9,7 +9,6 @@ interface AssetDetailSheetProps {
   isConverting: boolean;
   onClose: () => void;
   onConvertToMp3: (id: number) => void;
-  onConvertToM4b: (id: number) => void;
   onConvertToM4a: (id: number) => void;
   onDelete: (id: number) => void;
 }
@@ -20,7 +19,6 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
   isConverting, 
   onClose, 
   onConvertToMp3,
-  onConvertToM4b,
   onConvertToM4a,
   onDelete
 }) => {
@@ -108,7 +106,7 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
 
             {/* Action buttons — uniform grid, always visible */}
             <div className="flex-shrink-0 px-5 pt-3 pb-8 border-t border-gray-100 bg-white">
-              <div className={`grid gap-3 ${asset.type?.startsWith('video/') ? 'grid-cols-5' : 'grid-cols-2'}`}>
+              <div className={`grid gap-3 ${asset.type?.startsWith('video/') ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 {asset.type?.startsWith('video/') && (
                   <>
                   <button
@@ -121,16 +119,7 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
                       : <Music size={20} />}
                     <span>Convert MP3</span>
                   </button>
-                  <button
-                    onClick={() => onConvertToM4b(asset.id)}
-                    disabled={isConverting}
-                    className="flex flex-col items-center justify-center gap-1.5 py-4 bg-fuchsia-50 text-fuchsia-600 rounded-2xl font-bold text-[0.7rem] border border-fuchsia-100 transition-all active:scale-[0.97] hover:bg-fuchsia-100 disabled:opacity-50"
-                  >
-                    {isConverting
-                      ? <Loader2 className="animate-spin" size={20} />
-                      : <Music size={20} />}
-                    <span>Convert M4B</span>
-                  </button>
+
                   <button
                     onClick={() => onConvertToM4a(asset.id)}
                     disabled={isConverting}
