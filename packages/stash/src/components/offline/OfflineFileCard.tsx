@@ -9,9 +9,10 @@ interface OfflineFileCardProps {
   onPlay: (file: OfflineFile) => void
   onDelete: (id: string) => void
   onProgressUpdate?: (id: string, progress: number) => void
+  onGetBlob?: (id: string) => Blob | undefined
 }
 
-const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate }) => {
+const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate, onGetBlob }) => {
   const isVideo = file.type.startsWith('video/')
   const isAudio = file.type.startsWith('audio/') || file.filename.toLowerCase().endsWith('.m4b')
 
@@ -39,41 +40,46 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
 
   // --- Audio handlers ---
   const handleAudioPlay = async () => {
+    debugger;
+    // If audio is already loaded, just toggle play/pause
+    if (audioUrl && audioRef.current) {
+      togglePlay()
+      return
+    }
+
     // 1. Desktop: Use File System Access API
     if (file.fileHandle) {
-      if (!audioUrl) {
-        try {
-          const status = await file.fileHandle.queryPermission({ mode: 'read' })
-          if (status !== 'granted') {
-            await file.fileHandle.requestPermission({ mode: 'read' })
-          }
-          const blob = await file.fileHandle.getFile()
-          const url = URL.createObjectURL(blob)
-          setAudioUrl(url)
-          setIsPlaying(true)
-        } catch (e) {
-          console.error('Could not access file handle', e)
-          alert('Need to re-select the file to access it again.')
+      try {
+        const status = await file.fileHandle.queryPermission({ mode: 'read' })
+        if (status !== 'granted') {
+          await file.fileHandle.requestPermission({ mode: 'read' })
         }
-      } else if (audioRef.current) {
-        togglePlay()
+        const blob = await file.fileHandle.getFile()
+        const url = URL.createObjectURL(blob)
+        setAudioUrl(url)
+        setIsPlaying(true)
+      } catch (e) {
+        console.error('Could not access file handle', e)
+        alert('Need to re-select the file to access it again.')
       }
       return
     }
 
-    // 2. iOS/Mobile: No handle — prompt re-pick if no URL yet
-    if (!audioUrl) {
-      reSelectFileRef.current?.click()
+    // 2. iOS/Mobile: Blob in transient memory from this session
+    const transientBlob = onGetBlob?.(file.id)
+    if (transientBlob) {
+      const url = URL.createObjectURL(transientBlob)
+      setAudioUrl(url)
+      setIsPlaying(true)
       return
     }
 
-    // 3. If we already have a URL (from a previous re-pick in this session)
-    if (audioRef.current) {
-      togglePlay()
-    }
+    // 3. No blob — prompt re-pick (next session on iOS)
+    reSelectFileRef.current?.click()
   }
 
   const togglePlay = () => {
+    debugger;
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause()
@@ -159,7 +165,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
         type="file"
         ref={reSelectFileRef}
         className="hidden"
-        
+
         onChange={handleReSelectChange}
       />
 

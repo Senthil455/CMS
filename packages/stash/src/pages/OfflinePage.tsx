@@ -11,7 +11,6 @@ const OfflinePage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<OfflineFile | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // iOS re-select flow: when Blob is lost after session, prompt user to re-pick
   const reSelectFileRef = useRef<HTMLInputElement>(null);
@@ -34,41 +33,15 @@ const OfflinePage: React.FC = () => {
     }
   };
 
-  const handleUploadClick = async () => {
-    // Check for File System Access API
-    if ('showOpenFilePicker' in window) {
-      try {
-        const [handle] = await (window as any).showOpenFilePicker({
-          types: [
-            {
-              description: 'Media Files',
-              accept: {
-                'video/*': ['.mp4', '.webm', '.ogg'],
-                'audio/*': ['.mp3', '.wav', '.ogg', '.m4a'],
-                'video/mp4': ['.m4b', '.m4a'],
-              },
-            },
-          ],
-        });
-        const fileData = await handle.getFile();
-        await addFile(fileData, handle);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error(err);
-        }
-      }
-    } else {
-      // Fallback to traditional input
-      fileInputRef.current?.click();
-    }
-  };
+
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugger;
     const file = e.target.files?.[0];
     if (file) {
       const ext = file.name.toLowerCase()
       const isSupported = file.type.startsWith('audio/') || file.type.startsWith('video/')
-        || /\.(mp3|wav|ogg|m4a|m4b|mp4|webm)$/.test(ext)
+        || /\.(mp3|wav|ogg|m4a|mp4|webm)$/.test(ext)
       if (!isSupported) {
         alert('Unsupported file type. Please select an audio or video file.')
         e.target.value = ''
@@ -80,8 +53,12 @@ const OfflinePage: React.FC = () => {
   };
 
   const addFile = async (file: File, handle?: any) => {
+    debugger;
     const newFile: OfflineFile = {
-      id: crypto.randomUUID(),
+      id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      }),
       filename: file.name,
       title: file.name.replace(/\.[^/.]+$/, ''),
       type: file.type,
@@ -101,6 +78,7 @@ const OfflinePage: React.FC = () => {
 
   // Called when user re-picks a file after iOS session cleared the Blob
   const handleReSelectChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugger;
     const picked = e.target.files?.[0];
     const pending = pendingPlayFileRef.current;
     e.target.value = '';
@@ -120,6 +98,8 @@ const OfflinePage: React.FC = () => {
   };
 
   const handlePlay = async (file: OfflineFile) => {
+    debugger;
+    console.log('handlePlay', file);
     try {
       let blob: Blob;
 
@@ -174,22 +154,13 @@ const OfflinePage: React.FC = () => {
     <div className="flex flex-col gap-6 pb-24">
       <div className="flex items-center justify-between px-2">
         <h1 className="text-2xl font-extrabold text-sage-dark">Offline Library</h1>
-        <button
-          onClick={handleUploadClick}
-          className="flex items-center gap-2 px-4 py-2.5 bg-sage-dark text-white rounded-2xl font-bold text-sm shadow-lg shadow-sage-dark/20 active:scale-95 transition-all"
-        >
-          <Plus size={18} />
-          <span>Add Local File</span>
-        </button>
+        <input
+          type="file"
+          accept="audio/*,video/*"
+          className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-sage-dark file:text-white hover:file:bg-sage-dark/90 cursor-pointer"
+          onChange={handleFileInputChange}
+        />
       </div>
-
-      {/* Add new file — no accept filter so iOS can pick .m4b */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        onChange={handleFileInputChange}
-      />
 
       {/* iOS re-select: triggered automatically when Blob is missing */}
       <input
@@ -218,6 +189,7 @@ const OfflinePage: React.FC = () => {
               onPlay={handlePlay}
               onDelete={handleDelete}
               onProgressUpdate={updateOfflineFileProgress}
+              onGetBlob={(id) => transientBlobsRef.current[id]}
             />
           ))}
         </div>
@@ -233,15 +205,7 @@ const OfflinePage: React.FC = () => {
         </div>
       )}
 
-      {/* Desktop note */}
-      {'showOpenFilePicker' in window && files.length > 0 && (
-        <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 flex gap-3 text-violet-700">
-          <Info size={18} className="shrink-0" />
-          <p className="text-[0.7rem] font-medium leading-relaxed">
-            On Desktop, we store a reference to your files. If you move or rename them, you'll need to re-add them.
-          </p>
-        </div>
-      )}
+
 
       <OfflinePlayer
         file={selectedFile}
