@@ -24,6 +24,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const [duration, setDuration] = useState(0)
   const lastSavedPctRef = useRef<number>(file.playProgress || 0)
   const reSelectFileRef = useRef<HTMLInputElement>(null)
+  const wantPlayRef = useRef(false)
 
   // Cleanup object URL on unmount
   useEffect(() => {
@@ -38,11 +39,36 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
     return <File size={18} />
   }
 
+  /**
+   * Start playback from a Blob, all within the user-gesture call stack.
+   * iOS Safari requires play() to be called synchronously from a tap handler.
+   */
+  const startFromBlob = (blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    if (audioUrl) URL.revokeObjectURL(audioUrl)
+    setAudioUrl(url)
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    audio.src = url
+    audio.load()
+    wantPlayRef.current = true
+    // play() will be called from onCanPlayThrough to ensure iOS has buffered enough
+    // But also try here — on some browsers this works directly
+    audio.play().then(() => {
+      setIsPlaying(true)
+    }).catch(() => {
+      // iOS may reject here — onCanPlayThrough will retry
+      console.log('play() rejected, waiting for canplaythrough')
+    })
+    setIsPlaying(true)
+  }
+
   // --- Audio handlers ---
   const handleAudioPlay = async () => {
-    debugger;
     // If audio is already loaded, just toggle play/pause
-    if (audioUrl && audioRef.current) {
+    if (audioUrl && audioRef.current && audioRef.current.src) {
       togglePlay()
       return
     }
@@ -55,9 +81,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
           await file.fileHandle.requestPermission({ mode: 'read' })
         }
         const blob = await file.fileHandle.getFile()
-        const url = URL.createObjectURL(blob)
-        setAudioUrl(url)
-        setIsPlaying(true)
+        startFromBlob(blob)
       } catch (e) {
         console.error('Could not access file handle', e)
         alert('Need to re-select the file to access it again.')
@@ -68,9 +92,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
     // 2. iOS/Mobile: Blob in transient memory from this session
     const transientBlob = onGetBlob?.(file.id)
     if (transientBlob) {
-      const url = URL.createObjectURL(transientBlob)
-      setAudioUrl(url)
-      setIsPlaying(true)
+      startFromBlob(transientBlob)
       return
     }
 
@@ -79,14 +101,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   }
 
   const togglePlay = () => {
-    debugger;
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause()
         setIsPlaying(false)
+        wantPlayRef.current = false
       } else {
-        audioRef.current.play()
+        audioRef.current.play().catch(console.error)
         setIsPlaying(true)
+        wantPlayRef.current = true
       }
     }
   }
@@ -94,28 +117,48 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const handleReSelectChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0]
     if (picked) {
-      const url = URL.createObjectURL(picked)
-      setAudioUrl(url)
-      setIsPlaying(true)
+      startFromBlob(picked)
     }
     e.target.value = ''
   }
 
-  // Once audioUrl is set, start playing
-  useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.play().catch(console.error)
-    }
-  }, [audioUrl])
-
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      setDuration(audioRef.current.duration)
-      // Resume from stored progress
-      const startTime = (file.playProgress / 100) * audioRef.current.duration
+      const dur = audioRef.current.duration
+      setDuration(dur)
+      // Seek to stored progress
+      const startTime = (file.playProgress / 100) * dur
       if (!isNaN(startTime) && startTime > 0) {
-        audioRef.current.currentTime = startTime
+        try {
+          audioRef.current.currentTime = startTime
+        } catch {
+          // will retry in canplaythrough
+        }
       }
+    }
+  }
+
+  // iOS: large blob URLs may not be seekable until enough is buffered.
+  // canplaythrough fires when the browser estimates it can play without stopping.
+  const handleCanPlayThrough = () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    // Retry seek if needed
+    const startTime = (file.playProgress / 100) * audio.duration
+    if (!isNaN(startTime) && startTime > 0 && audio.currentTime < 1) {
+      try {
+        audio.currentTime = startTime
+      } catch (e) {
+        console.warn('Seek failed on canplaythrough', e)
+      }
+    }
+
+    // Retry play if we intended to play
+    if (wantPlayRef.current && audio.paused) {
+      audio.play().then(() => {
+        setIsPlaying(true)
+      }).catch(console.error)
     }
   }
 
@@ -149,14 +192,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
 
   return (
     <div className="bg-glass backdrop-blur-zen border border-glass-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group">
-      {/* Hidden audio element for inline playback */}
-      {isAudio && audioUrl && (
+      {/* Audio element — always rendered so we can set src imperatively from tap handler */}
+      {isAudio && (
         <audio
           ref={audioRef}
-          src={audioUrl}
+          preload="auto"
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlayThrough={handleCanPlayThrough}
           onTimeUpdate={handleTimeUpdate}
-          onEnded={() => setIsPlaying(false)}
+          onEnded={() => { setIsPlaying(false); wantPlayRef.current = false }}
         />
       )}
 
@@ -165,7 +209,6 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
         type="file"
         ref={reSelectFileRef}
         className="hidden"
-
         onChange={handleReSelectChange}
       />
 

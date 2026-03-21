@@ -156,7 +156,7 @@ const OfflinePage: React.FC = () => {
         <h1 className="text-2xl font-extrabold text-sage-dark">Offline Library</h1>
         <input
           type="file"
-          accept="audio/*,video/*"
+
           className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-sage-dark file:text-white hover:file:bg-sage-dark/90 cursor-pointer"
           onChange={handleFileInputChange}
         />
