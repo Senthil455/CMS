@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import { BookmarkDialog } from '../components/BookmarkDialog';
-import { ContentList } from '@/components/ContentList';
-import { Content } from '@/types';
-import { ContentViewer } from '@/components/ContentViewer';
 import { useOnlineStatus } from '@/hooks';
 import useSWR from 'swr';
 import { useGetCmsAssetsUrl } from '@cms/sdk';

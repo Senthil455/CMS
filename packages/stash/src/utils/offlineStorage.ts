@@ -20,11 +20,6 @@ export async function getAllOfflineFiles(): Promise<OfflineFile[]> {
   return db.getAll(OFFLINE_STORE_NAME)
 }
 
-export async function getOfflineFile(id: string): Promise<OfflineFile | undefined> {
-  const db = await initializeDB()
-  return db.get(OFFLINE_STORE_NAME, id)
-}
-
 export async function updateOfflineFileProgress(id: string, progress: number): Promise<void> {
   const db = await initializeDB()
   const file = await db.get(OFFLINE_STORE_NAME, id)

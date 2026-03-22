@@ -1,13 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
-import { Content } from '@/types'
 import { useOnlineStatus } from '@/hooks'
 import { initializeDB } from '@/utils/storage'
 import { StatusBar } from '@/components/StatusBar'
-import { SearchBar } from '@/components/SearchBar'
-import { ContentList } from '@/components/ContentList'
-import { ContentViewer } from '@/components/ContentViewer'
-import { CacheStats } from '@/components/CacheStats'
 import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'
 import { TopBar } from '@/components/TopBar'
@@ -33,8 +28,6 @@ axios.defaults.withCredentials = true;
 
 function AppContent() {
   const { data: userInfo, isLoading: isUserLoading } = useUserInfo()
-  const [selectedContent, setSelectedContent] = useState<Content | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
   const [syncStatus, setSyncStatus] = useState({
     isSyncing: false,
     error: null as string | null,
@@ -58,16 +51,7 @@ function AppContent() {
     })
   }, [])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file && file.type.startsWith('audio/')) {
-      const url = URL.createObjectURL(file)
-      setLocalAudio({
-        src: url,
-        title: file.name.replace(/\.[^/.]+$/, "") // Remove extension
-      })
-    }
-  }
+
 
   const handleClosePlayer = () => {
     if (localAudio?.src) {
