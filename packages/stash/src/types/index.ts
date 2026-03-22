@@ -47,6 +47,9 @@ export interface BookmarkItem {
   subtitle: string
   publishedAt: string
   url: string
+  entityName?: string
+  content?: string
+  folderId?: number
 }
 
 export interface BookmarkFolder {

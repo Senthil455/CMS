@@ -64,5 +64,18 @@ export const engagementApi = {
     const response = await fetch(`${apiBaseUrl}/api/bookmarks/list/${folderId}?offset=${offset}&limit=${limit}&sort[id]=-1`, { headers });
     if (!response.ok) throw new Error('Failed to fetch bookmark list');
     return response.json();
+  },
+
+  async fetchContentTagBatch(entityName: string, recordIds: number[]): Promise<any[]> {
+    if (recordIds.length === 0) return [];
+    
+    // Construct query parameters: ?entityName=post&recordId=1&recordId=2...
+    const params = new URLSearchParams();
+    params.append('entityName', entityName);
+    recordIds.forEach(id => params.append('recordId', id.toString()));
+
+    const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?${params.toString()}`);
+    if (!response.ok) throw new Error(`Failed to fetch content tags for entity ${entityName}`);
+    return response.json();
   }
 };

@@ -50,6 +50,7 @@ export const ENDPOINTS = {
         CONVERT_MP3: '/api/assets/convert-mp3/:id',
         CONVERT_M4B: '/api/assets/convert-m4b/:id',
         CONVERT_M4A: '/api/assets/convert-m4a/:id',
+        PROGRESS: '/api/assets/progress',
     },
     TASKS: {
         ENTITY: '/api/tasks/entity',

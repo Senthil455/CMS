@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { BookmarkItem, BookmarkFolder } from '@/types';
 import { getAllBookmarks, getAllBookmarkFolders, saveBookmarks, clearBookmarks } from '@/utils/storage';
-import { engagementApi } from '@/utils/engagementApi';
 import { useOnlineStatus } from '@/hooks';
+import { syncBookmarksStore } from '@/components/SyncManager';
 
 const BookmarksPage: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+
+  const handleSpeak = (content: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const doc = new DOMParser().parseFromString(content, 'text/html');
+      const textContent = doc.body.textContent || "";
+      const utterance = new SpeechSynthesisUtterance(textContent);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
   const [folders, setFolders] = useState<BookmarkFolder[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const { isOnline } = useOnlineStatus();
 
@@ -32,16 +42,7 @@ const BookmarksPage: React.FC = () => {
     if (isOnline) {
       const refreshRemote = async () => {
         try {
-          // You could also refresh folders here if needed, but SyncManager handles heavy lifting
-          const listRes = await engagementApi.fetchBookmarkList(selectedFolder || 0, 0, 100);
-          
-          // Only replace if it's the "All" view to prevent wiping out IDB with partial views
-          if (!selectedFolder) {
-            await clearBookmarks();
-            await saveBookmarks(listRes.items || []);
-          }
-          
-          // Reload from local to reflect changes
+          await syncBookmarksStore();
           await loadLocalData();
         } catch (e) {
           console.warn('Foreground bookmark sync failed:', e);
@@ -49,7 +50,7 @@ const BookmarksPage: React.FC = () => {
       };
       refreshRemote();
     }
-  }, [isOnline, selectedFolder]);
+  }, [isOnline]);
 
   // Filter bookmarks locally since we sync all of them, or if specific folder is selected
   // Wait, if API returns specific folders, does our locally saved 'all' bookmarks contain folder info?
@@ -58,7 +59,7 @@ const BookmarksPage: React.FC = () => {
   // There is NO folderId in the BookmarkItem! 
   // If there's no folderId, filtering strictly locally is currently not feasible unless we store the folder mapping.
   // For now, if a folder is selected, we must fetch from the API if online, or show an indicator that offline filtering isn't supported.
-  
+
   // To avoid complexity right now, we will just show everything if no folder is selected. 
   // If a folder IS selected, we just render what `bookmarks` state has (which gets updated by the `refreshRemote` above).
 
@@ -76,25 +77,14 @@ const BookmarksPage: React.FC = () => {
 
       {folders.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
-          <button
-            onClick={() => setSelectedFolder(null)}
-            className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-              selectedFolder === null 
-                ? 'bg-sage-dark text-white border-transparent shadow-md' 
-                : 'bg-white text-gray-600 border-gray-200 hover:border-sage-medium hover:text-sage-dark'
-            }`}
-          >
-            All Bookmarks
-          </button>
           {folders.map(folder => (
             <button
               key={folder.id}
               onClick={() => setSelectedFolder(folder.id)}
-              className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                selectedFolder === folder.id 
-                  ? 'bg-sage-dark text-white border-transparent shadow-md' 
+              className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all border ${selectedFolder === folder.id
+                  ? 'bg-sage-dark text-white border-transparent shadow-md'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-sage-medium hover:text-sage-dark'
-              }`}
+                }`}
             >
               {folder.name || 'Default'}
             </button>
@@ -110,9 +100,9 @@ const BookmarksPage: React.FC = () => {
             </svg>
           </div>
         </div>
-      ) : bookmarks.length > 0 ? (
+      ) : bookmarks.filter(b => b.folderId === selectedFolder).length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {bookmarks.map(item => (
+          {bookmarks.filter(b => b.folderId === selectedFolder).map(item => (
             <a
               key={item.id}
               href={item.url}
@@ -136,7 +126,24 @@ const BookmarksPage: React.FC = () => {
                 )}
               </div>
               <div className="flex flex-col gap-1 px-1 mt-1">
-                <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2">{item.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2">{item.title}</h3>
+                  {item.content && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSpeak(item.content!);
+                      }}
+                      className="p-1.5 shrink-0 bg-sage-light/30 hover:bg-sage-light/60 text-sage-dark rounded-full transition-colors"
+                      aria-label="Play text-to-speech"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 <p className="text-[0.8rem] text-text-muted line-clamp-2 leading-relaxed">{item.subtitle}</p>
                 <p className="text-[0.65rem] text-text-muted mt-2 font-bold uppercase tracking-wider">
                   {new Date(item.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}

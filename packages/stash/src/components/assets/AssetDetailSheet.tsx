@@ -7,6 +7,8 @@ interface AssetDetailSheetProps {
   asset: any | null;
   getCmsAssetUrl: (path: string) => string;
   isConverting: boolean;
+  conversionProgress?: number | null;
+  conversionType?: 'mp3' | 'm4a' | null;
   onClose: () => void;
   onConvertToMp3: (id: number) => void;
   onConvertToM4a: (id: number) => void;
@@ -17,6 +19,8 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
   asset, 
   getCmsAssetUrl, 
   isConverting, 
+  conversionProgress,
+  conversionType,
   onClose, 
   onConvertToMp3,
   onConvertToM4a,
@@ -117,7 +121,7 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
                     {isConverting
                       ? <Loader2 className="animate-spin" size={20} />
                       : <Music size={20} />}
-                    <span>Convert MP3</span>
+                    <span>{isConverting && conversionType === 'mp3' && conversionProgress !== null ? `${conversionProgress}%` : "Convert MP3"}</span>
                   </button>
 
                   <button
@@ -128,7 +132,7 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
                     {isConverting
                       ? <Loader2 className="animate-spin" size={20} />
                       : <Music size={20} />}
-                    <span>Convert M4A</span>
+                    <span>{isConverting && conversionType === 'm4a' && conversionProgress !== null ? `${conversionProgress}%` : "Convert M4A"}</span>
                   </button>
                   </>
                 )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAssets, useGetCmsAssetsUrl, downloadVideo, convertToMp3, convertToM4a, deleteAsset } from "@cms/sdk";
+import { useAssets, useGetCmsAssetsUrl, downloadVideo, convertToMp3, convertToM4a, deleteAsset, getAssetProgress } from "@cms/sdk";
 import AssetTabBar, { AssetTab } from "../components/assets/AssetTabBar";
 import AssetGrid from "../components/assets/AssetGrid";
 import AddAssetFab from "../components/assets/AddAssetFab";
@@ -13,6 +13,8 @@ const AssetsPage: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState<number | null>(null);
+  const [conversionType, setConversionType] = useState<'mp3' | 'm4a' | null>(null);
   const [downloadError, setDownloadError] = useState('');
 
   // SWR hook for assets
@@ -51,29 +53,104 @@ const AssetsPage: React.FC = () => {
 
   const handleConvertToMp3 = async (id: number) => {
     setIsConverting(true);
+    setConversionType('mp3');
+    setConversionProgress(0);
     try {
-      await convertToMp3(id);
-      mutate();
-      setSelectedAsset(null);
+      const res = await convertToMp3(id) as any;
+      if (res.error) {
+        alert(res.errorDetail?.title || res.error);
+        setIsConverting(false);
+        setConversionProgress(null);
+        setConversionType(null);
+        return;
+      }
+      const newPath = res?.data?.path || (typeof res?.data === 'string' ? res.data : null);
+      
+      if (newPath) {
+        const pollInfo = async () => {
+          try {
+            const progRes = await getAssetProgress(newPath) as any;
+            const progress = progRes?.data?.progress;
+            if (progress !== undefined) {
+              setConversionProgress(progress);
+              if (progress >= 100) {
+                mutate();
+                setIsConverting(false);
+                setConversionProgress(null);
+                setSelectedAsset(null);
+                return;
+              }
+            }
+          } catch (e) {
+            console.warn("Polling error:", e);
+          }
+          setTimeout(pollInfo, 1000);
+        };
+        setTimeout(pollInfo, 1000);
+      } else {
+        mutate();
+        setSelectedAsset(null);
+        setIsConverting(false);
+        setConversionProgress(null);
+        setConversionType(null);
+      }
     } catch (err) {
       console.error(err);
-    } finally {
       setIsConverting(false);
+      setConversionProgress(null);
+      setConversionType(null);
     }
   };
 
-
-
   const handleConvertToM4a = async (id: number) => {
     setIsConverting(true);
+    setConversionType('m4a');
+    setConversionProgress(0);
     try {
-      await convertToM4a(id);
-      mutate();
-      setSelectedAsset(null);
+      const res = await convertToM4a(id) as any;
+      if (res.error) {
+        alert(res.errorDetail?.title || res.error);
+        setIsConverting(false);
+        setConversionProgress(null);
+        setConversionType(null);
+        return;
+      }
+      const newPath = res?.data?.path || (typeof res?.data === 'string' ? res.data : null);
+      
+      if (newPath) {
+        const pollInfo = async () => {
+          try {
+            const progRes = await getAssetProgress(newPath) as any;
+            const progress = progRes?.data?.progress;
+            if (progress !== undefined) {
+              setConversionProgress(progress);
+              if (progress >= 100) {
+                mutate();
+                setIsConverting(false);
+                setConversionProgress(null);
+                setConversionType(null);
+                setSelectedAsset(null);
+                return;
+              }
+            }
+          } catch (e) {
+            console.warn("Polling error:", e);
+          }
+          setTimeout(pollInfo, 1000);
+        };
+        setTimeout(pollInfo, 1000);
+      } else {
+        mutate();
+        setSelectedAsset(null);
+        setIsConverting(false);
+        setConversionProgress(null);
+        setConversionType(null);
+      }
     } catch (err) {
       console.error(err);
-    } finally {
       setIsConverting(false);
+      setConversionProgress(null);
+      setConversionType(null);
     }
   };
 
@@ -121,6 +198,8 @@ const AssetsPage: React.FC = () => {
         asset={selectedAsset} 
         getCmsAssetUrl={getCmsAssetUrl} 
         isConverting={isConverting} 
+        conversionProgress={conversionProgress}
+        conversionType={conversionType}
         onClose={() => setSelectedAsset(null)} 
         onConvertToMp3={handleConvertToMp3} 
         onConvertToM4a={handleConvertToM4a}

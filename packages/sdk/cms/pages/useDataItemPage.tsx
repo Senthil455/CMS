@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { deleteItem, updateItem, useItemData, savePublicationSettings, aiGenerateData, fetchAiProviders } from "../services/entity";
+import { deleteItem, updateItem, useItemData, savePublicationSettings } from "../services/entity";
 import { useAiGenerate } from "../hooks/useAiGenerate";
 import { Picklist } from "../containers/Picklist";
 import { useCheckError } from "../../hooks/useCheckError";
@@ -8,7 +8,7 @@ import { TreeContainer } from "../containers/TreeContainer";
 import { SetPublishStatusDialog } from "../containers/PublishDialog";
 import { createConfirm } from "../../hooks/createConfirm";
 import { FetchingStatus } from "../../containers/FetchingStatus";
-import { Dialog } from "primereact/dialog";
+
 import { DefaultAttributeNames } from "../types/defaultAttributeNames";
 import { PublicationStatus } from "../types/publicationStatus";
 import { SpecialQueryKeys } from "../types/specialQueryKeys";
@@ -121,7 +121,7 @@ export function useDataItemPage(
         const inputAttrs = getInputAttrs(schema.attributes);
         const getCmsAssetUrl = useGetCmsAssetsUrl();
         const { handleErrorOrSuccess, CheckErrorStatus } = useCheckError(componentConfig);
-        const { register, handleSubmit, control, setValue, getValues } = useForm();
+        const { register, handleSubmit, control, getValues } = useForm();
         const { AiGenerateDialog } = useAiGenerate(
             schema, 
             getValues, 

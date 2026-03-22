@@ -70,3 +70,7 @@ export function convertToM4b(id: number) {
 export function convertToM4a(id: number) {
     return catchResponse(() => axios.post(fullCmsApiUrl(ENDPOINTS.ASSETS.CONVERT_M4A.replace(':id', id.toString()))))
 }
+
+export function getAssetProgress(path: string) {
+    return catchResponse(() => axios.get(fullCmsApiUrl(`${ENDPOINTS.ASSETS.PROGRESS}?path=${encodeURIComponent(path)}`)))
+}
