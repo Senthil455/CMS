@@ -64,16 +64,15 @@ const BookmarksPage: React.FC = () => {
   // If a folder IS selected, we just render what `bookmarks` state has (which gets updated by the `refreshRemote` above).
 
   return (
-    <div className="flex flex-col gap-6 font-inter pb-20">
-      <div className="flex items-center justify-between px-1">
-        <h1 className="text-2xl font-extrabold text-sage-dark tracking-tight">Your Bookmarks</h1>
-        {!isOnline && (
-          <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-bold shadow-sm border border-amber-100 uppercase tracking-wider">
+    <div className="flex flex-col gap-6 font-inter pb-24">
+      {!isOnline && (
+        <div className="px-1">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-bold shadow-sm border border-amber-100 uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
             Offline
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {folders.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
@@ -125,7 +124,7 @@ const BookmarksPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-1 px-1 mt-1">
+              <div className="flex flex-col gap-2 px-1 mt-2 pb-1 bg-transparent">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2">{item.title}</h3>
                   {item.content && (

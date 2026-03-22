@@ -14,9 +14,9 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
     <motion.div
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(asset)}
-      className="bg-glass backdrop-blur-zen rounded-[24px] border border-glass-border overflow-hidden shadow-sm hover:shadow-md transition-all group cursor-pointer"
+      className="bg-glass backdrop-blur-zen rounded-2xl border border-glass-border shadow-sm hover:shadow-md transition-all group cursor-pointer flex flex-col"
     >
-      <div className="aspect-square bg-sage-light/20 flex items-center justify-center relative overflow-hidden">
+      <div className="aspect-video bg-sage-light/20 flex items-center justify-center relative overflow-hidden rounded-t-2xl">
         {asset.type?.startsWith('image/') ? (
           <img 
             src={getCmsAssetUrl(asset.path)} 
@@ -48,11 +48,11 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
           </div>
         )}
       </div>
-      <div className="p-3">
+      <div className="p-3 pb-4 flex flex-col min-h-0">
         <h3 className="text-[0.8rem] font-bold text-sage-dark truncate mb-1">{asset.title || asset.name}</h3>
-        <div className="flex justify-between items-center text-[0.65rem] text-text-muted">
-          <span>{formatSize(asset.size || 0)}</span>
-          <span className="uppercase">{asset.type?.split('/')[1] || 'FILE'}</span>
+        <div className="flex justify-between items-center text-[0.65rem] text-text-muted min-w-0 gap-2">
+          <span className="truncate">{formatSize(asset.size || 0)}</span>
+          <span className="uppercase shrink-0">{asset.type?.split('/')[1] || 'FILE'}</span>
         </div>
       </div>
     </motion.div>

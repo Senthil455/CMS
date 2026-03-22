@@ -268,7 +268,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
 
       {/* Inline audio seek bar — only shown when audio is loaded */}
       {isAudio && audioUrl && (
-        <div className="mt-3 px-1 flex items-center gap-3">
+        <div className="mt-3 mb-1 px-1 flex items-center gap-3">
           <span className="text-[0.6rem] font-bold text-text-muted w-8 text-right shrink-0">{formatTime(currentTime)}</span>
           <input
             type="range"

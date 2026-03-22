@@ -152,11 +152,9 @@ const OfflinePage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <div className="flex items-center justify-between px-2">
-        <h1 className="text-2xl font-extrabold text-sage-dark">Offline Library</h1>
+      <div className="flex items-center justify-end px-2">
         <input
           type="file"
-
           className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-sage-dark file:text-white hover:file:bg-sage-dark/90 cursor-pointer"
           onChange={handleFileInputChange}
         />
@@ -171,7 +169,7 @@ const OfflinePage: React.FC = () => {
       />
 
       {files.length === 0 && !isLoading ? (
-        <div className="p-10 border-2 border-dashed border-sage-light/50 rounded-[40px] flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
+        <div className="p-10 border-2 border-dashed border-sage-light/50 rounded-3xl flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
           <div className="w-16 h-16 bg-sage-light/30 rounded-2xl flex items-center justify-center text-sage-medium mb-4">
             <FolderOpen size={32} />
           </div>

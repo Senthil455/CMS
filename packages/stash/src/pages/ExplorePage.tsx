@@ -40,10 +40,9 @@ const ExplorePage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24">
 
-      <div className="flex flex-col gap-6 mt-2">
-        <h2 className="text-[1.1rem] font-extrabold text-sage-dark px-1 tracking-tight">Top Trending Content</h2>
+      <div className="flex flex-col gap-6 mt-1">
 
         {isTopListLoading ? (
           <div className="flex items-center justify-center p-8 bg-glass backdrop-blur-zen border border-glass-border rounded-3xl shadow-sm">
@@ -72,9 +71,9 @@ const ExplorePage: React.FC = () => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex flex-col gap-1 px-1 mt-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2">{item.title}</h3>
+                <div className="flex flex-col gap-2 px-1 mt-2 pb-1 bg-transparent">
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2 flex-1 min-w-0">{item.title}</h3>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={(e) => {
