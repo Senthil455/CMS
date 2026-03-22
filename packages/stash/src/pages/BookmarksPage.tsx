@@ -3,18 +3,16 @@ import { BookmarkItem, BookmarkFolder } from '@/types';
 import { getAllBookmarks, getAllBookmarkFolders, saveBookmarks, clearBookmarks } from '@/utils/storage';
 import { useOnlineStatus } from '@/hooks';
 import { syncBookmarksStore } from '@/components/SyncManager';
+import { useTTS } from '@/contexts/TTSContext';
 
 const BookmarksPage: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
 
-  const handleSpeak = (content: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const doc = new DOMParser().parseFromString(content, 'text/html');
-      const textContent = doc.body.textContent || "";
-      const utterance = new SpeechSynthesisUtterance(textContent);
-      window.speechSynthesis.speak(utterance);
-    }
+  const tts = useTTS();
+
+  const handleSpeak = (item: BookmarkItem) => {
+    tts.setCurrentTitle(item.title);
+    tts.play(item.content || "", `${item.entityName}_${item.recordId}`);
   };
   const [folders, setFolders] = useState<BookmarkFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<number>(0);
@@ -140,7 +138,7 @@ const BookmarksPage: React.FC = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleSpeak(item.content!);
+                      handleSpeak(item);
                     }}
                     className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
                     aria-label="Play text-to-speech"

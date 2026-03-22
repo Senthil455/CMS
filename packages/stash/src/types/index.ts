@@ -29,6 +29,7 @@ export interface BookmarkItem {
   publishedAt: string
   url: string
   entityName?: string
+  recordId?: string
   content?: string
   folderId?: number
 }

@@ -31,10 +31,17 @@ export const syncBookmarksStore = async () => {
       
       // Compare with local items to see if we can skip the heavy contentTag payload
       items.forEach(item => {
+        const parts = item.url?.split('/').filter(Boolean) || []
+        if (parts.length >= 2) {
+           item.entityName = parts[0];
+           item.recordId = parts[1];
+        }
+
         const existing = existingBookmarksMap.get(item.id)
         if (existing && existing.content && existing.publishedAt === item.publishedAt) {
           item.content = existing.content
           item.entityName = existing.entityName
+          item.recordId = existing.recordId
         } else {
           itemsToFetchContent.push(item)
         }
@@ -70,6 +77,7 @@ export const syncBookmarksStore = async () => {
               if (tagData && tagData.content) {
                 item.content = tagData.content
                 item.entityName = entityName
+                item.recordId = recordId
               }
             })
           } catch (e) {

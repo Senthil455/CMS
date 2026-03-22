@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { BookmarkDialog } from '../components/BookmarkDialog';
-import { useOnlineStatus } from '@/hooks';
+import { useTTS } from '../contexts/TTSContext';
 import useSWR from 'swr';
-import { useGetCmsAssetsUrl } from '@cms/sdk';
 
 interface TopListItem {
   recordId: string;
@@ -17,8 +16,6 @@ interface TopListItem {
 
 const ExplorePage: React.FC = () => {
   const [bookmarkTarget, setBookmarkTarget] = useState<{ entityName: string, recordId: string } | null>(null);
-  const { isOnline } = useOnlineStatus();
-  const getCmsAssetUrl = useGetCmsAssetsUrl();
 
   const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? import.meta.env.VITE_APP_API_URL ?? '';
   const { data: topList, error: topListError, isLoading: isTopListLoading } = useSWR<TopListItem[]>(
@@ -26,14 +23,11 @@ const ExplorePage: React.FC = () => {
     (url: string) => fetch(url).then(res => res.json())
   );
 
-  const handleSpeak = (content: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const doc = new DOMParser().parseFromString(content, 'text/html');
-      const textContent = doc.body.textContent || "";
-      const utterance = new SpeechSynthesisUtterance(textContent);
-      window.speechSynthesis.speak(utterance);
-    }
+  const tts = useTTS();
+
+  const handleSpeak = (item: TopListItem) => {
+    tts.setCurrentTitle(item.title);
+    tts.play(item.content, `${item.entityName}_${item.recordId}`);
   };
 
   return (
@@ -90,7 +84,7 @@ const ExplorePage: React.FC = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleSpeak(item.content);
+                      handleSpeak(item);
                     }}
                     className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
                     aria-label="Play text-to-speech"

@@ -66,3 +66,5 @@ export function useSyncStatus(): SyncStatus {
 
   return syncStatus
 }
+
+export * from './useSpeechSynthesis';

@@ -16,6 +16,9 @@ import BookmarksPage from './pages/BookmarksPage'
 import AssetsPage from './pages/AssetsPage'
 import OfflinePage from './pages/OfflinePage'
 import './App.css'
+import { TTSProvider, useTTS } from './contexts/TTSContext'
+import { TTSPlayer } from './components/TTSPlayer'
+import { TranscriptSheet } from './components/TranscriptSheet'
 
 // Configure SDK
 const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? '';
@@ -34,6 +37,7 @@ function AppContent() {
   })
   const [localAudio, setLocalAudio] = useState<{ src: string, title: string } | null>(null)
   const offlineState = useOnlineStatus()
+  const tts = useTTS()
 
   useEffect(() => {
     // Initialize database on mount
@@ -155,6 +159,20 @@ function AppContent() {
             onClose={handleClosePlayer} 
           />
         )}
+        
+        <TTSPlayer 
+          isPlaying={tts.isPlaying}
+          isPaused={tts.isPaused}
+          progress={tts.progress}
+          onPlay={() => {}}
+          onPause={tts.pause}
+          onResume={tts.resume}
+          onStop={tts.stop}
+          onViewTranscript={() => tts.setTranscriptOpen(true)}
+          title={tts.currentTitle || undefined}
+        />
+        
+        <TranscriptSheet />
       </div>
 
     </div>
@@ -164,7 +182,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter basename="/stash">
-      <AppContent />
+      <TTSProvider>
+        <AppContent />
+      </TTSProvider>
     </BrowserRouter>
   )
 }
