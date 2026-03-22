@@ -9,6 +9,7 @@ export interface TTSState {
   totalChars: number;
   chunks: { text: string, startOffset: number }[];
   currentChunkIndex: number;
+  error: string | null;
 }
 
 const CHUNK_SIZE = 4000;
@@ -22,6 +23,7 @@ export function useSpeechSynthesis() {
     totalChars: 0,
     chunks: [],
     currentChunkIndex: 0,
+    error: null,
   });
 
   const chunksRef = useRef<{ text: string; startOffset: number }[]>([]);
@@ -69,40 +71,62 @@ export function useSpeechSynthesis() {
     speakCurrentChunk();
   }, []);
 
-  const speakCurrentChunk = useCallback(() => {
+  // iOS Safari loads voices asynchronously. This waits until they are available.
+  const waitForVoices = (): Promise<SpeechSynthesisVoice[]> => {
+    return new Promise((resolve) => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        resolve(voices);
+        return;
+      }
+      const onVoicesChanged = () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+        resolve(window.speechSynthesis.getVoices());
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+      // Fallback in case voiceschanged never fires
+      setTimeout(() => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+        resolve(window.speechSynthesis.getVoices());
+      }, 1500);
+    });
+  };
+
+  const speakCurrentChunk = useCallback(async () => {
     if (playStateRef.current !== 'playing') return;
 
     window.speechSynthesis.cancel();
-    
+
+    // iOS Safari: calling speak() too soon after cancel() causes it to be silently dropped.
+    // A short delay lets the browser fully flush the queue before we speak.
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (playStateRef.current !== 'playing') return;
+
     const chunk = chunksRef.current[currentChunkIndexRef.current];
     if (!chunk) return;
 
-    const utterance = new SpeechSynthesisUtterance(chunk.text);
-    
-    const getBestVoice = (): SpeechSynthesisVoice | null => {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices.length) return null;
-  
-      // Prefer English voices
-      const enVoices = voices.filter(v => v.lang.startsWith('en'));
-      const candidateVoices = enVoices.length > 0 ? enVoices : voices;
-  
-      // Try to find a high quality cloud voice (Google, Premium, etc.)
-      const premiumVoice = candidateVoices.find(v => 
-        !v.localService || 
-        v.name.includes('Google') || 
-        v.name.includes('Premium') ||
-        v.name.includes('Online') ||
-        v.name.includes('Natural')
-      );
-  
-      if (premiumVoice) return premiumVoice;
-      return candidateVoices[0] || voices[0];
-    };
+    // Wait for voices (critical on iOS where voices load async)
+    const voices = await waitForVoices();
+    if (playStateRef.current !== 'playing') return;
 
-    const bestVoice = getBestVoice();
-    if (bestVoice) {
-      utterance.voice = bestVoice;
+    const utterance = new SpeechSynthesisUtterance(chunk.text);
+    // Prefer English voices first
+    const enVoices = voices.filter(v => v.lang.startsWith('en'));
+    const candidateVoices = enVoices.length > 0 ? enVoices : voices;
+
+    // Ranking: prefer cloud/premium/natural voices for quality
+    const rankedVoice = candidateVoices.find(v =>
+      v.name.includes('Samantha') || // iOS built-in high quality
+      v.name.includes('Karen') ||     // iOS AU high quality
+      v.name.includes('Daniel') ||    // iOS UK high quality
+      v.name.includes('Google') ||
+      v.name.includes('Natural') ||
+      v.name.includes('Premium') ||
+      v.name.includes('Enhanced')
+    ) || candidateVoices[0] || voices[0] || null;
+
+    if (rankedVoice) {
+      utterance.voice = rankedVoice;
     }
 
     utteranceRef.current = utterance;
@@ -141,7 +165,7 @@ export function useSpeechSynthesis() {
       if (e.error !== 'canceled' && e.error !== 'interrupted') {
         console.error('Speech synthesis error:', e);
         playStateRef.current = 'stopped';
-        updateState({ isPlaying: false, isPaused: false });
+        updateState({ isPlaying: false, isPaused: false, error: `Speech synthesis error: ${e.error}` });
       }
     };
 
@@ -183,6 +207,12 @@ export function useSpeechSynthesis() {
   };
 
   const play = async (htmlContent: string, key: string, resume: boolean = true) => {
+    // iOS Safari requires a synchronous call to speak() within a user-initiated event.
+    // This "warm-up" registers the user gesture for the current session.
+    const warmUp = new SpeechSynthesisUtterance('');
+    warmUp.volume = 0;
+    window.speechSynthesis.speak(warmUp);
+
     // Clean up existing
     window.speechSynthesis.cancel();
     currentKeyRef.current = key;
@@ -190,7 +220,7 @@ export function useSpeechSynthesis() {
     chunkCharOffsetRef.current = 0;
 
     const { length: totalLength, chunks } = prepareChunks(htmlContent);
-    updateState({ totalChars: totalLength, progress: 0, currentCharIndex: 0, chunks, currentChunkIndex: 0 });
+    updateState({ totalChars: totalLength, progress: 0, currentCharIndex: 0, chunks, currentChunkIndex: 0, error: null });
 
     currentChunkIndexRef.current = 0;
 
@@ -245,7 +275,7 @@ export function useSpeechSynthesis() {
     playStateRef.current = 'stopped';
     window.speechSynthesis.cancel();
     saveProgress();
-    updateState({ isPlaying: false, isPaused: false, progress: 0, currentCharIndex: 0 });
+    updateState({ isPlaying: false, isPaused: false, progress: 0, currentCharIndex: 0, error: null });
   };
   
   const seek = (chunkIndex: number) => {

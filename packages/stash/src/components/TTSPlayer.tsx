@@ -10,6 +10,7 @@ interface TTSPlayerProps {
   onStop: () => void;
   onViewTranscript?: () => void;
   title?: string;
+  error?: string | null;
 }
 
 export const TTSPlayer: React.FC<TTSPlayerProps> = ({
@@ -21,7 +22,8 @@ export const TTSPlayer: React.FC<TTSPlayerProps> = ({
   onResume,
   onStop,
   onViewTranscript,
-  title
+  title,
+  error
 }) => {
   if (!isPlaying && !isPaused) {
     return null;
@@ -36,6 +38,17 @@ export const TTSPlayer: React.FC<TTSPlayerProps> = ({
           style={{ width: `${Math.max(0, Math.min(100, progress * 100))}%` }}
         ></div>
       </div>
+
+      {error && (
+        <div className="w-full text-xs text-red-500 bg-red-50 px-2 py-1 rounded-md border border-red-100 flex items-center gap-1 mt-1 transition-all">
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+           </svg>
+           <span className="truncate">{error}</span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
          <div className="flex-1 min-w-0 pr-4">

@@ -170,6 +170,7 @@ function AppContent() {
           onStop={tts.stop}
           onViewTranscript={() => tts.setTranscriptOpen(true)}
           title={tts.currentTitle || undefined}
+          error={tts.error}
         />
         
         <TranscriptSheet />

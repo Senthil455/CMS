@@ -25,9 +25,28 @@ const ExplorePage: React.FC = () => {
 
   const tts = useTTS();
 
-  const handleSpeak = (item: TopListItem) => {
+  const handleSpeak = async (item: TopListItem) => {
     tts.setCurrentTitle(item.title);
-    tts.play(item.content, `${item.entityName}_${item.recordId}`);
+    
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?entityName=${item.entityName}&recordId=${item.recordId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch content details');
+      }
+      const data = await response.json();
+      
+      let speechContent = item.content;
+      if (Array.isArray(data) && data.length > 0 && data[0].content) {
+        speechContent = data[0].content;
+      } else if (data && !Array.isArray(data) && data.content) {
+        speechContent = data.content;
+      }
+      
+      tts.play(speechContent, `${item.entityName}_${item.recordId}`);
+    } catch (err) {
+      console.error("Error fetching content details for speech:", err);
+      tts.play(item.content, `${item.entityName}_${item.recordId}`);
+    }
   };
 
   return (

@@ -5,6 +5,7 @@ interface TTSContextType {
   isPlaying: boolean;
   isPaused: boolean;
   progress: number;
+  error: string | null;
   play: (text: string, key: string) => void;
   pause: () => void;
   resume: () => void;
