@@ -179,7 +179,7 @@ const OfflinePage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-2">
           {files.map(file => (
             <OfflineFileCard
               key={file.id}

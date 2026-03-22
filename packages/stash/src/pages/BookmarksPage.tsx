@@ -100,7 +100,7 @@ const BookmarksPage: React.FC = () => {
           </div>
         </div>
       ) : bookmarks.filter(b => b.folderId === selectedFolder).length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           {bookmarks.filter(b => b.folderId === selectedFolder).map(item => (
             <a
               key={item.id}

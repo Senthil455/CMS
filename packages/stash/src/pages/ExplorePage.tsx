@@ -57,58 +57,65 @@ const ExplorePage: React.FC = () => {
             Failed to load top trending content.
           </div>
         ) : topList && topList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {topList.map(item => (
               <a
                 key={item.recordId}
                 href={item.url}
-                className="flex flex-col gap-3 p-4 bg-glass backdrop-blur-zen border border-glass-border rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group no-underline"
+                className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 active:scale-[0.99] group no-underline cursor-pointer"
               >
-                <div className="aspect-video w-full rounded-2xl overflow-hidden bg-white/50 border border-white/20">
+                {/* Image */}
+                <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20">
                   <img
                     src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex flex-col gap-2 px-1 mt-2 pb-1 bg-transparent">
-                  <div className="flex items-start justify-between gap-2 min-w-0">
-                    <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2 flex-1 min-w-0">{item.title}</h3>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (item.entityName) {
-                            setBookmarkTarget({ entityName: item.entityName, recordId: item.recordId });
-                          }
-                        }}
-                        className="p-1.5 shrink-0 bg-sage-light/30 hover:bg-sage-light/60 text-sage-dark rounded-full transition-colors"
-                        aria-label="Bookmark"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSpeak(item.content);
-                        }}
-                        className="p-1.5 shrink-0 bg-sage-light/30 hover:bg-sage-light/60 text-sage-dark rounded-full transition-colors"
-                        aria-label="Play text-to-speech"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polygon points="5 3 19 12 5 21 5 3" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-[0.8rem] text-text-muted line-clamp-2 leading-relaxed">{item.subtitle}</p>
-                  <p className="text-[0.65rem] text-text-muted mt-2 font-bold uppercase tracking-wider">
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-sage-dark leading-tight line-clamp-2 mb-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-[0.7rem] text-text-muted line-clamp-1 mb-2">
+                    {item.subtitle}
+                  </p>
+                  <p className="text-[0.62rem] text-gray-400 font-bold uppercase tracking-wider">
                     {new Date(item.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSpeak(item.content);
+                    }}
+                    className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
+                    aria-label="Play text-to-speech"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-0.5">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (item.entityName) {
+                        setBookmarkTarget({ entityName: item.entityName, recordId: item.recordId });
+                      }
+                    }}
+                    className="w-9 h-9 flex items-center justify-center text-sage-medium hover:text-sage-dark hover:bg-sage-light/30 rounded-full transition-colors"
+                    aria-label="Bookmark"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </button>
                 </div>
               </a>
             ))}
