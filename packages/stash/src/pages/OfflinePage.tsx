@@ -152,7 +152,9 @@ const OfflinePage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <div className="flex items-center justify-end px-2">
+      <hr className="border-t border-gray-200/80 -mt-2 mb-0 mx-2" />
+
+      <div className="flex items-center justify-start px-2 mt-1">
         <input
           type="file"
           className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-sage-dark file:text-white hover:file:bg-sage-dark/90 cursor-pointer"
