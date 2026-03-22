@@ -69,59 +69,24 @@ export const ContentList: React.FC<ContentListProps> = ({
         <div
           key={content.id}
           onClick={() => onSelectContent(content)}
-          style={{
-            padding: '16px',
-            cursor: 'pointer',
-            background: selectedId === content.id ? 'var(--sage-light)' : 'var(--glass-bg)',
-            backdropFilter: 'blur(16px)',
-            borderRadius: '20px',
-            border: selectedId === content.id 
-              ? '1px solid var(--primary-color)' 
-              : '1px solid var(--glass-border)',
-            boxShadow: selectedId === content.id ? 'var(--card-shadow)' : 'none',
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+          className={`p-4 cursor-pointer rounded-2xl relative overflow-hidden transition-all duration-300 active:scale-[0.99] group ${
+            selectedId === content.id
+              ? 'bg-sage-light border border-primary-color shadow-md'
+              : 'bg-white border border-gray-100 shadow-sm hover:shadow-lg'
+          }`}
         >
-          <div style={{ 
-            fontWeight: 700, 
-            fontSize: '1rem', 
-            marginBottom: '6px',
-            color: 'var(--sage-dark)'
-          }}>
+          <div className="font-semibold text-lg text-sage-dark mb-1.5 leading-tight">
             {content.title}
           </div>
-          <div style={{ 
-            fontSize: '0.8rem', 
-            color: 'var(--text-muted)', 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis', 
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            lineHeight: 1.4,
-          }}>
+          <div className="text-sm text-gray-500 overflow-hidden line-clamp-2 leading-relaxed h-[40px]">
             {content.content}
           </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginTop: '12px',
-          }}>
-            <span style={{ 
-              fontSize: '0.7rem', 
-              color: 'var(--primary-color)',
-              fontWeight: 600,
-              background: 'rgba(109, 166, 122, 0.1)',
-              padding: '2px 8px',
-              borderRadius: '6px',
-            }}>
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-xs text-sage-dark font-medium bg-sage-light/50 px-2 py-0.5 rounded tracking-wide">
               {content.entityName || 'Article'}
             </span>
             {content.updatedAt && (
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+              <span className="text-[0.65rem] text-gray-400 font-medium tracking-wide uppercase">
                 {new Date(content.updatedAt).toLocaleDateString()}
               </span>
             )}

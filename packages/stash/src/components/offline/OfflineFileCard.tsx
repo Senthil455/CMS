@@ -191,7 +191,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const playbackProgress = duration > 0 ? (currentTime / duration) * 100 : file.playProgress || 0
 
   return (
-    <div className="bg-glass backdrop-blur-zen border border-glass-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group">
+    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 active:scale-[0.99] group cursor-pointer">
       {/* Audio element — always rendered so we can set src imperatively from tap handler */}
       {isAudio && (
         <audio
@@ -221,12 +221,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-[0.9rem] font-bold text-sage-dark truncate leading-tight mb-0.5">
+          <h3 className="text-lg font-semibold text-sage-dark truncate leading-tight mb-1">
             {file.title || file.filename}
           </h3>
-          <p className="text-[0.65rem] text-text-muted font-medium truncate mb-2">
-            {file.filename} • {formatSize(file.size)}
-          </p>
+          <div className="flex items-center gap-2 mb-3 mt-1">
+            <span className="px-2 py-0.5 bg-sage-light/50 text-sage-dark text-xs rounded font-medium">Downloaded</span>
+            <p className="text-sm text-gray-400 font-medium truncate">
+              {formatSize(file.size)} • {file.filename.split('.').pop()?.toUpperCase() || 'FILE'}
+            </p>
+          </div>
 
           {/* Progress bar — shows inline audio progress when playing, stored progress otherwise */}
           <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
