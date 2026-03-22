@@ -72,7 +72,7 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
               {/* Preview */}
-              <div className="rounded-2xl overflow-hidden bg-gray-50 mb-4" style={{ aspectRatio: '16/9' }}>
+              <div className="rounded-2xl overflow-hidden bg-gray-50 mb-4 flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
                 {asset.type?.startsWith('image/') ? (
                   <img
                     src={getCmsAssetUrl(asset.path)}
@@ -86,6 +86,16 @@ const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
                     controls
                     playsInline
                   />
+                ) : asset.type?.startsWith('audio/') ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-sage-light/10">
+                    <Music size={48} className="text-sage-medium" />
+                    <audio
+                      src={getCmsAssetUrl(asset.path)}
+                      className="w-[90%] max-w-[300px]"
+                      controls
+                      autoPlay
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <File size={48} className="text-sage-medium" />

@@ -64,26 +64,30 @@ const BookmarksPage: React.FC = () => {
   // If a folder IS selected, we just render what `bookmarks` state has (which gets updated by the `refreshRemote` above).
 
   return (
-    <div className="flex flex-col gap-6 font-inter pb-24">
-      {!isOnline && (
-        <div className="px-1">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-bold shadow-sm border border-amber-100 uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Offline
-          </span>
-        </div>
-      )}
+    <div className="flex flex-col gap-6 pb-24">
+      <hr className="border-t border-gray-200/80 -mt-2 mb-0 mx-2" />
+
+      <div className="flex flex-col gap-6 mt-1">
+        {!isOnline && (
+          <div className="px-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-bold shadow-sm border border-amber-100 uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              Offline
+            </span>
+          </div>
+        )}
 
       {folders.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
+        <div className="flex gap-2 p-1 bg-sage-light/50 rounded-2xl w-fit sticky top-0 z-10 backdrop-blur-md overflow-x-auto scrollbar-hide mx-1 mb-2">
           {folders.map(folder => (
             <button
               key={folder.id}
               onClick={() => setSelectedFolder(folder.id)}
-              className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all border ${selectedFolder === folder.id
-                  ? 'bg-sage-dark text-white border-transparent shadow-md'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-sage-medium hover:text-sage-dark'
-                }`}
+              className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-[0.62rem] font-bold uppercase tracking-wider transition-all duration-300 ${
+                selectedFolder === folder.id 
+                  ? 'bg-white text-sage-dark shadow-sm' 
+                  : 'text-sage-medium hover:text-sage-dark hover:bg-white/50'
+              }`}
             >
               {folder.name || 'Default'}
             </button>
@@ -100,14 +104,15 @@ const BookmarksPage: React.FC = () => {
           </div>
         </div>
       ) : bookmarks.filter(b => b.folderId === selectedFolder).length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-gray-200/40 rounded-2xl overflow-hidden border border-gray-200/40 shadow-sm">
           {bookmarks.filter(b => b.folderId === selectedFolder).map(item => (
             <a
               key={item.id}
               href={item.url}
-              className="flex flex-col gap-3 p-4 bg-glass backdrop-blur-zen border border-glass-border rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group no-underline"
+              className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group no-underline cursor-pointer"
             >
-              <div className="aspect-video w-full rounded-2xl overflow-hidden bg-white/50 border border-white/20">
+              {/* Image */}
+              <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20">
                 {item.image ? (
                   <img
                     src={item.image}
@@ -116,7 +121,7 @@ const BookmarksPage: React.FC = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
@@ -124,29 +129,37 @@ const BookmarksPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2 px-1 mt-2 pb-1 bg-transparent">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[0.95rem] font-bold text-sage-dark leading-tight line-clamp-2">{item.title}</h3>
-                  {item.content && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSpeak(item.content!);
-                      }}
-                      className="p-1.5 shrink-0 bg-sage-light/30 hover:bg-sage-light/60 text-sage-dark rounded-full transition-colors"
-                      aria-label="Play text-to-speech"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="5 3 19 12 5 21 5 3" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <p className="text-[0.8rem] text-text-muted line-clamp-2 leading-relaxed">{item.subtitle}</p>
-                <p className="text-[0.65rem] text-text-muted mt-2 font-bold uppercase tracking-wider">
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-sage-dark leading-tight line-clamp-2 mb-1">
+                  {item.title}
+                </h3>
+                <p className="text-[0.7rem] text-text-muted line-clamp-1 mb-2">
+                  {item.subtitle}
+                </p>
+                <p className="text-[0.62rem] text-gray-400 font-bold uppercase tracking-wider">
                   {new Date(item.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                 </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col items-center gap-2 shrink-0">
+                {item.content && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSpeak(item.content!);
+                    }}
+                    className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
+                    aria-label="Play text-to-speech"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-0.5">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </a>
           ))}
@@ -164,6 +177,7 @@ const BookmarksPage: React.FC = () => {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 };

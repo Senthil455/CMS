@@ -58,12 +58,12 @@ const ExplorePage: React.FC = () => {
             Failed to load top trending content.
           </div>
         ) : topList && topList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-gray-200/40 rounded-2xl overflow-hidden border border-gray-200/40 shadow-sm">
             {topList.map(item => (
               <a
                 key={item.recordId}
                 href={item.url}
-                className="flex items-center gap-3 p-2.5 hover:bg-white/60 rounded-xl transition-all duration-300 active:scale-[0.99] group no-underline cursor-pointer"
+                className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group no-underline cursor-pointer"
               >
                 {/* Image */}
                 <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20">

@@ -14,18 +14,16 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
     <motion.div
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(asset)}
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col"
+      className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group cursor-pointer"
     >
-      <div className="aspect-video bg-sage-light/20 flex items-center justify-center relative overflow-hidden rounded-t-2xl">
+      {/* Image */}
+      <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20 relative flex items-center justify-center">
         {asset.type?.startsWith('image/') ? (
-          <>
-            <img 
-              src={getCmsAssetUrl(asset.path)} 
-              alt={asset.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-          </>
+          <img 
+            src={getCmsAssetUrl(asset.path)} 
+            alt={asset.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : asset.type?.startsWith('video/') ? (
           <div className="w-full h-full relative">
             <video 
@@ -36,11 +34,13 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
               playsInline
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-              <Video className="text-white/70 drop-shadow-md" size={32} />
+              <Video className="text-white/70 drop-shadow-md" size={16} />
             </div>
           </div>
         ) : (
-          getFileIcon(asset.type || '')
+          <div className="w-full h-full scale-[0.6] origin-center flex items-center justify-center">
+            {getFileIcon(asset.type || '')}
+          </div>
         )}
         {asset.progress < 100 && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-sage-light/30">
@@ -51,16 +51,22 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
           </div>
         )}
       </div>
-      <div className="p-4 flex flex-col min-h-0 bg-white rounded-b-2xl z-10">
-        <h3 className="text-lg font-semibold text-sage-dark truncate mb-1.5">{asset.title || asset.name}</h3>
-        <div className="flex justify-between items-center gap-2 mb-2">
-          <p className="text-sm text-gray-500 truncate">{asset.description || 'No description available'}</p>
-        </div>
-        <div className="flex justify-between items-center text-xs text-gray-400 min-w-0 gap-2 mt-auto">
-          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-sage-light/50 text-sage-dark rounded font-medium truncate">
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-bold text-sage-dark leading-tight line-clamp-2 mb-1">
+          {asset.title || asset.name}
+        </h3>
+        <p className="text-[0.7rem] text-text-muted line-clamp-1 mb-2">
+          {asset.description || 'No description available'}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-[0.62rem] text-gray-400 font-bold uppercase tracking-wider">
             {formatSize(asset.size || 0)}
           </span>
-          <span className="uppercase shrink-0 tracking-wide font-medium">{asset.type?.split('/')[1] || 'FILE'}</span>
+          <span className="text-[0.62rem] text-sage-medium font-bold uppercase tracking-wider">
+            • {asset.type?.split('/')[1] || 'FILE'}
+          </span>
         </div>
       </div>
     </motion.div>

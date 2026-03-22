@@ -183,7 +183,9 @@ const AssetsPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <AssetTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <hr className="border-t border-gray-200/80 -mt-2 mb-0 mx-2" />
+      <div className="flex flex-col gap-6 mt-1">
+        <AssetTabBar activeTab={activeTab} onTabChange={setActiveTab} />
       
       <AssetGrid 
         assets={assets} 
@@ -215,6 +217,7 @@ const AssetsPage: React.FC = () => {
         onSubmit={handleAddAsset} 
         onClose={() => setShowAddAssetDialog(false)} 
       />
+      </div>
     </div>
   );
 };
