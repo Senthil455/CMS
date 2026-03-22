@@ -52,16 +52,6 @@ const BookmarksPage: React.FC = () => {
     }
   }, [isOnline]);
 
-  // Filter bookmarks locally since we sync all of them, or if specific folder is selected
-  // Wait, if API returns specific folders, does our locally saved 'all' bookmarks contain folder info?
-  // The API payload for bookmark list returned by user:
-  // { "id": 1, "updatedAt": "...", "image": "...", "title": "...", "url": "..." }
-  // There is NO folderId in the BookmarkItem! 
-  // If there's no folderId, filtering strictly locally is currently not feasible unless we store the folder mapping.
-  // For now, if a folder is selected, we must fetch from the API if online, or show an indicator that offline filtering isn't supported.
-
-  // To avoid complexity right now, we will just show everything if no folder is selected. 
-  // If a folder IS selected, we just render what `bookmarks` state has (which gets updated by the `refreshRemote` above).
 
   return (
     <div className="flex flex-col gap-6 pb-24">
