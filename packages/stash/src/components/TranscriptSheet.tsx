@@ -4,8 +4,9 @@ import { useTTS } from '../contexts/TTSContext';
 export const TranscriptSheet: React.FC = () => {
   const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle } = useTTS();
   const activeChunkRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to active chunk
+  // Auto-scroll to active sentence
   useEffect(() => {
     if (isTranscriptOpen && activeChunkRef.current) {
       activeChunkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -17,11 +18,11 @@ export const TranscriptSheet: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <h2 className="text-lg font-bold text-sage-dark line-clamp-1 flex-1 pr-4">
           {currentTitle || 'Transcript'}
         </h2>
-        <button 
+        <button
           onClick={() => setTranscriptOpen(false)}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
         >
@@ -33,26 +34,30 @@ export const TranscriptSheet: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <div className="max-w-2xl mx-auto space-y-4">
+      <div ref={containerRef} className="flex-1 overflow-y-auto px-5 py-4 pb-36">
+        <div className="max-w-2xl mx-auto">
           {chunks.length === 0 ? (
             <p className="text-center text-text-muted mt-10">No transcript available.</p>
           ) : (
             chunks.map((chunk, index) => {
               const isActive = index === currentChunkIndex;
-              
+
               return (
-                <div 
+                <div
                   key={index}
                   ref={isActive ? activeChunkRef : null}
                   onClick={() => seek(index)}
-                  className={`p-3 rounded-xl transition-all duration-300 cursor-pointer ${
-                    isActive 
-                      ? 'bg-sage-light/30 border border-sage-light/50 transform scale-[1.02] shadow-sm' 
+                  className={`px-3 py-2 my-1 rounded-xl transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? 'bg-amber-50 border border-amber-300 shadow-sm'
                       : 'hover:bg-gray-50 border border-transparent'
                   }`}
                 >
-                  <p className={`text-base leading-relaxed ${isActive ? 'text-sage-dark font-medium' : 'text-gray-600'}`}>
+                  <p className={`text-base leading-relaxed ${
+                    isActive
+                      ? 'text-amber-900 font-semibold'
+                      : 'text-gray-600'
+                  }`}>
                     {chunk.text}
                   </p>
                 </div>
