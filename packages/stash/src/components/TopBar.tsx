@@ -27,12 +27,12 @@ export const TopBar: React.FC = () => {
   const pageTitle = getPageTitle();
 
   return (
-    <div className="flex justify-between items-center py-2.5 px-3 mb-4 sticky top-0 z-[90] bg-[#fdfdfc]/80 backdrop-blur-md border-b border-gray-200/50">
+    <div className="flex justify-between items-center py-2.5 px-3 mb-4 sticky top-0 z-[90] bg-transparent">
       <div className="flex items-center gap-2 overflow-hidden">
         <span className="text-xl shrink-0">🧘</span>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link to="/explore" className="font-outfit font-extrabold text-xl text-sage-dark tracking-tight hover:opacity-80 transition-opacity shrink-0 no-underline">
-            Zen Stash
+            Zen
           </Link>
           {pageTitle && (
             <>

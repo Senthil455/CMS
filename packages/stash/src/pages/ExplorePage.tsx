@@ -41,6 +41,7 @@ const ExplorePage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
+      <hr className="border-t border-gray-200/80 -mt-2 mb-0 mx-2" />
 
       <div className="flex flex-col gap-6 mt-1">
 
@@ -57,15 +58,15 @@ const ExplorePage: React.FC = () => {
             Failed to load top trending content.
           </div>
         ) : topList && topList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
             {topList.map(item => (
               <a
                 key={item.recordId}
                 href={item.url}
-                className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 active:scale-[0.99] group no-underline cursor-pointer"
+                className="flex items-center gap-3 p-2.5 hover:bg-white/60 rounded-xl transition-all duration-300 active:scale-[0.99] group no-underline cursor-pointer"
               >
                 {/* Image */}
-                <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20">
+                <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20">
                   <img
                     src={item.image}
                     alt={item.title}
