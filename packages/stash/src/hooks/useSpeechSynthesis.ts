@@ -78,6 +78,33 @@ export function useSpeechSynthesis() {
     if (!chunk) return;
 
     const utterance = new SpeechSynthesisUtterance(chunk.text);
+    
+    const getBestVoice = (): SpeechSynthesisVoice | null => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return null;
+  
+      // Prefer English voices
+      const enVoices = voices.filter(v => v.lang.startsWith('en'));
+      const candidateVoices = enVoices.length > 0 ? enVoices : voices;
+  
+      // Try to find a high quality cloud voice (Google, Premium, etc.)
+      const premiumVoice = candidateVoices.find(v => 
+        !v.localService || 
+        v.name.includes('Google') || 
+        v.name.includes('Premium') ||
+        v.name.includes('Online') ||
+        v.name.includes('Natural')
+      );
+  
+      if (premiumVoice) return premiumVoice;
+      return candidateVoices[0] || voices[0];
+    };
+
+    const bestVoice = getBestVoice();
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+    }
+
     utteranceRef.current = utterance;
 
     utterance.onboundary = (event) => {
