@@ -124,7 +124,7 @@ export const TopBar: React.FC = () => {
         ) : (
           <Link 
             to="/login"
-            className="flex items-center gap-2 py-2 px-4 bg-primary-color hover:bg-sage-dark text-white rounded-2xl text-[0.85rem] font-bold transition-all duration-300 shadow-sm hover:shadow-md hover:translate-y-[-1px]"
+            className="flex items-center gap-2 py-2 px-4 bg-primary hover:bg-sage-dark text-white rounded-2xl text-[0.85rem] font-bold transition-all duration-300 shadow-sm hover:shadow-md hover:translate-y-[-1px]"
           >
             <LogIn size={16} />
             <span>Sign In</span>

@@ -6,11 +6,13 @@ interface TTSContextType {
   isPaused: boolean;
   progress: number;
   error: string | null;
+  rate: number;
   play: (text: string, key: string) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
   seek: (offset: number) => void;
+  setRate: (rate: number) => void;
   chunks: { text: string, startOffset: number }[];
   currentChunkIndex: number;
   currentTitle: string | null;

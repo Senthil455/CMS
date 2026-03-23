@@ -10,6 +10,7 @@ export interface TTSState {
   chunks: { text: string, startOffset: number }[];
   currentChunkIndex: number;
   error: string | null;
+  rate: number;
 }
 
 export function useSpeechSynthesis() {
@@ -22,6 +23,7 @@ export function useSpeechSynthesis() {
     chunks: [],
     currentChunkIndex: 0,
     error: null,
+    rate: 1,
   });
 
   // chunksRef holds one entry per sentence - each is also one utterance
@@ -32,6 +34,22 @@ export function useSpeechSynthesis() {
   const currentKeyRef = useRef<string | null>(null);
   const chunkCharOffsetRef = useRef(0);
   const totalCharsRef = useRef(0);
+  // Cache voices eagerly so speakCurrentChunk can use them synchronously
+  const voicesCacheRef = useRef<SpeechSynthesisVoice[]>([]);
+  const rateRef = useRef(1);
+
+  // Eagerly load and cache voices on mount (critical for iOS auto-start)
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) voicesCacheRef.current = voices;
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    };
+  }, []);
 
   const saveProgress = async () => {
     if (!currentKeyRef.current) return;
@@ -48,23 +66,6 @@ export function useSpeechSynthesis() {
     setState((prev) => ({ ...prev, ...newState }));
   };
 
-  // iOS Safari loads voices asynchronously.
-  const waitForVoices = (): Promise<SpeechSynthesisVoice[]> => {
-    return new Promise((resolve) => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) { resolve(voices); return; }
-      const onVoicesChanged = () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
-        resolve(window.speechSynthesis.getVoices());
-      };
-      window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
-      setTimeout(() => {
-        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
-        resolve(window.speechSynthesis.getVoices());
-      }, 1500);
-    });
-  };
-
   const pickVoice = (voices: SpeechSynthesisVoice[]) => {
     const enVoices = voices.filter(v => v.lang.startsWith('en'));
     const candidates = enVoices.length > 0 ? enVoices : voices;
@@ -79,21 +80,19 @@ export function useSpeechSynthesis() {
     ) || candidates[0] || voices[0] || null;
   };
 
-  const speakCurrentChunk = useCallback(async () => {
+  const speakCurrentChunk = useCallback(() => {
     if (playStateRef.current !== 'playing') return;
 
     window.speechSynthesis.cancel();
-    // iOS Safari: short delay after cancel before next speak
-    await new Promise(resolve => setTimeout(resolve, 100));
-    if (playStateRef.current !== 'playing') return;
 
     const chunk = chunksRef.current[currentChunkIndexRef.current];
     if (!chunk) return;
 
-    const voices = await waitForVoices();
-    if (playStateRef.current !== 'playing') return;
+    // Use cached voices synchronously - no async needed (iOS-safe)
+    const voices = voicesCacheRef.current;
 
     const utterance = new SpeechSynthesisUtterance(chunk.text);
+    utterance.rate = rateRef.current;
     const voice = pickVoice(voices);
     if (voice) utterance.voice = voice;
     utteranceRef.current = utterance;
@@ -163,7 +162,7 @@ export function useSpeechSynthesis() {
   };
 
   const play = async (htmlContent: string, key: string, resume: boolean = true) => {
-    // iOS Safari: warm-up speak within user gesture context
+    // iOS Safari: warm-up speak within user gesture context (synchronous)
     const warmUp = new SpeechSynthesisUtterance('');
     warmUp.volume = 0;
     window.speechSynthesis.speak(warmUp);
@@ -231,6 +230,16 @@ export function useSpeechSynthesis() {
     speakCurrentChunk();
   };
 
+  const setRate = (newRate: number) => {
+    rateRef.current = newRate;
+    updateState({ rate: newRate });
+    // If currently playing, restart current chunk at the new rate
+    if (playStateRef.current === 'playing') {
+      window.speechSynthesis.cancel();
+      speakCurrentChunk();
+    }
+  };
+
   useEffect(() => {
     return () => {
       saveProgress();
@@ -245,5 +254,6 @@ export function useSpeechSynthesis() {
     resume,
     stop,
     seek,
+    setRate,
   };
 }

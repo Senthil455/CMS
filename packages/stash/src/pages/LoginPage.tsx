@@ -200,7 +200,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ baseRouter }) => {
               fontSize: '0.8rem',
               border: 'none',
               cursor: isLoading ? 'default' : 'pointer',
-              background: 'var(--primary-color)',
+              background: 'var(--sage-dark)',
               color: '#fff',
               opacity: isLoading ? 0.6 : 1,
               transition: 'opacity 0.2s',

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useOnlineStatus } from '@/hooks'
 import { initializeDB } from '@/utils/storage'
@@ -38,6 +38,7 @@ function AppContent() {
   const [localAudio, setLocalAudio] = useState<{ src: string, title: string } | null>(null)
   const offlineState = useOnlineStatus()
   const tts = useTTS()
+  const location = useLocation()
 
   useEffect(() => {
     // Initialize database on mount
@@ -79,11 +80,10 @@ function AppContent() {
     )
   }
 
-  if (!userInfo) {
+  if (!userInfo && location.pathname === '/login') {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage baseRouter="/stash" />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     )
   }
@@ -117,24 +117,32 @@ function AppContent() {
                 </motion.div>
               } />
               <Route path="/bookmarks" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <BookmarksPage />
-                </motion.div>
+                userInfo ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <BookmarksPage />
+                  </motion.div>
+                ) : (
+                  <Navigate to="/login" state={{ from: location }} replace />
+                )
               } />
               <Route path="/assets" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <AssetsPage />
-                </motion.div>
+                userInfo ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <AssetsPage />
+                  </motion.div>
+                ) : (
+                  <Navigate to="/login" state={{ from: location }} replace />
+                )
               } />
               <Route path="/offline" element={
                 <motion.div

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { useTTS } from '../contexts/TTSContext';
 
+const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
 export const TranscriptSheet: React.FC = () => {
-  const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle } = useTTS();
+  const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, rate, setRate } = useTTS();
   const activeChunkRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -14,6 +16,20 @@ export const TranscriptSheet: React.FC = () => {
   }, [currentChunkIndex, isTranscriptOpen]);
 
   if (!isTranscriptOpen) return null;
+
+  const currentPresetIndex = SPEED_PRESETS.indexOf(rate);
+  const canDecrease = currentPresetIndex > 0;
+  const canIncrease = currentPresetIndex < SPEED_PRESETS.length - 1;
+
+  const handleDecrease = () => {
+    if (canDecrease) setRate(SPEED_PRESETS[currentPresetIndex - 1]);
+  };
+
+  const handleIncrease = () => {
+    if (canIncrease) setRate(SPEED_PRESETS[currentPresetIndex + 1]);
+  };
+
+  const formatRate = (r: number) => `${r === 1 ? '1' : r}×`;
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-white">
@@ -30,6 +46,36 @@ export const TranscriptSheet: React.FC = () => {
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
+        </button>
+      </div>
+
+      {/* Speed Controls */}
+      <div className="flex items-center justify-center gap-3 px-5 py-2 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+        <span className="text-xs text-gray-400 mr-1">Speed</span>
+        <button
+          onClick={handleDecrease}
+          disabled={!canDecrease}
+          className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+            canDecrease
+              ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          −
+        </button>
+        <span className="min-w-[3rem] text-center text-sm font-semibold text-sage-dark tabular-nums">
+          {formatRate(rate)}
+        </span>
+        <button
+          onClick={handleIncrease}
+          disabled={!canIncrease}
+          className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+            canIncrease
+              ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          +
         </button>
       </div>
 
