@@ -4,7 +4,7 @@ import { useTTS } from '../contexts/TTSContext';
 const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export const TranscriptSheet: React.FC = () => {
-  const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, rate, setRate } = useTTS();
+  const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, rate, setRate, voices, selectedVoice, setVoice, isPlaying, isPaused, pause, resume, stop } = useTTS();
   const activeChunkRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,34 +49,88 @@ export const TranscriptSheet: React.FC = () => {
         </button>
       </div>
 
-      {/* Speed Controls */}
-      <div className="flex items-center justify-center gap-3 px-5 py-2 border-b border-gray-100 bg-white/80 backdrop-blur-md">
-        <span className="text-xs text-gray-400 mr-1">Speed</span>
-        <button
-          onClick={handleDecrease}
-          disabled={!canDecrease}
-          className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
-            canDecrease
-              ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
-              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-          }`}
-        >
-          −
-        </button>
-        <span className="min-w-[3rem] text-center text-sm font-semibold text-sage-dark tabular-nums">
-          {formatRate(rate)}
-        </span>
-        <button
-          onClick={handleIncrease}
-          disabled={!canIncrease}
-          className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
-            canIncrease
-              ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
-              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-          }`}
-        >
-          +
-        </button>
+      {/* Speed & Voice Controls */}
+      <div className="flex items-center justify-between gap-3 px-5 py-2 border-b border-gray-100 bg-white/80 backdrop-blur-md overflow-x-auto hide-scrollbar">
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-2">
+            {isPlaying && !isPaused ? (
+              <button
+                onClick={pause}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-colors"
+                title="Pause"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+              </button>
+            ) : (
+              <button
+                onClick={resume}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-colors"
+                title="Play"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+            )}
+            
+            <button
+              onClick={stop}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+              title="Stop"
+            >
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"></rect></svg>
+            </button>
+          </div>
+
+          <div className="h-6 w-px bg-gray-200" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 mr-1">Speed</span>
+            <button
+              onClick={handleDecrease}
+              disabled={!canDecrease}
+              className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+                canDecrease
+                  ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              −
+            </button>
+            <span className="min-w-[2.5rem] text-center text-sm font-semibold text-sage-dark tabular-nums">
+              {formatRate(rate)}
+            </span>
+            <button
+              onClick={handleIncrease}
+              disabled={!canIncrease}
+              className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+                canIncrease
+                  ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {voices.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={selectedVoice?.name || ''}
+              onChange={(e) => {
+                const voice = voices.find(v => v.name === e.target.value);
+                if (voice) setVoice(voice);
+              }}
+              className="text-sm font-semibold text-sage-dark bg-sage-light/50 border border-sage-medium/30 rounded-lg pl-2 pr-6 py-1.5 outline-none focus:border-sage-dark transition-colors w-[140px] text-ellipsis whitespace-nowrap overflow-hidden cursor-pointer appearance-none"
+              style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233a5a42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
+              title={selectedVoice?.name || 'Select Voice'}
+            >
+              <option value="" disabled>Select Voice</option>
+              {voices.map(v => (
+                <option key={v.name} value={v.name} title={v.name}>{v.name} ({v.lang})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Content */}

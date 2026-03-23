@@ -7,12 +7,15 @@ interface TTSContextType {
   progress: number;
   error: string | null;
   rate: number;
+  voices: SpeechSynthesisVoice[];
+  selectedVoice: SpeechSynthesisVoice | null;
   play: (text: string, key: string) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
   seek: (offset: number) => void;
   setRate: (rate: number) => void;
+  setVoice: (voice: SpeechSynthesisVoice) => void;
   chunks: { text: string, startOffset: number }[];
   currentChunkIndex: number;
   currentTitle: string | null;

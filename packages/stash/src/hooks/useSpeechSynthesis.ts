@@ -11,6 +11,8 @@ export interface TTSState {
   currentChunkIndex: number;
   error: string | null;
   rate: number;
+  voices: SpeechSynthesisVoice[];
+  selectedVoice: SpeechSynthesisVoice | null;
 }
 
 export function useSpeechSynthesis() {
@@ -24,6 +26,8 @@ export function useSpeechSynthesis() {
     currentChunkIndex: 0,
     error: null,
     rate: 1,
+    voices: [],
+    selectedVoice: null,
   });
 
   // chunksRef holds one entry per sentence - each is also one utterance
@@ -37,19 +41,7 @@ export function useSpeechSynthesis() {
   // Cache voices eagerly so speakCurrentChunk can use them synchronously
   const voicesCacheRef = useRef<SpeechSynthesisVoice[]>([]);
   const rateRef = useRef(1);
-
-  // Eagerly load and cache voices on mount (critical for iOS auto-start)
-  useEffect(() => {
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) voicesCacheRef.current = voices;
-    };
-    loadVoices();
-    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-    return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
-    };
-  }, []);
+  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   const saveProgress = async () => {
     if (!currentKeyRef.current) return;
@@ -66,7 +58,7 @@ export function useSpeechSynthesis() {
     setState((prev) => ({ ...prev, ...newState }));
   };
 
-  const pickVoice = (voices: SpeechSynthesisVoice[]) => {
+  const pickVoice = useCallback((voices: SpeechSynthesisVoice[]) => {
     const enVoices = voices.filter(v => v.lang.startsWith('en'));
     const candidates = enVoices.length > 0 ? enVoices : voices;
     return candidates.find(v =>
@@ -78,7 +70,31 @@ export function useSpeechSynthesis() {
       v.name.includes('Premium') ||
       v.name.includes('Enhanced')
     ) || candidates[0] || voices[0] || null;
-  };
+  }, []);
+
+  // Eagerly load and cache voices on mount (critical for iOS auto-start)
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        voicesCacheRef.current = voices;
+        if (!selectedVoiceRef.current) {
+          const defaultVoice = pickVoice(voices);
+          selectedVoiceRef.current = defaultVoice;
+          updateState({ voices, selectedVoice: defaultVoice });
+        } else {
+          updateState({ voices });
+        }
+      }
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    };
+  }, [pickVoice]);
+
+
 
   const speakCurrentChunk = useCallback(() => {
     if (playStateRef.current !== 'playing') return;
@@ -93,7 +109,7 @@ export function useSpeechSynthesis() {
 
     const utterance = new SpeechSynthesisUtterance(chunk.text);
     utterance.rate = rateRef.current;
-    const voice = pickVoice(voices);
+    const voice = selectedVoiceRef.current || pickVoice(voices);
     if (voice) utterance.voice = voice;
     utteranceRef.current = utterance;
 
@@ -240,6 +256,15 @@ export function useSpeechSynthesis() {
     }
   };
 
+  const setVoice = (voice: SpeechSynthesisVoice) => {
+    selectedVoiceRef.current = voice;
+    updateState({ selectedVoice: voice });
+    if (playStateRef.current === 'playing') {
+      window.speechSynthesis.cancel();
+      speakCurrentChunk();
+    }
+  };
+
   useEffect(() => {
     return () => {
       saveProgress();
@@ -255,5 +280,6 @@ export function useSpeechSynthesis() {
     stop,
     seek,
     setRate,
+    setVoice,
   };
 }
