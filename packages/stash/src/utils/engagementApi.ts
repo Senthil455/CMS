@@ -77,5 +77,24 @@ export const engagementApi = {
     const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?${params.toString()}`);
     if (!response.ok) throw new Error(`Failed to fetch content tags for entity ${entityName}`);
     return response.json();
+  },
+
+  async deleteBookmark(id: number) {
+    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/bookmarks/delete/${id}`, {
+      method: 'POST',
+      headers
+    });
+
+    if (!response.ok) throw new Error('Failed to delete bookmark');
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   }
 };

@@ -26,7 +26,14 @@ const ExplorePage: React.FC = () => {
   const tts = useTTS();
 
   const handleSpeak = async (item: TopListItem) => {
+    const key = `${item.entityName}_${item.recordId}`;
     tts.setCurrentTitle(item.title);
+    
+    // Open transcript sheet immediately
+    tts.setTranscriptOpen(true);
+
+    // Start speaking immediately with teaser content to unlock iOS audio context during user gesture
+    tts.play(item.content, key, true);
     
     try {
       const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?entityName=${item.entityName}&recordId=${item.recordId}`);
@@ -35,19 +42,23 @@ const ExplorePage: React.FC = () => {
       }
       const data = await response.json();
       
-      let speechContent = item.content;
+      let fullContent = item.content;
       if (Array.isArray(data) && data.length > 0 && data[0].content) {
-        speechContent = data[0].content;
+        fullContent = data[0].content;
       } else if (data && !Array.isArray(data) && data.content) {
-        speechContent = data.content;
+        fullContent = data.content;
       }
       
-      tts.play(speechContent, `${item.entityName}_${item.recordId}`);
+      // If we got full content, switch to it. Since audio is already "unlocked", this should work.
+      if (fullContent !== item.content) {
+        tts.play(fullContent, key, true);
+      }
     } catch (err) {
       console.error("Error fetching content details for speech:", err);
-      tts.play(item.content, `${item.entityName}_${item.recordId}`);
+      // Fallback: we already started with item.content, so nothing more to do
     }
   };
+
 
   return (
     <div className="flex flex-col gap-6 pb-24">
@@ -73,6 +84,10 @@ const ExplorePage: React.FC = () => {
               <a
                 key={item.recordId}
                 href={item.url}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSpeak(item);
+                }}
                 className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group no-underline cursor-pointer"
               >
                 {/* Image */}
@@ -99,19 +114,6 @@ const ExplorePage: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex flex-col items-center gap-2 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSpeak(item);
-                    }}
-                    className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
-                    aria-label="Play text-to-speech"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-0.5">
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                  </button>
                   <button
                     onClick={(e) => {
                       e.preventDefault();

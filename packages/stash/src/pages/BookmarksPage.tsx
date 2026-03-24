@@ -4,16 +4,34 @@ import { getAllBookmarks, getAllBookmarkFolders, saveBookmarks, clearBookmarks }
 import { useOnlineStatus } from '@/hooks';
 import { syncBookmarksStore } from '@/components/SyncManager';
 import { useTTS } from '@/contexts/TTSContext';
+import { BookmarkDialog } from '../components/BookmarkDialog';
+import { engagementApi } from '../utils/engagementApi';
 
 const BookmarksPage: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [bookmarkTarget, setBookmarkTarget] = useState<{ entityName: string, recordId: string } | null>(null);
 
   const tts = useTTS();
 
   const handleSpeak = (item: BookmarkItem) => {
     tts.setCurrentTitle(item.title);
+    tts.setTranscriptOpen(true);
     tts.play(item.content || "", `${item.entityName}_${item.recordId}`);
   };
+  const handleDelete = async (item: BookmarkItem) => {
+    if (!window.confirm(`Remove "${item.title}" from bookmarks?`)) return;
+    try {
+      await engagementApi.deleteBookmark(item.id);
+      if (isOnline) {
+        await syncBookmarksStore();
+      }
+      await loadLocalData();
+    } catch (e) {
+      console.error('Failed to delete bookmark', e);
+      alert('Failed to delete bookmark.');
+    }
+  };
+
   const [folders, setFolders] = useState<BookmarkFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,10 +89,10 @@ const BookmarksPage: React.FC = () => {
             <button
               key={folder.id}
               onClick={() => setSelectedFolder(folder.id)}
-              className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-[0.62rem] font-bold uppercase tracking-wider transition-all duration-300 ${
+              className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-[0.75rem] font-bold transition-all duration-300 ${
                 selectedFolder === folder.id 
                   ? 'bg-white text-sage-dark shadow-sm' 
-                  : 'text-sage-medium hover:text-sage-dark hover:bg-white/50'
+                  : 'text-text-muted hover:text-sage-dark'
               }`}
             >
               {folder.name || 'Default'}
@@ -97,6 +115,10 @@ const BookmarksPage: React.FC = () => {
             <a
               key={item.id}
               href={item.url}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSpeak(item);
+              }}
               className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group no-underline cursor-pointer"
             >
               {/* Image */}
@@ -133,21 +155,22 @@ const BookmarksPage: React.FC = () => {
 
               {/* Actions */}
               <div className="flex flex-col items-center gap-2 shrink-0">
-                {item.content && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSpeak(item);
-                    }}
-                    className="w-9 h-9 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-90 transition-transform"
-                    aria-label="Play text-to-speech"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-0.5">
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(item);
+                  }}
+                  className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  aria-label="Remove Bookmark"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
               </div>
             </a>
           ))}
@@ -166,6 +189,19 @@ const BookmarksPage: React.FC = () => {
         </div>
       )}
       </div>
+
+      {bookmarkTarget && (
+        <BookmarkDialog
+          isOpen={true}
+          entityName={bookmarkTarget.entityName}
+          recordId={bookmarkTarget.recordId}
+          onClose={() => setBookmarkTarget(null)}
+          onSaved={() => {
+            setBookmarkTarget(null);
+            loadLocalData(); // Refresh to show any changes (though folders are remote, this is good practice)
+          }}
+        />
+      )}
     </div>
   );
 };

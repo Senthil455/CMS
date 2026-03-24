@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, FolderOpen, Info } from 'lucide-react';
+import { FolderOpen, Info } from 'lucide-react';
 import { OfflineFile } from '@/types';
 import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress } from '@/utils/offlineStorage';
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
 import OfflinePlayer from '@/components/offline/OfflinePlayer';
+
 
 
 const OfflinePage: React.FC = () => {
@@ -11,8 +12,6 @@ const OfflinePage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<OfflineFile | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // iOS re-select flow: when Blob is lost after session, prompt user to re-pick
   const reSelectFileRef = useRef<HTMLInputElement>(null);
   const pendingPlayFileRef = useRef<OfflineFile | null>(null);
   const transientBlobsRef = useRef<Record<string, Blob>>({});
@@ -20,6 +19,13 @@ const OfflinePage: React.FC = () => {
   useEffect(() => {
     loadFiles();
   }, []);
+
+  // Stop the video player when TopBar sleep timer fires
+  useEffect(() => {
+    const handler = () => handleClosePlayer();
+    window.addEventListener('stash:stopAll', handler);
+    return () => window.removeEventListener('stash:stopAll', handler);
+  }, [fileUrl]);
 
   const loadFiles = async () => {
     setIsLoading(true);

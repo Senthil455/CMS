@@ -1,14 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUserInfo, logout, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk";
-import { LogIn, LogOut, Loader2, User, ChevronDown, Info } from "lucide-react";
+import { LogIn, LogOut, Loader2, User, ChevronDown, Info, Moon, Timer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
+import { useTTS } from '../contexts/TTSContext';
+
+const SLEEP_OPTIONS = [
+  { label: '15 min', seconds: 15 * 60 },
+  { label: '30 min', seconds: 30 * 60 },
+  { label: '45 min', seconds: 45 * 60 },
+  { label: '60 min', seconds: 60 * 60 },
+];
 
 export const TopBar: React.FC = () => {
   const { data: userInfo, isLoading } = useUserInfo();
   const [showMenu, setShowMenu] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const location = useLocation();
+  const tts = useTTS();
+
+  // Sleep timer
+  const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [sleepRemaining, setSleepRemaining] = useState<number | null>(null);
+  const sleepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearSleepTimer = () => {
+    if (sleepIntervalRef.current) {
+      clearInterval(sleepIntervalRef.current);
+      sleepIntervalRef.current = null;
+    }
+    setSleepRemaining(null);
+  };
+
+  const startSleepTimer = (seconds: number) => {
+    clearSleepTimer();
+    setSleepRemaining(seconds);
+    setShowSleepMenu(false);
+    sleepIntervalRef.current = setInterval(() => {
+      setSleepRemaining(prev => {
+        if (prev === null || prev <= 1) {
+          // Stop TTS
+          tts.stop();
+          // Stop offline video player via custom event
+          window.dispatchEvent(new CustomEvent('stash:stopAll'));
+          clearInterval(sleepIntervalRef.current!);
+          sleepIntervalRef.current = null;
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => () => clearSleepTimer(), []);
+
+  const formatSleepTime = (secs: number): string => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`;
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -45,7 +96,70 @@ export const TopBar: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        {/* Sleep Timer */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSleepMenu(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+              sleepRemaining !== null
+                ? 'bg-sage-dark text-white shadow-md'
+                : 'bg-sage-light/40 text-sage-dark hover:bg-sage-light/70'
+            }`}
+            aria-label="Sleep Timer"
+          >
+            <Moon size={14} />
+            {sleepRemaining !== null && (
+              <span>{formatSleepTime(sleepRemaining)}</span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showSleepMenu && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[91]"
+                  onClick={() => setShowSleepMenu(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 bg-white border border-sage-light/50 shadow-xl rounded-2xl p-3 z-[92] flex flex-col gap-1 min-w-[160px]"
+                >
+                  <p className="text-[0.62rem] font-extrabold uppercase tracking-widest text-text-muted px-1 pb-1 flex items-center gap-1">
+                    <Timer size={10} /> Stop after
+                  </p>
+                  {SLEEP_OPTIONS.map(opt => (
+                    <button
+                      key={opt.seconds}
+                      onClick={() => startSleepTimer(opt.seconds)}
+                      className="text-sm font-bold text-sage-dark text-left px-3 py-2 rounded-xl hover:bg-sage-light/40 transition-colors"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  {sleepRemaining !== null && (
+                    <>
+                      <div className="w-full h-px bg-sage-light/40 my-1" />
+                      <button
+                        onClick={() => { clearSleepTimer(); setShowSleepMenu(false); }}
+                        className="text-sm font-bold text-red-500 text-left px-3 py-2 rounded-xl hover:bg-red-50 transition-colors"
+                      >
+                        Cancel timer
+                      </button>
+                    </>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
         {isLoading ? (
           <Loader2 size={18} className="animate-spin text-sage-medium" />
         ) : userInfo ? (

@@ -6,7 +6,6 @@ import { StatusBar } from '@/components/StatusBar'
 import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'
 import { TopBar } from '@/components/TopBar'
-import { AudioPlayer } from '@/components/AudioPlayer'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUserInfo, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
 import axios from 'axios'
@@ -17,7 +16,6 @@ import AssetsPage from './pages/AssetsPage'
 import OfflinePage from './pages/OfflinePage'
 import './App.css'
 import { TTSProvider, useTTS } from './contexts/TTSContext'
-import { TTSPlayer } from './components/TTSPlayer'
 import { TranscriptSheet } from './components/TranscriptSheet'
 
 // Configure SDK
@@ -35,7 +33,6 @@ function AppContent() {
     isSyncing: false,
     error: null as string | null,
   })
-  const [localAudio, setLocalAudio] = useState<{ src: string, title: string } | null>(null)
   const offlineState = useOnlineStatus()
   const tts = useTTS()
   const location = useLocation()
@@ -58,12 +55,6 @@ function AppContent() {
 
 
 
-  const handleClosePlayer = () => {
-    if (localAudio?.src) {
-      URL.revokeObjectURL(localAudio.src)
-    }
-    setLocalAudio(null)
-  }
 
   if (isUserLoading) {
     return (
@@ -160,26 +151,6 @@ function AppContent() {
 
         <BottomNav />
         
-        {localAudio && (
-          <AudioPlayer 
-            src={localAudio.src} 
-            title={localAudio.title} 
-            onClose={handleClosePlayer} 
-          />
-        )}
-        
-        <TTSPlayer 
-          isPlaying={tts.isPlaying}
-          isPaused={tts.isPaused}
-          progress={tts.progress}
-          onPlay={() => {}}
-          onPause={tts.pause}
-          onResume={tts.resume}
-          onStop={tts.stop}
-          onViewTranscript={() => tts.setTranscriptOpen(true)}
-          title={tts.currentTitle || undefined}
-          error={tts.error}
-        />
         
         <TranscriptSheet />
       </div>

@@ -9,7 +9,7 @@ interface TTSContextType {
   rate: number;
   voices: SpeechSynthesisVoice[];
   selectedVoice: SpeechSynthesisVoice | null;
-  play: (text: string, key: string) => void;
+  play: (text: string, key: string, resume?: boolean) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
@@ -31,8 +31,8 @@ export const TTSProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
   const [isTranscriptOpen, setTranscriptOpen] = useState(false);
 
-  const handlePlay = (text: string, key: string) => {
-    tts.play(text, key);
+  const handlePlay = (text: string, key: string, resume: boolean = true) => {
+    tts.play(text, key, resume);
   };
 
   return (

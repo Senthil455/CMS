@@ -43,16 +43,28 @@ export function useSpeechSynthesis() {
   const rateRef = useRef(1);
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
-  const saveProgress = async () => {
+  const saveProgress = () => {
     if (!currentKeyRef.current) return;
     const currentChunk = chunksRef.current[currentChunkIndexRef.current];
     if (!currentChunk) return;
     const globalOffset = currentChunk.startOffset + chunkCharOffsetRef.current;
-    await setMetadata(`tts_progress_${currentKeyRef.current}`, {
+    
+    const progressData = {
       offset: globalOffset,
       timestamp: Date.now()
-    });
+    };
+    
+    // Use localStorage for synchronous access (critical for iOS Safari resume)
+    try {
+      localStorage.setItem(`tts_progress_${currentKeyRef.current}`, JSON.stringify(progressData));
+    } catch (e) {
+      console.warn('Failed to save TTS progress to localStorage:', e);
+    }
+    
+    // Also save to indexedDB as backup/long-term storage
+    setMetadata(`tts_progress_${currentKeyRef.current}`, progressData);
   };
+
 
   const updateState = (newState: Partial<TTSState>) => {
     setState((prev) => ({ ...prev, ...newState }));
@@ -177,11 +189,17 @@ export function useSpeechSynthesis() {
     return { length: text.length, chunks };
   };
 
-  const play = async (htmlContent: string, key: string, resume: boolean = true) => {
-    // iOS Safari: warm-up speak within user gesture context (synchronous)
-    const warmUp = new SpeechSynthesisUtterance('');
-    warmUp.volume = 0;
-    window.speechSynthesis.speak(warmUp);
+  const play = (htmlContent: string, key: string, resume: boolean = true) => {
+    const isSameKey = currentKeyRef.current === key;
+    const isAlreadyPlaying = playStateRef.current === 'playing';
+
+    // If already playing the same content (or teaser), just update chunks for seamless transition
+    if (isSameKey && isAlreadyPlaying) {
+      const { length: totalLength, chunks } = prepareChunks(htmlContent);
+      totalCharsRef.current = totalLength;
+      updateState({ totalChars: totalLength, chunks });
+      return;
+    }
 
     window.speechSynthesis.cancel();
     currentKeyRef.current = key;
@@ -194,20 +212,29 @@ export function useSpeechSynthesis() {
     currentChunkIndexRef.current = 0;
 
     if (resume) {
-      const saved = await getMetadata(`tts_progress_${key}`);
-      if (saved && saved.offset !== undefined && saved.offset < totalLength - 100) {
-        const offset = saved.offset;
-        const sentenceIndex = chunksRef.current.findIndex((c, i) => {
-          const next = chunksRef.current[i + 1];
-          return next ? offset < next.startOffset : true;
-        });
-        if (sentenceIndex >= 0) {
-          currentChunkIndexRef.current = sentenceIndex;
-          updateState({ currentChunkIndex: sentenceIndex });
+      // Synchronously check localStorage for progress to avoid async gaps on iOS
+      try {
+        const savedStr = localStorage.getItem(`tts_progress_${key}`);
+        if (savedStr) {
+          const saved = JSON.parse(savedStr);
+          if (saved && saved.offset !== undefined && saved.offset < totalLength - 100) {
+            const offset = saved.offset;
+            const sentenceIndex = chunksRef.current.findIndex((c, i) => {
+              const next = chunksRef.current[i + 1];
+              return next ? offset < next.startOffset : true;
+            });
+            if (sentenceIndex >= 0) {
+              currentChunkIndexRef.current = sentenceIndex;
+              updateState({ currentChunkIndex: sentenceIndex });
+            }
+          }
         }
+      } catch (e) {
+        console.warn('Failed to load TTS progress from localStorage:', e);
       }
     }
 
+    // Start speaking synchronously (crucial for iOS Safari)
     if (chunksRef.current.length > 0) {
       speakCurrentChunk();
     } else {
@@ -215,6 +242,8 @@ export function useSpeechSynthesis() {
       updateState({ isPlaying: false, isPaused: false });
     }
   };
+
+
 
   const pause = () => {
     playStateRef.current = 'paused';
