@@ -25,30 +25,35 @@ const ExplorePage: React.FC = () => {
 
   const tts = useTTS();
 
-  const handleSpeak = async (item: TopListItem) => {
+  const handleSpeak = async (item: TopListItem, index: number) => {
     const key = `${item.entityName}_${item.recordId}`;
     tts.setCurrentTitle(item.title);
-    
+
+    // Register playlist for navigation
+    if (topList) {
+      tts.setPlaylist(topList, index, (newItem) => handleSpeak(newItem, topList.indexOf(newItem)));
+    }
+
     // Open transcript sheet immediately
     tts.setTranscriptOpen(true);
 
     // Start speaking immediately with teaser content to unlock iOS audio context during user gesture
     tts.play(item.content, key, true);
-    
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?entityName=${item.entityName}&recordId=${item.recordId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch content details');
       }
       const data = await response.json();
-      
+
       let fullContent = item.content;
       if (Array.isArray(data) && data.length > 0 && data[0].content) {
         fullContent = data[0].content;
       } else if (data && !Array.isArray(data) && data.content) {
         fullContent = data.content;
       }
-      
+
       // If we got full content, switch to it. Since audio is already "unlocked", this should work.
       if (fullContent !== item.content) {
         tts.play(fullContent, key, true);
@@ -79,32 +84,40 @@ const ExplorePage: React.FC = () => {
             Failed to load top trending content.
           </div>
         ) : topList && topList.length > 0 ? (
-          <div className="grid grid-cols-1 gap-[1px] bg-gray-200/40 rounded-2xl overflow-hidden border border-gray-200/40 shadow-sm">
-            {topList.map(item => (
+          <div className="flex flex-col gap-1.5">
+            {topList.map((item, index) => (
               <a
                 key={item.recordId}
                 href={item.url}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleSpeak(item);
+                  handleSpeak(item, index);
                 }}
-                className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group no-underline cursor-pointer"
+                className="flex items-center gap-4 p-3.5 bg-white/80 hover:bg-white rounded-2xl border border-gray-100/60 hover:border-gray-200/80 shadow-sm hover:shadow-md transition-all duration-250 group no-underline cursor-pointer"
               >
-                {/* Image */}
-                <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20">
+                {/* Image with play overlay */}
+                <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative">
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-400"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
+                    <svg
+                      width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none"
+                      className="opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300 drop-shadow-lg"
+                    >
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
+                  </div>
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-sage-dark leading-tight line-clamp-2 mb-1">
+                  <h3 className="text-[0.9rem] font-bold text-sage-dark leading-snug line-clamp-2 mb-1 group-hover:text-primary transition-colors duration-200">
                     {item.title}
                   </h3>
-                  <p className="text-[0.7rem] text-text-muted line-clamp-1 mb-2">
+                  <p className="text-[0.75rem] text-text-muted line-clamp-1 mb-1.5 font-medium">
                     {item.subtitle}
                   </p>
                   <p className="text-[0.62rem] text-gray-400 font-bold uppercase tracking-wider">
@@ -122,7 +135,7 @@ const ExplorePage: React.FC = () => {
                         setBookmarkTarget({ entityName: item.entityName, recordId: item.recordId });
                       }
                     }}
-                    className="w-9 h-9 flex items-center justify-center text-sage-medium hover:text-sage-dark hover:bg-sage-light/30 rounded-full transition-colors"
+                    className="w-9 h-9 flex items-center justify-center text-gray-300 hover:text-sage-dark hover:bg-sage-light/30 rounded-full transition-all duration-200"
                     aria-label="Bookmark"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

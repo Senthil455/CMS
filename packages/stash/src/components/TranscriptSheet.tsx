@@ -4,7 +4,11 @@ import { useTTS } from '../contexts/TTSContext';
 const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export const TranscriptSheet: React.FC = () => {
-  const { isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, rate, setRate, voices, selectedVoice, setVoice, isPlaying, isPaused, pause, resume, stop } = useTTS();
+  const { 
+    isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, 
+    rate, setRate, voices, selectedVoice, setVoice, isPlaying, isPaused, pause, resume, stop,
+    next, previous, hasNext, hasPrevious
+  } = useTTS();
   const activeChunkRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -53,24 +57,56 @@ export const TranscriptSheet: React.FC = () => {
       <div className="flex items-center justify-between gap-3 px-5 py-2 border-b border-gray-100 bg-white/80 backdrop-blur-md overflow-x-auto hide-scrollbar">
         <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-center gap-2">
+            <button
+              onClick={previous}
+              disabled={!hasPrevious}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                hasPrevious
+                  ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+                  : 'bg-gray-50 text-gray-200 cursor-not-allowed'
+              }`}
+              title="Previous"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
             {isPlaying && !isPaused ? (
               <button
                 onClick={pause}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-all active:scale-95 shadow-sm"
                 title="Pause"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
               </button>
             ) : (
               <button
                 onClick={resume}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-all active:scale-95 shadow-md"
                 title="Play"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               </button>
             )}
+
+            <button
+              onClick={next}
+              disabled={!hasNext}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                hasNext
+                  ? 'bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white active:scale-95'
+                  : 'bg-gray-50 text-gray-200 cursor-not-allowed'
+              }`}
+              title="Next"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
             
+            <div className="w-px h-6 bg-gray-200 mx-1" />
+
             <button
               onClick={stop}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors"

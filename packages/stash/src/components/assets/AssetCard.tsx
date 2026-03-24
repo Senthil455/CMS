@@ -14,34 +14,44 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
     <motion.div
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(asset)}
-      className="flex items-center gap-3 p-3 bg-white/70 hover:bg-white/95 transition-all duration-200 group cursor-pointer"
+      className="flex items-center gap-4 p-3.5 bg-white/80 hover:bg-white rounded-2xl border border-gray-100/60 hover:border-gray-200/80 shadow-sm hover:shadow-md transition-all duration-250 group cursor-pointer"
     >
-      {/* Image */}
-      <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-sage-light/20 relative flex items-center justify-center">
+      {/* Media with play overlay */}
+      <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative flex items-center justify-center">
         {asset.type?.startsWith('image/') ? (
           <img 
             src={getCmsAssetUrl(asset.path)} 
             alt={asset.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : asset.type?.startsWith('video/') ? (
           <div className="w-full h-full relative">
             <video 
               src={`${getCmsAssetUrl(asset.path)}#t=0.5`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               preload="metadata"
               muted
               playsInline
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-              <Video className="text-white/70 drop-shadow-md" size={16} />
-            </div>
           </div>
         ) : (
-          <div className="w-full h-full scale-[0.6] origin-center flex items-center justify-center">
+          <div className="w-full h-full scale-[0.8] origin-center flex items-center justify-center group-hover:scale-90 transition-transform duration-300">
             {getFileIcon(asset.type || '')}
           </div>
         )}
+
+        {/* Play Overlay for interactive media */}
+        {(asset.type?.startsWith('image/') || asset.type?.startsWith('video/')) && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
+            <svg
+              width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none"
+              className="opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300 drop-shadow-lg"
+            >
+              <polygon points="6 3 20 12 6 21 6 3" />
+            </svg>
+          </div>
+        )}
+
         {asset.progress < 100 && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-sage-light/30">
             <div 
@@ -54,10 +64,10 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, getCmsAssetUrl, onClick })
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-sage-dark leading-tight line-clamp-2 mb-1">
+        <h3 className="text-[0.9rem] font-bold text-sage-dark leading-snug line-clamp-2 mb-1 group-hover:text-primary transition-colors duration-200">
           {asset.title || asset.name}
         </h3>
-        <p className="text-[0.7rem] text-text-muted line-clamp-1 mb-2">
+        <p className="text-[0.75rem] text-text-muted line-clamp-1 mb-1.5 font-medium">
           {asset.description || 'No description available'}
         </p>
         <div className="flex items-center gap-2">

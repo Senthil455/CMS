@@ -30,7 +30,7 @@ const AssetGrid: React.FC<AssetGridProps> = ({ assets, isLoading, getCmsAssetUrl
   }
 
   return (
-    <div className="grid grid-cols-1 gap-[1px] bg-gray-200/40 rounded-2xl overflow-hidden border border-gray-200/40 shadow-sm">
+    <div className="flex flex-col gap-1.5">
       {assets.map((asset) => (
         <AssetCard 
           key={asset.id} 
