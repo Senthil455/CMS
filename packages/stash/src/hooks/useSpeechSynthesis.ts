@@ -73,16 +73,26 @@ export function useSpeechSynthesis() {
   const pickVoice = useCallback((voices: SpeechSynthesisVoice[]) => {
     const enVoices = voices.filter(v => v.lang.startsWith('en'));
     const candidates = enVoices.length > 0 ? enVoices : voices;
-    return candidates.find(v =>
-      v.name.includes('Samantha') ||
-      v.name.includes('Karen') ||
-      v.name.includes('Daniel') ||
-      v.name.includes('Google') ||
-      v.name.includes('Natural') ||
-      v.name.includes('Premium') ||
-      v.name.includes('Enhanced')
-    ) || candidates[0] || voices[0] || null;
+    
+    // Priority list for voices - will return the first one that exists in candidates
+    const preferredNames = [
+      'Daniel',
+      'Samantha',
+      'Karen',
+      'Google',
+      'Natural',
+      'Premium',
+      'Enhanced'
+    ];
+
+    for (const name of preferredNames) {
+      const v = candidates.find(v => v.name.includes(name));
+      if (v) return v;
+    }
+
+    return candidates[0] || voices[0] || null;
   }, []);
+
 
   // Eagerly load and cache voices on mount (critical for iOS auto-start)
   useEffect(() => {

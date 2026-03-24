@@ -122,6 +122,14 @@ async function start() {
             decorateReply: false,
         });
 
+        // Register Static Files for Stash
+        const stashDistPath = join(__dirname, '../../stash/dist');
+        await server.register(fastifyStatic, {
+            root: stashDistPath,
+            prefix: '/stash/',
+            decorateReply: false,
+        });
+
         // Register Backend Static Files (e.g. common JS)
         const publicPath = join(__dirname, '../public/static');
         await server.register(fastifyStatic, {
@@ -165,6 +173,10 @@ async function start() {
             if (request.url.startsWith('/app')) {
                 reply.type('text/html');
                 return reply.send(createReadStream(join(appDistPath, 'index.html')));
+            }
+            if (request.url.startsWith('/stash')) {
+                reply.type('text/html');
+                return reply.send(createReadStream(join(stashDistPath, 'index.html')));
             }
             reply.status(404).send({ error: 'Not Found' });
         });
