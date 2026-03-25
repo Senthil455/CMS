@@ -24,6 +24,7 @@ npm run build:shared --silent
 npm run build --workspace=@cms/app --silent
 npm run build --workspace=@cms/admin --silent
 npm run build --workspace=@cms/portal --silent
+npm run build --workspace=@cms/stash --silent
 
 # Build Backend (Prisma + TSC)
 cd packages/service

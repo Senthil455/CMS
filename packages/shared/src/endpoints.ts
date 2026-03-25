@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     },
     SYSTEM: {
         IS_READY: '/api/system/is-ready',
+        DOWNLOAD_PLUGINS: '/api/system/download-plugins',
     },
     AI: {
         PROVIDERS: '/cmsapi/ai/providers',

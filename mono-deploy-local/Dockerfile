@@ -34,6 +34,7 @@ RUN cd packages/service && npx prisma generate
 COPY CMS/packages/app/dist ./packages/app/dist
 COPY CMS/packages/admin/dist ./packages/admin/dist
 COPY CMS/packages/portal/dist ./packages/portal/dist
+COPY CMS/packages/stash/dist ./packages/stash/dist
 
 # --- Stage 2: Final Image (Hybrid .NET + Node) ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

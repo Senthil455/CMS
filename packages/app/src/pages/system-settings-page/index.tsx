@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Shield, Key, AlertTriangle, Box, Globe, ArrowLeft, Settings, Palette } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box, Globe, ArrowLeft, Settings, Palette, Puzzle } from 'lucide-react';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
@@ -8,10 +8,11 @@ import { AISettings } from './components/AISettings';
 import { AddSpaSettings } from './components/AddSpaSettings';
 import { CorsSettings } from './components/CorsSettings';
 import { StyleSettings } from './components/StyleSettings';
+import { PluginSettings } from './components/PluginSettings';
 
 declare const __APP_BUILD_TIMESTAMP__: string;
 
-type SettingsTab = 'database' | 'admin' | 'ai' | 'spa' | 'cors' | 'styles';
+type SettingsTab = 'database' | 'admin' | 'ai' | 'spa' | 'cors' | 'styles' | 'plugins';
 
 interface NavItem {
     id: SettingsTab;
@@ -41,6 +42,7 @@ export default function SystemSettingsPage() {
         { id: 'ai', label: 'AI Providers', icon: <Key className="w-4 h-4" />, show: !!user },
         { id: 'styles', label: 'Design Styles', icon: <Palette className="w-4 h-4" />, show: !!user },
         { id: 'spa', label: 'Add SPA', icon: <Box className="w-4 h-4" />, show: !!user },
+        { id: 'plugins', label: 'Download Plugins', icon: <Puzzle className="w-4 h-4" />, show: !!user },
         { id: 'cors', label: 'CORS', icon: <Globe className="w-4 h-4" />, show: !!user },
     ];
 
@@ -115,6 +117,7 @@ export default function SystemSettingsPage() {
                         {user && activeTab === 'ai' && <AISettings />}
                         {user && activeTab === 'styles' && <StyleSettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
+                        {user && activeTab === 'plugins' && <PluginSettings />}
                         {user && activeTab === 'cors' && <CorsSettings />}
                     </div>
                 </div>

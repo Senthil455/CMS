@@ -17,6 +17,7 @@ npm run build:shared --silent
 npm run build --workspace=@cms/app --silent
 npm run build --workspace=@cms/admin --silent
 npm run build --workspace=@cms/portal --silent
+npm run build --workspace=@cms/stash --silent
 
 # Build Backend (Prisma + TSC)
 cd packages/service
@@ -32,7 +33,7 @@ dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o ./publish
 
 echo "🐳 Building Docker Image (Fast Mode)..."
 cd "$SCRIPT_DIR"
-docker build -t cms-mono-deploy:latest -f Dockerfile "$REPO_ROOT"
+docker build -t "cms-mono-deploy:latest" -f Dockerfile "$REPO_ROOT"
 
 echo "✅ Build complete! Image: cms-mono-deploy:latest"
 echo "👉 Run ./reload.sh to restart the container."
