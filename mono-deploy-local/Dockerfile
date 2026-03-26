@@ -41,7 +41,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 # Start Node.js & Nginx
-RUN apt-get update && apt-get install -y curl nginx procps dos2unix && \
+RUN apt-get update && apt-get install -y curl nginx procps dos2unix ffmpeg && \
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g tsx && \

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from "framer-motion";
-import { X, File, Music, Download, Trash2, Loader2 } from "lucide-react";
+import { X, File, Music, Download, Trash2, Loader2, ChevronLeft } from "lucide-react";
 import { formatSize, getFileIcon } from "../../utils/assetUtils";
 
 interface AssetDetailSheetProps {
@@ -15,145 +15,167 @@ interface AssetDetailSheetProps {
   onDelete: (id: number) => void;
 }
 
-const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({ 
-  asset, 
-  getCmsAssetUrl, 
-  isConverting, 
+const AssetDetailSheet: React.FC<AssetDetailSheetProps> = ({
+  asset,
+  getCmsAssetUrl,
+  isConverting,
   conversionProgress,
   conversionType,
-  onClose, 
+  onClose,
   onConvertToMp3,
   onConvertToM4a,
-  onDelete
+  onDelete,
 }) => {
   return (
     <AnimatePresence>
       {asset && (
         <>
+          {/* Backdrop */}
           <motion.div
+            key="asset-detail-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110]"
           />
+
+          {/* Sheet */}
           <motion.div
+            key="asset-detail-sheet"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[32px] border-t border-glass-border z-[120] flex flex-col"
-            style={{ maxHeight: '82vh' }}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl z-[120] p-6 pb-10 shadow-2xl flex flex-col gap-6"
+            style={{ maxHeight: '88vh', overflowY: 'auto' }}
           >
-            {/* Drag handle */}
-            <div className="flex-shrink-0 pt-3 pb-1 flex justify-center">
-              <div className="w-10 h-1 bg-gray-200 rounded-full" />
-            </div>
-
-            {/* Header — always visible, never clipped */}
-            <div className="flex-shrink-0 flex items-center gap-3 px-5 py-3 border-b border-gray-100">
-              <div className="w-10 h-10 bg-sage-light/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                {getFileIcon(asset.type || '')}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-[0.95rem] font-extrabold text-sage-dark truncate leading-tight">
-                  {asset.title || asset.name}
-                </h2>
-                <p className="text-[0.7rem] text-text-muted font-medium">{asset.type}</p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 bg-sage-light/30 rounded-full text-sage-dark"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-              {/* Preview */}
-              <div className="rounded-2xl overflow-hidden bg-gray-50 mb-4 flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
-                {asset.type?.startsWith('image/') ? (
-                  <img
-                    src={getCmsAssetUrl(asset.path)}
-                    alt={asset.title}
-                    className="w-full h-full object-contain"
-                  />
-                ) : asset.type?.startsWith('video/') ? (
-                  <video
-                    src={getCmsAssetUrl(asset.path)}
-                    className="w-full h-full object-contain"
-                    controls
-                    playsInline
-                  />
-                ) : asset.type?.startsWith('audio/') ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-sage-light/10">
-                    <Music size={48} className="text-sage-medium" />
-                    <audio
-                      src={getCmsAssetUrl(asset.path)}
-                      className="w-[90%] max-w-[300px]"
-                      controls
-                      autoPlay
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <File size={48} className="text-sage-medium" />
-                  </div>
-                )}
-              </div>
-
-              {/* Metadata pills */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-sage-light/20 rounded-2xl">
-                  <p className="text-[0.65rem] text-text-muted font-bold uppercase tracking-wider mb-0.5">Size</p>
-                  <p className="text-[0.9rem] text-sage-dark font-bold">{formatSize(asset.size || 0)}</p>
-                </div>
-                <div className="p-3 bg-sage-light/20 rounded-2xl">
-                  <p className="text-[0.65rem] text-text-muted font-bold uppercase tracking-wider mb-0.5">Created</p>
-                  <p className="text-[0.9rem] text-sage-dark font-bold">
-                    {new Date(asset.createdAt).toLocaleDateString()}
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-sage-light/30 rounded-xl text-sage-dark flex items-center gap-1 transition-colors group"
+                >
+                  <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                  <span className="text-sm font-bold">Return</span>
+                </button>
+                <div className="w-px h-6 bg-sage-light/40 mx-1" />
+                <div>
+                  <h2 className="text-xl font-extrabold text-sage-dark truncate max-w-[200px]">
+                    {asset.title || asset.name}
+                  </h2>
+                  <p className="text-xs text-text-muted font-bold uppercase tracking-widest">
+                    {asset.type}
                   </p>
                 </div>
               </div>
+              <button
+                onClick={onClose}
+                className="p-3 bg-sage-light/30 rounded-full text-sage-dark hover:bg-sage-light/50 transition-colors"
+              >
+                <X size={24} />
+              </button>
             </div>
 
-            {/* Action buttons — uniform grid, always visible */}
-            <div className="flex-shrink-0 px-5 pt-3 pb-8 border-t border-gray-100 bg-white">
+            {/* Preview area */}
+            {asset.type?.startsWith('image/') ? (
+              <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-inner">
+                <img
+                  src={getCmsAssetUrl(asset.path)}
+                  alt={asset.title}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : asset.type?.startsWith('video/') ? (
+              <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-inner">
+                <video
+                  src={getCmsAssetUrl(asset.path)}
+                  className="w-full h-full object-contain"
+                  controls
+                  playsInline
+                />
+              </div>
+            ) : asset.type?.startsWith('audio/') ? (
+              <div className="w-full rounded-3xl bg-sage-light/20 flex flex-col items-center justify-center gap-5 py-10">
+                <div className="w-20 h-20 rounded-full bg-sage-dark/10 flex items-center justify-center">
+                  <Music size={36} className="text-sage-dark" />
+                </div>
+                <audio
+                  src={getCmsAssetUrl(asset.path)}
+                  className="w-[90%] max-w-[320px]"
+                  controls
+                  autoPlay
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-video bg-sage-light/10 rounded-3xl flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-sage-dark/10 flex items-center justify-center">
+                  {getFileIcon(asset.type || '')}
+                </div>
+              </div>
+            )}
+
+            {/* Metadata pills */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 bg-sage-light/20 rounded-2xl">
+                <p className="text-[0.65rem] text-text-muted font-bold uppercase tracking-widest mb-1">Size</p>
+                <p className="text-base text-sage-dark font-extrabold">{formatSize(asset.size || 0)}</p>
+              </div>
+              <div className="p-4 bg-sage-light/20 rounded-2xl">
+                <p className="text-[0.65rem] text-text-muted font-bold uppercase tracking-widest mb-1">Created</p>
+                <p className="text-base text-sage-dark font-extrabold">
+                  {new Date(asset.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div>
               <div className={`grid gap-3 ${asset.type?.startsWith('video/') ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 {asset.type?.startsWith('video/') && (
                   <>
-                  <button
-                    onClick={() => onConvertToMp3(asset.id)}
-                    disabled={isConverting}
-                    className="flex flex-col items-center justify-center gap-1.5 py-4 bg-violet-50 text-violet-600 rounded-2xl font-bold text-[0.7rem] border border-violet-100 transition-all active:scale-[0.97] hover:bg-violet-100 disabled:opacity-50"
-                  >
-                    {isConverting
-                      ? <Loader2 className="animate-spin" size={20} />
-                      : <Music size={20} />}
-                    <span>{isConverting && conversionType === 'mp3' && conversionProgress !== null ? `${conversionProgress}%` : "Convert MP3"}</span>
-                  </button>
+                    <button
+                      onClick={() => onConvertToMp3(asset.id)}
+                      disabled={isConverting}
+                      className="flex flex-col items-center justify-center gap-1.5 py-4 bg-sage-light/30 text-sage-dark rounded-2xl font-bold text-[0.7rem] border border-sage-light/50 transition-all active:scale-[0.97] hover:bg-sage-light/50 disabled:opacity-50"
+                    >
+                      {isConverting && conversionType === 'mp3'
+                        ? <Loader2 className="animate-spin" size={20} />
+                        : <Music size={20} />}
+                      <span>
+                        {isConverting && conversionType === 'mp3' && conversionProgress !== null
+                          ? `${conversionProgress}%`
+                          : 'MP3'}
+                      </span>
+                    </button>
 
-                  <button
-                    onClick={() => onConvertToM4a(asset.id)}
-                    disabled={isConverting}
-                    className="flex flex-col items-center justify-center gap-1.5 py-4 bg-sky-50 text-sky-600 rounded-2xl font-bold text-[0.7rem] border border-sky-100 transition-all active:scale-[0.97] hover:bg-sky-100 disabled:opacity-50"
-                  >
-                    {isConverting
-                      ? <Loader2 className="animate-spin" size={20} />
-                      : <Music size={20} />}
-                    <span>{isConverting && conversionType === 'm4a' && conversionProgress !== null ? `${conversionProgress}%` : "Convert M4A"}</span>
-                  </button>
+                    <button
+                      onClick={() => onConvertToM4a(asset.id)}
+                      disabled={isConverting}
+                      className="flex flex-col items-center justify-center gap-1.5 py-4 bg-sage-light/30 text-sage-dark rounded-2xl font-bold text-[0.7rem] border border-sage-light/50 transition-all active:scale-[0.97] hover:bg-sage-light/50 disabled:opacity-50"
+                    >
+                      {isConverting && conversionType === 'm4a'
+                        ? <Loader2 className="animate-spin" size={20} />
+                        : <Music size={20} />}
+                      <span>
+                        {isConverting && conversionType === 'm4a' && conversionProgress !== null
+                          ? `${conversionProgress}%`
+                          : 'M4A'}
+                      </span>
+                    </button>
                   </>
                 )}
+
                 <a
                   href={getCmsAssetUrl(asset.path)}
                   download={asset.name}
-                  className="flex flex-col items-center justify-center gap-1.5 py-4 bg-emerald-50 text-emerald-600 rounded-2xl font-bold text-[0.7rem] border border-emerald-100 transition-all active:scale-[0.97] hover:bg-emerald-100 no-underline"
+                  className="flex flex-col items-center justify-center gap-1.5 py-4 bg-sage-dark text-white rounded-2xl font-bold text-[0.7rem] transition-all active:scale-[0.97] hover:opacity-90 no-underline"
                 >
                   <Download size={20} />
                   <span>Download</span>
                 </a>
+
                 <button
                   onClick={() => asset && onDelete(asset.id)}
                   className="flex flex-col items-center justify-center gap-1.5 py-4 bg-red-50 text-red-400 rounded-2xl font-bold text-[0.7rem] border border-red-100 transition-all active:scale-[0.97] hover:bg-red-500 hover:text-white hover:border-red-500"
