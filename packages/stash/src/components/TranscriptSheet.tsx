@@ -179,8 +179,8 @@ export const TranscriptSheet: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto pl-10 pr-6 py-8 pb-36 scroll-smooth">
-        <div className="max-w-2xl mx-auto">
+      <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden py-8 pb-36 scroll-smooth">
+        <div className="max-w-2xl mx-auto px-10 sm:px-16 w-full">
           {chunks.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 bg-white/40 backdrop-blur-sm border border-white/60 rounded-3xl mt-10 shadow-sm">
               <svg className="w-12 h-12 text-sage-medium/50 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,9 +198,9 @@ export const TranscriptSheet: React.FC = () => {
                     key={index}
                     ref={isActive ? activeChunkRef : null}
                     onClick={() => seek(index)}
-                    className={`pl-6 pr-5 py-4 rounded-2xl transition-all duration-300 cursor-pointer ${
+                    className={`pl-12 pr-6 py-4 rounded-2xl transition-all duration-300 cursor-pointer ${
                       isActive
-                        ? 'bg-sage-light/70 border border-sage-medium/40 shadow-zen transcript-active-chunk scale-[1.02]'
+                        ? 'bg-sage-light/70 border border-sage-medium/40 shadow-zen transcript-active-chunk'
                         : 'hover:bg-white/60 border border-transparent text-gray-500'
                     }`}
                   >

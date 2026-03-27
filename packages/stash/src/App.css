@@ -326,17 +326,5 @@ input {
 /* Transcript Sheet specific */
 .transcript-active-chunk {
   position: relative;
-  overflow: hidden;
-}
-
-.transcript-active-chunk::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: var(--sage-dark);
-  border-radius: 4px 0 0 4px;
 }
 
