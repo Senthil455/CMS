@@ -28,6 +28,20 @@ export class LayoutCompiler {
         window.cmsSdk = cmsSdk;${visitTrackSnippet}
         window.dispatchEvent(new CustomEvent('cmsSdkReady'));
     </script>
+
+    <script async src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" onload="renderAllMarkdown()"></script>
+    <script>
+        function renderAllMarkdown() {
+            console.log('renderAllMarkdown');
+            document.querySelectorAll('.markdown-content').forEach(container => {
+                const rawText = container.textContent.trim();
+                console.log(rawText);
+
+
+                container.innerHTML = marked.parse(rawText);
+            });
+        }
+    </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>`;
