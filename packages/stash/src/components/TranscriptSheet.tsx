@@ -62,115 +62,114 @@ export const TranscriptSheet: React.FC = () => {
           </svg>
         </button>
       </div>
-
       {/* Speed & Voice Controls */}
-      <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-glass-border bg-glass backdrop-blur-zen overflow-x-auto hide-scrollbar z-10 shadow-sm">
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="flex items-center gap-2 bg-white/40 p-1.5 rounded-full border border-white/50 shadow-sm">
-            <button
-              onClick={previous}
-              disabled={!hasPrevious}
-              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
-                hasPrevious
-                  ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
-                  : 'bg-transparent text-gray-300 cursor-not-allowed'
-              }`}
-              title="Previous"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="19 20 9 12 19 4 19 20"></polygon>
-                <line x1="5" y1="19" x2="5" y2="5"></line>
-              </svg>
-            </button>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-glass-border bg-glass backdrop-blur-zen z-10 shadow-sm">
+        {/* Playback pill */}
+        <div className="flex items-center gap-1 bg-white/40 p-1 rounded-full border border-white/50 shadow-sm shrink-0">
+          <button
+            onClick={previous}
+            disabled={!hasPrevious}
+            className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+              hasPrevious
+                ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
+                : 'bg-transparent text-gray-300 cursor-not-allowed'
+            }`}
+            title="Previous"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <line x1="5" y1="19" x2="5" y2="5"></line>
+            </svg>
+          </button>
 
-            {isPlaying && !isPaused ? (
-              <button
-                onClick={pause}
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-all active:scale-95 shadow-md border border-sage-medium/30"
-                title="Pause"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
-              </button>
-            ) : (
-              <button
-                onClick={resume}
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-all active:scale-95 shadow-md border border-sage-dark"
-                title="Play"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              </button>
-            )}
+          {isPlaying && !isPaused ? (
+            <button
+              onClick={pause}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-all active:scale-95 shadow-md border border-sage-medium/30"
+              title="Pause"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+            </button>
+          ) : (
+            <button
+              onClick={resume}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-all active:scale-95 shadow-md border border-sage-dark"
+              title="Play"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
+          )}
 
-            <button
-              onClick={next}
-              disabled={!hasNext}
-              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
-                hasNext
-                  ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
-                  : 'bg-transparent text-gray-300 cursor-not-allowed'
-              }`}
-              title="Next"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                <line x1="19" y1="5" x2="19" y2="19"></line>
-              </svg>
-            </button>
-            
-            <div className="w-px h-6 bg-sage-medium/30 mx-1" />
+          <button
+            onClick={next}
+            disabled={!hasNext}
+            className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+              hasNext
+                ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
+                : 'bg-transparent text-gray-300 cursor-not-allowed'
+            }`}
+            title="Next"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+          </button>
 
-            <button
-              onClick={stop}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-sm"
-              title="Stop"
-            >
-               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
-            </button>
-          </div>
+          <div className="w-px h-5 bg-sage-medium/30" />
 
-          <div className="flex items-center gap-1.5 bg-white/40 p-1.5 rounded-full border border-white/50 shadow-sm px-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-sage-dark mr-1 opacity-70">Speed</span>
-            <button
-              onClick={handleDecrease}
-              disabled={!canDecrease}
-              className={`w-7 h-7 flex items-center justify-center rounded-full font-bold text-lg transition-colors ${
-                canDecrease
-                  ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
-                  : 'bg-transparent text-gray-300 cursor-not-allowed'
-              }`}
-            >
-              −
-            </button>
-            <span className="w-8 text-center text-sm font-bold text-sage-dark tabular-nums">
-              {formatRate(rate)}
-            </span>
-            <button
-              onClick={handleIncrease}
-              disabled={!canIncrease}
-              className={`w-7 h-7 flex items-center justify-center rounded-full font-bold text-lg transition-colors ${
-                canIncrease
-                  ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
-                  : 'bg-transparent text-gray-300 cursor-not-allowed'
-              }`}
-            >
-              +
-            </button>
-          </div>
+          <button
+            onClick={stop}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-sm"
+            title="Stop"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          </button>
         </div>
 
+        {/* Speed pill */}
+        <div className="flex items-center gap-1 bg-white/40 p-1 rounded-full border border-white/50 shadow-sm px-1.5 shrink-0">
+          <button
+            onClick={handleDecrease}
+            disabled={!canDecrease}
+            className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+              canDecrease
+                ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
+                : 'bg-transparent text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            −
+          </button>
+          <span className="w-7 text-center text-xs font-bold text-sage-dark tabular-nums">
+            {formatRate(rate)}
+          </span>
+          <button
+            onClick={handleIncrease}
+            disabled={!canIncrease}
+            className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-base transition-colors ${
+              canIncrease
+                ? 'bg-white text-sage-dark hover:bg-sage-light active:scale-95 shadow-sm'
+                : 'bg-transparent text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            +
+          </button>
+        </div>
+
+        {/* Voice selector — fills remaining space */}
         {voices.length > 0 && (
-          <div className="flex items-center shrink-0">
+          <div className="flex-1 min-w-0">
             <select
               value={selectedVoice?.name || ''}
               onChange={(e) => {
                 const voice = voices.find(v => v.name === e.target.value);
                 if (voice) setVoice(voice);
               }}
-              className="text-sm font-semibold text-sage-dark bg-white/60 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl pl-3 pr-8 py-2 outline-none focus:border-sage-medium transition-colors w-[160px] text-ellipsis whitespace-nowrap overflow-hidden cursor-pointer appearance-none"
-              style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233a5a42" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+              className="w-full text-xs font-semibold text-sage-dark bg-white/60 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl pl-2 pr-6 py-1.5 outline-none focus:border-sage-medium transition-colors cursor-pointer appearance-none"
+              style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233a5a42" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
               title={selectedVoice?.name || 'Select Voice'}
             >
-              <option value="" disabled>Select Voice</option>
+              <option value="" disabled>Voice</option>
               {voices.map(v => (
                 <option key={v.name} value={v.name} title={v.name}>{v.name} ({v.lang})</option>
               ))}
@@ -180,7 +179,7 @@ export const TranscriptSheet: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto px-5 py-6 pb-36 scroll-smooth">
+      <div ref={containerRef} className="flex-1 overflow-y-auto pl-10 pr-6 py-8 pb-36 scroll-smooth">
         <div className="max-w-2xl mx-auto">
           {chunks.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 bg-white/40 backdrop-blur-sm border border-white/60 rounded-3xl mt-10 shadow-sm">
@@ -199,13 +198,13 @@ export const TranscriptSheet: React.FC = () => {
                     key={index}
                     ref={isActive ? activeChunkRef : null}
                     onClick={() => seek(index)}
-                    className={`px-4 py-3 rounded-2xl transition-all duration-300 cursor-pointer ${
+                    className={`pl-6 pr-5 py-4 rounded-2xl transition-all duration-300 cursor-pointer ${
                       isActive
                         ? 'bg-sage-light/70 border border-sage-medium/40 shadow-zen transcript-active-chunk scale-[1.02]'
                         : 'hover:bg-white/60 border border-transparent text-gray-500'
                     }`}
                   >
-                    <p className={`text-[1.05rem] leading-relaxed transition-colors duration-300 ${
+                    <p className={`text-[1.1rem] leading-loose transition-colors duration-300 ${
                       isActive
                         ? 'text-sage-dark font-semibold'
                         : 'text-gray-600'
