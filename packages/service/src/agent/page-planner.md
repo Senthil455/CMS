@@ -3,7 +3,7 @@
 ## Schema Classification
 
 ### Page Name
-- **Detail Pages**: MUST follow the pattern `<entityName>/{primaryParameter}` (e.g., `blogPost/{postId}`). If a detail page for this entity already exists, use `<entityName>-<timestamp>/{primaryParameter}` to prevent conflict.
+- **Detail Pages**: MUST follow the pattern `<entityName>/routeName` (e.g., `blogPost/routeName`). The route parameter name is always `routeName` — do not vary it. If a detail page for this entity already exists, use `<entityName>-<timestamp>/routeName` to prevent conflict.
 - **List Pages**: Use descriptive kebab-case (e.g., `blog-post-list`, `recent-orders`). If a list page with the same name already exists, you MUST choose a different name to prevent conflict (e.g. `all-blog-posts`).
 
 ### Page Title

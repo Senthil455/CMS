@@ -28,6 +28,17 @@
 - If the user explicitly requests a feature that matches an "AVAILABLE PAGE COMPONENTS" (e.g. they ask for a search bar, and "search_bar" is available), you MUST include the `componentTypeId` in that component's instruction.
 - Only use `componentTypeId` for components that exactly match the provided types. Do not invent component type IDs.
 
+### Cross-Page Linking (List → Detail)
+When your page contains list-style components that should link to a detail page, you MUST determine the correct link format by inspecting the AVAILABLE QUERIES:
+
+1. **Find the detail-lookup query** for the same entity. Look for queries whose name contains the entity name and that accept a single-record identifier variable (e.g. `$id`, `$slug`, `$postId`, `$postSlug`).
+2. **Choose the link parameter**:
+   - If a query like `get<Entity>BySlug` (or a query with a `$slug` / `$<entity>Slug` variable) exists → **use slug**. Link format: `/<entityName>/{{slug}}`
+   - Otherwise, if a query like `get<Entity>ById` (or a query with an `$id` / `$<entity>Id` variable) exists → **use id**. Link format: `/<entityName>/{{id}}`
+   - **Prefer slug over id** when both exist — slug produces SEO-friendly URLs.
+3. **Embed the link format** explicitly in every list component's `instruction` field. For example: *"Each card links to the post detail page at `/post/{{slug}}`"*.
+4. If no matching detail-lookup query is found, do not generate detail links.
+
 ## Context
 You will be provided with:
 1. **DESIGN TEMPLATE**: The selected design style (e.g., "modern", "classic", "minimal"). Use this to guide section structure and layout complexity.

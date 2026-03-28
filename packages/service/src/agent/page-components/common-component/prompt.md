@@ -59,6 +59,7 @@ These are **value helpers** that output `true`/`false` as strings. They CANNOT b
 3. **JavaScript expressions**: `{{items.length}}`, `{{Math.floor(value)}}` — No JS runtime.
 4. **Inline comments inside templates**: `{{! long explanation... }}` — Keep comments minimal. Never use multi-line or explanatory comments inside Handlebars templates.
 5. **Complex conditional logic inside `#each`**: Do NOT try to skip items, filter items, or slice arrays inside templates. All data filtering must be done server-side.
+6. **Image fields as scalars**: `<img src="{{this.image}}">` — Image fields are **Sysasset objects**, not strings. Always access the `.url` subfield: `<img src="{{this.image.url}}">`. Using the field directly will produce a broken image.
 
 ### ✅ DESIGN PATTERNS FOR COMMON SCENARIOS
 
