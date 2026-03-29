@@ -27,7 +27,14 @@ export default defineConfig({
           label: 'graphql',
           entry: 'monaco-graphql/esm/graphql.worker',
         }
-      ]
+      ],
+      customDistPath: (root: string, buildOutDir: string, _base: string) => {
+        // The plugin defaults to path.join(root, outDir, base, publicPath),
+        // which creates dist/app/monacoeditorwork/. But Fastify serves
+        // /app/ prefix from the dist/ root, so the workers need to be at
+        // dist/monacoeditorwork/ (without the extra base nesting).
+        return `${root}/${buildOutDir}/monacoeditorwork`;
+      },
     }),
   ],
 

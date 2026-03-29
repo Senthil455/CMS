@@ -1,0 +1,23 @@
+1
+00:00:00,500 --> 00:00:07,500
+Welcome to CMS! I'll show you how to use our AI schema builder to instantly create and test queries for your content.
+
+2
+00:00:08,000 --> 00:00:16,800
+First, we'll ask the AI to create a post list query. As you can see, the AI understands the schema and generates the query automatically on the left.
+
+3
+00:00:25,000 --> 00:00:32,900
+Next, let's create a query to fetch a specific post by its slug. The AI handles the input variables and filtering logic for us.
+
+4
+00:00:45,000 --> 00:00:54,400
+Now, let's head over to the query detail page. Here, we can easily preview live data by hitting 'Test Request'. This ensures our query is working perfectly.
+
+5
+00:01:05,000 --> 00:01:14,700
+For more control, use the Query Designer. It offers full GraphQL IntelliSense, letting you manually refine your queries with suggestions and real-time validation.
+
+6
+00:01:30,000 --> 00:01:40,700
+Finally, let's test the 'get post by slug' query. We'll grab a slug from our preview and paste it into the variable field. And there we go—precise data returned for a specific record.
