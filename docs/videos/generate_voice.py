@@ -1,6 +1,9 @@
 import os
 import subprocess
 import re
+import argparse
+import urllib.request
+import json
 
 def parse_srt(filename):
     with open(filename, 'r', encoding='utf-8') as f:
@@ -23,10 +26,39 @@ def parse_srt(filename):
                 subtitles.append({'start_ms': start_time_ms, 'text': text})
     return subtitles
 
+def generate_audio_openai(text, output_file, api_key, model="tts-1", voice="alloy"):
+    """Generate TTS using OpenAI API natively with urllib"""
+    url = "https://api.openai.com/v1/audio/speech"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": model,
+        "input": text,
+        "voice": voice
+    }
+    encoded_data = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(url, data=encoded_data, headers=headers)
+    
+    with urllib.request.urlopen(req) as response:
+        with open(output_file, 'wb') as f:
+            f.write(response.read())
+
 def main():
-    srt_file = 'query.srt'
-    video_file = 'query_final.mp4'
-    output_video = 'query_final_voiced.mp4'
+    parser = argparse.ArgumentParser(description="Generate voice overlay from SRT and merge with video.")
+    parser.add_argument('-s', '--srt', required=True, help="Input SRT file")
+    parser.add_argument('-v', '--video', required=True, help="Input video file (MP4)")
+    parser.add_argument('-o', '--output', required=True, help="Output video file (MP4)")
+    parser.add_argument('-e', '--engine', choices=['mac', 'openai'], default='mac', help="TTS engine to use (default: mac)")
+    parser.add_argument('-k', '--api-key', default=os.environ.get('OPENAI_API_KEY'), help="OpenAI API key (or set OPENAI_API_KEY env var)")
+    parser.add_argument('--voice', default='alloy', help="Voice for OpenAI (alloy, echo, fable, onyx, nova, shimmer)")
+    
+    args = parser.parse_args()
+    
+    srt_file = args.srt
+    video_file = args.video
+    output_video = args.output
     
     subtitles = parse_srt(srt_file)
     audio_files = []
@@ -38,13 +70,21 @@ def main():
     for i, sub in enumerate(subtitles):
         text = sub['text']
         start_ms = sub['start_ms']
-        audio_file = f'temp_audio_{i}.aiff'
         delayed_audio = f'temp_audio_delayed_{i}.wav'
         
         # generate speech
-        # Samantha is generally good, we can use it.
-        subprocess.run(['say', '-v', 'Samantha', '-o', audio_file, text], check=True)
-        
+        if args.engine == 'openai':
+            if not args.api_key:
+                print("Error: --api-key is required when using engine 'openai' (or set OPENAI_API_KEY env var).")
+                return
+            audio_file = f'temp_audio_{i}.mp3'
+            print(f"Generating OpenAI voice for snippet {i+1}/{len(subtitles)}...")
+            generate_audio_openai(text, audio_file, args.api_key, voice=args.voice)
+        else:
+            audio_file = f'temp_audio_{i}.aiff'
+            print(f"Generating Mac voice for snippet {i+1}/{len(subtitles)}...")
+            subprocess.run(['say', '-v', 'Samantha', '-o', audio_file, text], check=True)
+            
         # add delay using ffmpeg
         # adelay takes delay in milliseconds. We need to specify delay for all channels
         delay_args = f'{start_ms}:all=1'
@@ -86,6 +126,8 @@ def main():
         for i in range(len(subtitles)):
             if os.path.exists(f'temp_audio_{i}.aiff'):
                 os.remove(f'temp_audio_{i}.aiff')
+            if os.path.exists(f'temp_audio_{i}.mp3'):
+                os.remove(f'temp_audio_{i}.mp3')
         if os.path.exists('voice.wav'):
             os.remove('voice.wav')
             
