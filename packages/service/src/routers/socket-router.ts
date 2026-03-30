@@ -23,10 +23,10 @@ const socketHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 onEvent(SOCKET_EVENTS.CHAT.AGENT_STATUS, { agentName: null });
             }
 
-            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, selection?: ModelSelection }) => {
+            socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, async (data: { content: string, selection?: ModelSelection, providerName?: string }) => {
                 try {
-                    const selection = data.selection || 'gemini/gemini-3-flash';
-                    await fastify.orchestratorService.processInput(userId, data.content, socket.data.externalCookie, selection, onEvent);
+                    const selection = data.providerName || data.selection || 'gemini/gemini-3-flash';
+                    await fastify.orchestratorService.processInput(userId, data.content, socket.data.externalCookie, selection as ModelSelection, onEvent);
                 } catch (error) {
                     console.error('Error handling message:', formatError(error));
                 }

@@ -35,3 +35,7 @@ packages/shared/dist/
 packages/frontend/dist/
 publish.sh
 myapp.tar.gz
+
+# Video Processing
+/docs/videos/output/
+

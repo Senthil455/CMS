@@ -15,6 +15,7 @@ interface AiLog {
     input?: string;
     response: string;
     timestamp: string;
+    modelSelection?: string;
 }
 
 export function AiLogsList({ onSwitchToChat, onSend }: { onSwitchToChat?: () => void; onSend?: (message: string, providerName: string) => void }) {
@@ -97,13 +98,20 @@ export function AiLogsList({ onSwitchToChat, onSend }: { onSwitchToChat?: () => 
                         className={`w-full text-left p-3 hover:bg-app-muted/50 transition-colors ${expandedLogId === log.id ? 'bg-app-muted/30' : ''}`}
                     >
                         <div className="flex justify-between items-start mb-1">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <Cpu className={`w-3.5 h-3.5 shrink-0 ${expandedLogId === log.id ? 'text-primary' : 'text-primary-muted'}`} />
-                                <span className="font-bold text-xs truncate">
-                                    {log.handler}
-                                </span>
+                            <div className="flex flex-col gap-1 overflow-hidden">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <Cpu className={`w-3.5 h-3.5 shrink-0 ${expandedLogId === log.id ? 'text-primary' : 'text-primary-muted'}`} />
+                                    <span className="font-bold text-xs truncate">
+                                        {log.handler}
+                                    </span>
+                                </div>
+                                {log.modelSelection && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-app-surface border border-border text-primary-muted/80 w-fit">
+                                        {log.modelSelection}
+                                    </span>
+                                )}
                             </div>
-                            <span className="text-[10px] font-mono text-primary-muted/50">#{log.id}</span>
+                            <span className="text-[10px] font-mono text-primary-muted/50 mt-0.5">#{log.id}</span>
                         </div>
                         <div className="flex items-center gap-3 text-[10px] text-primary-muted font-medium">
                             <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(log.timestamp).toLocaleDateString()}</span>

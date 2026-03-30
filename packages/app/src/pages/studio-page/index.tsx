@@ -157,7 +157,8 @@ export default function StudioPage() {
     const handleConfirmSchema = (response: SchemaSummary) => {
         sendAgentFeedbackResponse({
             agentName: AGENT_NAMES.ENTITY_DESIGNER,
-            feedbackData: { ...response, agentTaskItem: currentAgentTaskItem }
+            feedbackData: { ...response, agentTaskItem: currentAgentTaskItem },
+            selection: localStorage.getItem('cms_selected_provider') || 'gemini/gemini-3-flash'
         });
         setShowConfirmation(false);
         setConfirmationData(null);
@@ -172,7 +173,8 @@ export default function StudioPage() {
                     selectedTemplate: selectedTemplateId,
                     requestPayload: templateSelectionData,
                     agentTaskItem: currentAgentTaskItem
-                }
+                },
+                selection: localStorage.getItem('cms_selected_provider') || 'gemini/gemini-3-flash'
             });
             setShowTemplateSelection(false);
             setTemplateSelectionData(null);
@@ -183,7 +185,8 @@ export default function StudioPage() {
     const handleConfirmSystemPlan = (plan: SystemRequirment) => {
         sendAgentFeedbackResponse({
             agentName: AGENT_NAMES.SYSTEM_ARCHITECT,
-            feedbackData: { ...plan, agentTaskItem: currentAgentTaskItem }
+            feedbackData: { ...plan, agentTaskItem: currentAgentTaskItem },
+            selection: localStorage.getItem('cms_selected_provider') || 'gemini/gemini-3-flash'
         });
         setShowSystemPlanConfirmation(false);
         setSystemPlanData(null);
@@ -271,7 +274,7 @@ export default function StudioPage() {
                                 onTabChange={(tab) => setSearchParams({ tab })}
                                 onSave={handleSaveEntity}
                                 onCancel={() => navigate(`/app/${selectedItem.type}/${selectedItem.schemaId}`)}
-                                onSendMessage={(msg) => handleSend(msg, localStorage.getItem('cms_ai_provider') || 'openai')}
+                                onSendMessage={(msg) => handleSend(msg, localStorage.getItem('cms_selected_provider') || 'gemini/gemini-3-flash')}
                             />
                         )}
                     </>

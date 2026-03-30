@@ -169,22 +169,11 @@ export class GeminiProvider implements AIProvider {
         }
     }
     transformError(error: any): string {
-        let errorMessage = error.message || 'Unknown error occurred';
+        const errorMessage = error.message || 'Unknown error occurred';
 
-        if (errorMessage.includes('Gemini API error 429')) {
-            try {
-                const jsonPart = errorMessage.substring(errorMessage.indexOf('{'));
-                const errorObj = JSON.parse(jsonPart);
-                if (errorObj?.error?.message) {
-                    errorMessage = errorObj.error.message;
-                }
-            } catch (e) {
-                // If parsing fails, just use the original message or a cleaner fallback
-                errorMessage = 'You exceeded your current AI quota. Please wait a few seconds and try again.';
-            }
+        // Catch any error that starts with "Gemini [4xx/5xx]:"
+        if (/^Gemini [45]\d{2}:/.test(errorMessage)) {
             throw new AgentProviderError(errorMessage);
-        } else if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
         }
 
         return errorMessage;
