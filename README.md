@@ -29,7 +29,9 @@ CMS is an open-source CMS that uses AI to generate your entire app — schemas, 
 
 Watch CMS build a complete Library system (Entities, Data, Queries, and UI) from scratch in under 60 seconds (sped up 10x).
 
-![CMS Demo](https://github.com/Senthil455/CMS/blob/main/artifacts/demo_video.webp?raw=true)
+[![CMS Demo](https://github.com/Senthil455/CMS/blob/main/artifacts/demo_video.webp?raw=true)](https://github.com/Senthil455/CMS)
+
+[Watch the full demo on YouTube](https://github.com/Senthil455/CMS)
 
 ---
 
