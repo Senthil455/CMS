@@ -15,10 +15,14 @@
 ### Component Instructions & State Management
 
 - **Full State Output**: Whether you are creating a new page or modifying an existing one, you MUST always output the FULL `sections` and FULL `selectedQueries` array. This ensures page integrity.
-- **Selective Building (needsBuild flag)**:
-    - Set `needsBuild: true` for any new component being added.
-    - Set `needsBuild: true` for any existing component whose visual design, content structure, or queries have been modified in your instruction.
-    - Set `needsBuild: false` for unchanged components to avoid redundant build tasks.
+- **Selective Building (`needsBuild` flag) - STRICT RULE**:
+  - Set `needsBuild: true` **ONLY** in these two cases:
+    1. The component is **brand new** (was not present in the EXISTING STRUCTURE).
+    2. The component is **existing** BUT you have **explicitly modified** its `instruction`, visual design, content structure, queriesToUse, or componentTypeId in this response.
+  - Set `needsBuild: false` for **ALL** existing components that remain **completely unchanged** (same instruction, same queries, same design).
+  - **Default to `false`** unless there is a clear reason to rebuild.
+  - It is **extremely important** to minimize rebuilds. Only mark `needsBuild: true` when absolutely necessary to avoid wasting build resources and time.
+  - Even if you slightly reword the instruction, if the meaning and design intent stay the same, keep `needsBuild: false`.
 - **One per column**: Every column `id` in `sections` MUST have a corresponding entry in `componentInstructions`.
 - **Be specific**: Describe the visual design, content structure, and user interactions. For example: "A hero banner with full-bleed background image, overlaid title and excerpt, category pill badge, and a read-more link" is better than "A hero section".
 - **Reference queries**: List which `queryName` values the component needs to fetch and display data from.
