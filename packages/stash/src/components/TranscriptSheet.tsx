@@ -1,36 +1,70 @@
-import React, { useEffect, useRef } from 'react';
-import { useTTS } from '../contexts/TTSContext';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { TTSChunk } from '../hooks/useTTSContent';
+import { useTTSPlayer } from '../hooks/useTTSPlayer';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
 const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-export const TranscriptSheet: React.FC = () => {
-  const { 
-    isTranscriptOpen, setTranscriptOpen, chunks, currentChunkIndex, seek, currentTitle, 
-    rate, setRate, voices, selectedVoice, setVoice, isPlaying, isPaused, pause, resume, stop,
-    next, previous, hasNext, hasPrevious
-  } = useTTS();
+/** The handle pages use to trigger playback */
+export interface TranscriptSheetHandle {
+  /** Start speaking an item. Pass playlist for prev/next navigation. */
+  speak: (
+    text: string,
+    title: string,
+    key: string,
+    playlist?: { items: any[]; index: number; onPlayItem: (item: any) => void }
+  ) => void;
+}
+
+export const TranscriptSheet = forwardRef<TranscriptSheetHandle>((_, ref) => {
+  const {
+    play, pause: onPause, resume: onResume, stop: onStop, seek: onSeek,
+    setRate: onSetRate, setVoice: onSetVoice,
+    chunks, currentChunkIndex, isPlaying, isPaused, rate, voices, selectedVoice,
+  } = useSpeechSynthesis();
+
+  const {
+    isTranscriptOpen: isOpen, setTranscriptOpen,
+    currentTitle: title, setCurrentTitle,
+    next: onNext, previous: onPrevious, hasNext, hasPrevious, setPlaylist
+  } = useTTSPlayer(onStop);
+
+  const onClose = () => setTranscriptOpen(false);
+
   const activeChunkRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Expose speak() to parent via ref
+  useImperativeHandle(ref, () => ({
+    speak(text, title, key, playlist) {
+      setCurrentTitle(title);
+      if (playlist) {
+        setPlaylist(playlist.items, playlist.index, playlist.onPlayItem);
+      }
+      setTranscriptOpen(true);
+      play(text, key, true);
+    },
+  }));
+
   // Auto-scroll to active sentence
   useEffect(() => {
-    if (isTranscriptOpen && activeChunkRef.current) {
+    if (isOpen && activeChunkRef.current) {
       activeChunkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [currentChunkIndex, isTranscriptOpen]);
+  }, [currentChunkIndex, isOpen]);
 
-  if (!isTranscriptOpen) return null;
+  if (!isOpen) return null;
 
   const currentPresetIndex = SPEED_PRESETS.indexOf(rate);
   const canDecrease = currentPresetIndex > 0;
   const canIncrease = currentPresetIndex < SPEED_PRESETS.length - 1;
 
   const handleDecrease = () => {
-    if (canDecrease) setRate(SPEED_PRESETS[currentPresetIndex - 1]);
+    if (canDecrease) onSetRate(SPEED_PRESETS[currentPresetIndex - 1]);
   };
 
   const handleIncrease = () => {
-    if (canIncrease) setRate(SPEED_PRESETS[currentPresetIndex + 1]);
+    if (canIncrease) onSetRate(SPEED_PRESETS[currentPresetIndex + 1]);
   };
 
   const formatRate = (r: number) => `${r === 1 ? '1' : r}×`;
@@ -40,9 +74,9 @@ export const TranscriptSheet: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-glass-border bg-glass backdrop-blur-zen sticky top-0 z-20 shadow-sm">
         <h2 className="text-lg font-bold text-sage-dark line-clamp-1 flex-1 pr-4">
-          {currentTitle || 'Transcript'}
+          {title || 'Transcript'}
         </h2>
-        
+
         {/* Progress Indicator */}
         {chunks.length > 0 && (
           <div className="hidden sm:flex items-center px-3 py-1 bg-white/40 rounded-full border border-gray-100/50 mr-4">
@@ -53,7 +87,7 @@ export const TranscriptSheet: React.FC = () => {
         )}
 
         <button
-          onClick={() => setTranscriptOpen(false)}
+          onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-gray-500 hover:text-sage-dark transition-all shadow-sm"
           aria-label="Close transcript"
         >
@@ -62,12 +96,13 @@ export const TranscriptSheet: React.FC = () => {
           </svg>
         </button>
       </div>
+
       {/* Speed & Voice Controls */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-glass-border bg-glass backdrop-blur-zen z-10 shadow-sm">
         {/* Playback pill */}
         <div className="flex items-center gap-1 bg-white/40 p-1 rounded-full border border-white/50 shadow-sm shrink-0">
           <button
-            onClick={previous}
+            onClick={onPrevious}
             disabled={!hasPrevious}
             className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
               hasPrevious
@@ -84,7 +119,7 @@ export const TranscriptSheet: React.FC = () => {
 
           {isPlaying && !isPaused ? (
             <button
-              onClick={pause}
+              onClick={onPause}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-light text-sage-dark hover:bg-sage-medium hover:text-white transition-all active:scale-95 shadow-md border border-sage-medium/30"
               title="Pause"
             >
@@ -92,7 +127,7 @@ export const TranscriptSheet: React.FC = () => {
             </button>
           ) : (
             <button
-              onClick={resume}
+              onClick={onResume}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-dark text-white hover:bg-sage-medium transition-all active:scale-95 shadow-md border border-sage-dark"
               title="Play"
             >
@@ -101,7 +136,7 @@ export const TranscriptSheet: React.FC = () => {
           )}
 
           <button
-            onClick={next}
+            onClick={onNext}
             disabled={!hasNext}
             className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
               hasNext
@@ -119,7 +154,7 @@ export const TranscriptSheet: React.FC = () => {
           <div className="w-px h-5 bg-sage-medium/30" />
 
           <button
-            onClick={stop}
+            onClick={onStop}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-sm"
             title="Stop"
           >
@@ -156,21 +191,21 @@ export const TranscriptSheet: React.FC = () => {
           </button>
         </div>
 
-        {/* Voice selector — fills remaining space */}
+        {/* Voice selector */}
         {voices.length > 0 && (
           <div className="flex-1 min-w-0">
             <select
               value={selectedVoice?.name || ''}
               onChange={(e) => {
-                const voice = voices.find(v => v.name === e.target.value);
-                if (voice) setVoice(voice);
+                const voice = voices.find((v: SpeechSynthesisVoice) => v.name === e.target.value);
+                if (voice) onSetVoice(voice);
               }}
               className="w-full text-xs font-semibold text-sage-dark bg-white/60 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl pl-2 pr-6 py-1.5 outline-none focus:border-sage-medium transition-colors cursor-pointer appearance-none"
               style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233a5a42" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
               title={selectedVoice?.name || 'Select Voice'}
             >
               <option value="" disabled>Voice</option>
-              {voices.map(v => (
+              {voices.map((v: SpeechSynthesisVoice) => (
                 <option key={v.name} value={v.name} title={v.name}>{v.name} ({v.lang})</option>
               ))}
             </select>
@@ -190,14 +225,13 @@ export const TranscriptSheet: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {chunks.map((chunk, index) => {
+              {chunks.map((chunk: TTSChunk, index: number) => {
                 const isActive = index === currentChunkIndex;
-
                 return (
                   <div
                     key={index}
                     ref={isActive ? activeChunkRef : null}
-                    onClick={() => seek(index)}
+                    onClick={() => onSeek(index)}
                     className={`pl-12 pr-6 py-4 rounded-2xl transition-all duration-300 cursor-pointer ${
                       isActive
                         ? 'bg-sage-light/70 border border-sage-medium/40 shadow-zen transcript-active-chunk'
@@ -205,9 +239,7 @@ export const TranscriptSheet: React.FC = () => {
                     }`}
                   >
                     <p className={`text-[1.1rem] leading-loose transition-colors duration-300 ${
-                      isActive
-                        ? 'text-sage-dark font-semibold'
-                        : 'text-gray-600'
+                      isActive ? 'text-sage-dark font-semibold' : 'text-gray-600'
                     }`}>
                       {chunk.text}
                     </p>
@@ -220,4 +252,6 @@ export const TranscriptSheet: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+
+TranscriptSheet.displayName = 'TranscriptSheet';

@@ -1,29 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { BookmarkItem, BookmarkFolder } from '@/types';
 import { getAllBookmarks, getAllBookmarkFolders, saveBookmarks, clearBookmarks } from '@/utils/storage';
 import { useOnlineStatus } from '@/hooks';
 import { syncBookmarksStore } from '@/components/SyncManager';
-import { useTTS } from '@/contexts/TTSContext';
+import { TranscriptSheet, TranscriptSheetHandle } from '../components/TranscriptSheet';
 import { BookmarkDialog } from '../components/BookmarkDialog';
 import { engagementApi } from '../utils/engagementApi';
 
 const BookmarksPage: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [bookmarkTarget, setBookmarkTarget] = useState<{ entityName: string, recordId: string } | null>(null);
-
-  const tts = useTTS();
+  const sheetRef = useRef<TranscriptSheetHandle>(null);
 
   const handleSpeak = (item: BookmarkItem, index: number) => {
-    tts.setCurrentTitle(item.title);
-    
     // Register playlist for navigation (filtered by current folder)
     const filteredBookmarks = bookmarks.filter(b => b.folderId === selectedFolder);
-    tts.setPlaylist(filteredBookmarks, index, (newItem) => 
-      handleSpeak(newItem, filteredBookmarks.findIndex(b => b.id === newItem.id))
+    sheetRef.current?.speak(
+        item.content || "",
+        item.title,
+        `${item.entityName}_${item.recordId}`,
+        {
+          items: filteredBookmarks,
+          index,
+          onPlayItem: (newItem: BookmarkItem) => handleSpeak(newItem, filteredBookmarks.findIndex(b => b.id === newItem.id))
+        }
     );
-
-    tts.setTranscriptOpen(true);
-    tts.play(item.content || "", `${item.entityName}_${item.recordId}`);
   };
 
   const handleDelete = async (item: BookmarkItem) => {
@@ -214,10 +215,12 @@ const BookmarksPage: React.FC = () => {
           onClose={() => setBookmarkTarget(null)}
           onSaved={() => {
             setBookmarkTarget(null);
-            loadLocalData(); // Refresh to show any changes (though folders are remote, this is good practice)
+            loadLocalData();
           }}
         />
       )}
+
+      <TranscriptSheet ref={sheetRef} />
     </div>
   );
 };

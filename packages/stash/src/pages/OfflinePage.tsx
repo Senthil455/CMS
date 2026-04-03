@@ -4,6 +4,7 @@ import { OfflineFile } from '@/types';
 import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress } from '@/utils/offlineStorage';
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
 import OfflinePlayer from '@/components/offline/OfflinePlayer';
+import { useSleepTimer } from '@/contexts/SleepTimerContext';
 
 
 
@@ -15,17 +16,18 @@ const OfflinePage: React.FC = () => {
   const reSelectFileRef = useRef<HTMLInputElement>(null);
   const pendingPlayFileRef = useRef<OfflineFile | null>(null);
   const transientBlobsRef = useRef<Record<string, Blob>>({});
+  const sleepTimer = useSleepTimer();
 
   useEffect(() => {
     loadFiles();
   }, []);
 
-  // Stop the video player when TopBar sleep timer fires
+  // Stop the player when sleep timer expires
   useEffect(() => {
-    const handler = () => handleClosePlayer();
-    window.addEventListener('stash:stopAll', handler);
-    return () => window.removeEventListener('stash:stopAll', handler);
-  }, [fileUrl]);
+    if (sleepTimer.expired) {
+      handleClosePlayer();
+    }
+  }, [sleepTimer.expired]);
 
   const loadFiles = async () => {
     setIsLoading(true);

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { BookmarkDialog } from '../components/BookmarkDialog';
-import { useTTS } from '../contexts/TTSContext';
+import { TranscriptSheet, TranscriptSheetHandle } from '../components/TranscriptSheet';
 import useSWR from 'swr';
 
 interface TopListItem {
@@ -16,6 +16,7 @@ interface TopListItem {
 
 const ExplorePage: React.FC = () => {
   const [bookmarkTarget, setBookmarkTarget] = useState<{ entityName: string, recordId: string } | null>(null);
+  const sheetRef = useRef<TranscriptSheetHandle>(null);
 
   const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? import.meta.env.VITE_APP_API_URL ?? '';
   const { data: topList, error: topListError, isLoading: isTopListLoading } = useSWR<TopListItem[]>(
@@ -23,28 +24,17 @@ const ExplorePage: React.FC = () => {
     (url: string) => fetch(url).then(res => res.json())
   );
 
-  const tts = useTTS();
-
   const handleSpeak = async (item: TopListItem, index: number) => {
     const key = `${item.entityName}_${item.recordId}`;
-    tts.setCurrentTitle(item.title);
 
-    // Register playlist for navigation
-    if (topList) {
-      tts.setPlaylist(topList, index, (newItem) => handleSpeak(newItem, topList.indexOf(newItem)));
-    }
-
-    // Open transcript sheet immediately
-    tts.setTranscriptOpen(true);
-
-    // Start speaking immediately with teaser content to unlock iOS audio context during user gesture
-    tts.play(item.content, key, true);
+    // Speak immediately with teaser content to unlock iOS audio
+    sheetRef.current?.speak(item.content, item.title, key,
+      topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem)) } : undefined
+    );
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/queries/contentTag?entityName=${item.entityName}&recordId=${item.recordId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch content details');
-      }
+      if (!response.ok) throw new Error('Failed to fetch content details');
       const data = await response.json();
 
       let fullContent = item.content;
@@ -54,13 +44,14 @@ const ExplorePage: React.FC = () => {
         fullContent = data.content;
       }
 
-      // If we got full content, switch to it. Since audio is already "unlocked", this should work.
+      // Switch to full content once loaded
       if (fullContent !== item.content) {
-        tts.play(fullContent, key, true);
+        sheetRef.current?.speak(fullContent, item.title, key,
+          topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem)) } : undefined
+        );
       }
     } catch (err) {
       console.error("Error fetching content details for speech:", err);
-      // Fallback: we already started with item.content, so nothing more to do
     }
   };
 
@@ -166,11 +157,12 @@ const ExplorePage: React.FC = () => {
           recordId={bookmarkTarget.recordId}
           onClose={() => setBookmarkTarget(null)}
           onSaved={() => {
-            // Optional: you can show a toast here in the future
             setBookmarkTarget(null);
           }}
         />
       )}
+
+      <TranscriptSheet ref={sheetRef} />
     </div>
   );
 };

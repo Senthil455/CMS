@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useUserInfo, logout, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk";
 import { LogIn, LogOut, Loader2, User, ChevronDown, Info, Moon, Timer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
-import { useTTS } from '../contexts/TTSContext';
+import { useSleepTimer } from '../contexts/SleepTimerContext';
 
 const SLEEP_OPTIONS = [
   { label: '15 min', seconds: 15 * 60 },
@@ -17,43 +17,9 @@ export const TopBar: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const location = useLocation();
-  const tts = useTTS();
+  const sleepTimer = useSleepTimer();
 
-  // Sleep timer
   const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [sleepRemaining, setSleepRemaining] = useState<number | null>(null);
-  const sleepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const clearSleepTimer = () => {
-    if (sleepIntervalRef.current) {
-      clearInterval(sleepIntervalRef.current);
-      sleepIntervalRef.current = null;
-    }
-    setSleepRemaining(null);
-  };
-
-  const startSleepTimer = (seconds: number) => {
-    clearSleepTimer();
-    setSleepRemaining(seconds);
-    setShowSleepMenu(false);
-    sleepIntervalRef.current = setInterval(() => {
-      setSleepRemaining(prev => {
-        if (prev === null || prev <= 1) {
-          // Stop TTS
-          tts.stop();
-          // Stop offline video player via custom event
-          window.dispatchEvent(new CustomEvent('stash:stopAll'));
-          clearInterval(sleepIntervalRef.current!);
-          sleepIntervalRef.current = null;
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Cleanup on unmount
-  useEffect(() => () => clearSleepTimer(), []);
 
   const formatSleepTime = (secs: number): string => {
     const m = Math.floor(secs / 60);
@@ -102,15 +68,15 @@ export const TopBar: React.FC = () => {
           <button
             onClick={() => setShowSleepMenu(v => !v)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-              sleepRemaining !== null
+              sleepTimer.remaining !== null
                 ? 'bg-sage-dark text-white shadow-md'
                 : 'bg-sage-light/40 text-sage-dark hover:bg-sage-light/70'
             }`}
             aria-label="Sleep Timer"
           >
             <Moon size={14} />
-            {sleepRemaining !== null && (
-              <span>{formatSleepTime(sleepRemaining)}</span>
+            {sleepTimer.remaining !== null && (
+              <span>{formatSleepTime(sleepTimer.remaining)}</span>
             )}
           </button>
 
@@ -137,17 +103,17 @@ export const TopBar: React.FC = () => {
                   {SLEEP_OPTIONS.map(opt => (
                     <button
                       key={opt.seconds}
-                      onClick={() => startSleepTimer(opt.seconds)}
+                      onClick={() => { sleepTimer.start(opt.seconds); setShowSleepMenu(false); }}
                       className="text-sm font-bold text-sage-dark text-left px-3 py-2 rounded-xl hover:bg-sage-light/40 transition-colors"
                     >
                       {opt.label}
                     </button>
                   ))}
-                  {sleepRemaining !== null && (
+                  {sleepTimer.remaining !== null && (
                     <>
                       <div className="w-full h-px bg-sage-light/40 my-1" />
                       <button
-                        onClick={() => { clearSleepTimer(); setShowSleepMenu(false); }}
+                        onClick={() => { sleepTimer.cancel(); setShowSleepMenu(false); }}
                         className="text-sm font-bold text-red-500 text-left px-3 py-2 rounded-xl hover:bg-red-50 transition-colors"
                       >
                         Cancel timer

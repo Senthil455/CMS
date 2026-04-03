@@ -15,8 +15,7 @@ import BookmarksPage from './pages/BookmarksPage'
 import AssetsPage from './pages/AssetsPage'
 import OfflinePage from './pages/OfflinePage'
 import './App.css'
-import { TTSProvider, useTTS } from './contexts/TTSContext'
-import { TranscriptSheet } from './components/TranscriptSheet'
+import { SleepTimerProvider } from './contexts/SleepTimerContext'
 
 // Configure SDK
 const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? '';
@@ -26,7 +25,6 @@ import { setCmsApiBaseUrl } from "@cms/sdk";
 setCmsApiBaseUrl(apiBaseUrl);
 axios.defaults.withCredentials = true;
 
-
 function AppContent() {
   const { data: userInfo, isLoading: isUserLoading } = useUserInfo()
   const [syncStatus, setSyncStatus] = useState({
@@ -34,11 +32,9 @@ function AppContent() {
     error: null as string | null,
   })
   const offlineState = useOnlineStatus()
-  const tts = useTTS()
   const location = useLocation()
 
   useEffect(() => {
-    // Initialize database on mount
     initializeDB().catch(console.error)
   }, [])
 
@@ -52,9 +48,6 @@ function AppContent() {
       error: success ? null : error || 'Sync failed',
     })
   }, [])
-
-
-
 
   if (isUserLoading) {
     return (
@@ -150,11 +143,7 @@ function AppContent() {
         </main>
 
         <BottomNav />
-        
-        
-        <TranscriptSheet />
       </div>
-
     </div>
   )
 }
@@ -162,9 +151,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter basename="/stash">
-      <TTSProvider>
+      <SleepTimerProvider>
         <AppContent />
-      </TTSProvider>
+      </SleepTimerProvider>
     </BrowserRouter>
   )
 }
