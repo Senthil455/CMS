@@ -5,9 +5,9 @@ import { useSleepTimer } from '../contexts/SleepTimerContext';
 /**
  * Internal hook used by TranscriptSheet.
  * Owns the TTS engine, sheet open state, title, and playlist.
- * Stops automatically when the global sleep timer expires.
+ * Pauses automatically when the global sleep timer expires.
  */
-export function useTTSPlayer(stop: () => void) {
+export function useTTSPlayer(pause: () => void) {
   const sleepTimer = useSleepTimer();
   const [isTranscriptOpen, setTranscriptOpen] = useState(false);
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -20,9 +20,9 @@ export function useTTSPlayer(stop: () => void) {
   // Stop when global sleep timer fires
   useEffect(() => {
     if (sleepTimer.expired) {
-      stop();
+      pause();
     }
-  }, [sleepTimer.expired, stop]);
+  }, [sleepTimer.expired, pause]);
 
   const setPlaylist = (items: any[], index: number, onPlay: (item: any) => void) => {
     setPlaylistState(items);

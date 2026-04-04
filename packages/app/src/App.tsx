@@ -9,6 +9,7 @@ import { setAuthApiBaseUrl } from '@cms/sdk';
 setAuthApiBaseUrl('');
 
 import LoginPage from './pages/login-page';
+import RegisterPage from './pages/register-page';
 import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
@@ -53,6 +54,7 @@ function App() {
           {/* ... existing routes ... */}
           <Route path="/app">
             <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
             <Route
               path=""
               element={

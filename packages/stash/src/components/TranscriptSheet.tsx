@@ -12,13 +12,14 @@ export interface TranscriptSheetHandle {
     text: string,
     title: string,
     key: string,
-    playlist?: { items: any[]; index: number; onPlayItem: (item: any) => void }
+    playlist?: { items: any[]; index: number; onPlayItem: (item: any) => void },
+    autoPlay?: boolean
   ) => void;
 }
 
 export const TranscriptSheet = forwardRef<TranscriptSheetHandle>((_, ref) => {
   const {
-    play, pause: onPause, resume: onResume, stop: onStop, seek: onSeek,
+    play, pause: onPause, resume: onResume, seek: onSeek,
     setRate: onSetRate, setVoice: onSetVoice,
     chunks, currentChunkIndex, isPlaying, isPaused, rate, voices, selectedVoice,
   } = useSpeechSynthesis();
@@ -27,7 +28,7 @@ export const TranscriptSheet = forwardRef<TranscriptSheetHandle>((_, ref) => {
     isTranscriptOpen: isOpen, setTranscriptOpen,
     currentTitle: title, setCurrentTitle,
     next: onNext, previous: onPrevious, hasNext, hasPrevious, setPlaylist
-  } = useTTSPlayer(onStop);
+  } = useTTSPlayer(onPause);
 
   const onClose = () => setTranscriptOpen(false);
 
@@ -36,13 +37,13 @@ export const TranscriptSheet = forwardRef<TranscriptSheetHandle>((_, ref) => {
 
   // Expose speak() to parent via ref
   useImperativeHandle(ref, () => ({
-    speak(text, title, key, playlist) {
+    speak(text, title, key, playlist, autoPlay = true) {
       setCurrentTitle(title);
       if (playlist) {
         setPlaylist(playlist.items, playlist.index, playlist.onPlayItem);
       }
       setTranscriptOpen(true);
-      play(text, key, true);
+      play(text, key, true, autoPlay);
     },
   }));
 
@@ -151,15 +152,6 @@ export const TranscriptSheet = forwardRef<TranscriptSheetHandle>((_, ref) => {
             </svg>
           </button>
 
-          <div className="w-px h-5 bg-sage-medium/30" />
-
-          <button
-            onClick={onStop}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-sm"
-            title="Stop"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
-          </button>
         </div>
 
         {/* Speed pill */}

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useUserInfo, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
 import axios from 'axios'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import ExplorePage from './pages/ExplorePage'
 import BookmarksPage from './pages/BookmarksPage'
 import AssetsPage from './pages/AssetsPage'
@@ -64,10 +65,11 @@ function AppContent() {
     )
   }
 
-  if (!userInfo && location.pathname === '/login') {
+  if (!userInfo && (location.pathname === '/login' || location.pathname === '/auth/register')) {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage baseRouter="/stash" />} />
+        <Route path="/auth/register" element={<RegisterPage baseRouter="/stash" />} />
       </Routes>
     )
   }

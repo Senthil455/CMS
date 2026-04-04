@@ -12,7 +12,7 @@ const BookmarksPage: React.FC = () => {
   const [bookmarkTarget, setBookmarkTarget] = useState<{ entityName: string, recordId: string } | null>(null);
   const sheetRef = useRef<TranscriptSheetHandle>(null);
 
-  const handleSpeak = (item: BookmarkItem, index: number) => {
+  const handleSpeak = (item: BookmarkItem, index: number, autoPlay: boolean = true) => {
     // Register playlist for navigation (filtered by current folder)
     const filteredBookmarks = bookmarks.filter(b => b.folderId === selectedFolder);
     sheetRef.current?.speak(
@@ -22,8 +22,9 @@ const BookmarksPage: React.FC = () => {
         {
           items: filteredBookmarks,
           index,
-          onPlayItem: (newItem: BookmarkItem) => handleSpeak(newItem, filteredBookmarks.findIndex(b => b.id === newItem.id))
-        }
+          onPlayItem: (newItem: BookmarkItem) => handleSpeak(newItem, filteredBookmarks.findIndex(b => b.id === newItem.id), true)
+        },
+        autoPlay
     );
   };
 
@@ -126,12 +127,19 @@ const BookmarksPage: React.FC = () => {
               href={item.url}
               onClick={(e) => {
                 e.preventDefault();
-                handleSpeak(item, index);
+                handleSpeak(item, index, false);
               }}
               className="flex items-center gap-4 p-3.5 bg-white/80 hover:bg-white rounded-2xl border border-gray-100/60 hover:border-gray-200/80 shadow-sm hover:shadow-md transition-all duration-250 group no-underline cursor-pointer"
             >
               {/* Image with play overlay */}
-              <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative">
+              <div 
+                className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSpeak(item, index, true);
+                }}
+              >
                 {item.image ? (
                   <img
                     src={item.image}

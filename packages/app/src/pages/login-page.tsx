@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { useSocketContext } from '../context/socket-provider';
 import { Loader2, Lock } from 'lucide-react';
@@ -106,6 +106,13 @@ export default function LoginPage() {
                             'Sign In'
                         )}
                     </button>
+                    
+                    <p className="text-sm text-primary-muted text-center mt-6 mb-2">
+                        Don't have an account?{' '}
+                        <Link to="/app/register" className="font-bold text-primary hover:underline">
+                            Register
+                        </Link>
+                    </p>
 
                     <p className="text-[10px] text-primary-muted text-center uppercase tracking-widest font-bold opacity-40">
                         Secure Authentication demo

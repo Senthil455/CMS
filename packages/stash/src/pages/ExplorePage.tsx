@@ -24,12 +24,13 @@ const ExplorePage: React.FC = () => {
     (url: string) => fetch(url).then(res => res.json())
   );
 
-  const handleSpeak = async (item: TopListItem, index: number) => {
+  const handleSpeak = async (item: TopListItem, index: number, autoPlay: boolean = true) => {
     const key = `${item.entityName}_${item.recordId}`;
 
     // Speak immediately with teaser content to unlock iOS audio
     sheetRef.current?.speak(item.content, item.title, key,
-      topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem)) } : undefined
+      topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem), true) } : undefined,
+      autoPlay
     );
 
     try {
@@ -47,7 +48,8 @@ const ExplorePage: React.FC = () => {
       // Switch to full content once loaded
       if (fullContent !== item.content) {
         sheetRef.current?.speak(fullContent, item.title, key,
-          topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem)) } : undefined
+          topList ? { items: topList, index, onPlayItem: (newItem: TopListItem) => handleSpeak(newItem, topList.indexOf(newItem), true) } : undefined,
+          autoPlay
         );
       }
     } catch (err) {
@@ -82,12 +84,19 @@ const ExplorePage: React.FC = () => {
                 href={item.url}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleSpeak(item, index);
+                  handleSpeak(item, index, false);
                 }}
                 className="flex items-center gap-4 p-3.5 bg-white/80 hover:bg-white rounded-2xl border border-gray-100/60 hover:border-gray-200/80 shadow-sm hover:shadow-md transition-all duration-250 group no-underline cursor-pointer"
               >
                 {/* Image with play overlay */}
-                <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative">
+                <div 
+                  className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-sage-light/20 relative"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSpeak(item, index, true);
+                  }}
+                >
                   <img
                     src={item.image}
                     alt={item.title}

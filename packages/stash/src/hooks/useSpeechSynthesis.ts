@@ -113,20 +113,29 @@ export function useSpeechSynthesis() {
   }, [chunksRef, currentChunkIndexRef, detectLang, pickVoice, voicesCacheRef, updateState, saveProgress]);
 
 
-  const play = async (htmlContent: string, key: string, resume: boolean = true) => {
+  const play = async (htmlContent: string, key: string, resumeProgress: boolean = true, autoPlay: boolean = true) => {
     const isSameKey = currentKeyRef.current === key;
     const isAlreadyPlaying = playStateRef.current === 'playing';
 
-    if (isSameKey && isAlreadyPlaying) {
+    if (isSameKey && isAlreadyPlaying && autoPlay) {
       const { totalChars, chunks } = prepareChunks(htmlContent);
       totalCharsRef.current = totalChars;
       updateState({ totalChars, chunks });
       return;
     }
 
+    if (isSameKey && !autoPlay) {
+        // Just prepare chunks and return so we don't restart if they just click the item without playing
+        const { totalChars, chunks } = prepareChunks(htmlContent);
+        totalCharsRef.current = totalChars;
+        updateState({ totalChars, chunks });
+        return;
+    }
+
     window.speechSynthesis.cancel();
+    utteranceRef.current = null;
     currentKeyRef.current = key;
-    playStateRef.current = 'playing';
+    playStateRef.current = autoPlay ? 'playing' : 'paused';
     chunkCharOffsetRef.current = 0;
 
     const { totalChars, chunks } = prepareChunks(htmlContent);
@@ -134,14 +143,18 @@ export function useSpeechSynthesis() {
     updateState({ totalChars, progress: 0, currentCharIndex: 0, chunks, currentChunkIndex: 0, error: null });
     currentChunkIndexRef.current = 0;
 
-    if (resume) {
+    if (resumeProgress) {
       const sentenceIndex = loadProgress(key, totalChars, chunks);
       currentChunkIndexRef.current = sentenceIndex;
       updateState({ currentChunkIndex: sentenceIndex });
     }
 
     if (chunks.length > 0) {
-      speakCurrentChunk();
+      if (autoPlay) {
+        speakCurrentChunk();
+      } else {
+        updateState({ isPlaying: false, isPaused: true });
+      }
     } else {
       playStateRef.current = 'stopped';
       updateState({ isPlaying: false, isPaused: false });
@@ -157,15 +170,12 @@ export function useSpeechSynthesis() {
 
   const resume = () => {
     playStateRef.current = 'playing';
-    window.speechSynthesis.resume();
+    if (!utteranceRef.current) {
+        speakCurrentChunk();
+    } else {
+        window.speechSynthesis.resume();
+    }
     updateState({ isPlaying: true, isPaused: false });
-  };
-
-  const stop = () => {
-    playStateRef.current = 'stopped';
-    window.speechSynthesis.cancel();
-    saveProgress(chunksRef.current);
-    updateState({ isPlaying: false, isPaused: false, progress: 0, currentCharIndex: 0, error: null });
   };
 
   const seek = (chunkIndex: number) => {
@@ -208,7 +218,6 @@ export function useSpeechSynthesis() {
     play,
     pause,
     resume,
-    stop,
     seek,
     setRate,
     setVoice,
