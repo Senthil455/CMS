@@ -20,7 +20,7 @@ export const engagementApi = {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`; // Just in case, standard JWT handling if needed. 
     }
-    
+
     // Using relative path as it's typically handled by Vite proxy or deployed together
     // but applying apiBaseUrl for external backend like topList does
     const response = await fetch(`${apiBaseUrl}/api/bookmarks/${entity}/${id}`, {
@@ -28,9 +28,9 @@ export const engagementApi = {
       headers,
       body: JSON.stringify(payload)
     });
-    
+
     if (!response.ok) throw new Error('Failed to save bookmark');
-    
+
     // The API might return an empty body on 200 OK, which would cause response.json() to throw.
     const text = await response.text();
     return text ? JSON.parse(text) : null;
@@ -68,7 +68,7 @@ export const engagementApi = {
 
   async fetchContentTagBatch(entityName: string, recordIds: number[]): Promise<any[]> {
     if (recordIds.length === 0) return [];
-    
+
     // Construct query parameters: ?entityName=post&recordId=1&recordId=2...
     const params = new URLSearchParams();
     params.append('entityName', entityName);
@@ -96,5 +96,45 @@ export const engagementApi = {
     if (!response.ok) throw new Error('Failed to delete bookmark');
     const text = await response.text();
     return text ? JSON.parse(text) : null;
+  },
+
+  async fetchProgressRecords(userId: string): Promise<{ items: any[]; totalRecords: number }> {
+    const response = await fetch(
+      `${apiBaseUrl}/api/entities/progress?offset=0&limit=1&sort[id]=-1&createdBy[equals]=${userId}`,
+      { credentials: 'include' }
+    );
+    if (!response.ok) throw new Error('Failed to fetch progress records');
+    return response.json();
+  },
+
+  async insertProgress(progressJson: string): Promise<void> {
+    const now = new Date().toISOString();
+    const response = await fetch(`${apiBaseUrl}/api/entities/progress/insert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        progress: progressJson,
+        publicationStatus: 'published',
+        publishedAt: now,
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to insert progress record');
+  },
+
+  async updateProgress(id: number, progressJson: string, updatedAt: string): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/entities/progress/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id,
+        description: 'TTS Progress',
+        progress: progressJson,
+        publicationStatus: 'published',
+        updatedAt,
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to update progress record');
   }
 };

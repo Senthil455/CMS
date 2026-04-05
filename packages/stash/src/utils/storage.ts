@@ -64,6 +64,12 @@ export async function getMetadata(key: string): Promise<any> {
   return item?.value
 }
 
+export async function getAllMetadataByPrefix(prefix: string): Promise<{ key: string; value: any; timestamp: number }[]> {
+  if (!db) await initializeDB();
+  const all = await db!.getAll(METADATA_STORE_NAME);
+  return all.filter(item => item.key.startsWith(prefix));
+}
+
 // Bookmark CRUD functions
 export async function saveBookmarks(items: any[]): Promise<void> {
   if (!db) await initializeDB()

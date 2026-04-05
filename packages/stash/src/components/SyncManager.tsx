@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 import { setMetadata, clearBookmarks, clearBookmarkFolders, saveBookmarks, saveBookmarkFolders, getAllBookmarks } from '@/utils/storage'
 import { engagementApi } from '@/utils/engagementApi'
+import { syncProgressStore } from '@/utils/syncProgress'
 
 export const syncBookmarksStore = async () => {
   try {
@@ -99,11 +100,12 @@ export const syncBookmarksStore = async () => {
 
 interface SyncManagerProps {
   isOnline: boolean
+  userId?: string
   onSyncStart?: () => void
   onSyncEnd?: (success: boolean, error?: string) => void
 }
 
-export const SyncManager: React.FC<SyncManagerProps> = ({ isOnline, onSyncStart, onSyncEnd }) => {
+export const SyncManager: React.FC<SyncManagerProps> = ({ isOnline, userId, onSyncStart, onSyncEnd }) => {
   const [isSyncing, setIsSyncing] = useState(false)
 
   useEffect(() => {
@@ -115,6 +117,9 @@ export const SyncManager: React.FC<SyncManagerProps> = ({ isOnline, onSyncStart,
 
       try {
         await syncBookmarksStore()
+        if (userId) {
+          await syncProgressStore(userId)
+        }
         
         await setMetadata('lastSyncTime', Date.now())
         onSyncEnd?.(true)

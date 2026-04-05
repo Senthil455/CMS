@@ -81,6 +81,7 @@ function AppContent() {
 
         <SyncManager
           isOnline={offlineState.isOnline}
+          userId={userInfo?.id}
           onSyncStart={handleSyncStart}
           onSyncEnd={handleSyncEnd}
         />

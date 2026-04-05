@@ -7,7 +7,6 @@ export function useTTSProgress(currentKeyRef: MutableRefObject<string | null>) {
   const currentChunkIndexRef = useRef(0);
 
   const saveProgress = useCallback((chunks: TTSChunk[]) => {
-    debugger;
     if (!currentKeyRef.current) return;
     const currentChunk = chunks[currentChunkIndexRef.current];
     if (!currentChunk) return;
@@ -39,7 +38,6 @@ export function useTTSProgress(currentKeyRef: MutableRefObject<string | null>) {
     // Note: We intentionally ONLY read from localStorage here.
     // Making an async read to IndexedDB here would force the entire trigger flow to become async,
     // which causes browsers to lose the "user gesture" context and block the audio autoplay.
-    debugger;
     try {
       const savedStr = localStorage.getItem(`tts_progress_${key}`);
       if (savedStr) {
