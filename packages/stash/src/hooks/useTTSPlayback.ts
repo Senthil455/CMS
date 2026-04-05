@@ -38,12 +38,24 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions) {
     const isSameKey = currentKeyRef.current === key;
     const isAlreadyPlaying = playStateRef.current === 'playing';
 
-    // Same item, already playing → just refresh chunks
-    if (isSameKey && isAlreadyPlaying && autoPlay) {
-      const { totalChars, chunks } = prepareChunks(htmlContent);
-      totalCharsRef.current = totalChars;
-      updateState({ totalChars, chunks });
-      return;
+    // Same item, autoPlay (user clicked Play icon) → toggle play/pause state
+    if (isSameKey && autoPlay) {
+      if (isAlreadyPlaying) {
+        // Toggle to paused
+        playStateRef.current = 'paused';
+        window.speechSynthesis.pause();
+        saveProgress(chunksRef.current);
+        updateState({ isPlaying: false, isPaused: true });
+        return;
+      } else if (playStateRef.current === 'paused') {
+        // Toggle to playing (resume)
+        playStateRef.current = 'playing';
+        if (!utteranceRef.current) speakCurrentChunk();
+        else window.speechSynthesis.resume();
+        updateState({ isPlaying: true, isPaused: false });
+        return;
+      }
+      // If stopped, fall through to regenerate chunks & restart
     }
 
     // Same item, no autoPlay → prepare chunks but don't restart
@@ -116,9 +128,9 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions) {
     window.speechSynthesis.cancel();
     currentChunkIndexRef.current = chunkIndex;
     chunkCharOffsetRef.current = 0;
-    updateState({ currentChunkIndex: chunkIndex });
     playStateRef.current = 'playing';
     speakCurrentChunk();
+    updateState({ currentChunkIndex: chunkIndex, isPlaying: true, isPaused: false });
   }, [chunksRef, currentChunkIndexRef, chunkCharOffsetRef, playStateRef, speakCurrentChunk, updateState]);
 
   // Save progress & cancel on unmount
