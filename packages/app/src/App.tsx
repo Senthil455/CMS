@@ -14,7 +14,7 @@ import { useAuth } from './hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, hasSuperAdmin } = useAuth();
+  const { user, hasSuperAdmin, logout } = useAuth();
   const location = useLocation();
 
   // When system status is still loading, show loading screen
@@ -38,6 +38,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // System is fully ready, require authentication
   if (!user) {
     return <Navigate to="/app/login" replace />;
+  }
+
+  if (user.allowedMenus && !user.allowedMenus.includes('menu_schema_builder')) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-app">
+        <div className="w-full max-w-md p-8 bg-app-surface border border-border rounded-3xl shadow-2xl text-center flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div>
+            <h2 className="text-2xl font-bold text-red-500">Access Denied</h2>
+            <p className="text-primary-muted mt-2">You don't have privileges to access this application.</p>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full h-12 bg-primary text-app rounded-xl font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-2"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

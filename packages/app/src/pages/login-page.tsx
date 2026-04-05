@@ -28,9 +28,13 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const result = await login(usernameOrEmail, password);
-            if (!result) {
-                setError('Login failed');
+            const result: any = await login(usernameOrEmail, password);
+            if (!result || result.error || result.success === false) {
+                setError(result?.error || 'Login failed');
+            } else if (result.allowedMenus && !result.allowedMenus.includes('menu_schema_builder')) {
+                setError("You don't have privileges to access this workspace");
+                // Immediately clear their session if they shouldn't log in
+                import('@cms/sdk').then(({ getApiClient }) => getApiClient().logout().catch(() => {}));
             } else {
                 refreshConnection();
                 navigate('/app');
