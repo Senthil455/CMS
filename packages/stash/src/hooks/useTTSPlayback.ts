@@ -10,6 +10,7 @@ export interface UseTTSPlaybackOptions {
   chunkCharOffsetRef: React.MutableRefObject<number>;
   currentChunkIndexRef: React.MutableRefObject<number>;
   totalCharsRef: React.MutableRefObject<number>;
+  currentKeyRef: React.MutableRefObject<string | null>;
   // Engine
   playStateRef: React.MutableRefObject<'playing' | 'paused' | 'stopped'>;
   utteranceRef: React.MutableRefObject<SpeechSynthesisUtterance | null>;
@@ -23,12 +24,10 @@ export interface UseTTSPlaybackOptions {
 export function useTTSPlayback(options: UseTTSPlaybackOptions) {
   const {
     prepareChunks, saveProgress, loadProgress,
-    chunksRef, chunkCharOffsetRef, currentChunkIndexRef, totalCharsRef,
+    chunksRef, chunkCharOffsetRef, currentChunkIndexRef, totalCharsRef, currentKeyRef,
     playStateRef, utteranceRef, speakCurrentChunk,
     updateState,
   } = options;
-
-  const currentKeyRef = useRef<string | null>(null);
 
   const play = useCallback(async (
     htmlContent: string,
@@ -36,7 +35,6 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions) {
     resumeProgress: boolean = true,
     autoPlay: boolean = true,
   ) => {
-    debugger;
     const isSameKey = currentKeyRef.current === key;
     const isAlreadyPlaying = playStateRef.current === 'playing';
 
@@ -131,5 +129,5 @@ export function useTTSPlayback(options: UseTTSPlaybackOptions) {
     };
   }, [saveProgress, chunksRef]);
 
-  return { currentKeyRef, play, pause, resume, seek };
+  return { play, pause, resume, seek };
 }

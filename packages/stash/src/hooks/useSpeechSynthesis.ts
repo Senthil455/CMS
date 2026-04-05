@@ -45,13 +45,11 @@ export function useSpeechSynthesis() {
   const { rate, selectedVoice, rateRef, selectedVoiceRef, setRate: setRateBase, setVoice: setVoiceBase } = useTTSSettings();
 
   // Shared refs consumed by the engine and playback hooks
-  const currentChunkIndexRef = useRef(0);
-  const chunkCharOffsetRef = useRef(0);
   const totalCharsRef = useRef(0);
 
-  // currentKeyRef lives in useTTSPlayback, but useTTSProgress needs it
+  // currentKeyRef is shared with useTTSPlayback and useTTSProgress
   const currentKeyRef = useRef<string | null>(null);
-  const { saveProgress, loadProgress } = useTTSProgress(currentKeyRef);
+  const { saveProgress, loadProgress, chunkCharOffsetRef, currentChunkIndexRef } = useTTSProgress(currentKeyRef);
 
   // Engine — utterance lifecycle
   const { playStateRef, utteranceRef, speakCurrentChunk } = useTTSEngine({
@@ -83,6 +81,7 @@ export function useSpeechSynthesis() {
     chunkCharOffsetRef,
     currentChunkIndexRef,
     totalCharsRef,
+    currentKeyRef,
     playStateRef,
     utteranceRef,
     speakCurrentChunk,
