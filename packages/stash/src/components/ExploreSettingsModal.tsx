@@ -1,6 +1,7 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, LayoutList, Loader2, AlertCircle, Check } from 'lucide-react';
+import { X, Loader2, AlertCircle, Check } from 'lucide-react';
 import useSWR from 'swr';
 import { useExploreSettings } from '../hooks/useExploreSettings';
 
@@ -28,7 +29,7 @@ export const ExploreSettingsModal: React.FC<ExploreSettingsModalProps> = ({
     fetcher
   );
 
-  const allOptions: Array<{ id: string; label: string; description?: string; isBuiltIn?: boolean }> = [
+  const allOptions: Array<{ id: string; label: string; description?: string }> = [
     ...BUILT_IN_TABS,
     ...(publicQueries ?? []).map(q => ({
       id: q,
@@ -40,91 +41,155 @@ export const ExploreSettingsModal: React.FC<ExploreSettingsModalProps> = ({
     })),
   ];
 
-  return (
+  return ReactDOM.createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 flex items-end sm:items-center justify-center z-[99999] p-4 sm:p-6">
-          {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 font-outfit"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          onClick={onClose}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={onClose}
-          />
-
-          {/* Sheet */}
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.25 }}
+            style={{
+              width: '100%',
+              maxWidth: '340px',
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+              border: '1px solid rgba(255,255,255,0.6)',
+            }}
+            onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sage-light/50 flex items-center justify-center text-sage-dark">
-                  <LayoutList size={18} />
-                </div>
-                <div>
-                  <h2 className="text-base font-extrabold text-sage-dark tracking-tight">Explore Settings</h2>
-                  <p className="text-[0.72rem] text-text-muted font-medium">Choose tabs to display</p>
-                </div>
-              </div>
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem', position: 'relative' }}>
+              {/* Close button */}
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+                style={{
+                  position: 'absolute',
+                  top: '-0.25rem',
+                  right: '-0.25rem',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'var(--sage-light)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--sage-medium, #c5d1ca)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--sage-light)'; }}
+                aria-label="Close"
               >
-                <X size={15} />
+                <X size={13} strokeWidth={2.5} />
               </button>
+
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🗂️</div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--sage-dark)', margin: 0 }}>
+                Explore Settings
+              </h2>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+                Choose tabs to display
+              </p>
             </div>
 
-            {/* Content */}
-            <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
+            {/* Tabs Section */}
+            <div style={{ marginBottom: '0.85rem' }}>
+              <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Available Tabs
+              </label>
+
               {queryLoading ? (
-                <div className="flex items-center justify-center py-10 gap-3 text-sage-medium">
-                  <Loader2 size={20} className="animate-spin" />
-                  <span className="text-sm font-semibold">Loading available queries…</span>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '1.5rem 0',
+                  gap: '0.4rem',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Loading available queries…</span>
                 </div>
               ) : queryError ? (
-                <div className="flex items-center gap-2 py-4 px-4 bg-red-50 rounded-2xl text-red-600 text-sm font-medium">
-                  <AlertCircle size={16} />
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.75rem',
+                  background: 'rgba(239,68,68,0.08)',
+                  borderRadius: '10px',
+                  color: '#ef4444',
+                  fontSize: '0.75rem',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                }}>
+                  <AlertCircle size={14} />
                   Failed to load public queries.
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: 220, overflowY: 'auto' }}>
                   {allOptions.map(option => {
                     const isSelected = settings.selectedTabs.includes(option.id);
                     return (
                       <button
                         key={option.id}
                         onClick={() => toggleTab(option.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 text-left ${
-                          isSelected
-                            ? 'bg-sage-light/30 border-sage-medium/40 shadow-sm'
-                            : 'bg-gray-50/80 border-gray-100 hover:bg-gray-100/80'
-                        }`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.55rem 0.65rem',
+                          background: isSelected ? 'rgba(107,142,120,0.1)' : 'rgba(255,255,255,0.6)',
+                          border: isSelected ? '1px solid var(--sage-dark)' : '1px solid var(--sage-light)',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'left',
+                          fontFamily: 'inherit',
+                        }}
                       >
-                        {/* Checkbox */}
-                        <div
-                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
-                            isSelected
-                              ? 'bg-sage-dark border-sage-dark'
-                              : 'bg-white border-gray-300'
-                          }`}
-                        >
-                          {isSelected && <Check size={12} color="white" strokeWidth={3} />}
-                        </div>
-
-                        {/* Label */}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[0.875rem] font-bold leading-tight ${isSelected ? 'text-sage-dark' : 'text-gray-600'}`}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                          <span style={{
+                            color: isSelected ? 'var(--sage-dark)' : 'var(--text-main)',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                          }}>
                             {option.label}
-                          </p>
+                          </span>
                           {option.description && (
-                            <p className="text-[0.7rem] text-text-muted mt-0.5">{option.description}</p>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                              {option.description}
+                            </span>
                           )}
+                        </div>
+                        <div style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '5px',
+                          border: isSelected ? '2px solid var(--sage-dark)' : '2px solid var(--sage-light)',
+                          background: isSelected ? 'var(--sage-dark)' : 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.2s',
+                        }}>
+                          {isSelected && <Check size={11} color="white" strokeWidth={3} />}
                         </div>
                       </button>
                     );
@@ -133,23 +198,35 @@ export const ExploreSettingsModal: React.FC<ExploreSettingsModalProps> = ({
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50">
-              <p className="text-[0.72rem] text-text-muted text-center">
-                {settings.selectedTabs.length === 0
-                  ? 'Select at least one tab to show on Explore'
-                  : `${settings.selectedTabs.length} tab${settings.selectedTabs.length > 1 ? 's' : ''} selected`}
-              </p>
-              <button
-                onClick={onClose}
-                className="mt-3 w-full py-2.5 bg-sage-medium hover:bg-sage-dark text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-sage-medium/20 active:scale-[0.98]"
-              >
-                Done
-              </button>
-            </div>
+            {/* Footer note */}
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', margin: '0.5rem 0 0.75rem' }}>
+              {settings.selectedTabs.length === 0
+                ? 'Select at least one tab to show on Explore'
+                : `${settings.selectedTabs.length} tab${settings.selectedTabs.length > 1 ? 's' : ''} selected`}
+            </p>
+
+            {/* Done button */}
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%',
+                padding: '0.6rem',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--sage-dark)',
+                color: '#fff',
+                transition: 'opacity 0.2s',
+                fontFamily: 'inherit',
+              }}
+            >
+              Done
+            </button>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
-  );
+  , document.body);
 };
