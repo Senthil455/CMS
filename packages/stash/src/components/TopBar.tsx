@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useUserInfo, logout, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk";
-import { LogIn, LogOut, Loader2, User, ChevronDown, Info, Moon, Timer } from "lucide-react";
+import { LogIn, LogOut, Loader2, User, ChevronDown, Info, Moon, Timer, Settings2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
 import { useSleepTimer } from '../contexts/SleepTimerContext';
+import { ExploreSettingsModal } from './ExploreSettingsModal';
 
 const SLEEP_OPTIONS = [
   { label: '15 min', seconds: 15 * 60 },
@@ -16,8 +17,10 @@ export const TopBar: React.FC = () => {
   const { data: userInfo, isLoading } = useUserInfo();
   const [showMenu, setShowMenu] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showExploreSettings, setShowExploreSettings] = useState(false);
   const location = useLocation();
   const sleepTimer = useSleepTimer();
+  const apiBaseUrl = import.meta.env.VITE_REACT_APP_API_URL ?? import.meta.env.VITE_APP_API_URL ?? '';
 
   const [showSleepMenu, setShowSleepMenu] = useState(false);
 
@@ -177,6 +180,16 @@ export const TopBar: React.FC = () => {
                     
                     <div className="px-2 space-y-1">
                       <button 
+                        onClick={() => { setShowExploreSettings(true); setShowMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-sage-light/40 rounded-xl transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-sage-light/50 flex items-center justify-center text-sage-dark group-hover:bg-white transition-colors">
+                          <Settings2 size={16} />
+                        </div>
+                        <span className="text-[0.85rem] font-bold text-sage-dark">Explore Settings</span>
+                      </button>
+
+                      <button 
                         onClick={() => { setShowAbout(true); setShowMenu(false); }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-sage-light/40 rounded-xl transition-colors group"
                       >
@@ -241,6 +254,12 @@ export const TopBar: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ExploreSettingsModal
+        isOpen={showExploreSettings}
+        onClose={() => setShowExploreSettings(false)}
+        apiBaseUrl={apiBaseUrl}
+      />
     </div>
   );
 };
