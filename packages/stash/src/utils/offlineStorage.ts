@@ -35,7 +35,7 @@ export async function updateOfflineFileProgress(id: string, progress: number): P
   }
 }
 
-export async function updateOfflineFile(id: string, updates: Partial<Pick<OfflineFile, 'title' | 'description'>>): Promise<void> {
+export async function updateOfflineFile(id: string, updates: Partial<Pick<OfflineFile, 'title'>>): Promise<void> {
   const db = await initializeDB()
   const file = await db.get(OFFLINE_STORE_NAME, id)
   if (file) {

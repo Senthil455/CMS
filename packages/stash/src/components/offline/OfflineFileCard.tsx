@@ -3,6 +3,7 @@ import { File, Video, Music, Trash2, Play, Pause } from 'lucide-react'
 import { OfflineFile } from '@/types'
 import { formatSize } from '@/utils/assetUtils'
 import { useSleepTimer } from '@/contexts/SleepTimerContext'
+import OfflineDetailSheet from './OfflineDetailSheet'
 
 
 interface OfflineFileCardProps {
@@ -11,10 +12,10 @@ interface OfflineFileCardProps {
   onDelete: (id: string) => void
   onProgressUpdate?: (id: string, progress: number) => void
   onGetBlob?: (id: string) => Blob | undefined
-  onShowDetail?: (file: OfflineFile) => void
+  onUpdateFile: (id: string, updates: Partial<Pick<OfflineFile, 'title'>>) => void
 }
 
-const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate, onGetBlob, onShowDetail }) => {
+const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate, onGetBlob, onUpdateFile }) => {
   const isVideo = file.type.startsWith('video/')
   const isAudio = file.type.startsWith('audio/') || file.filename.toLowerCase().endsWith('.m4b')
 
@@ -28,6 +29,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const reSelectFileRef = useRef<HTMLInputElement>(null)
   const wantPlayRef = useRef(false)
   const { expired: sleepExpired } = useSleepTimer()
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   // Cleanup object URL on unmount
   useEffect(() => {
@@ -209,7 +211,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
         // Only open detail if the click is NOT on a button or input
         const target = e.target as HTMLElement
         if (target.closest('button') || target.closest('input')) return
-        onShowDetail?.(file)
+        setIsDetailOpen(true)
       }}
     >
       {/* Audio element — always rendered so we can set src imperatively from tap handler */}
@@ -304,6 +306,25 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
           />
           <span className="text-[0.6rem] font-bold text-text-muted w-8 shrink-0">{formatTime(duration)}</span>
         </div>
+      )}
+
+      {/* Render detail sheet here so it has access to our playback state implicitly via props */}
+      {isDetailOpen && (
+        <OfflineDetailSheet
+          file={file}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          onUpdateFile={onUpdateFile}
+          // Pass down playback state to detail sheet
+          isAudio={isAudio}
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={duration}
+          playbackProgress={playbackProgress}
+          onPlayToggle={isAudio ? handleAudioPlay : () => onPlay(file)}
+          onSeek={handleSeek}
+          formatTime={formatTime}
+        />
       )}
     </div>
   )

@@ -17,8 +17,15 @@ export interface OfflineFile {
   size: number
   addedAt: string
   playProgress: number // in seconds
-  description?: string // user-editable notes / description
   fileHandle?: any // FileSystemFileHandle for desktop
+}
+
+export interface FileNote {
+  id: string          // uuid
+  fileId: string      // OfflineFile.id
+  position: number    // playback position in seconds at time of note
+  desc: string        // note text
+  createdAt: string   // ISO timestamp
 }
 
 export interface BookmarkItem {

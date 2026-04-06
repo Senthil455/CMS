@@ -1,36 +1,63 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { X, Pencil, Check, Music, Video, File as FileIcon } from 'lucide-react'
-import { OfflineFile } from '@/types'
+import { X, Pencil, Check, Music, Video, File as FileIcon, Trash2 } from 'lucide-react'
+import { OfflineFile, FileNote } from '@/types'
 import { formatSize } from '@/utils/assetUtils'
+import { addFileNote, getFileNotes, updateFileNote, deleteFileNote } from '@/utils/fileNotes'
 
 interface OfflineDetailSheetProps {
   file: OfflineFile
   isOpen: boolean
   onClose: () => void
-  onUpdateFile: (id: string, updates: Partial<Pick<OfflineFile, 'title' | 'description'>>) => void
+  onUpdateFile: (id: string, updates: Partial<Pick<OfflineFile, 'title'>>) => void
+  isAudio: boolean
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  playbackProgress: number
+  onPlayToggle: () => void
+  onSeek: (e: React.ChangeEvent<HTMLInputElement>) => void
+  formatTime: (s: number) => string
 }
 
-const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({ file, isOpen, onClose, onUpdateFile }) => {
+const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({
+  file, isOpen, onClose, onUpdateFile,
+  isAudio, isPlaying, currentTime, duration, playbackProgress, onPlayToggle, onSeek, formatTime
+}) => {
   // --- Inline-edit: Title ---
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(file.title || file.filename)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
-  // --- Inline-edit: Description ---
-  const [editingDesc, setEditingDesc] = useState(false)
-  const [descDraft, setDescDraft] = useState(file.description || '')
-  const descTextareaRef = useRef<HTMLTextAreaElement>(null)
+  // --- Notes ---
+  const [notes, setNotes] = useState<FileNote[]>([])
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [noteDraft, setNoteDraft] = useState('')
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null)
+  // New note input
+  const [addingNote, setAddingNote] = useState(false)
+  const [newNoteDraft, setNewNoteDraft] = useState('')
+  const newNoteRef = useRef<HTMLTextAreaElement>(null)
 
-  // Sync drafts when file changes
-  useEffect(() => {
-    setTitleDraft(file.title || file.filename)
-    setDescDraft(file.description || '')
-    setEditingTitle(false)
-    setEditingDesc(false)
+  // Load notes when file changes or sheet opens
+  const loadNotes = useCallback(async () => {
+    const fetched = await getFileNotes(file.id)
+    setNotes(fetched)
   }, [file.id])
 
-  // Auto-focus inputs
+  useEffect(() => {
+    if (isOpen) loadNotes()
+  }, [isOpen, loadNotes])
+
+  // Sync title when file changes
+  useEffect(() => {
+    setTitleDraft(file.title || file.filename)
+    setEditingTitle(false)
+    setEditingNoteId(null)
+    setAddingNote(false)
+  }, [file.id])
+
+  // Auto-focus
   useEffect(() => {
     if (editingTitle && titleInputRef.current) {
       titleInputRef.current.focus()
@@ -39,14 +66,15 @@ const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({ file, isOpen, o
   }, [editingTitle])
 
   useEffect(() => {
-    if (editingDesc && descTextareaRef.current) {
-      descTextareaRef.current.focus()
-    }
-  }, [editingDesc])
+    if (addingNote && newNoteRef.current) newNoteRef.current.focus()
+  }, [addingNote])
+
+  useEffect(() => {
+    if (editingNoteId && noteTextareaRef.current) noteTextareaRef.current.focus()
+  }, [editingNoteId])
 
   // --- Helpers ---
   const isVideo = file.type.startsWith('video/')
-  const isAudio = file.type.startsWith('audio/') || file.filename.toLowerCase().endsWith('.m4b')
   const getIcon = () => {
     if (isVideo) return <Video size={22} />
     if (isAudio) return <Music size={22} />
@@ -61,16 +89,36 @@ const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({ file, isOpen, o
     setEditingTitle(false)
   }
 
-  const saveDesc = () => {
-    if (descDraft !== (file.description || '')) {
-      onUpdateFile(file.id, { description: descDraft })
-    }
-    setEditingDesc(false)
+  // --- Note handlers ---
+  const handleAddNote = async () => {
+    const text = newNoteDraft.trim()
+    if (!text) { setAddingNote(false); return }
+    await addFileNote(file.id, currentTime, text)
+    setNewNoteDraft('')
+    setAddingNote(false)
+    loadNotes()
+  }
+
+  const startEditNote = (note: FileNote) => {
+    setEditingNoteId(note.id)
+    setNoteDraft(note.desc)
+  }
+
+  const saveEditNote = async (id: string) => {
+    const text = noteDraft.trim()
+    if (text) await updateFileNote(id, text)
+    setEditingNoteId(null)
+    loadNotes()
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    await deleteFileNote(id)
+    loadNotes()
   }
 
   if (!isOpen) return null
 
-  const progress = Math.min(file.playProgress || 0, 100)
+  const progress = Math.min(playbackProgress || 0, 100)
 
   const sheet = (
     <div className="fixed inset-0 z-[100] flex flex-col zen-gradient-bg animate-[slideUpFullScreen_0.4s_cubic-bezier(0.16,1,0.3,1)]">
@@ -98,11 +146,9 @@ const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({ file, isOpen, o
               {getIcon()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-gray-400 font-medium truncate">
-                {file.filename}
-              </p>
+              <p className="text-sm text-gray-400 font-medium truncate">{file.filename}</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {formatSize(file.size)} • {file.filename.split('.').pop()?.toUpperCase() || 'FILE'}
+                {formatSize(file.size)} • {file.filename.split('.').pop()?.toUpperCase() || 'FILE'} • {new Date(file.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -120,93 +166,172 @@ const OfflineDetailSheet: React.FC<OfflineDetailSheetProps> = ({ file, isOpen, o
                   onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') { setEditingTitle(false); setTitleDraft(file.title || file.filename) } }}
                   className="flex-1 text-lg font-semibold text-sage-dark bg-white/70 border border-sage-medium/30 rounded-xl px-3 py-2 outline-none focus:border-sage-dark transition-colors"
                 />
-                <button
-                  onClick={saveTitle}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-dark text-white shadow-md active:scale-95 transition-transform"
-                >
+                <button onClick={saveTitle} className="w-9 h-9 flex items-center justify-center rounded-full bg-sage-dark text-white shadow-md active:scale-95 transition-transform">
                   <Check size={16} />
                 </button>
               </div>
             ) : (
-              <div
-                className="flex items-center gap-2 group/title cursor-pointer"
-                onClick={() => setEditingTitle(true)}
-              >
-                <span className="text-lg font-semibold text-sage-dark flex-1">
-                  {file.title || file.filename}
-                </span>
+              <div className="flex items-center gap-2 group/title cursor-pointer" onClick={() => setEditingTitle(true)}>
+                <span className="text-lg font-semibold text-sage-dark flex-1">{file.title || file.filename}</span>
                 <Pencil size={14} className="text-gray-300 group-hover/title:text-sage-dark transition-colors shrink-0" />
               </div>
             )}
           </div>
 
-          {/* --- Progress --- */}
+          {/* --- Play Progress --- */}
           <div className="bg-white/60 backdrop-blur-sm border border-white/80 rounded-2xl p-5 shadow-sm">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">Play Progress</label>
             <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-sage-dark rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
+              <button
+                onClick={onPlayToggle}
+                className="w-10 h-10 bg-sage-dark text-white rounded-full flex items-center justify-center shadow-md shadow-sage-dark/20 active:scale-95 transition-transform shrink-0"
+              >
+                {isPlaying ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                )}
+              </button>
+
+              {isAudio ? (
+                <div className="flex-1 flex items-center gap-3">
+                  <span className="text-xs font-bold text-sage-dark tabular-nums shrink-0 w-9 text-right">{formatTime(currentTime)}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 0}
+                    step={0.5}
+                    value={currentTime}
+                    onChange={onSeek}
+                    className="flex-1 h-1.5 accent-sage-dark cursor-pointer rounded-full"
                   />
+                  <span className="text-xs font-bold text-sage-dark tabular-nums shrink-0 w-9">{formatTime(duration)}</span>
                 </div>
-              </div>
-              <span className="text-sm font-bold text-sage-dark tabular-nums shrink-0 min-w-[3rem] text-right">
-                {progress.toFixed(1)}%
-              </span>
+              ) : (
+                <div className="flex-1 flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-sage-dark rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-sage-dark tabular-nums shrink-0 min-w-[3rem] text-right">{progress.toFixed(1)}%</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* --- Description --- */}
+          {/* --- Notes --- */}
           <div className="bg-white/60 backdrop-blur-sm border border-white/80 rounded-2xl p-5 shadow-sm">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Description</label>
-            {editingDesc ? (
-              <div className="space-y-2">
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Notes {notes.length > 0 && <span className="text-sage-dark">({notes.length})</span>}
+              </label>
+              <button
+                onClick={() => {
+                  setNewNoteDraft('')
+                  setAddingNote(true)
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[0.7rem] font-bold bg-sage-dark text-white rounded-xl shadow-sm active:scale-95 transition-all"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Note at {formatTime(currentTime)}
+              </button>
+            </div>
+
+            {/* New note input */}
+            {addingNote && (
+              <div className="mb-4 space-y-2 bg-sage-light/20 border border-sage-medium/20 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[0.65rem] font-bold text-sage-dark bg-sage-light/60 px-2 py-0.5 rounded-full border border-sage-medium/20">
+                    @ {formatTime(currentTime)}
+                  </span>
+                </div>
                 <textarea
-                  ref={descTextareaRef}
-                  value={descDraft}
-                  onChange={e => setDescDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Escape') { setEditingDesc(false); setDescDraft(file.description || '') } }}
-                  rows={5}
-                  className="w-full text-sm text-sage-dark bg-white/70 border border-sage-medium/30 rounded-xl px-3 py-2.5 outline-none focus:border-sage-dark transition-colors resize-y leading-relaxed"
-                  placeholder="Add notes or a description…"
+                  ref={newNoteRef}
+                  value={newNoteDraft}
+                  onChange={e => setNewNoteDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') { setAddingNote(false) } }}
+                  rows={3}
+                  className="w-full text-sm text-sage-dark bg-white/80 border border-sage-medium/20 rounded-xl px-3 py-2 outline-none focus:border-sage-dark transition-colors resize-none leading-relaxed"
+                  placeholder="Write your note…"
                 />
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
                   <button
-                    onClick={saveDesc}
-                    className="px-4 py-2 text-xs font-bold bg-sage-dark text-white rounded-xl shadow-md active:scale-95 transition-transform"
+                    onClick={() => setAddingNote(false)}
+                    className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-gray-600 rounded-xl transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddNote}
+                    className="px-4 py-1.5 text-xs font-bold bg-sage-dark text-white rounded-xl shadow-sm active:scale-95 transition-transform"
                   >
                     Save
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* Notes list */}
+            {notes.length === 0 && !addingNote ? (
+              <p className="text-sm text-gray-300 italic text-center py-4">No notes yet. Click "Add Note" to capture a thought at the current position.</p>
             ) : (
-              <div
-                className="flex items-start gap-2 group/desc cursor-pointer min-h-[2.5rem]"
-                onClick={() => setEditingDesc(true)}
-              >
-                <span className={`text-sm leading-relaxed flex-1 whitespace-pre-wrap ${file.description ? 'text-sage-dark' : 'text-gray-300 italic'}`}>
-                  {file.description || 'Tap to add a description…'}
-                </span>
-                <Pencil size={14} className="text-gray-300 group-hover/desc:text-sage-dark transition-colors shrink-0 mt-0.5" />
+              <div className="space-y-3">
+                {notes.map(note => (
+                  <div key={note.id} className="bg-white/70 border border-white/90 rounded-xl p-3 shadow-sm">
+                    {/* Position badge */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[0.65rem] font-bold text-sage-dark bg-sage-light/60 px-2 py-0.5 rounded-full border border-sage-medium/20">
+                        @ {formatTime(note.position)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEditNote(note)}
+                          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-sage-dark hover:bg-sage-light/40 transition-all"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          ref={noteTextareaRef}
+                          value={noteDraft}
+                          onChange={e => setNoteDraft(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Escape') setEditingNoteId(null) }}
+                          rows={3}
+                          className="w-full text-sm text-sage-dark bg-white/80 border border-sage-medium/30 rounded-xl px-3 py-2 outline-none focus:border-sage-dark transition-colors resize-none leading-relaxed"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => setEditingNoteId(null)}
+                            className="px-3 py-1 text-xs font-bold text-gray-400 hover:text-gray-600 rounded-xl transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => saveEditNote(note.id)}
+                            className="px-4 py-1 text-xs font-bold bg-sage-dark text-white rounded-xl shadow-sm active:scale-95 transition-transform"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-sage-dark leading-relaxed whitespace-pre-wrap">{note.desc}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
-          </div>
-
-          {/* --- Metadata --- */}
-          <div className="bg-white/60 backdrop-blur-sm border border-white/80 rounded-2xl p-5 shadow-sm">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">Info</label>
-            <div className="grid grid-cols-2 gap-y-3 text-sm">
-              <span className="text-gray-400 font-medium">Added</span>
-              <span className="text-sage-dark font-semibold text-right">
-                {new Date(file.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-              <span className="text-gray-400 font-medium">Size</span>
-              <span className="text-sage-dark font-semibold text-right">{formatSize(file.size)}</span>
-              <span className="text-gray-400 font-medium">Type</span>
-              <span className="text-sage-dark font-semibold text-right">{file.type || 'unknown'}</span>
-            </div>
           </div>
 
         </div>

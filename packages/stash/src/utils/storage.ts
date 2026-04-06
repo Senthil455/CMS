@@ -5,7 +5,8 @@ export const METADATA_STORE_NAME = 'metadata'
 export const OFFLINE_STORE_NAME = 'offline-files'
 export const BOOKMARKS_STORE_NAME = 'bookmarks'
 export const BOOKMARK_FOLDERS_STORE_NAME = 'bookmark-folders'
-const DB_VERSION = 3 // Incremented version to trigger upgrade
+export const FILE_NOTES_STORE_NAME = 'file-notes'
+const DB_VERSION = 4 // Bumped to add file-notes store
 
 let db: IDBPDatabase | null = null
 
@@ -46,6 +47,13 @@ export async function initializeDB(): Promise<IDBPDatabase> {
       // Bookmark folders store
       if (!db.objectStoreNames.contains(BOOKMARK_FOLDERS_STORE_NAME)) {
         db.createObjectStore(BOOKMARK_FOLDERS_STORE_NAME, { keyPath: 'id' })
+      }
+
+      // File notes store
+      if (!db.objectStoreNames.contains(FILE_NOTES_STORE_NAME)) {
+        const store = db.createObjectStore(FILE_NOTES_STORE_NAME, { keyPath: 'id' })
+        store.createIndex('fileId', 'fileId', { unique: false })
+        store.createIndex('createdAt', 'createdAt', { unique: false })
       }
     },
   })
