@@ -106,8 +106,6 @@ const OfflinePage: React.FC = () => {
   };
 
   const handlePlay = async (file: OfflineFile) => {
-    debugger;
-    console.log('handlePlay', file);
     try {
       let blob: Blob;
 

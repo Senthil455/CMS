@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { File, Video, Music, Trash2, Play, Pause } from 'lucide-react'
 import { OfflineFile } from '@/types'
 import { formatSize } from '@/utils/assetUtils'
+import { useSleepTimer } from '@/contexts/SleepTimerContext'
 
 
 interface OfflineFileCardProps {
@@ -25,6 +26,7 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const lastSavedPctRef = useRef<number>(file.playProgress || 0)
   const reSelectFileRef = useRef<HTMLInputElement>(null)
   const wantPlayRef = useRef(false)
+  const { expired: sleepExpired } = useSleepTimer()
 
   // Cleanup object URL on unmount
   useEffect(() => {
@@ -32,6 +34,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
       if (audioUrl) URL.revokeObjectURL(audioUrl)
     }
   }, [audioUrl])
+
+  // Stop audio when the sleep timer expires
+  useEffect(() => {
+    if (sleepExpired && isPlaying && audioRef.current) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+      wantPlayRef.current = false
+    }
+  }, [sleepExpired])
 
   const getIcon = () => {
     if (isVideo) return <Video size={18} />
