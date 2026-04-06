@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FolderOpen, Info } from 'lucide-react';
 import { OfflineFile } from '@/types';
-import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress } from '@/utils/offlineStorage';
+import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress, updateOfflineFile } from '@/utils/offlineStorage';
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
 import OfflinePlayer from '@/components/offline/OfflinePlayer';
+import OfflineDetailSheet from '@/components/offline/OfflineDetailSheet';
 import { useSleepTimer } from '@/contexts/SleepTimerContext';
 
 
@@ -17,6 +18,7 @@ const OfflinePage: React.FC = () => {
   const pendingPlayFileRef = useRef<OfflineFile | null>(null);
   const transientBlobsRef = useRef<Record<string, Blob>>({});
   const sleepTimer = useSleepTimer();
+  const [detailFile, setDetailFile] = useState<OfflineFile | null>(null);
 
   useEffect(() => {
     loadFiles();
@@ -154,6 +156,13 @@ const OfflinePage: React.FC = () => {
     }
   };
 
+  const handleUpdateFile = async (id: string, updates: Partial<Pick<OfflineFile, 'title' | 'description'>>) => {
+    await updateOfflineFile(id, updates);
+    await loadFiles();
+    // Keep the detail sheet in sync with the updated file
+    setDetailFile(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
+  };
+
   const isIOS = !('showOpenFilePicker' in window);
 
   return (
@@ -196,6 +205,7 @@ const OfflinePage: React.FC = () => {
               onDelete={handleDelete}
               onProgressUpdate={updateOfflineFileProgress}
               onGetBlob={(id) => transientBlobsRef.current[id]}
+              onShowDetail={setDetailFile}
             />
           ))}
         </div>
@@ -219,6 +229,15 @@ const OfflinePage: React.FC = () => {
         onClose={handleClosePlayer}
         onProgressUpdate={updateOfflineFileProgress}
       />
+
+      {detailFile && (
+        <OfflineDetailSheet
+          file={detailFile}
+          isOpen={!!detailFile}
+          onClose={() => setDetailFile(null)}
+          onUpdateFile={handleUpdateFile}
+        />
+      )}
     </div>
   );
 };

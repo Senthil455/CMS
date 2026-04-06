@@ -11,9 +11,10 @@ interface OfflineFileCardProps {
   onDelete: (id: string) => void
   onProgressUpdate?: (id: string, progress: number) => void
   onGetBlob?: (id: string) => Blob | undefined
+  onShowDetail?: (file: OfflineFile) => void
 }
 
-const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate, onGetBlob }) => {
+const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelete, onProgressUpdate, onGetBlob, onShowDetail }) => {
   const isVideo = file.type.startsWith('video/')
   const isAudio = file.type.startsWith('audio/') || file.filename.toLowerCase().endsWith('.m4b')
 
@@ -202,7 +203,15 @@ const OfflineFileCard: React.FC<OfflineFileCardProps> = ({ file, onPlay, onDelet
   const playbackProgress = duration > 0 ? (currentTime / duration) * 100 : file.playProgress || 0
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 active:scale-[0.99] group cursor-pointer">
+    <div
+      className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 active:scale-[0.99] group cursor-pointer"
+      onClick={(e) => {
+        // Only open detail if the click is NOT on a button or input
+        const target = e.target as HTMLElement
+        if (target.closest('button') || target.closest('input')) return
+        onShowDetail?.(file)
+      }}
+    >
       {/* Audio element — always rendered so we can set src imperatively from tap handler */}
       {isAudio && (
         <audio

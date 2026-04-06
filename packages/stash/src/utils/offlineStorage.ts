@@ -35,6 +35,20 @@ export async function updateOfflineFileProgress(id: string, progress: number): P
   }
 }
 
+export async function updateOfflineFile(id: string, updates: Partial<Pick<OfflineFile, 'title' | 'description'>>): Promise<void> {
+  const db = await initializeDB()
+  const file = await db.get(OFFLINE_STORE_NAME, id)
+  if (file) {
+    const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
+    const { fileHandle, ...metadata } = file
+    await tx.store.put({
+      ...metadata,
+      ...updates,
+    })
+    await tx.done
+  }
+}
+
 export async function deleteOfflineFile(id: string): Promise<void> {
   const db = await initializeDB()
   await db.delete(OFFLINE_STORE_NAME, id)

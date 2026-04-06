@@ -17,6 +17,7 @@ export interface OfflineFile {
   size: number
   addedAt: string
   playProgress: number // in seconds
+  description?: string // user-editable notes / description
   fileHandle?: any // FileSystemFileHandle for desktop
 }
 
