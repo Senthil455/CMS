@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BookmarkFolder, engagementApi } from '../utils/engagementApi';
+import { bookmarkApi } from '@/api/bookmarkApi';
+import type { BookmarkFolder } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Bookmark, FolderOpen, X, ChevronRight, FolderPlus } from 'lucide-react';
+
+interface DialogBookmarkFolder extends BookmarkFolder {
+  selected?: boolean;
+}
+
 
 interface BookmarkDialogProps {
   isOpen: boolean;
@@ -18,7 +24,7 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
   onClose,
   onSaved
 }) => {
-  const [folders, setFolders] = useState<BookmarkFolder[]>([]);
+  const [folders, setFolders] = useState<DialogBookmarkFolder[]>([]);
   const [newFolderName, setNewFolderName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,12 +33,13 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
     if (isOpen) {
       if (entityName && recordId) {
         setIsLoading(true);
-        engagementApi.fetchBookmarkFolders(entityName, recordId)
-          .then(data => {
-            setFolders(data.map(f => ({ ...f, selected: !!f.selected })));
+        bookmarkApi.fetchFolders(entityName, recordId)
+          .then((data: any) => {
+            setFolders(data.map((f: any) => ({ ...f, selected: !!f.selected })));
           })
-          .catch(err => console.error('Failed to load folders', err))
-          .finally(() => setIsLoading(false));
+          .catch((err: any) => {
+            console.error('Failed to fetch bookmark folders:', err);
+          }).finally(() => setIsLoading(false));
       }
     } else {
       setFolders([]);
@@ -42,15 +49,15 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
 
   if (!isOpen) return null;
 
-  const handleToggleFolder = (id: string) => {
+  const handleToggleFolder = (id: number) => {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, selected: !f.selected } : f));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const selectedFolders = folders.filter(f => f.selected).map(f => f.id);
-      await engagementApi.saveBookmark(entityName, recordId, {
+      const selectedFolders = folders.filter(f => f.selected).map(f => String(f.id));
+      await bookmarkApi.saveBookmark(entityName, recordId, {
         selectedFolders,
         newFolderName
       });

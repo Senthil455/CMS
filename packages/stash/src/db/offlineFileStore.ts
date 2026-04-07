@@ -1,4 +1,4 @@
-import { initializeDB, OFFLINE_STORE_NAME } from './storage'
+import { initializeDB, OFFLINE_STORE_NAME } from './database'
 import { OfflineFile } from '@/types'
 
 export async function saveOfflineFile(file: OfflineFile): Promise<void> {

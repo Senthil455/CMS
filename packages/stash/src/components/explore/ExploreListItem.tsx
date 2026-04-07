@@ -1,5 +1,5 @@
 import React from 'react';
-import { TopListItem } from './types';
+import { TopListItem } from '@/types';
 
 interface ExploreListItemProps {
   item: TopListItem;

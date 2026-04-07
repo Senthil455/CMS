@@ -1,12 +1,13 @@
 import { IDBPDatabase, openDB } from 'idb'
 
-const DB_NAME = 'cms-stash'
+export const DB_NAME = 'cms-stash'
+export const DB_VERSION = 4
+
 export const METADATA_STORE_NAME = 'metadata'
 export const OFFLINE_STORE_NAME = 'offline-files'
 export const BOOKMARKS_STORE_NAME = 'bookmarks'
 export const BOOKMARK_FOLDERS_STORE_NAME = 'bookmark-folders'
 export const FILE_NOTES_STORE_NAME = 'file-notes'
-const DB_VERSION = 4 // Bumped to add file-notes store
 
 let db: IDBPDatabase | null = null
 
@@ -59,62 +60,4 @@ export async function initializeDB(): Promise<IDBPDatabase> {
   })
 
   return db
-}
-
-export async function setMetadata(key: string, value: any): Promise<void> {
-  if (!db) await initializeDB()
-  await db!.put(METADATA_STORE_NAME, { key, value, timestamp: Date.now() })
-}
-
-export async function getMetadata(key: string): Promise<any> {
-  if (!db) await initializeDB()
-  const item = await db!.get(METADATA_STORE_NAME, key)
-  return item?.value
-}
-
-export async function getAllMetadataByPrefix(prefix: string): Promise<{ key: string; value: any; timestamp: number }[]> {
-  if (!db) await initializeDB();
-  const all = await db!.getAll(METADATA_STORE_NAME);
-  return all.filter(item => item.key.startsWith(prefix));
-}
-
-// Bookmark CRUD functions
-export async function saveBookmarks(items: any[]): Promise<void> {
-  if (!db) await initializeDB()
-  const tx = db!.transaction(BOOKMARKS_STORE_NAME, 'readwrite')
-  for (const item of items) {
-    await tx.store.put(item)
-  }
-  await tx.done
-}
-
-export async function getAllBookmarks(): Promise<any[]> {
-  if (!db) await initializeDB()
-  const items = await db!.getAll(BOOKMARKS_STORE_NAME)
-  // Sort descending by id
-  return items.sort((a, b) => b.id - a.id)
-}
-
-export async function clearBookmarks(): Promise<void> {
-  if (!db) await initializeDB()
-  await db!.clear(BOOKMARKS_STORE_NAME)
-}
-
-export async function saveBookmarkFolders(folders: any[]): Promise<void> {
-  if (!db) await initializeDB()
-  const tx = db!.transaction(BOOKMARK_FOLDERS_STORE_NAME, 'readwrite')
-  for (const folder of folders) {
-    await tx.store.put(folder)
-  }
-  await tx.done
-}
-
-export async function getAllBookmarkFolders(): Promise<any[]> {
-  if (!db) await initializeDB()
-  return db!.getAll(BOOKMARK_FOLDERS_STORE_NAME)
-}
-
-export async function clearBookmarkFolders(): Promise<void> {
-  if (!db) await initializeDB()
-  await db!.clear(BOOKMARK_FOLDERS_STORE_NAME)
 }

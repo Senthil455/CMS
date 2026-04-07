@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FolderOpen, Info } from 'lucide-react';
 import { OfflineFile } from '@/types';
-import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress, updateOfflineFile } from '@/utils/offlineStorage';
+import { getAllOfflineFiles, saveOfflineFile, deleteOfflineFile, updateOfflineFileProgress, updateOfflineFile } from '@/db/offlineFileStore';
 import OfflineFileCard from '@/components/offline/OfflineFileCard';
 import OfflinePlayer from '@/components/offline/OfflinePlayer';
 import { useSleepTimer } from '@/contexts/SleepTimerContext';

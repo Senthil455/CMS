@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useOnlineStatus } from '@/hooks'
-import { initializeDB } from '@/utils/storage'
+import { initializeDB } from '@/db/database'
 import { StatusBar } from '@/components/StatusBar'
 import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'

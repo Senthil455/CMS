@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { BookmarkItem, BookmarkFolder } from '@/types';
-import { getAllBookmarks, getAllBookmarkFolders, saveBookmarks, clearBookmarks } from '@/utils/storage';
+import { getAllBookmarks, getAllBookmarkFolders } from '@/db/bookmarkStore';
 import { useOnlineStatus } from '@/hooks';
-import { syncBookmarksStore } from '@/components/SyncManager';
+import { syncBookmarksStore } from '@/services/syncBookmarks';
 import { TranscriptSheet, TranscriptSheetHandle } from '../components/TranscriptSheet';
 import { BookmarkDialog } from '../components/BookmarkDialog';
-import { engagementApi } from '../utils/engagementApi';
+import { bookmarkApi } from '@/api/bookmarkApi';
+import AssetCard from '@/components/assets/AssetCard';
+import AssetDetailSheet from '@/components/assets/AssetDetailSheet';
+import { Trash2, ExternalLink, Archive, Folder } from 'lucide-react';
 
 const BookmarksPage: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
@@ -31,7 +34,7 @@ const BookmarksPage: React.FC = () => {
   const handleDelete = async (item: BookmarkItem) => {
     if (!window.confirm(`Remove "${item.title}" from bookmarks?`)) return;
     try {
-      await engagementApi.deleteBookmark(item.id);
+      await bookmarkApi.deleteBookmark(item.id);
       if (isOnline) {
         await syncBookmarksStore();
       }

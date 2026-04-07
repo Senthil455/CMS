@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import { X, Pencil, Check, Music, Video, File as FileIcon, Trash2 } from 'lucide-react'
 import { OfflineFile, FileNote } from '@/types'
 import { formatSize } from '@/utils/assetUtils'
-import { addFileNote, getFileNotes, updateFileNote, deleteFileNote } from '@/utils/fileNotes'
+import { addFileNote, getFileNotes, updateFileNote, deleteFileNote } from '@/db/fileNoteStore'
 
 interface OfflineDetailSheetProps {
   file: OfflineFile

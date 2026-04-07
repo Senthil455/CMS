@@ -1,5 +1,5 @@
 import { useRef, useCallback, MutableRefObject } from 'react';
-import { setMetadata } from '../utils/storage';
+import { setMetadata } from '../db/progressStore';
 import { TTSChunk } from './useTTSContent';
 
 export function useTTSProgress(currentKeyRef: MutableRefObject<string | null>) {

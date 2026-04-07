@@ -17,7 +17,10 @@ export interface OfflineFile {
   size: number
   addedAt: string
   playProgress: number // in seconds
+  fileMetadata?: string // arbitrary metadata JSON
   fileHandle?: any // FileSystemFileHandle for desktop
+  serverId?: number // remote record id after sync
+  serverUpdatedAt?: string // remote updatedAt for optimistic concurrency
 }
 
 export interface FileNote {
@@ -47,4 +50,22 @@ export interface BookmarkFolder {
   name: string
   description: string
   userId?: string
+}
+
+export interface SaveBookmarkPayload {
+  selectedFolders: string[];
+  newFolderName: string;
+}
+
+export interface TopListItem {
+  recordId?: string;
+  __record_id?: number | string;
+  id?: number | string;
+  title: string;
+  url: string;
+  image?: string;
+  subtitle?: string;
+  content?: string;
+  publishedAt: string;
+  entityName?: string;
 }

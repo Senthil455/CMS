@@ -1,4 +1,4 @@
-import { initializeDB, FILE_NOTES_STORE_NAME } from './storage'
+import { initializeDB, FILE_NOTES_STORE_NAME } from './database'
 import { FileNote } from '@/types'
 
 function newId(): string {

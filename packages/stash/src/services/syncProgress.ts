@@ -1,5 +1,5 @@
-import { getAllMetadataByPrefix, setMetadata } from './storage';
-import { engagementApi } from './engagementApi';
+import { getAllMetadataByPrefix, setMetadata } from '@/db/progressStore';
+import { progressApi } from '@/api/progressApi';
 
 export async function syncProgressStore(userId: string): Promise<void> {
   // ── 1. Read all local tts_progress_* entries from IndexedDB ──
@@ -7,7 +7,7 @@ export async function syncProgressStore(userId: string): Promise<void> {
   // Shape: { key, value: { offset, timestamp }, timestamp }
 
   // ── 2. Fetch the remote progress record for this user ──
-  const res = await engagementApi.fetchProgressRecords(userId);
+  const res = await progressApi.fetchProgressRecords(userId);
   const remoteRecord = res.items?.[0]; // may be undefined
   let remoteEntries: { key: string; value: { offset: number; timestamp: number }; timestamp: number }[] = [];
 
@@ -41,9 +41,9 @@ export async function syncProgressStore(userId: string): Promise<void> {
 
   // ── 4. Write merged result back to REMOTE ──
   if (remoteRecord) {
-    await engagementApi.updateProgress(remoteRecord.id, mergedJson, remoteRecord.updatedAt);
+    await progressApi.updateProgress(remoteRecord.id, mergedJson, remoteRecord.updatedAt);
   } else {
-    await engagementApi.insertProgress(mergedJson);
+    await progressApi.insertProgress(mergedJson);
   }
 
   // ── 5. Write merged result back to LOCAL (IndexedDB + localStorage) ──

@@ -2,7 +2,9 @@ import React from 'react';
 import useSWR from 'swr';
 import { TranscriptSheetHandle } from '../TranscriptSheet';
 import { ExploreListItem } from './ExploreListItem';
-import { TopListItem, apiBaseUrl, fetcher, tabLabel } from './types';
+import { TopListItem } from '@/types';
+import { exploreApi, fetcher } from '@/api/exploreApi';
+import { tabLabel } from '@/utils/exploreUtils';
 
 interface ExploreTabContentProps {
   queryName: string;
@@ -11,8 +13,7 @@ interface ExploreTabContentProps {
 }
 
 export const ExploreTabContent: React.FC<ExploreTabContentProps> = ({ queryName, sheetRef, onBookmark }) => {
-  const url = `${apiBaseUrl}/api/queries/${queryName}?normalizeTagFields=true`;
-  const { data: list, error, isLoading } = useSWR<TopListItem[]>(url, fetcher);
+  const { data: list, error, isLoading } = useSWR<TopListItem[]>(exploreApi.queryUrl(queryName), fetcher);
 
   const handleSpeak = async (item: TopListItem, index: number, autoPlay: boolean = true) => {
     const actualRecordId = item.recordId ?? item.__record_id ?? item.id ?? String(index);
@@ -21,16 +22,12 @@ export const ExploreTabContent: React.FC<ExploreTabContentProps> = ({ queryName,
 
     if (item.entityName && actualRecordId) {
       try {
-        const response = await fetch(
-          `${apiBaseUrl}/api/queries/contentTag?entityName=${item.entityName}&recordId=${actualRecordId}`
-        );
-        if (!response.ok) throw new Error('Failed to fetch content details');
-        const data = await response.json();
+        const data = await exploreApi.fetchContentDetail(item.entityName, String(actualRecordId));
 
         if (Array.isArray(data) && data.length > 0 && data[0].content) {
           fullContent = data[0].content;
-        } else if (data && !Array.isArray(data) && data.content) {
-          fullContent = data.content;
+        } else if (data && !Array.isArray(data) && (data as any).content) {
+          fullContent = (data as any).content;
         }
       } catch (err) {
         console.error('Error fetching content details for speech:', err);

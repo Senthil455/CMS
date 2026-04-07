@@ -1,0 +1,32 @@
+import { apiFetchJson } from './client';
+
+export const progressApi = {
+  fetchProgressRecords: (userId: string) =>
+    apiFetchJson<{ items: any[]; totalRecords: number }>(
+      `/api/entities/progress?offset=0&limit=1&sort[id]=-1&createdBy[equals]=${userId}`
+    ),
+
+  insertProgress: (progressJson: string) =>
+    apiFetchJson<void>(`/api/entities/progress/insert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        progress: progressJson,
+        publicationStatus: 'published',
+        publishedAt: new Date().toISOString(),
+      }),
+    }),
+
+  updateProgress: (id: number, progressJson: string, updatedAt: string) =>
+    apiFetchJson<void>(`/api/entities/progress/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        description: 'TTS Progress',
+        progress: progressJson,
+        publicationStatus: 'published',
+        updatedAt
+      }),
+    }),
+};

@@ -1,5 +1,5 @@
 import React from 'react';
-import { tabLabel } from './types';
+import { tabLabel } from '@/utils/exploreUtils';
 
 interface ExploreTabBarProps {
   tabs: string[];
