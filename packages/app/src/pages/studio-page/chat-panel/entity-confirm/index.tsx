@@ -16,7 +16,17 @@ interface SchemaConfirmationModalProps {
 export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSummary }: SchemaConfirmationModalProps) {
     const [skippedIndices, setSkippedIndices] = useState<Set<number>>(new Set());
     const [skippedRelationshipIndices, setSkippedRelationshipIndices] = useState<Set<number>>(new Set());
+    const [entities, setEntities] = useState(schemaSummary.entities);
     const modalRef = useRef<HTMLDivElement>(null);
+
+    // Sync local state when schemaSummary prop changes (e.g. arrives async)
+    useEffect(() => {
+        setEntities(schemaSummary.entities);
+    }, [schemaSummary]);
+
+    const updateEntity = (index: number, updated: typeof entities[number]) => {
+        setEntities((prev) => prev.map((e, i) => i === index ? updated : e));
+    };
 
     const toggleSkip = (index: number) => {
         setSkippedIndices((prev) => {
@@ -40,7 +50,7 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
         const response: SchemaSummary = {
             userInput: schemaSummary.userInput,
             summary: schemaSummary.summary,
-            entities: schemaSummary.entities.filter((_, idx) => !skippedIndices.has(idx)),
+            entities: entities.filter((_, idx) => !skippedIndices.has(idx)),
             relationships: (schemaSummary.relationships || []).filter((_, idx) => !skippedRelationshipIndices.has(idx))
         };
         onConfirm(response);
@@ -74,13 +84,14 @@ export function SchemaConfirmationModal({ isOpen, onClose, onConfirm, schemaSumm
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div className="space-y-4">
-                        {schemaSummary.entities.map((item, index) => (
+                        {entities.map((item, index) => (
                             <EntityCard
                                 key={index}
                                 item={item}
                                 index={index}
                                 isSkipped={skippedIndices.has(index)}
                                 onToggleSkip={toggleSkip}
+                                onUpdate={updateEntity}
                             />
                         ))}
                     </div>
