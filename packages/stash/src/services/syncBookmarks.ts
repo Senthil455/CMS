@@ -2,6 +2,7 @@ import { clearBookmarks, clearBookmarkFolders, saveBookmarks, saveBookmarkFolder
 import { bookmarkApi } from '@/api/bookmarkApi';
 import { setMetadata } from '@/db/progressStore';
 
+// Sync bookmarks from remote to local, only when the remote bookmark is newer
 export const syncBookmarksStore = async () => {
   try {
     // Sync Bookmark Folders
@@ -11,29 +12,29 @@ export const syncBookmarksStore = async () => {
 
     // Ensure we also sync folder 0 (Default)
     const allFolderIds = [0, ...foldersRes.map((f: any) => f.id)]
-    
+
     // Pre-load existing bookmarks to preserve local HTML content across syncs based on publishedAt
     const existingBookmarks = await getAllBookmarks()
     const existingBookmarksMap = new Map()
     existingBookmarks.forEach(b => existingBookmarksMap.set(b.id, b))
-    
+
     let allBookmarks: any[] = []
 
     for (const folderId of allFolderIds) {
       const listRes = await bookmarkApi.fetchList(folderId, 0, 100)
       const items = listRes.items || []
-      
+
       // Assign folderId to each item
       items.forEach(item => item.folderId = folderId)
-      
+
       const itemsToFetchContent: any[] = []
-      
+
       // Compare with local items to see if we can skip the heavy contentTag payload
       items.forEach(item => {
         const parts = item.url?.split('/').filter(Boolean) || []
         if (parts.length >= 2) {
-           item.entityName = parts[0];
-           item.recordId = parts[1];
+          item.entityName = parts[0];
+          item.recordId = parts[1];
         }
 
         const existing = existingBookmarksMap.get(item.id)
@@ -45,7 +46,7 @@ export const syncBookmarksStore = async () => {
           itemsToFetchContent.push(item)
         }
       })
-      
+
       // Fetch full content for bookmarks (group by entity from URL)
       const itemsByEntity: Record<string, any[]> = {}
       itemsToFetchContent.forEach(item => {
@@ -84,7 +85,7 @@ export const syncBookmarksStore = async () => {
           }
         }
       }
-      
+
       allBookmarks = [...allBookmarks, ...items]
     }
 

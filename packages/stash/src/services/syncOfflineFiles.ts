@@ -55,7 +55,9 @@ export async function syncOfflineFilesStore(userId: string): Promise<void> {
         await saveOfflineFile({
           ...local,
           serverId: result.id,
-          serverUpdatedAt: result.updatedAt ?? new Date().toISOString(),
+          // Update local updatedAt to remote updatedAt, so next sync will not overwrite remote
+          // update at means the last time the file was updated or synced
+          updatedAt: result.updatedAt ?? new Date().toISOString(),
         });
       }
     } else {
@@ -74,7 +76,7 @@ export async function syncOfflineFilesStore(userId: string): Promise<void> {
         const notes = await getFileNotes(local.id);
         const fileMetadata = JSON.stringify({ notes });
 
-        await offlineFileApi.updateOfflineFile({
+        var remoteResult = await offlineFileApi.updateOfflineFile({
           id: remote.id,
           fileId: local.id,
           filename: local.filename,
@@ -87,13 +89,12 @@ export async function syncOfflineFilesStore(userId: string): Promise<void> {
           updatedAt: remote.updatedAt, // Pass current remote updatedAt for optimistic locking
         });
 
-        // We assume the server will update its `updatedAt` and we will get it on the next sync,
-        // or we can optionally retrieve the server's new updatedAt if the API returns it. 
-        // For now, we wait for next fetch.
+        // Update local updatedAt to remote updatedAt, so next sync will not overwrite remote
+        // update at means the last time the file was updated or synced
         await saveOfflineFile({
           ...local,
           serverId: remote.id,
-          serverUpdatedAt: remote.updatedAt,
+          updatedAt: remoteResult.updatedAt,
         });
 
       } else {
@@ -108,7 +109,6 @@ export async function syncOfflineFilesStore(userId: string): Promise<void> {
           updatedAt: remote.updatedAt,
           playProgress: remote.playProgress ?? local.playProgress,
           serverId: remote.id,
-          serverUpdatedAt: remote.updatedAt,
         });
 
         if (remote.fileMetadata) {
@@ -146,7 +146,6 @@ export async function syncOfflineFilesStore(userId: string): Promise<void> {
       updatedAt: remote.updatedAt,
       playProgress: remote.playProgress ?? 0,
       serverId: remote.id,
-      serverUpdatedAt: remote.updatedAt,
     };
 
     await saveOfflineFile(newLocal);

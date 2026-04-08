@@ -11,6 +11,11 @@ export async function getMetadata(key: string): Promise<any> {
   return item?.value
 }
 
+export async function deleteMetadata(key: string): Promise<void> {
+  const db = await initializeDB()
+  await db.delete(METADATA_STORE_NAME, key)
+}
+
 export async function getAllMetadataByPrefix(prefix: string): Promise<{ key: string; value: any; timestamp: number }[]> {
   const db = await initializeDB()
   const all = await db.getAll(METADATA_STORE_NAME)

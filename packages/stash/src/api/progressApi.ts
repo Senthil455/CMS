@@ -7,7 +7,7 @@ export const progressApi = {
     ),
 
   insertProgress: (progressJson: string) =>
-    apiFetchJson<void>(`/api/entities/progress/insert`, {
+    apiFetchJson<any>(`/api/entities/progress/insert`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -18,7 +18,7 @@ export const progressApi = {
     }),
 
   updateProgress: (id: number, progressJson: string, updatedAt: string) =>
-    apiFetchJson<void>(`/api/entities/progress/update`, {
+    apiFetchJson<any>(`/api/entities/progress/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

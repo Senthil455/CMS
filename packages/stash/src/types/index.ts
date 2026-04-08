@@ -28,7 +28,6 @@ export interface OfflineFile {
   playProgress: number // in seconds
   fileHandle?: any // FileSystemFileHandle for desktop
   serverId?: number // remote record id after sync
-  serverUpdatedAt?: string // remote updatedAt for optimistic concurrency
 }
 
 export interface RemoteOfflineFile {

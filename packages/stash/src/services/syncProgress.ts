@@ -1,4 +1,4 @@
-import { getAllMetadataByPrefix, setMetadata } from '@/db/progressStore';
+import { getAllMetadataByPrefix, setMetadata, getMetadata } from '@/db/progressStore';
 import { progressApi } from '@/api/progressApi';
 
 export async function syncProgressStore(userId: string): Promise<void> {
@@ -9,6 +9,13 @@ export async function syncProgressStore(userId: string): Promise<void> {
   // ── 2. Fetch the remote progress record for this user ──
   const res = await progressApi.fetchProgressRecords(userId);
   const remoteRecord = res.items?.[0]; // may be undefined
+
+  const lastSyncUpdatedAt = await getMetadata('lastProgressSyncUpdatedAt');
+  if (remoteRecord && remoteRecord.updatedAt === lastSyncUpdatedAt) {
+    // Optimization: nothing changed locally or remotely since last sync!
+    return;
+  }
+
   let remoteEntries: { key: string; value: { offset: number; timestamp: number }; timestamp: number }[] = [];
 
   if (remoteRecord) {
@@ -40,10 +47,15 @@ export async function syncProgressStore(userId: string): Promise<void> {
   const mergedJson = JSON.stringify(mergedArray);
 
   // ── 4. Write merged result back to REMOTE ──
+  let response: any;
   if (remoteRecord) {
-    await progressApi.updateProgress(remoteRecord.id, mergedJson, remoteRecord.updatedAt);
+    response = await progressApi.updateProgress(remoteRecord.id, mergedJson, remoteRecord.updatedAt);
   } else {
-    await progressApi.insertProgress(mergedJson);
+    response = await progressApi.insertProgress(mergedJson);
+  }
+
+  if (response && response.updatedAt) {
+    await setMetadata('lastProgressSyncUpdatedAt', response.updatedAt);
   }
 
   // ── 5. Write merged result back to LOCAL (IndexedDB + localStorage) ──

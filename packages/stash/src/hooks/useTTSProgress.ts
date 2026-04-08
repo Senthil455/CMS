@@ -1,5 +1,5 @@
 import { useRef, useCallback, MutableRefObject } from 'react';
-import { setMetadata } from '../db/progressStore';
+import { setMetadata, deleteMetadata } from '../db/progressStore';
 import { TTSChunk } from './useTTSContent';
 
 export function useTTSProgress(currentKeyRef: MutableRefObject<string | null>) {
@@ -32,6 +32,7 @@ export function useTTSProgress(currentKeyRef: MutableRefObject<string | null>) {
     // This will be extremely useful later for syncing playback progress to the server
     // or rendering accurate global progress bars without blocking the main UI thread.
     setMetadata(`tts_progress_${currentKeyRef.current}`, progressData);
+    deleteMetadata('lastProgressSyncUpdatedAt');
   }, [currentKeyRef]);
 
   const loadProgress = useCallback((key: string, totalChars: number, chunks: TTSChunk[]): number => {
