@@ -72,6 +72,7 @@ const OfflinePage: React.FC = () => {
       type: file.type,
       size: file.size,
       addedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       playProgress: 0,
       fileHandle: handle || null,
     };

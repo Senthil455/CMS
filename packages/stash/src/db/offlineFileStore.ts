@@ -4,13 +4,14 @@ import { OfflineFile } from '@/types'
 export async function saveOfflineFile(file: OfflineFile): Promise<void> {
   const db = await initializeDB()
   const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
-  
+
   // Strip non-serializable data before saving to IDB — only persist metadata and progress
   const { fileHandle, ...metadata } = file
-  
+
   await tx.store.put({
     ...metadata,
     addedAt: metadata.addedAt || new Date().toISOString(),
+    updatedAt: metadata.updatedAt || new Date().toISOString(),
   })
   await tx.done
 }
@@ -25,7 +26,6 @@ export async function updateOfflineFileProgress(id: string, progress: number): P
   const file = await db.get(OFFLINE_STORE_NAME, id)
   if (file) {
     const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
-    // Ensure we don't accidentally save fileHandle if it was somehow in the retrieved object
     const { fileHandle, ...metadata } = file
     await tx.store.put({
       ...metadata,
@@ -44,6 +44,22 @@ export async function updateOfflineFile(id: string, updates: Partial<Pick<Offlin
     await tx.store.put({
       ...metadata,
       ...updates,
+      updatedAt: new Date().toISOString(),
+    })
+    await tx.done
+  }
+}
+
+/** Bump `updatedAt` on an existing file without changing anything else. */
+export async function touchOfflineFile(id: string): Promise<void> {
+  const db = await initializeDB()
+  const file = await db.get(OFFLINE_STORE_NAME, id)
+  if (file) {
+    const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite')
+    const { fileHandle, ...metadata } = file
+    await tx.store.put({
+      ...metadata,
+      updatedAt: new Date().toISOString(),
     })
     await tx.done
   }

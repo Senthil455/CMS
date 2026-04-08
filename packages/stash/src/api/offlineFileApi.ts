@@ -14,7 +14,7 @@ export const offlineFileApi = {
     size: number;
     addedAt: string;
     playProgress: number;
-    fileMetadata?: string;
+    fileMetadata?: string; // JSON.stringify({ notes: FileNote[] })
   }) =>
     apiFetchJson<any>(`/api/entities/offlineFile/insert`, {
       method: 'POST',
@@ -35,7 +35,7 @@ export const offlineFileApi = {
     size: number;
     addedAt: string;
     playProgress: number;
-    fileMetadata?: string;
+    fileMetadata?: string; // JSON.stringify({ notes: FileNote[] })
     updatedAt: string;
   }) =>
     apiFetchJson<any>(`/api/entities/offlineFile/update`, {
