@@ -3,7 +3,7 @@ import { apiFetchJson } from './client';
 export const progressApi = {
   fetchProgressRecords: (userId: string) =>
     apiFetchJson<{ items: any[]; totalRecords: number }>(
-      `/api/entities/progress?offset=0&limit=1&sort[id]=-1&createdBy[equals]=${userId}`
+      `/api/entities/progress?createdBy[equals]=${userId}`
     ),
 
   insertProgress: (progressJson: string) =>

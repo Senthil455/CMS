@@ -5,8 +5,11 @@ import AssetGrid from "../components/assets/AssetGrid";
 import AddAssetFab from "../components/assets/AddAssetFab";
 import AssetDetailSheet from "../components/assets/AssetDetailSheet";
 import AddAssetDialog from "../components/assets/AddAssetDialog";
+import { useUserInfo } from "@cms/sdk";
 
 const AssetsPage: React.FC = () => {
+  const { data: userInfo } = useUserInfo();
+  const userId = userInfo?.id;
   const [activeTab, setActiveTab] = useState<AssetTab>('all');
   const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
   const [showAddAssetDialog, setShowAddAssetDialog] = useState(false);
@@ -23,10 +26,11 @@ const AssetsPage: React.FC = () => {
     if (activeTab === 'video') params.append('type[startsWith]', 'video/');
     if (activeTab === 'audio') params.append('type[startsWith]', 'audio/');
     if (activeTab === 'image') params.append('type[startsWith]', 'image/');
-    
+
     params.append('offset', '0');
     params.append('limit', '48');
     params.append('sort[id]', '-1');
+    params.append('createdBy[equals]', userId || '');
     return params.toString();
   };
 
@@ -65,7 +69,7 @@ const AssetsPage: React.FC = () => {
         return;
       }
       const newPath = res?.data?.path || (typeof res?.data === 'string' ? res.data : null);
-      
+
       if (newPath) {
         const pollInfo = async () => {
           try {
@@ -116,7 +120,7 @@ const AssetsPage: React.FC = () => {
         return;
       }
       const newPath = res?.data?.path || (typeof res?.data === 'string' ? res.data : null);
-      
+
       if (newPath) {
         const pollInfo = async () => {
           try {
@@ -158,7 +162,7 @@ const AssetsPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this asset?')) {
       return;
     }
-    
+
     try {
       await deleteAsset(id);
       mutate();
@@ -186,37 +190,37 @@ const AssetsPage: React.FC = () => {
       <hr className="border-t border-gray-200/80 -mt-2 mb-0 mx-2" />
       <div className="flex flex-col gap-6 mt-1">
         <AssetTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      <AssetGrid 
-        assets={assets} 
-        isLoading={isLoading} 
-        getCmsAssetUrl={getCmsAssetUrl} 
-        onAssetClick={setSelectedAsset} 
-      />
 
-      <AddAssetFab onClick={handleClipboardCheck} />
+        <AssetGrid
+          assets={assets}
+          isLoading={isLoading}
+          getCmsAssetUrl={getCmsAssetUrl}
+          onAssetClick={setSelectedAsset}
+        />
 
-      <AssetDetailSheet 
-        asset={selectedAsset} 
-        getCmsAssetUrl={getCmsAssetUrl} 
-        isConverting={isConverting} 
-        conversionProgress={conversionProgress}
-        conversionType={conversionType}
-        onClose={() => setSelectedAsset(null)} 
-        onConvertToMp3={handleConvertToMp3} 
-        onConvertToM4a={handleConvertToM4a}
-        onDelete={handleDeleteAsset}
-      />
+        <AddAssetFab onClick={handleClipboardCheck} />
 
-      <AddAssetDialog 
-        show={showAddAssetDialog} 
-        videoUrl={videoUrl} 
-        isDownloading={isDownloading} 
-        downloadError={downloadError} 
-        onUrlChange={setVideoUrl} 
-        onSubmit={handleAddAsset} 
-        onClose={() => setShowAddAssetDialog(false)} 
-      />
+        <AssetDetailSheet
+          asset={selectedAsset}
+          getCmsAssetUrl={getCmsAssetUrl}
+          isConverting={isConverting}
+          conversionProgress={conversionProgress}
+          conversionType={conversionType}
+          onClose={() => setSelectedAsset(null)}
+          onConvertToMp3={handleConvertToMp3}
+          onConvertToM4a={handleConvertToM4a}
+          onDelete={handleDeleteAsset}
+        />
+
+        <AddAssetDialog
+          show={showAddAssetDialog}
+          videoUrl={videoUrl}
+          isDownloading={isDownloading}
+          downloadError={downloadError}
+          onUrlChange={setVideoUrl}
+          onSubmit={handleAddAsset}
+          onClose={() => setShowAddAssetDialog(false)}
+        />
       </div>
     </div>
   );

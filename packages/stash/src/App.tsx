@@ -65,11 +65,11 @@ function AppContent() {
     )
   }
 
-  if (!userInfo && (location.pathname === '/login' || location.pathname === '/auth/register')) {
+  if (!userInfo && (location.pathname === '/login' || location.pathname === '/register')) {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage baseRouter="/stash" />} />
-        <Route path="/auth/register" element={<RegisterPage baseRouter="/stash" />} />
+        <Route path="/register" element={<RegisterPage baseRouter="/stash" />} />
       </Routes>
     )
   }
