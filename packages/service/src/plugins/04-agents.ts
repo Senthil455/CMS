@@ -8,29 +8,25 @@ import { AGENT_NAMES } from '@cms/shared';
 
 import { IntentClassifier } from '../agent/intent-classifier';
 import { EntityGenerator } from '../agent/entity-designer';
-
 import { QueryGenerator } from '../agent/query-builder';
 import { PagePlanner } from '../agent/page-planner';
-// PageArchitect import removed
 import { PageArchitect } from '../agent/page-architect';
 import { DataGenerator } from '../agent/data-synthesizer';
 import { PAGE_COMPONENT_REGISTRY } from '../agent/page-components/index';
 import { PageComponentBuilder } from '../agent/page-components/page-component-builder';
 import type { Agent } from '../agent/chat-assistant';
 import { SystemArchitect } from '../agent/system-architect';
-import { EntityOperator } from '../operators/entity-operator';
-import { PageOperator } from '../operators/page-operator';
-import { TaskOperator } from '../operators/task-operator';
-import { SqliteAgentTaskRepository } from '../repositories/agent-task-repository';
-import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
 
-// ArchitectDesignerAgent import removed
-// removed HtmlGenerationHandler import
-
-const handlersPlugin: FastifyPluginAsync = async (fastify) => {
+const agentsPlugin: FastifyPluginAsync = async (fastify) => {
+    fastify.log.info('Starting agents plugin...');
+    
     const providers = fastify.aiProvider;
     const cmsClient = fastify.cms;
     const modelLogger = fastify.log.child({ component: 'MODEL' }, { level: config.LOG_LEVEL_MODEL });
+
+    const entityOperator = fastify.entityOperator;
+    const pageOperator = fastify.pageOperator;
+    const prisma = fastify.prisma;
 
     // Resolve directories
     const __dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,7 +72,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     for (const [providerName, provider] of Object.entries(providers)) {
         try {
             // DB-backed style lookup function
-            const prisma = fastify.prisma;
             const getStylePrompt = async (styleName: string, pageType: string): Promise<string> => {
                 if (!styleName) return '';
                 const style = await (prisma as any).designStyle.findUnique({ where: { name: styleName } });
@@ -94,9 +89,6 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
 
             // Build addon handlers from registry
             const addonHandlers: Record<string, Agent<any>> = {};
-            const entityOperator = new EntityOperator(cmsClient, modelLogger);
-            const systemSettingRepository = new SqliteSystemSettingRepository(prisma);
-            const pageOperator = new PageOperator(cmsClient, modelLogger, systemSettingRepository);
 
             for (const addon of PAGE_COMPONENT_REGISTRY) {
                 let prompt = '';
@@ -125,7 +117,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             const queryGenerator = new QueryGenerator(provider, queryGeneratorPrompt, cmsClient, modelLogger);
             const pagePlannerAgent = new PagePlanner(provider, pagePlannerPrompt, modelLogger, getTemplateOptions, cmsClient, pageOperator);
             const dataGenerator = new DataGenerator(provider, dataGeneratorPrompt, cmsClient, modelLogger);
-            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, fastify.prisma, modelLogger);
+            const systemArchitect = new SystemArchitect(provider, systemArchitectPrompt, prisma, modelLogger);
 
             const intentClassifier = new IntentClassifier(
                 provider,
@@ -162,7 +154,7 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
     fastify.decorate('intentClassifier', intentClassifiers);
 };
 
-export default fp(handlersPlugin, {
-    name: 'intentClassifier',
-    dependencies: ['aiProvider', 'cms']
+export default fp(agentsPlugin, {
+    name: 'agents',
+    dependencies: ['infrastructure', 'operators', 'prisma']
 });

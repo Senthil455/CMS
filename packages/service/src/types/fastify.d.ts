@@ -14,6 +14,8 @@ import { IDesignStyleRepository } from '../repositories/design-style-repository'
 import { ISystemSettingRepository } from '../repositories/system-setting-repository';
 import { IAgentTaskRepository } from '../repositories/agent-task-repository';
 import { TaskOperator } from '../operators/task-operator';
+import { EntityOperator } from '../operators/entity-operator';
+import { PageOperator } from '../operators/page-operator';
 import '@fastify/session';
 
 declare module 'fastify' {
@@ -22,6 +24,8 @@ declare module 'fastify' {
         io: Server<ClientToServerEvents, ServerToClientEvents>;
         orchestratorService: OrchestratorService;
         taskOperator: TaskOperator;
+        entityOperator: EntityOperator;
+        pageOperator: PageOperator;
         authService: AuthService;
         socketService: SocketService;
         statusService: StatusService;
