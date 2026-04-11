@@ -3,8 +3,13 @@ import { bookmarkApi } from '@/api/bookmarkApi';
 import { setMetadata } from '@/db/progressStore';
 
 // Sync bookmarks from remote to local, only when the remote bookmark is newer
-export const syncBookmarksStore = async () => {
+export const syncBookmarksStore = async (userId?: string) => {
+  if (!userId) {
+    console.log('syncBookmarksStore: skipped — user not logged in');
+    return;
+  }
   try {
+
     // Sync Bookmark Folders
     const foldersRes = await bookmarkApi.fetchAllFolders()
     await clearBookmarkFolders()

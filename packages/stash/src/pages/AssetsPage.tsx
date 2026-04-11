@@ -5,11 +5,10 @@ import AssetGrid from "../components/assets/AssetGrid";
 import AddAssetFab from "../components/assets/AddAssetFab";
 import AssetDetailSheet from "../components/assets/AssetDetailSheet";
 import AddAssetDialog from "../components/assets/AddAssetDialog";
-import { useUserInfo } from "@cms/sdk";
+import { useUser } from "@/contexts/UserContext";
 
 const AssetsPage: React.FC = () => {
-  const { data: userInfo } = useUserInfo();
-  const userId = userInfo?.id;
+  const { userId, isLoggedIn } = useUser();
   const [activeTab, setActiveTab] = useState<AssetTab>('all');
   const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
   const [showAddAssetDialog, setShowAddAssetDialog] = useState(false);

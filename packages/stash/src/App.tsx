@@ -7,7 +7,8 @@ import { SyncManager } from '@/components/SyncManager'
 import { BottomNav } from '@/components/BottomNav'
 import { TopBar } from '@/components/TopBar'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useUserInfo, setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
+import { setAuthApiBaseUrl, setActivityBaseUrl } from "@cms/sdk"
+import { UserProvider, useUser } from './contexts/UserContext'
 import axios from 'axios'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -27,7 +28,7 @@ setCmsApiBaseUrl(apiBaseUrl);
 axios.defaults.withCredentials = true;
 
 function AppContent() {
-  const { data: userInfo, isLoading: isUserLoading } = useUserInfo()
+  const { userInfo, isLoading: isUserLoading, isLoggedIn } = useUser()
   const [syncStatus, setSyncStatus] = useState({
     isSyncing: false,
     error: null as string | null,
@@ -65,7 +66,7 @@ function AppContent() {
     )
   }
 
-  if (!userInfo && (location.pathname === '/login' || location.pathname === '/register')) {
+  if (!isLoggedIn && (location.pathname === '/login' || location.pathname === '/register')) {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage baseRouter="/stash" />} />
@@ -104,7 +105,7 @@ function AppContent() {
                 </motion.div>
               } />
               <Route path="/bookmarks" element={
-                userInfo ? (
+                isLoggedIn ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -118,7 +119,7 @@ function AppContent() {
                 )
               } />
               <Route path="/assets" element={
-                userInfo ? (
+                isLoggedIn ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -154,9 +155,11 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter basename="/stash">
-      <SleepTimerProvider>
-        <AppContent />
-      </SleepTimerProvider>
+      <UserProvider>
+        <SleepTimerProvider>
+          <AppContent />
+        </SleepTimerProvider>
+      </UserProvider>
     </BrowserRouter>
   )
 }

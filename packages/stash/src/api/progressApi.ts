@@ -11,9 +11,8 @@ export const progressApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        description: 'TTS Progress',
         progress: progressJson,
-        publicationStatus: 'published',
-        publishedAt: new Date().toISOString(),
       }),
     }),
 
@@ -23,10 +22,9 @@ export const progressApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id,
+        updatedAt,
         description: 'TTS Progress',
         progress: progressJson,
-        publicationStatus: 'published',
-        updatedAt
       }),
     }),
 };

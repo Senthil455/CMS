@@ -1,5 +1,8 @@
-import { apiFetch, apiFetchJson } from './client';
+import { apiFetch, apiFetchJson, apiBaseUrl } from './client';
 import type { BookmarkFolder, SaveBookmarkPayload } from '@/types';
+
+/** SWR-compatible fetcher that includes auth headers */
+export const authFetcher = (path: string) => apiFetchJson<any>(path);
 
 export const bookmarkApi = {
   saveBookmark: (entity: string, id: string, payload: SaveBookmarkPayload) =>
@@ -9,12 +12,20 @@ export const bookmarkApi = {
       body: JSON.stringify(payload),
     }),
 
-  fetchFolders: (entity: string, id: string) =>
+  fetchFolders: (entity: string, id: string) => {
     // The previous code returned an array of objects shaped like { id: string, name: string, selected?: boolean } for this specific call.
-    apiFetchJson<any[]>(`/api/bookmarks/folders/${entity}/${id}`),
+    return apiFetchJson<any[]>(`/api/bookmarks/folders/${entity}/${id}`);
+  },
 
-  fetchAllFolders: () =>
-    apiFetchJson<any[]>(`/api/bookmarks/folders`),
+  fetchAllFolders: () => {
+    return apiFetchJson<any[]>(`/api/bookmarks/folders`);
+  },
+
+  /** SWR key for fetchFolders */
+  foldersKey: (entity: string, id: string) => `/api/bookmarks/folders/${entity}/${id}`,
+
+  /** SWR key for fetchAllFolders */
+  allFoldersKey: () => `/api/bookmarks/folders`,
 
   fetchList: (folderId = 0, offset = 0, limit = 100) =>
     apiFetchJson<{ items: any[]; totalRecords: number }>(

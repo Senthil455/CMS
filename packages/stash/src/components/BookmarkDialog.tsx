@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { bookmarkApi } from '@/api/bookmarkApi';
+import React, { useState, useEffect, useMemo } from 'react';
+import useSWR from 'swr';
+import { useUser } from '@/contexts/UserContext';
+import { bookmarkApi, authFetcher } from '@/api/bookmarkApi';
 import type { BookmarkFolder } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Bookmark, FolderOpen, X, ChevronRight, FolderPlus } from 'lucide-react';
-
-interface DialogBookmarkFolder extends BookmarkFolder {
-  selected?: boolean;
-}
-
 
 interface BookmarkDialogProps {
   isOpen: boolean;
@@ -17,6 +14,8 @@ interface BookmarkDialogProps {
   onSaved: () => void;
 }
 
+const DEFAULT_FOLDER = { id: 0, name: 'Default Folder' };
+
 export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
   isOpen,
   entityName,
@@ -24,39 +23,88 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
   onClose,
   onSaved
 }) => {
-  const [folders, setFolders] = useState<DialogBookmarkFolder[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [newFolderName, setNewFolderName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const { isLoggedIn } = useUser();
+
+  // SWR: fetch all user folders
+  const {
+    data: allFolders,
+    isLoading: allFoldersLoading,
+  } = useSWR<any[]>(
+    isOpen && isLoggedIn ? bookmarkApi.allFoldersKey() : null,
+    authFetcher,
+    { revalidateOnFocus: false }
+  );
+
+  // SWR: fetch which folders this entity/id is selected in
+  const {
+    data: entityFolders,
+    isLoading: entityFoldersLoading,
+  } = useSWR<any[]>(
+    isOpen && isLoggedIn && entityName && recordId ? bookmarkApi.foldersKey(entityName, recordId) : null,
+    authFetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const isLoading = allFoldersLoading || entityFoldersLoading;
+
+  // Merge: build the folder list with selection status
+  const folders = useMemo(() => {
+    const base = allFolders ?? [];
+    // Ensure Default Folder is always present
+    const hasDef = base.find((f: any) => f.id === 0);
+    const list = hasDef ? [...base] : [DEFAULT_FOLDER, ...base];
+
+    // Build set of selected folder ids from entityFolders
+    const selectedSet = new Set<number>(
+      (entityFolders ?? []).filter((f: any) => f.selected).map((f: any) => f.id)
+    );
+
+    return list.map(f => ({
+      ...f,
+      name: f.name || 'Default Folder',
+    }));
+  }, [allFolders, entityFolders]);
+
+  // Initialize selectedIds from entityFolders when data loads
   useEffect(() => {
-    if (isOpen) {
-      if (entityName && recordId) {
-        setIsLoading(true);
-        bookmarkApi.fetchFolders(entityName, recordId)
-          .then((data: any) => {
-            setFolders(data.map((f: any) => ({ ...f, selected: !!f.selected })));
-          })
-          .catch((err: any) => {
-            console.error('Failed to fetch bookmark folders:', err);
-          }).finally(() => setIsLoading(false));
-      }
-    } else {
-      setFolders([]);
+    if (entityFolders) {
+      const ids = new Set<number>(
+        entityFolders.filter((f: any) => f.selected).map((f: any) => f.id)
+      );
+      setSelectedIds(ids);
+    }
+  }, [entityFolders]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedIds(new Set());
       setNewFolderName('');
     }
-  }, [isOpen, entityName, recordId]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleToggleFolder = (id: number) => {
-    setFolders(prev => prev.map(f => f.id === id ? { ...f, selected: !f.selected } : f));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const selectedFolders = folders.filter(f => f.selected).map(f => String(f.id));
+      const selectedFolders = Array.from(selectedIds).map(id => String(id));
       await bookmarkApi.saveBookmark(entityName, recordId, {
         selectedFolders,
         newFolderName
@@ -70,6 +118,8 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
       setIsSaving(false);
     }
   };
+
+  const isSaveDisabled = isSaving || isLoading || (selectedIds.size === 0 && !newFolderName.trim());
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -170,51 +220,42 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
                   <Loader2 size={16} className="animate-spin" />
                   <span>Loading folders…</span>
                 </div>
-              ) : folders.length === 0 ? (
-                <div style={{
-                  background: 'rgba(255,255,255,0.6)',
-                  borderRadius: '10px',
-                  padding: '1rem',
-                  textAlign: 'center',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.75rem',
-                  border: '1px solid var(--sage-light)',
-                }}>
-                  No folders yet. Create one below.
-                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: 180, overflowY: 'auto' }}>
-                  {folders.map(folder => (
-                    <button
-                      key={folder.id}
-                      onClick={() => handleToggleFolder(folder.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.55rem 0.65rem',
-                        background: folder.selected ? 'rgba(107,142,120,0.1)' : 'rgba(255,255,255,0.6)',
-                        border: folder.selected ? '1px solid var(--sage-dark)' : '1px solid var(--sage-light)',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        textAlign: 'left',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <FolderOpen size={15} strokeWidth={1.8} style={{ color: folder.selected ? 'var(--sage-dark)' : 'var(--text-muted)' }} />
-                        <span style={{
-                          color: folder.selected ? 'var(--sage-dark)' : 'var(--text-main)',
-                          fontWeight: 600,
-                          fontSize: '0.8rem',
-                        }}>
-                          {folder.name || 'Default Folder'}
-                        </span>
-                      </div>
-                      <ChevronRight size={13} strokeWidth={2.5} style={{ color: folder.selected ? 'var(--sage-dark)' : 'var(--text-muted)' }} />
-                    </button>
-                  ))}
+                  {folders.map(folder => {
+                    const isSelected = selectedIds.has(folder.id);
+                    return (
+                      <button
+                        key={folder.id}
+                        onClick={() => handleToggleFolder(folder.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.55rem 0.65rem',
+                          background: isSelected ? 'rgba(107,142,120,0.1)' : 'rgba(255,255,255,0.6)',
+                          border: isSelected ? '1px solid var(--sage-dark)' : '1px solid var(--sage-light)',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'left',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <FolderOpen size={15} strokeWidth={1.8} style={{ color: isSelected ? 'var(--sage-dark)' : 'var(--text-muted)' }} />
+                          <span style={{
+                            color: isSelected ? 'var(--sage-dark)' : 'var(--text-main)',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                          }}>
+                            {folder.name}
+                          </span>
+                        </div>
+                        <ChevronRight size={13} strokeWidth={2.5} style={{ color: isSelected ? 'var(--sage-dark)' : 'var(--text-muted)' }} />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -270,7 +311,7 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || isLoading}
+                disabled={isSaveDisabled}
                 style={{
                   flex: 1,
                   padding: '0.6rem',
@@ -278,10 +319,10 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
                   fontWeight: 700,
                   fontSize: '0.8rem',
                   border: 'none',
-                  cursor: isSaving || isLoading ? 'default' : 'pointer',
+                  cursor: isSaveDisabled ? 'not-allowed' : 'pointer',
                   background: 'var(--sage-dark)',
                   color: '#fff',
-                  opacity: isSaving || isLoading ? 0.6 : 1,
+                  opacity: isSaveDisabled ? 0.6 : 1,
                   transition: 'opacity 0.2s',
                   display: 'flex',
                   alignItems: 'center',
@@ -300,3 +341,5 @@ export const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
     </AnimatePresence>
   );
 };
+
+
