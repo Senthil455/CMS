@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Shield, Key, AlertTriangle, Box, Globe, ArrowLeft, Settings, Palette, Puzzle } from 'lucide-react';
+import { Database, Shield, Key, AlertTriangle, Box, Globe, ArrowLeft, Settings, Palette, Puzzle, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../hooks/use-auth';
 import { DatabaseSettings } from './components/DatabaseSettings';
 import { AdminSettings } from './components/AdminSettings';
@@ -9,10 +9,11 @@ import { AddSpaSettings } from './components/AddSpaSettings';
 import { CorsSettings } from './components/CorsSettings';
 import { StyleSettings } from './components/StyleSettings';
 import { PluginSettings } from './components/PluginSettings';
+import { GASettings } from './components/GASettings';
 
 declare const __APP_BUILD_TIMESTAMP__: string;
 
-type SettingsTab = 'database' | 'admin' | 'ai' | 'spa' | 'cors' | 'styles' | 'plugins';
+type SettingsTab = 'database' | 'admin' | 'ai' | 'spa' | 'cors' | 'styles' | 'plugins' | 'analytics';
 
 interface NavItem {
     id: SettingsTab;
@@ -40,6 +41,7 @@ export default function SystemSettingsPage() {
         { id: 'admin', label: 'Super Admin', icon: <Shield className="w-4 h-4" />, show: !hasSuperAdmin },
         { id: 'database', label: 'Database', icon: <Database className="w-4 h-4" />, show: !databaseReady },
         { id: 'ai', label: 'AI Providers', icon: <Key className="w-4 h-4" />, show: !!user },
+        { id: 'analytics', label: 'Google Analytics', icon: <BarChart2 className="w-4 h-4" />, show: !!user },
         { id: 'styles', label: 'Design Styles', icon: <Palette className="w-4 h-4" />, show: !!user },
         { id: 'spa', label: 'Add SPA', icon: <Box className="w-4 h-4" />, show: !!user },
         { id: 'plugins', label: 'Download Plugins', icon: <Puzzle className="w-4 h-4" />, show: !!user },
@@ -115,6 +117,7 @@ export default function SystemSettingsPage() {
                         )}
                         {activeTab === 'database' && !databaseReady && <DatabaseSettings />}
                         {user && activeTab === 'ai' && <AISettings />}
+                        {user && activeTab === 'analytics' && <GASettings />}
                         {user && activeTab === 'styles' && <StyleSettings />}
                         {user && activeTab === 'spa' && <AddSpaSettings />}
                         {user && activeTab === 'plugins' && <PluginSettings />}

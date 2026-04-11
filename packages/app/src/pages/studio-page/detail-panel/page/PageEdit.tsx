@@ -9,6 +9,17 @@ import { PageEditSettings } from './components/PageEditSettings';
 import { PageEditLayout } from './components/PageEditLayout';
 import { PageEditSource } from './components/PageEditSource';
 
+async function fetchGACompileOptions(): Promise<{ enableGoogleAnalytics?: boolean; googleAnalyticsMeasurementId?: string }> {
+    try {
+        const res = await fetch('/cmsapi/config/analytics', { credentials: 'include' });
+        if (res.ok) {
+            const { data } = await res.json();
+            return { enableGoogleAnalytics: !!data.enabled, googleAnalyticsMeasurementId: data.measurementId ?? '' };
+        }
+    } catch { /* ignore — GA simply won't be injected */ }
+    return {};
+}
+
 interface PageEditProps {
     item: SchemaDto;
     initialTab?: 'settings' | 'layout' | 'view-html';
@@ -59,7 +70,8 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             // Compile the architecture into Tailwind Grid HTML if it exists
             if (pageForm.metadata?.architecture?.sections) {
                 const components = pageForm.metadata.components || [];
-                const compileOptions: any = { enableVisitTrack: pageForm.metadata.enableVisitTrack };
+                const gaOptions = await fetchGACompileOptions();
+                const compileOptions: any = { enableVisitTrack: pageForm.metadata.enableVisitTrack, ...gaOptions };
                 if (pageForm.metadata.customHeader) {
                     compileOptions.customHeader = pageForm.metadata.customHeader;
                 }
@@ -122,6 +134,8 @@ export function PageEdit({ item, initialTab = 'settings', onTabChange, onSave, o
             if (updatedForm.metadata.customHeader) {
                 compileOptions.customHeader = updatedForm.metadata.customHeader;
             }
+            // GA options are fetched async; for live preview we skip them here —
+            // they will be included when the user explicitly saves (handleSave).
             updatedForm.html = LayoutCompiler.compile(
                 updatedForm.metadata.architecture.sections,
                 components,

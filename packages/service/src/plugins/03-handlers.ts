@@ -22,6 +22,7 @@ import { EntityOperator } from '../operators/entity-operator';
 import { PageOperator } from '../operators/page-operator';
 import { TaskOperator } from '../operators/task-operator';
 import { SqliteAgentTaskRepository } from '../repositories/agent-task-repository';
+import { SqliteSystemSettingRepository } from '../repositories/system-setting-repository';
 
 // ArchitectDesignerAgent import removed
 // removed HtmlGenerationHandler import
@@ -94,7 +95,8 @@ const handlersPlugin: FastifyPluginAsync = async (fastify) => {
             // Build addon handlers from registry
             const addonHandlers: Record<string, Agent<any>> = {};
             const entityOperator = new EntityOperator(cmsClient, modelLogger);
-            const pageOperator = new PageOperator(cmsClient, modelLogger);
+            const systemSettingRepository = new SqliteSystemSettingRepository(prisma);
+            const pageOperator = new PageOperator(cmsClient, modelLogger, systemSettingRepository);
 
             for (const addon of PAGE_COMPONENT_REGISTRY) {
                 let prompt = '';

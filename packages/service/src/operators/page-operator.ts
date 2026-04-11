@@ -8,12 +8,14 @@ import {
 } from '@cms/shared';
 import type { CmsClient } from '../infrastructures/cms-client';
 import type { ServiceLogger } from '../types/logger';
+import type { ISystemSettingRepository } from '../repositories/system-setting-repository';
 import { UserVisibleError } from '../agent/user-visible-error';
 
 export class PageOperator {
     constructor(
         private readonly cmsClient: CmsClient,
-        private readonly logger: ServiceLogger
+        private readonly logger: ServiceLogger,
+        private readonly systemSettingRepository?: ISystemSettingRepository
     ) { }
 
     async savePlanAndUserInput(
@@ -103,6 +105,14 @@ export class PageOperator {
             const compileOptions: any = { enableVisitTrack: metadata.enableVisitTrack ?? false };
             if (metadata.customHeader) {
                 compileOptions.customHeader = metadata.customHeader;
+            }
+            if (this.systemSettingRepository) {
+                const gaEnabled = await this.systemSettingRepository.get('ENABLE_GOOGLE_ANALYTICS');
+                const gaMeasurementId = await this.systemSettingRepository.get('GA_MEASUREMENT_ID');
+                if (gaEnabled === 'true' && gaMeasurementId) {
+                    compileOptions.enableGoogleAnalytics = true;
+                    compileOptions.googleAnalyticsMeasurementId = gaMeasurementId;
+                }
             }
             compiledHtml = LayoutCompiler.compile(metadata.architecture?.sections || [], components, pageSettings.title, compileOptions);
         } catch (e) {

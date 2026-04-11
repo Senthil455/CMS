@@ -3,7 +3,43 @@ import { z } from 'zod';
 import { config } from '../config';
 import { maskApiKey } from '../utils/mask-api-key';
 
+const analyticsSettingsSchema = z.object({
+    enabled: z.boolean(),
+    measurementId: z.string()
+});
+
 const configRouter: FastifyPluginAsync = async (fastify) => {
+    // GET /cmsapi/config/analytics - Get GA settings
+    fastify.get('/cmsapi/config/analytics', {
+        preHandler: [fastify.authenticate]
+    }, async (_request, _reply) => {
+        const enabled = await fastify.systemSettingRepository.get('ENABLE_GOOGLE_ANALYTICS');
+        const measurementId = await fastify.systemSettingRepository.get('GA_MEASUREMENT_ID');
+        return {
+            success: true,
+            data: {
+                enabled: enabled === 'true',
+                measurementId: measurementId ?? ''
+            }
+        };
+    });
+
+    // PUT /cmsapi/config/analytics - Save GA settings
+    fastify.put('/cmsapi/config/analytics', {
+        preHandler: [fastify.authenticate]
+    }, async (request, reply) => {
+        const body_ = analyticsSettingsSchema.safeParse(request.body);
+        if (!body_.success) {
+            return reply.status(400).send({ error: 'Invalid request body' });
+        }
+        const { enabled, measurementId } = body_.data;
+        await fastify.systemSettingRepository.upsert('ENABLE_GOOGLE_ANALYTICS', enabled ? 'true' : 'false');
+        await fastify.systemSettingRepository.upsert('GA_MEASUREMENT_ID', measurementId);
+        fastify.log.info(`Google Analytics settings updated: enabled=${enabled}, id=${measurementId}`);
+        return { success: true };
+    });
+
+
     // GET /cmsapi/config/gemini - Check status
     fastify.get('/cmsapi/config/gemini', {
         preHandler: [fastify.authenticate]

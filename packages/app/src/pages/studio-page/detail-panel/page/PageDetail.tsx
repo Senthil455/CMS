@@ -7,6 +7,17 @@ import { PagePublishSection } from './components/PagePublishSection';
 import { PageComponentsSection } from './components/PageComponentsSection';
 import { PagePreviewSection } from './components/PagePreviewSection';
 
+async function fetchGACompileOptions(): Promise<{ enableGoogleAnalytics?: boolean; googleAnalyticsMeasurementId?: string }> {
+    try {
+        const res = await fetch('/cmsapi/config/analytics', { credentials: 'include' });
+        if (res.ok) {
+            const { data } = await res.json();
+            return { enableGoogleAnalytics: !!data.enabled, googleAnalyticsMeasurementId: data.measurementId ?? '' };
+        }
+    } catch { /* ignore — GA simply won't be injected */ }
+    return {};
+}
+
 import { forwardRef, useImperativeHandle } from 'react';
 
 interface PageDetailProps {
@@ -100,7 +111,8 @@ export const PageDetail = forwardRef<PageDetailRef, PageDetailProps>(({ schema, 
 
             // Recompile HTML
             let htmlToSave = updatedSchema.settings.page.html;
-            const compileOptions1: any = { enableVisitTrack: metadata.enableVisitTrack };
+            const gaOptions1 = await fetchGACompileOptions();
+            const compileOptions1: any = { enableVisitTrack: metadata.enableVisitTrack, ...gaOptions1 };
             if (metadata.customHeader) {
                 compileOptions1.customHeader = metadata.customHeader;
             }
@@ -175,7 +187,8 @@ export const PageDetail = forwardRef<PageDetailRef, PageDetailProps>(({ schema, 
             // Recompile HTML to reflect the removal
             let htmlToSave = updatedSchema.settings.page.html;
             if (metadata.architecture?.sections) {
-                const compileOptions2: any = { enableVisitTrack: metadata.enableVisitTrack };
+                const gaOptions2 = await fetchGACompileOptions();
+                const compileOptions2: any = { enableVisitTrack: metadata.enableVisitTrack, ...gaOptions2 };
                 if (metadata.customHeader) {
                     compileOptions2.customHeader = metadata.customHeader;
                 }

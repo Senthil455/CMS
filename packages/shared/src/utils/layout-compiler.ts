@@ -3,6 +3,8 @@ import type { LayoutSection, PageComponent } from '../app.dto.js';
 export interface CompileOptions {
     enableVisitTrack?: boolean;
     customHeader?: string;
+    enableGoogleAnalytics?: boolean;
+    googleAnalyticsMeasurementId?: string;
 }
 
 export class LayoutCompiler {
@@ -11,7 +13,11 @@ export class LayoutCompiler {
         const visitTrackSnippet = options?.enableVisitTrack
             ? `\n\n        if (cmsSdk.engagementService) {\n            cmsSdk.engagementService.trackVisit();\n        }`
             : '';
-        return `
+        const gtagSnippet = (options?.enableGoogleAnalytics && options?.googleAnalyticsMeasurementId)
+            ? `\n    <!-- Google tag (gtag.js) -->\n    <script async src="https://www.googletagmanager.com/gtag/js?id=${options.googleAnalyticsMeasurementId}"></script>\n    <script>\n      window.dataLayer = window.dataLayer || [];\n      function gtag(){dataLayer.push(arguments);}\n      gtag('js', new Date());\n      gtag('config', '${options.googleAnalyticsMeasurementId}');\n    </script>`
+            : '';
+        console.log('gtagSnippet', gtagSnippet);
+        return `${gtagSnippet}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Tailwind CSS -->

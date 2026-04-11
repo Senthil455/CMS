@@ -85,6 +85,9 @@ export interface PageMetadata {
     userInput?: string;
     templateId?: string;
     enableVisitTrack?: boolean;
+    customHeader?: string;
+    enableGoogleAnalytics?: boolean;
+    googleAnalyticsMeasurementId?: string;
 }
 export interface PagePlan {
     pageName: string;
