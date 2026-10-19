@@ -1,6 +1,8 @@
 {
     "name": "cms",
     "private": true,
+    "version": "1.0.0",
+    "author": "Senthil Raja R <senthilrajasen637@gmail.com>",
     "workspaces": [
         "packages/*",
         "packages/sdk",

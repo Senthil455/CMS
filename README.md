@@ -130,3 +130,9 @@ CMS is actively evolving toward a vision of **no-code app building with AI**. He
 | **Marketplace** | Community ecosystem | Pre-built app templates, community components, one-click install |
 
 > **The Vision:** Describe your app in plain English → AI generates the entire backend (entities, queries, pages) → deploy with one click. No code required.
+
+---
+
+## 👤 Made by
+
+Built and maintained by **Senthil Raja R** <senthilrajasen637@gmail.com>. See [AUTHORS.md](AUTHORS.md) and [LICENSE](LICENSE).
