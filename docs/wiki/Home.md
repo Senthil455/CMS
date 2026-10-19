@@ -39,7 +39,7 @@ Welcome to the CMS documentation wiki.
 ## 🔗 Quick Links
 
 - [Main README](../../README.md) - Quick start guide
-- [Live Demo](https://example.com/app) - Try CMS online
+- [Live Demo](https://senthil455.github.io/CMS/) - Try CMS online
 - [GitHub Repository](https://github.com/Senthil455/CMS) - Source code
 
 ## 🚀 Getting Started

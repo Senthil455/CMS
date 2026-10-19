@@ -13,8 +13,8 @@ This guide covers how to set up cms for both development and production environm
 
 ### 1. Clone Repositories
 ```bash
-git clone git@github.com/Senthil455/CMS.git
-git clone git@github.com/Senthil455/CMS.git
+git clone https://github.com/Senthil455/CMS.git
+git clone https://github.com/Senthil455/CMS.git
 ```
 
 ### 2. Start Backend (CMS)

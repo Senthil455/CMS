@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-directory = 'output/v1/'
+directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output', 'v1') + os.sep
 videos = [
     ('setup.mp4', 'setup.srt'),
     ('entity-design.mp4', 'entity-design.srt'),

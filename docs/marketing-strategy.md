@@ -78,10 +78,10 @@ Create compelling video content showing CMS's unique AI capabilities:
 ![AI Entity Generation Demo](docs/assets/ai-demo.gif)
 
 ## Quick Start
-\`\`\`bash
+```bash
 docker run -p 5000:5000 senthil455/cms-mono:latest
-\`\`\`
 ```
+
 
 **GitHub Topics:**
 - `headless-cms`
