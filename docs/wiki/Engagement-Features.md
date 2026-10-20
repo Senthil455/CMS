@@ -1,112 +1,160 @@
 # Engagement Features
 
-CMS includes built-in social and engagement features to enhance user interaction.
+Engagement is implemented by the **ASP.NET Core CMS** and consumed by generated pages through the browser SDK. The Node service in this repository does not store or compute likes, views, shares, or bookmarks; it only serves the SDK and the AI prompts that generate engagement UI.
 
 ---
 
-## Feature Overview
+## 1. Feature map
 
-| Feature | Description | Data Tracked |
-|---------|-------------|--------------|
-| **Views** | Page/content view tracking | Count per record |
-| **Likes** | User appreciation | Count + per-user state |
-| **Shares** | Social sharing (X, email, Reddit, clipboard) | Count + per-user state |
-| **Bookmarks** | Save content to folders | Folder structure + per-user |
-| **Toplist** | Popularity ranking | Aggregated scores |
-| **Page Tracking** | Analytics & visit history | URL, timestamp, user |
-| **Notifications** | User activity alerts | Unread count |
+| Feature | UI | Data owner |
+|---|---|---|
+| Views / visit tracking | Page head or engagement bar | CMS engagement tables |
+| Likes | Engagement bar | CMS engagement tables |
+| Shares | Engagement bar + share dialog | CMS engagement tables |
+| Bookmarks | Engagement bar, bookmark dialog, Stash, Portal | CMS bookmark tables |
+| Toplist | Top list component / Stash Explore | CMS query over engagement data |
+| Notifications | Portal, user avatar menu | CMS notifications |
+| Reading history | Portal | CMS activity data |
 
----
-
-## Architecture
-
-### Backend (**cms** repo)
-
-The **CMS** backend handles all engagement data with buffered writes for performance:
-
-```
-User Action → API Call → Memory Buffer → Batch Write (every minute) → Database
-```
-
-**Performance:**
-- P95 latency: 19ms at 4,200 QPS
-- Supports 100M+ activity records
-- Sharding-ready for large-scale deployments
-
-### Frontend (**cms** repo)
-
-The SDK in `packages/backend/public/` provides client-side access. See [Page Templates & Interactivity](./Page-Templates-Interactivity.md#page--sdk-interaction) for SDK usage details.
+Because the CMS source is not in this repository, the exact write strategy (buffering, batching, indexing) and any performance numbers are **not verifiable here**. Treat claims about CMS throughput or latency as CMS-side documentation, not repository facts.
 
 ---
 
-## Feature Details
+## 2. Backend surface
 
-### Views
-- **Automatic**: Tracked on page load via `trackVisit()`
-- **Display**: Show view count in UI
-- **Unique**: Can track unique vs. total views
+The browser SDK calls these CMS endpoints directly:
 
-### Likes
-- **Toggle**: Click to like/unlike
-- **State**: Remembers user's like status
-- **Count**: Displays total likes
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/engagements/:entity/:id` | Stats for one record: `{ view, like, share, bookmark }`, each `{ count, active }` |
+| `POST` | `/api/engagements/toggle/:entity/:id/?type=like&active=true` | Toggle like or share for the current user |
+| `POST` | `/api/engagements/mark/:entity/:id?type=…` | Record an activity event |
+| `GET` | `/api/engagements/visit?url=…` | Track a page visit |
+| `GET` | `/api/bookmarks/folders/:entity/:id` | Folders available for this record |
+| `POST` | `/api/bookmarks/:entity/:id` | Save a bookmark |
+| `GET` | `/api/notifications/unread` | Unread notification count |
 
-### Shares
-Built-in share dialog supports:
-- **X (Twitter)** – Opens tweet composer
-- **Email** – Opens mail client
-- **Reddit** – Opens Reddit submit
-- **Clipboard** – Copies URL
+The shared constants also define management and analytics paths:
 
-### Bookmarks
-- **Folders**: Users organize bookmarks into custom folders
-- **Dialog**: UI for folder selection/creation
-- **Persistent**: Stored per-user in database
+| Path | Purpose |
+|---|---|
+| `/api/engagements/list/:type` | List engagement records |
+| `/api/engagements/counts` | Counts |
+| `/api/engagements/page-counts` | Counts grouped by page |
+| `/api/engagements/visit-counts` | Visit counts |
+| `/api/engagements/delete/:id` | Delete an engagement |
+| `/api/bookmarks/folders` | Create/list folders |
+| `/api/bookmarks/list/:folderId` | Bookmarks in a folder |
+| `/api/bookmarks/folders/update/:id` | Rename/update a folder |
+| `/api/bookmarks/folders/delete/:id` | Delete a folder |
+| `/api/bookmarks/delete/:id` | Delete a bookmark |
+| `/api/notifications` | Notification list/management |
 
-### Toplist
-- **Popularity scoring** based on engagement metrics
-- **Configurable** weighting (views vs. likes vs. shares)
-- **Use cases**: "Trending Posts", "Top Courses", "Popular Items"
-
-### Page Tracking
-- **Visit history** per user
-- **Analytics integration** ready
-- **Privacy-aware** (respects user settings)
+All calls use cookies and rely on the CMS for authentication. Unauthenticated users can usually read counts but must log in to toggle or bookmark; the SDK calls `userService.ensureLogin()` first.
 
 ---
 
-## API Endpoints
+## 3. Engagement bar
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/engagements/{entity}/{id}` | GET | Get stats for a record |
-| `/api/engagements/toggle/{entity}/{id}` | POST | Toggle like/share |
-| `/api/engagements/visit` | GET | Track page visit |
-| `/api/bookmarks/{entity}/{id}` | POST | Save bookmark |
-| `/api/bookmarks/folders/{entity}/{id}` | GET | Get user's bookmark folders |
-| `/api/notifications/unread` | GET | Get unread notification count |
+The `engagement-bar` component is generated into **detail pages** by `page_engagement_bar_builder`.
 
----
-
-## Integration
-
-### Adding Engagement Bar to a Page
-
-The AI Page Builder automatically includes the Engagement Bar component. It uses Handlebars + Alpine.js:
+Typical contract:
 
 ```html
-<div x-data="{ ... }" x-init="window.cmsSdk.engagementService.getStats('{{entityName}}')">
-    <!-- Like, Share, Bookmark buttons -->
+<div x-data="{
+  entityName: 'book',
+  stats: { view: {count:0}, like: {count:0,active:false},
+           share: {count:0,active:false}, bookmark: {count:0,active:false} },
+  init() {
+    window.cmsSdk.engagementService.getStats(this.entityName)
+      .then(s => this.stats = s);
+  },
+  toggle(type) {
+    window.cmsSdk.engagementService.toggle(this.entityName, type, this.stats);
+  }
+}" x-init="init()">
+  <button @click="toggle('like')">♥ <span x-text="stats.like.count"></span></button>
+  <button @click="toggle('share')">↗ <span x-text="stats.share.count"></span></button>
+  <button @click="toggle('bookmark')">🔖</button>
 </div>
 ```
 
-See [Page Templates & Interactivity](./Page-Templates-Interactivity.md) for SDK details.
+Key behavior:
+
+- The record ID comes from `<meta name="record-id">`, with the last URL segment as fallback.
+- `getStats()` standardizes missing types to `{ count: 0, active: false }` and swallows errors, so a broken endpoint shows zeros rather than an error.
+- `toggle()` updates counts optimistically, then calls the API. If the request fails, it logs the error; there is no automatic rollback.
+- Bookmarking opens a folder dialog; sharing opens a platform dialog.
 
 ---
 
-## Best Practices
+## 4. Bookmarks
 
-1. **Always seed data** – Engagement features need records to track
-2. **Use buffered writes** – Default behavior, don't disable for high-traffic sites
-3. **Consider caching** – Engagement counts can be cached at CDN level
-4. **Privacy** – Respect user preferences for tracking
+Bookmarks are stored by the CMS and surfaced in three places:
+
+| Surface | Behavior |
+|---|---|
+| Generated pages | Engagement bar → bookmark dialog → `/api/bookmarks/:entity/:id` |
+| Stash | Local cache in IndexedDB plus server sync; folder tabs |
+| Portal | Bookmark management with folders |
+
+The browser SDK does **not** maintain a bookmark cache. Stash does, and reconciles with the server through its sync queue.
+
+---
+
+## 5. Visit tracking and analytics
+
+Two independent mechanisms exist:
+
+1. **CMS visit tracking** — `LayoutCompiler` injects `cmsSdk.engagementService.trackVisit()` when `enableVisitTrack` is true. It calls `/api/engagements/visit?url=…`.
+2. **Google Analytics** — when enabled in Settings, the page head includes `gtag.js` with the configured measurement ID. This is separate from CMS engagement data.
+
+The Studio settings page stores `ENABLE_GOOGLE_ANALYTICS` and `GA_MEASUREMENT_ID` in the service database. Visit tracking is controlled per page compile option, not by a global service setting.
+
+---
+
+## 6. Toplist
+
+`top-list` is a page component and a common Stash pattern. It is generated from a query that orders records by an engagement or popularity field. The ranking formula and available sort fields are defined by the CMS/query, not by the Node service. Inspect the query used by the page to know what is being ranked.
+
+---
+
+## 7. Notifications
+
+Notifications belong to the CMS. The Portal shows notifications and unread counts; generated pages can use the user avatar component to expose a menu. The SDK includes a convenience call for `/api/notifications/unread`.
+
+The service has no notification storage, delivery, or websocket events.
+
+---
+
+## 8. What the AI pipeline contributes
+
+The engagement work in this repository is prompt and layout generation:
+
+| Agent | Produces |
+|---|---|
+| `page_engagement_bar_builder` | Engagement bar HTML/Alpine |
+| `page_user_avatar_builder` | Avatar menu |
+| `page_top_list_builder` | Ranked list |
+| `page_visit_tracker` (declared) | Visit tracking snippet; the actual injection is handled by `LayoutCompiler` options |
+
+`page_visit_tracker` is present in `AGENT_NAMES` but is not registered as a standalone handler; visit tracking is applied at compile time.
+
+---
+
+## 9. Operational notes
+
+- **Login is required for writes.** Reads may work anonymously depending on CMS policy.
+- **Engagement data is CMS data.** Back it up with the CMS database, not the service SQLite file.
+- **Counts can drift.** Optimistic UI updates are not rolled back on failure.
+- **No local caching layer.** Every stats fetch goes to the CMS through the browser.
+- **Privacy.** Visit tracking records URLs; disclose it and respect user preferences in the CMS configuration.
+
+---
+
+## 10. Related pages
+
+- [Page Templates & Interactivity](./Page-Templates-Interactivity.md) — SDK internals and Handlebars constraints
+- [API Reference](./API-Reference.md) — full route list
+- [Stash](./Stash.md) — offline bookmarks and sync
+- [Architecture](./Architecture.md) — why engagement lives in the CMS

@@ -1,188 +1,202 @@
-# Stash — PWA Companion App
+# Stash — Offline PWA
 
-**Stash** is a Progressive Web App (PWA) built on top of CMS that delivers a native mobile-app experience for consuming and managing content — no App Store required. Install it from the browser on iPhone or Android and it works just like a native app.
-
-> **💡 Why a PWA?** Stash uses browser APIs (Web Speech, IndexedDB, Service Worker) to deliver features that feel like a native iPhone/Android app — without the overhead of publishing to an app store.
+**Stash** is an installable PWA served at `/stash/`. It provides offline reading/listening, text-to-speech, media download/conversion, and a local player. It uses IndexedDB, the Web Speech API, and a service worker; there is no app-store build.
 
 ---
 
-## Features at a Glance
+## 1. Features
 
-| Feature | Description |
-|---------|-------------|
-| **Explore** | Browse trending content from your CMS backend and start reading/listening instantly. |
-| **Bookmarks** | Save content into folders — bookmarked items are cached on-device via IndexedDB for instant offline access. |
-| **Text-to-Speech** | Read any article aloud with mixed-language support (English + Chinese). Progress is saved across sessions. |
-| **Assets** | Download audio/video by pasting a URL. Convert to **MP3** (original quality) or **M4A** (64 kbps compressed). |
-| **Offline Player** | Play downloaded files fully offline. Playback progress is saved so long audio/video resumes where you left off. |
+| Feature | Behavior |
+|---|---|
+| **Explore** | Loads a CMS query (typically a toplist), shows cover, title, subtitle, and publish date |
+| **Bookmarks** | Folder tabs, cached content, sync with the CMS when online; requires login |
+| **Assets** | Download media by URL, convert to MP3/M4A/M4B, delete remote assets; requires login |
+| **Offline** | Add local audio/video files, play them, resume playback position |
+| **TTS** | Read articles aloud with per-sentence language detection and progress memory |
+| **Sleep timer** | Global playback timer (`SleepTimerContext`) |
 
----
-
-## Navigation
-
-Stash uses a floating bottom navigation bar with four tabs:
-
-| Tab | Icon | Description |
-|-----|------|-------------|
-| **Explore** | Compass | Browse and discover trending content |
-| **Bookmarks** | Bookmark | View and manage saved items (requires login) |
-| **Assets** | HardDrive | Manage downloaded media files (requires login) |
-| **Offline** | WifiOff | Play locally-stored audio/video files |
+Navigation is a floating bottom bar: Explore, Bookmarks, Assets, Offline.
 
 ---
 
-## Pages
+## 2. Pages
 
 ### Explore
 
-The default landing page. It fetches a `topList` query from the CMS backend and displays trending content as a visually rich list. Each item shows a thumbnail, title, subtitle, and publish date.
-
-**Key actions:**
-- **Tap an item** → Opens the Transcript Sheet and starts Text-to-Speech playback. The app first plays with the teaser content, then fetches the full article body (`contentTag` query) and seamlessly switches to the complete text.
-- **Bookmark icon** → Opens the Bookmark Dialog to save the item into a folder.
+- Fetches the configured trending query through the SDK/CMS.
+- Tapping an item opens `TranscriptSheet` and starts TTS.
+- Playback starts with teaser content, then swaps to the full article when the `contentTag` query resolves.
+- Bookmark action opens `BookmarkDialog`.
 
 ### Bookmarks
 
-Displays all bookmarked content, organized by folders. Data is stored locally in IndexedDB and synced with the server when online.
-
-**Key actions:**
-- **Folder tabs** → Filter bookmarks by folder.
-- **Tap an item** → Starts TTS playback with playlist navigation support.
-- **Delete icon** → Removes a bookmark (with confirmation).
-- **Offline indicator** → Shows an "Offline" badge when the device has no network.
+- Reads from IndexedDB first, then refreshes from the CMS.
+- Folder filter, playlist navigation, delete with confirmation.
+- Shows an offline badge when `navigator.onLine` is false.
 
 ### Assets
 
-A media management page for downloading and converting audio/video content.
-
-**Key actions:**
-- **Add button (FAB)** → Opens the Add Asset dialog. Automatically checks the clipboard for URLs.
-- **Tap an asset** → Opens the Asset Detail Sheet with metadata and conversion options.
-- **Convert to MP3** → Re-encodes the file at original quality (larger file size).
-- **Convert to M4A** → Compresses to 64 kbps AAC (smaller file size).
-- **Delete** → Removes the asset from the server.
-
-Assets are filtered by tab: **All**, **Video**, **Audio**, **Image**.
+- FAB opens the add-asset dialog and checks the clipboard for a URL.
+- Detail sheet shows metadata and conversion actions.
+- Tabs: All, Video, Audio, Image.
+- Conversion polls asset progress until complete.
 
 ### Offline
 
-A local media library for playing audio and video files stored on the device.
-
-**Key actions:**
-- **Add files** → Use the file picker to add audio/video from your device.
-- **Tap to play** → Opens the built-in Offline Player.
-- **Progress memory** → Playback position is saved per file so long content (lectures, podcasts) resumes where you left off.
-
-> **iOS Note:** On iPhone/iPad, files need to be re-selected after you close the app. Just tap Play and pick the same file — playback will resume where you left off.
+- Adds local files via the file picker.
+- Stores metadata and playback progress; the file itself remains in browser-managed storage.
+- iOS may require re-selecting the file after the app is closed; progress resumes from the saved offset.
 
 ---
 
-## Text-to-Speech (TTS) System
+## 3. TTS architecture
 
-The TTS system is one of Stash's key features, providing a read-aloud experience with progress memory and mixed-language support.
-
-### Architecture
-
-The TTS system is decomposed into focused sub-hooks following the single responsibility principle:
+There is **no `TTSContext`**. Playback is composed from hooks and a sheet component:
 
 | Module | Responsibility |
-|--------|---------------|
-| `useTTSVoices` | Loads available voices, filters preferred English/Chinese voices, provides `pickVoice()` |
-| `useTTSContent` | Parses HTML content into plain text, splits into sentence-level chunks, detects language per chunk |
-| `useTTSProgress` | Saves/loads reading progress per content key using `localStorage` |
-| `useSpeechSynthesis` | Orchestrates the above hooks into a unified playback API (play, pause, resume, stop, seek, rate, voice) |
-| `TTSContext` | React Context provider that exposes the TTS API app-wide, plus playlist navigation (next/previous) |
-| `TranscriptSheet` | Bottom sheet UI showing the live transcript with highlighted current sentence |
+|---|---|
+| `useTTSVoices` | Load voices, filter preferred English/Chinese voices, `pickVoice()` |
+| `useTTSContent` | Convert HTML to text, split into sentence chunks, detect language per chunk |
+| `useTTSProgress` | Save/load offset per content key (localStorage + IndexedDB) |
+| `useTTSEngine` | Speak chunks with `SpeechSynthesisUtterance`, handle boundary/end/error events |
+| `useTTSPlayback` | Position, rate, play/pause/stop state |
+| `useTTSPlayer` | Combine the hooks and expose playlist navigation (next/previous) |
+| `useTTSSettings` | Persist voice/rate preferences |
+| `useSpeechSynthesis` | Compatibility facade over the player hooks |
+| `TranscriptSheet` | Bottom sheet with live transcript, highlighted sentence, and controls |
 
-### Mixed-Language Support
+### Chunking and language
 
-Stash can speak articles that contain both English and Chinese text. The content is split into sentence-level chunks, and each chunk's language is detected independently. The system selects the appropriate voice for each chunk:
+Content is split at sentence boundaries. Each chunk gets a detected language, and the engine selects a voice:
 
-- **English preferred voices:** Daniel, Samantha, Karen, Google, Natural, Premium, Enhanced
-- **Chinese preferred voices:** Meijia, Mei-Jia, Sin-ji, Ting-Ting, Yu-shu, Yu-Shu
+- English preferences include Daniel, Samantha, Karen, Google, Natural, Premium, Enhanced.
+- Chinese preferences include Meijia, Mei-Jia, Sin-ji, Ting-Ting, Yu-shu, Yu-Shu.
 
-### Progress Memory
+Voice availability is platform-dependent. Browsers expose different lists; the app falls back to the default voice.
 
-Reading progress is saved per content key (format: `{entityName}_{recordId}`). When you return to an article, playback resumes from the exact sentence where you left off — even across browser sessions.
+### Progress
 
-### Playlist Navigation
+Progress is stored twice for different reasons:
 
-When TTS is started from Explore or Bookmarks, the current list is registered as a playlist. The Transcript Sheet then shows **Previous** and **Next** buttons to navigate between items without leaving the player.
+1. **localStorage** — synchronous read, because Safari blocks speech that is not started inside the user gesture.
+2. **IndexedDB (`metadata`)** — backup and source for background sync.
 
----
+The key format is `tts_progress_{contentKey}`; `contentKey` is typically `{entityName}_{recordId}`. A background sync merges local and remote progress records last-write-wins and writes the merged result to both sides.
 
-## Offline Architecture
+### Playlist navigation
 
-Stash is designed to work offline using several browser technologies:
-
-### IndexedDB Storage
-
-The app uses IndexedDB (via the `idb` library) with the following stores:
-
-| Store | Purpose |
-|-------|---------|
-| `bookmarks` | Cached bookmark items for offline browsing |
-| `bookmark-folders` | Cached folder structure |
-| `offline-files` | Metadata for locally-stored audio/video files |
-| `metadata` | General key-value metadata (sync timestamps, etc.) |
-
-### Background Sync
-
-The `SyncManager` component handles automatic background syncing:
-- Detects online/offline status changes
-- Syncs bookmarks and folders with the server when connectivity is restored
-- Displays sync status via the `StatusBar`
-
-### Service Worker
-
-Stash is configured as a PWA with a Service Worker for caching static assets, enabling the app shell to load even without network connectivity.
+Starting TTS from Explore or Bookmarks registers the current list as a playlist, so Previous/Next work inside the transcript sheet.
 
 ---
 
-## Tech Stack
+## 4. IndexedDB
 
-| Technology | Usage |
-|------------|-------|
-| **React + Vite** | UI framework and build tool |
-| **TypeScript** | Type-safe development |
-| **Tailwind CSS** | Utility-first styling with a custom zen/sage design system |
-| **Framer Motion** | Page transition animations |
-| **SWR** | Data fetching with caching for the Explore page |
-| **IndexedDB (idb)** | Client-side storage for bookmarks and offline files |
-| **Web Speech API** | Text-to-Speech engine |
-| **Lucide React** | Icon library |
-| **@cms/sdk** | CMS SDK for authentication, assets, and CMS API |
+Database: **`cms-stash`**, version **4** (`src/db/database.ts`).
 
----
+| Store | Key | Purpose |
+|---|---|---|
+| `content` | `id` | Legacy content cache; kept for schema compatibility |
+| `sync-queue` | auto-increment | Reserved queue store; current sync services call APIs directly |
+| `metadata` | `key` | TTS progress, sync timestamps, settings |
+| `offline-files` | `id` | Local media metadata (`addedAt` index) |
+| `bookmarks` | `id` | Cached bookmark records (`updatedAt` index) |
+| `bookmark-folders` | `id` | Cached folder structure |
+| `file-notes` | `id` | Notes per offline file (`fileId`, `createdAt` indexes) |
 
-## Design System
-
-Stash uses a **zen/sage** design language characterized by:
-
-- Muted sage green tones with warm neutrals
-- Glassmorphism effects (`bg-glass`, `backdrop-blur-zen`)
-- Rounded corners (`rounded-2xl`, `rounded-3xl`)
-- Smooth micro-animations and hover effects
-- Floating bottom navigation bar
-- Consistent card-based layouts with subtle shadows
+Adding a store requires a version bump and an `upgrade` branch. Do not assume the schema is stable across releases.
 
 ---
 
-## Getting Started
+## 5. Sync behavior
 
-### Development
+`SyncManager` runs:
+
+- on mount,
+- whenever connectivity returns,
+- every 5 minutes while online.
+
+It calls three services:
+
+| Service | Direction | Conflict rule |
+|---|---|---|
+| `syncBookmarksStore` | CMS → local | Remote is authoritative; bookmarks and folders are replaced |
+| `syncProgressStore` | Bidirectional | Last-write-wins per key using timestamps |
+| `syncOfflineFilesStore` | Bidirectional | Last-write-wins on `playProgress`/`updatedAt` |
+
+Sync is skipped when no user is logged in. `StatusBar` shows syncing, last sync time, or an error.
+
+The `sync-queue` store exists but is not used by these services; there is no offline mutation replay queue yet.
+
+---
+
+## 6. PWA configuration
+
+From `packages/stash/vite.config.ts`:
+
+- `registerType: 'autoUpdate'`
+- scope and start URL `/stash/`
+- standalone display, white theme/background
+- icons 192/512, plus maskable variants
+- Workbox precache for `js`, `css`, `html`, `ico`, `png`, `svg`, `json`, `wasm`
+- runtime `NetworkFirst` cache for `https://api.*/*` with a 5-day, 200-entry limit
+
+The service worker is **disabled in dev** (`devOptions.enabled: false`). Test offline behavior with `npm run build:stash && npm run preview:stash`, or through the built image.
+
+The runtime cache pattern matches `https://api.*`, which will not match same-origin `/api` requests. Treat offline API caching as limited; bookmarks and progress work because they are stored in IndexedDB.
+
+---
+
+## 7. Tech stack
+
+| Layer | Choice |
+|---|---|
+| UI | React 19 + Vite 5 + TypeScript |
+| Styling | Tailwind CSS 4, custom sage/zen visual language |
+| Animation | Framer Motion |
+| Storage | `idb` |
+| Speech | Web Speech API (`speechSynthesis`) |
+| Icons | Lucide React |
+| CMS access | `@cms/sdk`, `@cms/shared`, direct `/api` fetches |
+| PWA | `vite-plugin-pwa`, Workbox |
+
+There is no SWR dependency in Stash despite older documentation claiming it.
+
+---
+
+## 8. Running and installing
 
 ```bash
-# From the monorepo root
-npm run dev:stash
+npm run dev:stash       # http://127.0.0.1:5176/stash/
+npm run build:stash
+npm run preview:stash
 ```
 
-### Accessing Stash
+In production the service serves `packages/stash/dist` at `/stash/`.
 
-Once running, Stash is served at `/stash` on your CMS instance (e.g., `http://localhost:5000/stash`).
+To install:
 
-### Installing as PWA
+1. Open `/stash/` on the device.
+2. Use **Add to Home Screen** (Safari) or **Install app** (Chrome).
+3. Launch from the icon; it opens in standalone mode.
 
-1. Open the Stash URL in your mobile browser (Safari on iOS, Chrome on Android)
-2. Tap "Add to Home Screen" (or equivalent)
-3. Stash will appear as an app icon and launch in standalone mode
+HTTPS is required for service workers and several browser APIs outside localhost.
+
+---
+
+## 9. Known limitations
+
+- iOS Safari may evict cached files and requires re-selecting local files after the app closes.
+- TTS voice quality and availability depend on the OS/browser; there is no server-side TTS.
+- Bookmark sync replaces local bookmarks with the server copy; offline edits made directly in IndexedDB are not uploaded.
+- The Workbox runtime cache pattern does not cover same-origin `/api`.
+- Media conversion depends on the CMS conversion endpoints and ffmpeg in the deployment.
+- There is no automated test suite for Stash.
+
+---
+
+## 10. Related pages
+
+- [Page Templates & Interactivity](./Page-Templates-Interactivity.md) — browser SDK used by Stash-adjacent pages
+- [Engagement Features](./Engagement-Features.md) — bookmark endpoints
+- [API Reference](./API-Reference.md) — CMS endpoints
+- [Setup](./Setup.md) — dev ports and proxies

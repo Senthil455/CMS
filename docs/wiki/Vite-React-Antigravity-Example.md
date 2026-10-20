@@ -1,12 +1,12 @@
-# Building with Vite, React, and AI (Antigravity/Cursor)
+# Building an External Frontend (Vite + React)
 
-CMS is designed to be fully headless. This means you can run CMS as your robust backend and build your frontend using your favorite tools like **Vite** and **React**, while leveraging AI coding agents like **Antigravity** or **Cursor** to write the code for you.
+CMS is headless. You can run the CMS through Docker and build any frontend you like against `/api` and `/graphql`. This guide uses Vite + React, but the API contract is framework-agnostic.
 
-This guide walks you through setting up a modern frontend stack connected to a CMS backend.
+> **What you need:** a running CMS (Docker image or your own CMS deployment), and Node 20+ for the frontend.
 
-## 1. Start the CMS Backend
+---
 
-First, ensure your CMS backend is running via Docker. This provides all your APIs, database, and the admin portal without needing to write any backend code.
+## 1. Start the CMS
 
 ```bash
 docker run -d \
@@ -16,96 +16,252 @@ docker run -d \
   -e DATABASE_PROVIDER=0 \
   -e "CONNECTION_STRING=Data Source=/data/cms.db" \
   -e CMS_DATA_PATH=/data \
-  -e "DATABASE_URL=file:/data/app.db" \
+  -e "DATABASE_URL=file:/data/app/sqlite.db" \
   senthil455/cms-mono:latest
-
 ```
 
-Open **http://localhost:5000/app** to set up your entities (e.g., "Articles", "Products", "Tasks") using the AI schema builder.
+Open **http://localhost:5000/app/**, create the Super Admin, add an AI key, and create at least one entity with data.
 
-## 2. Initialize your Vite + React Project
+You do **not** need to run the Fastify Studio for an external frontend. It is only needed if you want the AI builder. Your app talks to the CMS `/api` and `/graphql` routes.
 
-Open a new terminal and create a new Vite project:
+---
+
+## 2. Create the Vite app
 
 ```bash
 npm create vite@latest my-app -- --template react-ts
 cd my-app
 npm install
+npm run dev
 ```
 
-## 3. Configure the API Connection
+Default dev URL: `http://localhost:5173`.
 
-Since your React app will run on a different port than CMS during development, you need to set up a proxy to avoid CORS issues. Edit your `vite.config.ts`:
+---
+
+## 3. Proxy the CMS in development
+
+Use Vite's proxy so the browser sees one origin and cookies work:
 
 ```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
-      }
-    }
-  }
-})
+      },
+      '/graphql': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+      '/files': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+    },
+  },
+});
 ```
 
-Now, any request to `/api` from your React app will be flawlessly forwarded to CMS.
+Use `127.0.0.1` consistently. If the CMS is running on another host, substitute its origin.
 
-## 4. Build the UI with Antigravity
+Every fetch should send cookies:
 
-With your backend running and frontend initialized, start your React dev server:
-
-```bash
-npm run dev
+```typescript
+fetch('/api/me', { credentials: 'include' });
 ```
 
-Now, use your AI development agent (like Antigravity or Cursor) to build the application. Try giving the agent prompts like these:
+If you build on `@cms/sdk`, it already uses same-origin paths and cookies.
 
-- *"Create a beautiful `ProductList` component that fetches data from `/api/products` and displays it in a responsive grid. Make it look modern and sleek."*
-- *"Build an `ArticleDetail` page that takes an ID from the URL, fetches `/api/articles/{id}`, and renders the title and content with good typography."*
-- *"Generate an API service file `src/services/api.ts` using `fetch` to handle standard CRUD operations against our `/api` endpoints."*
+---
 
-### Tips for Better AI Prompts
+## 4. Know the API shapes
 
-- **Be specific about endpoints**: Tell the AI exactly where to fetch data based on the entities you created in CMS (e.g., `/api/{entity-name}`).
-- **Share your schemas**: If you created a `Product` entity with `title` and `price`, explicitly tell the AI about these fields in your prompt so it knows the exact data structure.
-- **Request specific styling**: Mention if you want vanilla CSS, Tailwind CSS, or a specific component library. By default, agents are great at writing custom, modern CSS if you ask them to "make it look premium".
+### Authentication
 
-## 5. Enable CORS (If Running Frontend Separately)
+| Method | Path | Body |
+|---|---|---|
+| `POST` | `/api/login` | `{ usernameOrEmail, password }` |
+| `POST` | `/api/register` | registration fields |
+| `POST` | `/api/logout` | — |
+| `GET` | `/api/me` | — |
+| `POST` | `/api/profile/password` | password change |
+| `POST` | `/api/profile/avatar` | avatar update |
 
-If you are not using the Vite proxy from Step 3 and want your frontend (e.g., `http://localhost:5173`) to talk directly to CMS (e.g., `http://localhost:5000`), you must enable Cross-Origin Resource Sharing (CORS).
+### Entity records
 
-1. Open CMS at `http://localhost:5000/app`.
-2. Go to the **Settings** page.
-3. Find the **CORS Configuration** section.
-4. Add your frontend's URL (`http://localhost:5173`) to the allowed origins.
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/entities/:entityName` | List records (supports query filters) |
+| `GET` | `/api/entities/:entityName/:id` | One record |
+| `POST` | `/api/entities/:entityName/insert` | Insert |
+| `POST` | `/api/entities/:entityName/update` | Update |
+| `POST` | `/api/entities/:entityName/delete` | Delete |
+| `GET` | `/api/entities/lookup/:entityName` | Lookup options |
+| `POST` | `/api/entities/:entityName/publication` | Publish/unpublish |
 
-## 6. Deploying your React App
+The exact filter syntax and response envelope come from the CMS. Inspect a request in the Studio's API tester, or query GraphQL introspection.
 
-CMS includes a built-in static file server, making deployment incredibly simple. You don't need a separate host (like Vercel or Netlify) for your frontend—CMS can serve your React app directly!
+### Named queries
 
-1. Build your Vite project for production:
+Saved queries are exposed at:
+
+```text
+GET /api/queries/:id
+```
+
+Use the ID shown in the Studio's query detail/endpoint preview. Pages use:
+
+```text
+GET /api/page-data?id=<schemaId>
+```
+
+### GraphQL
+
+```text
+POST /graphql
+Content-Type: application/json
+
+{ "query": "{ books { id title } }" }
+```
+
+Use the GraphiQL panel in the Studio (or any GraphQL client) to introspect the schema.
+
+### Assets
+
+Uploaded files are served from `/files/...` and managed through `/api/assets`. Asset fields in records are objects; use `.url` in UI code.
+
+---
+
+## 5. Build the UI
+
+Example list component:
+
+```tsx
+import { useEffect, useState } from 'react';
+
+type Book = { id: number; title: string; price?: number };
+
+export function BookList() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/entities/book', { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setBooks(data.items ?? data))
+      .catch((err) => setError(err.message));
+  }, []);
+
+  if (error) return <p>Failed to load: {error}</p>;
+  return (
+    <ul>
+      {books.map((book) => (
+        <li key={book.id}>{book.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Login form:
+
+```tsx
+async function login(usernameOrEmail: string, password: string) {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ usernameOrEmail, password }),
+  });
+  if (!res.ok) throw new Error('Login failed');
+  return res.json();
+}
+```
+
+Prefer `@cms/sdk` if you want ready-made hooks and services. It is a source workspace, not a published npm package in this repository.
+
+---
+
+## 6. Use AI agents to write the frontend
+
+Once entities exist, give your coding agent the concrete schema and endpoints:
+
+> *"Create a `BookList` page using the existing `/api/entities/book` endpoint. Fields are `id`, `title`, `price`, `coverImage.url`. Include loading, empty, and error states. Use Tailwind."*
+
+Good prompts include:
+
+- the exact entity name and field list,
+- the endpoint or GraphQL query,
+- auth requirements,
+- the desired framework and styling,
+- pagination/filter expectations.
+
+Avoid asking an agent to "build the backend" in the external frontend repository; the backend is the CMS.
+
+---
+
+## 7. CORS if you do not use a proxy
+
+If the browser calls the CMS directly from a different origin, add your frontend origin in **Studio → Settings → CORS**. The setting is stored by the CMS (`/api/system/cors`) and the CMS restarts to apply it. Broad origins plus cookies are a security risk; prefer the same-origin proxy in production.
+
+---
+
+## 8. Deploy the frontend with CMS
+
+The CMS can serve a built SPA directly:
+
+1. Build:
    ```bash
    npm run build
    ```
-2. Compress the contents of the generated `dist` folder into a `.zip` file. (Make sure you zip the *contents* of the folder, so `index.html` is at the root of the zip archive).
-3. Open CMS at `http://localhost:5000/app`.
-4. Go to **Settings** -> **Frontend Apps**.
-5. Upload your `dist.zip` file.
+2. Zip the **contents** of `dist` so `index.html` is at the archive root.
+3. In the Studio, open **Settings → Frontend Apps**.
+4. Upload the zip, or upload a folder (the UI zips it), and choose the public path and directory name.
+5. The CMS stores it under its apps directory and serves it at the chosen path.
 
-Now, your entire full-stack application (frontend and backend APIs) is served from a single CMS server instance!
+This is convenient for demos and single-server deployments. For production, a CDN or static host is usually a better fit; the CMS is not a general-purpose CDN.
 
-## 7. Iterate Rapidly
+---
 
-The true power of this stack is your development velocity:
-1. **Need a new feature?** Ask CMS (via the `http://localhost:5000/app` UI) to generate new entities, relationships, or fields.
-2. **Need to show it?** Ask Antigravity to create or update the React components to consume the new endpoints.
-3. **Ready to ship?** Build, zip, and upload to CMS.
+## 9. Iterate
 
-This clean separation—AI handles the backend in CMS, AI handles the frontend in React—gives you the ultimate full-stack development experience with zero boilerplate.
+```text
+Change the data model in CMS (AI or manual)
+  → update the query
+  → regenerate or edit frontend components
+  → rebuild and deploy
+```
+
+Keep generated frontends under version control. The CMS stores schemas and content, not your React source.
+
+---
+
+## 10. Troubleshooting
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `401` on every call | Cookies not sent or wrong host | `credentials: 'include'`; use one host |
+| CORS error | Direct cross-origin call | Use the Vite proxy or configure CMS CORS |
+| `404` on an entity | Entity name mismatch | Check the schema name in the Studio |
+| Empty list | No data or a filter mismatch | Seed data; inspect the query response |
+| Images broken | Asset is an object | Use `coverImage.url`, not `coverImage` |
+| GraphQL validation error | Field names differ | Introspect the schema in GraphiQL |
+
+---
+
+## 11. Related pages
+
+- [Setup](./Setup.md) — CMS and Studio setup
+- [API Reference](./API-Reference.md) — route inventory
+- [Building a System](./Building-a-System.md) — create entities, data, and queries
+- [Antigravity Integration](../antigravity-integration.md) — agent workflows and current limitations
