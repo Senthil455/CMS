@@ -1,21 +1,106 @@
 root:
   packages:
     shared:
-      description: Shared types, endpoints, socket events
+      tech: typescript
+      description: DTOs, endpoint constants, socket events, API client, LayoutCompiler
       files:
-        - endpoints.ts
-        - events.ts
+        - src/endpoints.ts
+        - src/events.ts
+        - src/constants.ts
+        - src/contracts.ts
+        - src/app.dto.ts
+        - src/utils/layout-compiler.ts
 
-    backend:
+    service:
       tech: fastify
+      description: BFF and AI orchestrator; owns /cmsapi, SPAs, and browser SDK
       structure:
-        - routers/
-        - services/
-        - infrastructures/
-        - models/
+        - src/routers/
+        - src/plugins/
+        - src/agent/
+        - src/services/
+        - src/operators/
+        - src/repositories/
+        - src/infrastructures/
+        - src/models/
+        - prisma/
+        - public/static/
 
-    frontend:
+    app:
       tech: react-vite
+      description: CMS Studio at /app/
       structure:
-        - pages/
+        - src/pages/
+        - src/components/
+        - src/context/
+
+    admin:
+      tech: react-vite-primereact
+      description: CMS Admin at /admin/
+      structure:
+        - src/pages/
+        - src/layout/
+        - src/globalState.tsx
+
+    portal:
+      tech: react-vite-primereact
+      description: End-user portal at /portal/
+      structure:
+        - src/pages/
+        - src/layout/
+        - src/auth/
+
+    stash:
+      tech: react-vite-pwa
+      description: Offline-first PWA at /stash/
+      structure:
+        - src/pages/
+        - src/db/
+        - src/services/
+
+    sdk:
+      tech: react-typescript
+      description: Source-only React integration layer; no build script, not published
+      structure:
+        - auth/
+        - cms/
         - components/
+        - engagements/
+        - notifications/
+        - sub/
+        - auditLog/
+        - dashboard/
+
+    zen:
+      tech: react-vite
+      description: Standalone CMS-backed health-tracking demo; not mounted by the service
+      structure:
+        - src/pages/
+        - src/contexts/
+
+    hello:
+      tech: react-vite
+      description: Minimal SPA fixture for the Add SPA upload flow
+
+  deploy:
+    mono-deploy-local:
+      description: Single-image build, Compose, Nginx, entrypoint
+      files:
+        - Dockerfile
+        - docker-compose.yml
+        - entrypoint.sh
+        - nginx.conf
+        - build-fast.sh
+        - reload.sh
+        - reload_zen.sh
+    mono-deploy-hub:
+      description: Multi-arch Docker Hub publishing and production Compose
+      files:
+        - build-multiarch.sh
+        - docker-compose.prod.yml
+
+  docs:
+    wiki: docs/wiki/
+    migration: docs/migration-guide.md
+    marketing: docs/marketing-strategy.md
+    agents: docs/antigravity-integration.md
