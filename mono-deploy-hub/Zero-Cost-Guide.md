@@ -130,6 +130,7 @@ services:
       - CMS_DATA_PATH=/data
       - "DATABASE_URL=file:/data/app/sqlite.db"
       - FRONTEND_URL=http://YOUR_SERVER_IP
+      - SESSION_SECRET=replace-with-at-least-32-characters
     volumes:
       - cms_data:/data
     restart: unless-stopped

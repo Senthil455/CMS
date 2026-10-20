@@ -152,7 +152,7 @@ npm run dev:portal     # http://127.0.0.1:5173/portal/
 npm run dev:stash      # http://127.0.0.1:5176/stash/
 ```
 
-Admin and Portal do not define their own dev proxy. When developing them separately, either run one Vite app at a time or set `VITE_REACT_APP_API_URL` to the service origin. Stash proxies `/api` and `/graphql` to `:5000` and `/cmsapi` to `:3001`.
+Admin and Portal do not define their own dev proxy. When developing them separately, either run one Vite app at a time or set `VITE_REACT_APP_API_URL` to the service origin. Stash proxies `/api`, `/graphql`, and `/files` to `:5000` and `/cmsapi` to `:3001`.
 
 ### Build
 

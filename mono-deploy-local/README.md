@@ -72,7 +72,7 @@ Change the default PostgreSQL password before exposing the service.
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` | Two stages: Node 24 build/copy, then the .NET 10 ASP.NET runtime with Node, Nginx, `tsx`, and ffmpeg |
+| `Dockerfile` | Two stages: Node 24 dependency/artifact copy, then the .NET 10 ASP.NET runtime with Node, Nginx, `tsx`, and ffmpeg |
 | `docker-compose.yml` | App + PostgreSQL, `/data` volume, `APP_PORT` / `DB_PORT` |
 | `entrypoint.sh` | Writes CMS settings, renders the Nginx body-size limit, starts Nginx, runs Prisma `db push`, starts `tsx`, runs the .NET loop |
 | `nginx.conf` | Port 5000 gateway and route table |

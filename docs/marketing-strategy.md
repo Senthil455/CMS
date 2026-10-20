@@ -111,7 +111,7 @@ The most credible asset is the documentation set:
 - [Architecture](./wiki/Architecture.md) for the runtime boundary,
 - [API Reference](./wiki/API-Reference.md) for integration,
 - [Docker Deployment](./wiki/Docker-Deployment.md) for operations,
-- [Known limitations](../README.md#️-known-limitations) for honesty.
+- [Known limitations](../README.md#-known-limitations) for honesty.
 
 Link these from every post and video description.
 

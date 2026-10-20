@@ -128,7 +128,7 @@ A design style supplies prompt fragments that page agents use for list and detai
 | `chat:agent_plan_to_confirm` | `{ agentName, data, agentTaskItem? }` | Agent needs confirmation before writing. |
 | `chat:agent_status` | `{ agentName: string \| null, createdAt? }` | Current agent activity; `null` clears it. Re-sent on connect. |
 
-Agent names are listed in `packages/shared/src/constants.ts`; see [Orchestrator Strategy](./Orchestrator-Strategy.md#agent-catalogue).
+Agent names are listed in `packages/shared/src/constants.ts`; see [Orchestrator Strategy](./Orchestrator-Strategy.md#3-agent-catalogue).
 
 ---
 

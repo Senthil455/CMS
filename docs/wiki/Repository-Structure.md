@@ -21,7 +21,8 @@ CMS/
 ├── mono-deploy-local/ Dockerfile, Nginx, Compose, local build scripts
 ├── mono-deploy-hub/   Multi-arch publishing and production Compose
 ├── docs/              Wiki, deployment, migration, marketing, video tooling
-├── scripts/           Repository helper scripts
+├── artifacts/         Static landing page and demo images
+├── sync-readme.sh     Copies `readme.md` to `../cms/readme.md` when present
 ├── .agent/            Agent skill definitions
 └── .antigravity/      Agent-facing architecture and contract notes
 ```

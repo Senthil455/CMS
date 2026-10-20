@@ -83,7 +83,7 @@ DATABASE_URL=file:./dev.db
 SESSION_SECRET=replace-with-at-least-32-characters
 ```
 
-All variables are validated with Zod at startup. A missing or invalid required value aborts the process. See [Configuration](#configuration) below.
+All variables are validated with Zod at startup. A missing or invalid required value aborts the process. See [Configuration](#4-configuration) below.
 
 ### 3.4 Initialize the service database
 
@@ -247,4 +247,4 @@ Use the same origin and cookie. The socket path is `/cmsapi/socket.io`, and `FRO
 
 ### Docker build fails with `CMS/... not found`
 
-The build context and Dockerfile expect a sibling `CMS` directory checkout and a `CMS/publish` folder. See [Docker Deployment](./Docker-Deployment.md#building-from-source).
+The build context and Dockerfile expect a sibling `CMS` directory checkout and a `CMS/publish` folder. See [Docker Deployment](./Docker-Deployment.md#build-scripts-and-path-assumptions).
