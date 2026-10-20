@@ -25,16 +25,20 @@
 ## Frontend Rules
 
 - Frontend configuration MUST be centralized in `src/config.ts`
-- Use Vite-prefixed environment variables (e.g., `VITE_API_URL`)
+- Use Vite-prefixed environment variables (e.g., `VITE_API_BASE_URL`)
 - Provide sensible defaults for local development
 - No direct use of `import.meta.env` outside the config module
+- An empty base URL means same-origin and is the recommended default
 
 Example `src/config.ts`:
 ```ts
 export const config = {
-  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+  // Empty = same origin. In development, proxy /api and /graphql to CMS.
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '',
 };
 ```
+
+The CMS API default is `http://127.0.0.1:5000`. The Fastify service on `3001` serves `/cmsapi`, not the data API.
 
 Example:
 ```ts

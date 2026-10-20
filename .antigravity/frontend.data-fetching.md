@@ -21,7 +21,7 @@ These rules define how frontend code fetches data from APIs.
 
 ## 3. Endpoint Source
 
-- API endpoints must be imported from `/packages/shared/endpoints.ts`
+- API endpoints must be imported from `packages/shared/src/endpoints.ts`
 - **Base URL**: All API calls MUST use the `config.API_BASE_URL` from `@/config.ts`
 - No hardcoded URLs, protocols, or ports in hooks or components
 
