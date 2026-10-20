@@ -1,74 +1,115 @@
-# CMS: The AI-Powered CMS
+# `@cms/sdk`
 
-CMS is a cutting-edge, open-source Content Management System designed to revolutionize web development through AI. By automating the most tedious parts of development—schema design, data seeding, API creation, and UI building—CMS allows you to build complex, production-ready applications in minutes rather than weeks.
+Internal React integration layer for CMS. It provides hooks, services, page logic, and routers used by CMS Admin, Portal, and Stash.
 
----
-
-## ⚡ Powering Your Workflow with AI
-
-CMS isn't just a place to store content; it's an AI-driven development partner. 
-
-### 1. Generate Entity (Schema)
-Forget manual table definitions. Simply describe your business domain (e.g., "I need a system to manage a digital library with books, authors, and rentals"), and CMS's AI will:
-- Design the normalized database schema.
-- Establish relationships (Many-to-One, Many-to-Many).
-- Configure appropriate data types (Strings, Numbers, Lookups, Junctions).
-
-### 2. Generate Data (Seeding)
-Tired of "Lorem Ipsum"? Use AI to generate realistic, high-quality sample data:
-- Populate your database with meaningful records.
-- Preserve relational integrity across entities.
-- Test your UI with data that looks and feels real.
-
-### 3. Generate Query (API)
-Writing GraphQL can be complex. In CMS, you can:
-- Prompt the AI to build logic: "Give me all books published after 2020 by authors with more than 5 stars."
-- The AI generates the GraphQL query and converts it into a secure, high-performance REST endpoint automatically.
-
-### 4. Generate Page (UI)
-Go from prompt to page instantly:
-- "Build a landing page for my library that sections books by genre and features a search bar."
-- AI generates the HTML/CSS using semantic structures and bridges it with your data queries.
+> **Not published to npm.** This workspace is consumed directly as TypeScript source. `package.json` points `main` and `types` at `index.ts`, and there is **no build script**. Do not run `npm run build:sdk`.
 
 ---
 
-## 🎥 In Action
+## What is in the package
 
-A full walkthrough video is coming soon. See the [Quick Start](#-quick-start) below to try CMS yourself.
+| Directory | Contents |
+|---|---|
+| `auth/` | Session hook, login/register pages, password and avatar pages, users, roles, routers |
+| `cms/` | Entity and query clients, data list/item pages, asset pages and services, task pages, `EntityRouter` |
+| `components/` | Shared React data, input, and UI components |
+| `containers/` | Higher-level layout containers |
+| `engagements/` | Activity and bookmark services, types, and page hooks |
+| `notifications/` | Notification types and page hook |
+| `sub/` | Subscription/Stripe types and configuration |
+| `auditLog/` | Audit log pages, router, and API config |
+| `dashboard/` | Dashboard page hook |
+| `hooks/` | Data-table state and menu helpers |
+| `types/` | Shared types and formatters |
+| `utils/` | Utilities |
+| `ComponentConfig.tsx` | Global component configuration types |
+
+`index.ts` is the public entry point. Some configuration helpers live in subpaths, for example `@cms/sdk/notifications/config` and `@cms/sdk/sub/config`.
 
 ---
 
-## 🚀 Quick Start
+## Usage
 
-See the [main README](https://github.com/Senthil455/CMS#-quick-start-docker) for the Docker quick start, or the [Setup Guide](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Setup.md) to run CMS from source.
+The SDK is an npm workspace, so other workspaces import it by package name:
 
----
-
-## 🏗️ Architecture
-
-CMS is built on a modern, decoupled architecture designed for performance and flexibility.
-
-```mermaid
-graph TD
-    A[cms] -->|AI-Generated Schema & UI| B[CMS Ecosystem]
-    C[CMS Admin] -->|Management & Editing| D[cms Backend]
-    E[Portal / Frontend] -->|Consumes APIs| D
+```json
+{
+  "dependencies": {
+    "@cms/sdk": "*"
+  }
+}
 ```
 
-### 1. **cms** (AI Schema & UI Builder)
-The "brain" of the ecosystem. This tool leverages LLMs to architect your data models and design your UI. It translates your natural language requirements into technical configurations that the system understands.
+```tsx
+import {
+  setAuthApiBaseUrl,
+  setCmsApiBaseUrl,
+  useUserInfo,
+  useDataListPage,
+} from '@cms/sdk';
 
-### 2. **cms** (Backend Engine)
-The core high-performance engine built with **ASP.NET Core (C#)**.
-- **REST & GraphQL**: Automatically exposes APIs for every entity you define.
-- **Normalized Storage**: Optimized for speed (Sqlite, Postgres, SQL Server, MySQL supported).
-- **Scale**: Designed to handle millions of records and high-concurrency environments.
+// Same origin (recommended through the Fastify service or a dev proxy)
+setAuthApiBaseUrl('');
+setCmsApiBaseUrl('');
 
-### 3. **CMS Admin** (Management Dashboard)
-A sleek, **React-based** administrative interface.
-- Manage your entities, queries, and pages.
-- Visual editors for relationships and data.
-- Built-in audit logging and publication workflows.
+function Profile() {
+  const { data } = useUserInfo();
+  return data ? <span>{data.username}</span> : null;
+}
+```
+
+### Base URL configuration
+
+Call the setters once at application startup:
+
+| Setter | Used for |
+|---|---|
+| `setAuthApiBaseUrl(url)` | Login, session, profile, users, roles |
+| `setCmsApiBaseUrl(url)` | Entity and asset APIs |
+| `setAuditLogBaseUrl(url)` | Audit log APIs |
+| `setActivityBaseUrl(url)` | Engagement/activity APIs |
+| `setNotificationBaseUrl(url)` (subpath) | Notifications |
+| `setSubBaseUrl(url)` (subpath) | Subscriptions |
+
+The default is an empty string, which means **same origin**. Axios clients are created with `withCredentials: true`, so cookies flow when the API shares the origin.
+
+### Routers
+
+| Router | Purpose |
+|---|---|
+| `AuthRouter` | Login/register routing |
+| `EntityRouter` | Entity list/detail/edit routing |
+| `AccountRouter` | Account pages |
+| `ProfileRouter` | Profile pages |
+| `AuditLogRouter` | Audit log pages |
 
 ---
 
+## Peer dependencies
+
+The SDK expects the host app to provide:
+
+- React 19
+- `react-router-dom` 6
+- `react-hook-form` 7
+
+Admin and Portal satisfy these. An external project must install them itself.
+
+`@cms/shared` is a runtime dependency. Build it first (`npm run build:shared`) after changing shared types or endpoints.
+
+---
+
+## Development notes
+
+- Edit source and let the consuming workspace hot-reload; there is no package build.
+- The SDK has no tests and no lint script.
+- Because it is source-only, changes can break all three consumers at once. Run the consumer builds after editing shared hooks or types.
+- `packages/sdk` is listed in the root `workspaces`, so `npm install` at the root links it.
+
+---
+
+## Related
+
+- [Repository Structure](../../docs/wiki/Repository-Structure.md)
+- [API Reference](../../docs/wiki/API-Reference.md)
+- [Architecture](../../docs/wiki/Architecture.md)

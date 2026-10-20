@@ -1,73 +1,95 @@
-# React + TypeScript + Vite
+# Zen (`@cms/zen`)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A standalone health-tracking demo that shows how a small React SPA can consume CMS entities, queries, and cookie auth.
 
-Currently, two official plugins are available:
+- **Stack:** React 19, Vite 7, TypeScript, Framer Motion, React Router 7, Lucide
+- **Not mounted by the Fastify service.** It is a separate frontend example.
+- **Not part of the product runtime.** Nothing at `/app`, `/admin`, `/portal`, or `/stash` serves it.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## What it demonstrates
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Route | Screen |
+|---|---|
+| `/` | Daily dashboard |
+| `/check-in` | Habit check-in |
+| `/goals` | Goals list backed by the `goal` entity |
+| `/trends` | Charts and progress |
+| `/explore` | Habit templates |
 
-## Expanding the ESLint configuration
+The app uses:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `GET /api/me` for the session,
+- `POST /api/login` (including a guest login fallback),
+- `POST /api/register` and `/api/logout`,
+- `GET /api/entities/goal` for records,
+- `GET /api/queries/habitTemplateById` for template details.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+All requests use `credentials: 'include'`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Setup
+
+From the repository root:
+
+```bash
+npm install
+npm run dev --workspace=@cms/zen
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Vite serves the app on its default port `5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+`vite.config.ts` proxies:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Path | Target |
+|---|---|
+| `/api` | `http://localhost:8000` |
+| `/files` | `http://localhost:8000` |
+
+The `8000` target matches `mono-deploy-local/reload_zen.sh`, which runs a second Compose project named `zen` on port `8000` with PostgreSQL on `5433`.
+
+If your CMS is elsewhere, edit the proxy target in `packages/zen/vite.config.ts`. There is no environment-variable override.
+
+### Backend requirements
+
+The demo expects these to exist in the target CMS:
+
+- a `goal` entity with `targetValue`, `habitTemplate`, and publication fields;
+- a `habitTemplateById` query;
+- guest-login support (`__guest_` / `aaa`) for the automatic fallback.
+
+These are demo data, not part of the core schema. Without them the screens will show errors or empty states.
+
+---
+
+## Build
+
+```bash
+npm run build --workspace=@cms/zen
 ```
+
+Output: `packages/zen/dist`.
+
+There is no service route for this output. Serve it with any static host, or upload it through **Settings → Frontend Apps** in the Studio. The build uses the default `/` base path.
+
+---
+
+## Why it exists
+
+Zen is useful as:
+
+- a reference for a CMS-backed React app with login and entity queries;
+- a fixture for the SPA upload flow;
+- a second-environment test for the Docker/Compose setup.
+
+It is not a template for production auth. The guest credentials are hard-coded and intended for a demo environment only.
+
+---
+
+## Related
+
+- [Building an External Frontend](../../docs/wiki/Vite-React-Antigravity-Example.md)
+- [API Reference](../../docs/wiki/API-Reference.md)
+- [Repository Structure](../../docs/wiki/Repository-Structure.md)

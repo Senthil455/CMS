@@ -1,51 +1,93 @@
-# CMS Admin
+# CMS Admin (`@cms/admin`)
 
-CMS Admin is the admin portal for [CMS](https://github.com/Senthil455/CMS). It provides a user-friendly interface for managing content, schemas, and settings within the CMS ecosystem.
+Content-administration interface for the CMS.
 
-## Architecture
+- **Production path:** `/admin/`
+- **Stack:** React 19, Vite 5, PrimeReact, Chart.js, SWR, CodeMirror, `@cms/sdk`
+- **Build output:** `packages/admin/dist`
 
-For a detailed overview of the system architecture, please refer to the [CMS Architecture Wiki](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Architecture.md).
+---
+
+## What it does
+
+| Area | Capabilities |
+|---|---|
+| Data | Browse, create, edit, and delete entity records |
+| Assets | Upload, inspect, and delete files; convert media |
+| Users | Manage users, roles, and permissions |
+| Audit | Browse audit logs and entry details |
+| Tasks | Inspect background/system tasks |
+| Chunks | Upload large files in chunks |
+| Account | Login, registration, profile, password |
+
+The Admin uses `@cms/sdk` for routers, hooks, and services, and calls CMS `/api` routes directly for some operations.
+
+---
 
 ## Setup
 
-### Prerequisites
+From the repository root:
 
-- [Node.js](https://nodejs.org/) (latest LTS recommended)
-- npm
+```bash
+npm install
+npm run build:shared
+npm run dev:admin
+```
 
-### Installation
+Vite starts on its default port `5173` with `--host 127.0.0.1`. Open `http://127.0.0.1:5173/admin/`.
 
-1.  **Clone the repository:**
+> The Admin has **no dev proxy**. `/api` calls are same-origin by default, so during local development either:
+>
+> - build the Admin and load it through the Fastify service at `http://127.0.0.1:3001/admin/`, or
+> - set `VITE_REACT_APP_API_URL` to the CMS origin (for example `http://127.0.0.1:5000`) and configure CMS CORS.
+>
+> The Studio also uses port `5173`, so do not run `dev:app` and `dev:admin` at the same time without changing one port.
 
-    ```bash
-    git clone https://github.com/Senthil455/CMS.git
-    cd CMS
-    ```
+---
 
-2.  **Install dependencies from the repository root:**
+## Configuration
 
-    ```bash
-    npm install
-    ```
+`src/config.ts` reads build-time Vite variables:
 
-3.  **Start the admin development server:**
+| Variable | Default | Purpose |
+|---|---|---|
+| `VITE_REACT_APP_API_URL` | `''` (same origin) | CMS API origin |
+| `VITE_REACT_APP_ROUTER_PREFIX` | `/admin` | Route prefix for entity, auth, audit, and profile routers |
 
-    ```bash
-    npm run dev:admin
-    ```
+Example `.env.local`:
 
-    This starts the Vite development server for the admin app. The production base path is `/admin/`.
+```bash
+VITE_REACT_APP_API_URL=http://127.0.0.1:5000
+VITE_REACT_APP_ROUTER_PREFIX=/admin
+```
 
-## Features
+If the API is on another origin, add the Admin origin in **Studio → Settings → CORS**. Cookies require `credentials: 'include'`, which `@cms/sdk` already sets.
 
--   **Customizable Branding:** The app allows users to change the logo and other branding elements to match their organization's identity.
--   **Schema Management:** Create and modify content schemas visually.
--   **Content Management:** Efficient tools for creating and editing content.
+---
 
 ## Build
-
-To build the admin app for production from the repository root:
 
 ```bash
 npm run build --workspace=@cms/admin
 ```
+
+Output: `packages/admin/dist`.
+
+The Fastify service serves it at `/admin/`. `vite.config.ts` sets `base: '/admin/'`; changing that base breaks asset loading in production.
+
+---
+
+## Notes and limitations
+
+- No dev proxy is defined. Local development requires the service or an explicit API origin.
+- The Admin depends on CMS permissions. The service does not enforce them for Studio routes.
+- There is no automated test suite for this workspace.
+
+---
+
+## Related
+
+- [Architecture](../../docs/wiki/Architecture.md)
+- [API Reference](../../docs/wiki/API-Reference.md)
+- [Repository Structure](../../docs/wiki/Repository-Structure.md)
+- [CMS Admin setup in Setup](../../docs/wiki/Setup.md)
