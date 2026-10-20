@@ -90,4 +90,4 @@ The Fastify service serves it at `/admin/`. `vite.config.ts` sets `base: '/admin
 - [Architecture](../../docs/wiki/Architecture.md)
 - [API Reference](../../docs/wiki/API-Reference.md)
 - [Repository Structure](../../docs/wiki/Repository-Structure.md)
-- [CMS Admin setup in Setup](../../docs/wiki/Setup.md)
+- [Setup](../../docs/wiki/Setup.md)

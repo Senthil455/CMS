@@ -171,7 +171,9 @@ React integration layer consumed directly as TypeScript source.
 
 ## `packages/zen` — standalone demo
 
-A self-contained health-tracking demo (React 19, Vite 7, Framer Motion, React Router 7). It is **not mounted by the service** and does not consume CMS APIs by default. It is useful as a sample SPA for the SPA upload flow, but it is not part of the product runtime.
+A health-tracking demo (React 19, Vite 7, Framer Motion, React Router 7) that consumes CMS cookie auth, the `goal` entity, and the `habitTemplateById` query. Its Vite proxy targets `http://localhost:8000`, matching `mono-deploy-local/reload_zen.sh`, which runs a separate Compose project named `zen`.
+
+It is **not mounted by the service** and is not part of the product runtime. It is useful as a CMS-backed React example and as a fixture for the SPA upload flow. The hard-coded guest login (`__guest_` / `aaa`) is demo-only.
 
 ---
 
