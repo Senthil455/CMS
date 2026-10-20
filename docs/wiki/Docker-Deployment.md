@@ -220,7 +220,7 @@ dockerfile: cms/mono-deploy-local/Dockerfile
 
 This only resolves when the repository directory is literally named `cms` (lowercase) under the parent used as context. If your checkout is named differently, the build fails with `COPY CMS/... not found`.
 
-The local README references `build.sh` and `Dockerfile.fast`; neither exists. Use `build-fast.sh` (which calls the single `Dockerfile`) or `mono-deploy-hub/build-multiarch.sh`.
+Older documentation referenced `build.sh` and `Dockerfile.fast`; neither exists. Use `build-fast.sh` (which calls the single `Dockerfile`) or `mono-deploy-hub/build-multiarch.sh`.
 
 ### Requirements for a source build
 

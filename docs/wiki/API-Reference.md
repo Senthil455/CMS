@@ -268,7 +268,7 @@ The constants below come from `packages/shared/src/endpoints.ts`. Paths use the 
 
 | Condition | Status | Body |
 |---|---|---|
-| No session | 400?/401 | `{ success: false, error: "Unauthorized" }` (401) |
+| No session | 401 | `{ success: false, error: "Unauthorized" }` |
 | Zod validation | 400 | `{ error: "Validation failed", details }` |
 | `UserVisibleError`, `CmsError`, `AgentProviderError` | 400 | `{ success: false, error: message }` |
 | Prisma unique conflict (`P2002`) | 409 | `{ success: false, error: "Resource conflict or already exists" }` |
