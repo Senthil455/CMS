@@ -1,176 +1,270 @@
-# Build Your App with Zero Cost 🚀
+# Running CMS on a Zero-Cost Budget
 
-Building a modern, AI-powered application doesn't have to be expensive. By leveraging free-tier cloud services and powerful all-in-one Docker solutions, you can launch your project for **$0**.
+This guide is about keeping a CMS deployment cheap, not about promising that hosting is permanently free. Free tiers change, and the image runs two application runtimes plus a gateway, so resource limits matter.
 
----
-
-## 1. The All-in-One Solution (Docker)
-
-Most modern stacks require a separate backend, API layer, and database, each potentially incurring costs. However, there are many Docker-based solutions available that bundle these components together to help you stay within the "Free Tier" limits of most cloud providers.
-
-One such example is **CMS** (`cms-mono`), which provides:
-
--   **Backend Admin Panel:** A clear, ready-to-use interface to manage your content and data out-of-the-box.
--   **Database:** Built-in SQLite database support, removing the need for an external database service.
--   **API:** Automatically generated RESTful APIs to connect to any frontend.
--   **Custom Frontends:** You aren't locked in! You can easily build your own app using modern tools like React, Vite, and Antigravity. [See the Vite + React + Antigravity Example here](https://github.com/Senthil455/CMS/blob/main/docs/wiki/Vite-React-Antigravity-Example).
-
+> **What "zero cost" can realistically mean:** a free-tier VM or container host, SQLite instead of managed PostgreSQL, a free AI tier, and no paid add-ons. Expect to hit CPU, RAM, disk, or egress limits at some point.
 
 ---
 
-## 2. Free AI Power (Gemini)
+## 1. Know what you are running
 
-Adding AI capabilities to your application can also be free. Many tools and platforms now integrate directly with AI providers offering generous free tiers.
+The image contains:
 
--   **Zero Cost AI:** Google Gemini offers a free tier that is excellent for indie projects. 
--   **Free API Key:** You can acquire a Gemini API key for free from [Google AI Studio](https://aistudio.google.com/).
--   **Integration:** Solutions like CMS allow you to simply input your Gemini key to start generating content and managing data intelligently.
+| Component | Approximate role |
+|---|---|
+| Nginx | Gateway on port `5000` |
+| Node.js + Fastify | Studio, admin, portal, Stash, `/cmsapi` |
+| ASP.NET Core CMS | Entities, records, queries, pages, auth, assets |
+| ffmpeg | Media conversion for Stash |
 
----
+Practical minimum for a demo:
 
-## 3. Fast Deployment (Free Docker Hosting)
+- **1 vCPU**
+- **1 GB RAM** (2 GB is safer, especially during schema work and media conversion)
+- **2–5 GB disk** for the image, SQLite databases, and uploads
 
-Many cloud providers offer a free tier for running Docker containers. Providers like **Koyeb**, **Render**, or **Fly.io** often have free plans that are perfect for all-in-one images:
-
-1.  **Register:** Create a free account on your chosen provider.
-2.  **Source:** Point the deployment to your chosen public Docker Hub image (e.g., `senthil455/cms-mono:latest`).
-3.  **Config:** Map the appropriate exposed port (e.g., `5000` to the public port).
-4.  **Go:** Your application is now live at the provider's URL.
-
----
-
-## 4. Advanced: Oracle Cloud Free Tier (VPS)
-
-For those who want more control and a robust Virtual Private Server (VPS), Oracle Cloud provides one of the most generous free tiers available.
-
-### 4.1 Networking Setup
-- Create a **Virtual Cloud Network (VCN)**.
-- Configure an **Ingress Rule** to allow traffic on ports `80` (HTTP) and `443` (HTTPS).
-
-### 4.2 Create Compute Instance
-- Select a **Compute Instance**.
-- **Specs:** Use the "Always Free" ARM-based Ampere A1 shapes (up to 4 OCPUs and 24 GB of RAM).
-- **OS:** Choose **Rocky Linux** or Ubuntu.
-
-### 4.3 Environment Setup
-
-Here is the cleaned version (removed sections 6 and 7), formatted so you can copy directly:
+A 512 MB container may start but is likely to struggle. If a free tier offers less than 1 GB, expect restarts or OOM kills.
 
 ---
 
-# Install & Setup Nginx on Rocky Linux
+## 2. Choose a hosting shape
 
-## 1. Update System (Recommended)
+### Option A — Free container host
 
-```bash
-sudo dnf update -y
-```
+Providers such as Koyeb, Render, and Fly.io have offered free or low-cost container tiers. Before choosing one, check:
 
----
+- **Persistent storage:** many free tiers use ephemeral filesystems. Without a volume, every restart loses the SQLite database and uploads.
+- **Always-on behavior:** free services may sleep after inactivity, which breaks long AI runs and Socket.IO sessions.
+- **Memory limit:** the image needs roughly 1 GB to feel stable.
+- **Public port:** the container listens on `5000`; map the provider's port to it.
+- **Build vs pull:** deploy the published image `senthil455/cms-mono:latest` rather than building from source.
 
-## 2. Install Nginx
+A free container tier is fine for a demo. It is a poor fit for anything you expect to keep.
 
-```bash
-sudo dnf install nginx -y
-```
+### Option B — Free-tier VM (more control)
 
-Verify installation:
-
-```bash
-nginx -v
-```
+Oracle Cloud's Always Free tier is a common choice. It provides a real VM where you control Docker, volumes, and ports.
 
 ---
 
-## 3. Start and Enable Nginx
+## 3. Oracle Cloud Always Free walkthrough
 
-Start service:
+### 3.1 Network
 
-```bash
-sudo systemctl start nginx
-```
+1. Create a **Virtual Cloud Network (VCN)**.
+2. Add an **ingress rule** for TCP `80` and `443` (and `22` for SSH).
+3. Keep the default egress rule.
 
-Enable on boot:
+### 3.2 Instance
 
-```bash
-sudo systemctl enable nginx
-```
+1. Create a **Compute Instance**.
+2. Prefer the **Ampere A1** always-free shape (up to 4 OCPUs / 24 GB RAM, subject to capacity).
+3. Choose **Ubuntu** or **Rocky Linux**.
+4. Save the SSH key.
 
-Check status:
+### 3.3 Install Docker
 
-```bash
-sudo systemctl status nginx
-```
-
----
-
-## 4. Disable SELinux (If Blocking Access)
-
-### Temporarily disable (until reboot):
+Ubuntu:
 
 ```bash
-sudo setenforce 0
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
 ```
 
-Check status:
+Rocky Linux:
 
 ```bash
-getenforce
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
 ```
 
----
+Sign out and back in for the group change to apply.
 
-### Permanently disable:
+### 3.4 Open the host firewall
 
-Edit configuration file:
+Ubuntu:
 
 ```bash
-sudo vi /etc/selinux/config
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
 ```
 
-Change:
-
-```
-SELINUX=enforcing
-```
-
-To:
-
-```
-SELINUX=disabled
-```
-
-Reboot:
+Rocky Linux:
 
 ```bash
-sudo reboot
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
 ```
 
----
+Oracle images may also have iptables rules that block ports. If the service is unreachable, check:
 
-## 5. Verify Installation
-
-Open browser:
-
-```
-http://your_server_ip
+```bash
+sudo iptables -L -n
 ```
 
-You should see the Nginx welcome page.
+Add the required ACCEPT rules or use the distribution's firewall tooling.
 
-### 4.4 Deploy with Docker
-Create a `docker-compose.yml` file on your server to run your chosen solution (using CMS `cms-mono` as an example):
+Do not disable SELinux globally just to make a container run. If SELinux blocks a bind mount, label the directory or use a named volume.
+
+### 3.5 Run CMS with SQLite
+
+Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
 services:
   app:
     image: senthil455/cms-mono:latest
     ports:
-      - "5000:5000"
+      - "80:5000"
+    environment:
+      - DATABASE_PROVIDER=0
+      - "CONNECTION_STRING=Data Source=/data/cms.db"
+      - CMS_DATA_PATH=/data
+      - "DATABASE_URL=file:/data/app/sqlite.db"
+      - FRONTEND_URL=http://YOUR_SERVER_IP
     volumes:
-      - ./data:/data
-    restart: always
+      - cms_data:/data
+    restart: unless-stopped
+
+volumes:
+  cms_data:
 ```
 
-Run it with `docker compose up -d`. Your powerful, production-ready application is now running on a professional cloud infrastructure for free!
+```bash
+docker compose up -d
+docker compose logs -f app
+```
+
+Open `http://YOUR_SERVER_IP/app/`.
+
+Set `FRONTEND_URL` to the exact origin users will visit. Cookies are host-scoped; mixing an IP and a domain causes login loops.
+
+### 3.6 Add a domain and TLS (optional, may cost money)
+
+A domain usually costs money. TLS certificates from Let's Encrypt are free.
+
+If you put a host Nginx or Caddy in front of the container:
+
+- bind CMS to `127.0.0.1:5000` instead of `0.0.0.0:80`;
+- proxy `/` to `127.0.0.1:5000`;
+- enable WebSocket upgrade headers for `/cmsapi/socket.io`;
+- set `FRONTEND_URL=https://your-domain.example`.
+
+Caddy handles certificates automatically. Host Nginx requires Certbot or manual certificate management.
+
+---
+
+## 4. Keep the database free
+
+SQLite is the cheapest option:
+
+- no separate database service;
+- no network latency;
+- one volume to back up.
+
+Use it when:
+
+- one CMS instance is running;
+- write concurrency is modest;
+- you can tolerate brief downtime for backups.
+
+Use PostgreSQL when you need concurrent writers, managed backups, or multiple app instances. Managed PostgreSQL is rarely free for long. A free-tier PostgreSQL often has storage and connection limits, and may expire.
+
+If you do use PostgreSQL, run it in the same Compose stack and back it up with `pg_dump`:
+
+```bash
+docker compose exec -T db pg_dump -U postgres cms > cms.sql
+```
+
+Do not copy the PostgreSQL data directory as a backup.
+
+---
+
+## 5. Keep AI costs down
+
+### Gemini
+
+Google AI Studio offers a free tier for Gemini models. Limits and eligible models change; check the current quota before relying on it.
+
+1. Create a key at [Google AI Studio](https://aistudio.google.com/).
+2. In CMS, open **Settings → AI Providers**.
+3. Paste the key and select a Gemini model.
+
+### OpenAI
+
+OpenAI is paid. Use it only when you specifically need those models, and watch usage in the provider dashboard.
+
+### Practical limits
+
+- AI keys are stored in the service SQLite database as **plaintext**. Protect the volume and restrict Studio access.
+- Long agent runs consume tokens even if the resulting schema is discarded.
+- There is no built-in token or cost budget in the current service. Monitor the provider dashboard.
+- Free tiers may use your prompts for product improvement. Do not paste sensitive data.
+
+---
+
+## 6. Backups on a budget
+
+A volume snapshot is not a backup if it lives on the same host. Keep one copy elsewhere.
+
+```bash
+# Archive the CMS volume
+docker run --rm \
+  -v cms_data:/volume \
+  -v "$PWD":/backup \
+  alpine tar czf /backup/cms_data.tar.gz -C /volume .
+
+# Copy it off the host
+scp cms_data.tar.gz user@backup-host:/backups/
+```
+
+Run this on a schedule with `cron` or a systemd timer. Test a restore before you need it.
+
+Free object storage tiers exist, but egress and request limits apply. A small backup archive is usually cheap; a media-heavy `files/` directory may not be.
+
+---
+
+## 7. Cost traps
+
+| Trap | Why it bites |
+|---|---|
+| Ephemeral container filesystem | Data disappears on redeploy |
+| Free database that expires | Surprise migration under pressure |
+| Managed PostgreSQL minimums | Storage, backups, and connections add up |
+| Media uploads | Disk and egress grow with every file |
+| Always-on requirement | Free tiers may sleep or throttle |
+| Custom domain | Registration and renewal fees |
+| Email delivery | Transactional email is usually paid at volume |
+| Multiple environments | Each replica needs its own volume and resources |
+
+---
+
+## 8. Minimal checklist
+
+- [ ] Use `senthil455/cms-mono:latest`, not a source build.
+- [ ] Start with SQLite and one volume.
+- [ ] Give the container at least 1 GB RAM.
+- [ ] Set `FRONTEND_URL` to the exact public origin.
+- [ ] Set `SESSION_SECRET`.
+- [ ] Add a free Gemini key only if you need AI features.
+- [ ] Schedule volume backups to another host.
+- [ ] Test the restore path.
+- [ ] Check the provider's current free-tier limits before launch.
+- [ ] Move to PostgreSQL and a paid tier before real traffic.
+
+---
+
+## 9. Related documentation
+
+- [Docker Deployment](../docs/wiki/Docker-Deployment.md)
+- [Migration Guide](../docs/migration-guide.md)
+- [Setup](../docs/wiki/Setup.md)
+- [Docker Hub listing](./DOCKERHUB.md)

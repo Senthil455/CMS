@@ -1,280 +1,301 @@
-# CMS Mono-Deploy Build Guide
+# Local Single-Image Deployment
 
-This directory contains scripts and configurations for building and deploying the CMS mono-repo application (CMS .NET + CMS Node.js) as a single Docker container.
+This directory builds and runs CMS as one container: Nginx on `5000`, the Node/Fastify service on `3001`, and the ASP.NET Core CMS on `5001`.
 
-## Quick Start
-
-```bash
-# Fast build (recommended for development)
-./build-fast.sh
-./reload.sh
-
-# Access the application
-open http://localhost:5000
-```
-
-## Build Methods
-
-### 1. Fast Build (Recommended for Development)
-
-**Script:** `build-fast.sh`  
-**Dockerfile:** `Dockerfile.fast`
-
-Builds the application locally first, then copies pre-built artifacts into Docker. This is **significantly faster** because:
-- Leverages local build cache
-- Doesn't rebuild unchanged code
-- Skips dependency installation in Docker
-
-**Usage:**
-```bash
-./build-fast.sh
-```
-
-**What it does:**
-1. Builds CMS (Frontend + Backend) locally using `npm`
-2. Publishes CMS (.NET) locally using `dotnet publish`
-3. Creates Docker image with pre-built artifacts
-4. Tags as `cms-mono-deploy:latest`
-
-**Requirements:**
-- Node.js 24+ installed locally
-- .NET 10 SDK installed locally
-- npm dependencies installed
-
-**Build time:** ~30-60 seconds (after first build)
+> **Source boundary:** the .NET CMS source is not in this repository. `build-fast.sh` expects a sibling checkout at `$REPO_ROOT/CMS` and a published `CMS/publish` directory. Pulling `senthil455/cms-mono:latest` avoids both requirements.
 
 ---
 
-### 2. Production Build (Multi-Architecture)
+## 1. Quick start (published image)
 
-**Script:** `build.sh`  
-**Dockerfile:** `Dockerfile`
-
-Builds everything inside Docker using multi-stage builds. Supports **cross-platform builds** for different architectures (amd64, arm64).
-
-**Usage:**
-
-**Single architecture (current platform):**
 ```bash
-./build.sh
+docker run -d \
+  --name cms \
+  -p 5000:5000 \
+  -v cms_data:/data \
+  -e DATABASE_PROVIDER=0 \
+  -e "CONNECTION_STRING=Data Source=/data/cms.db" \
+  -e CMS_DATA_PATH=/data \
+  -e "DATABASE_URL=file:/data/app/sqlite.db" \
+  senthil455/cms-mono:latest
 ```
 
-**Multi-architecture (amd64 + arm64):**
-```bash
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t cms-mono-deploy:latest \
-  -f Dockerfile \
-  --push \
-  ../..
-```
+Open **http://localhost:5000/app/** and complete the setup wizard:
 
-**What it does:**
-1. Stage 1: Builds CMS (Node.js) inside Docker
-2. Stage 2: Builds CMS (.NET) inside Docker
-3. Stage 3: Creates final runtime image with both applications
-4. Supports multi-architecture builds via Docker Buildx
+1. Confirm SQLite (or enter another provider).
+2. Create the Super Admin.
+3. Add a Gemini or OpenAI key under **Settings → AI Providers**.
 
-**Requirements:**
-- Docker with Buildx support
-- No local dependencies needed
-
-**Build time:** ~5-10 minutes (first build)
+Without `-v cms_data:/data`, all data is lost when the container is removed.
 
 ---
 
-## Configuration
+## 2. Compose with PostgreSQL
 
-### Environment Variables
+`docker-compose.yml` starts two services:
 
-Configure the application via `docker-compose.yml`:
+- `app` — the CMS image, built locally or supplied as `cms-mono-deploy:latest`;
+- `db` — PostgreSQL 15 with a `postgres_data` volume.
 
-```yaml
-environment:
-  # Database Configuration
-  - DATABASE_PROVIDER=1  # 0=SQLite, 1=Postgres, 2=SqlServer, 3=MySQL
-  - CONNECTION_STRING=Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;
-  - CMS_CONFIG_PATH=/config/cms.settings.json
-
-  # Node.js Configuration
-  - PORT=3001
-  - CMS_BASE_URL=http://localhost:5000
-  - DATABASE_URL=file:/app/packages/backend/data/sqlite.db
-
-volumes:
-  - cms_config:/config
+```bash
+docker compose up -d
+docker compose logs -f app
 ```
 
-### Database Providers
+Default ports:
 
-**PostgreSQL (default):**
+| Variable | Default | Purpose |
+|---|---|---|
+| `APP_PORT` | `5000` | Published gateway port |
+| `DB_PORT` | `5432` | Published PostgreSQL port |
+
+```bash
+APP_PORT=8080 DB_PORT=5433 docker compose up -d
+```
+
+The Compose file sets both CMS-style and .NET-style database variables:
+
 ```yaml
 - DATABASE_PROVIDER=1
 - CONNECTION_STRING=Host=db;Port=5432;Database=cms;Username=postgres;Password=postgres;
+- DatabaseProvider=Postgres
+- "ConnectionStrings__Postgres=Host=db;Database=cms;Username=postgres;Password=postgres;"
 ```
 
-**MySQL:**
-```yaml
-- DATABASE_PROVIDER=3
-- CONNECTION_STRING=Server=db;Port=3306;Database=cms;User=root;Password=mysql;
-```
+`entrypoint.sh` writes `DATABASE_PROVIDER` and `CONNECTION_STRING` into `cms.settings.json`. Keep the two styles consistent.
 
-**SQLite:**
-```yaml
-- DATABASE_PROVIDER=0
-- CONNECTION_STRING=Data Source=/app/data/cms.db
-```
+Change the default PostgreSQL password before exposing the service.
 
 ---
 
-## Deployment
+## 3. Files in this directory
 
-### Local Development
+| File | Purpose |
+|---|---|
+| `Dockerfile` | Two stages: Node 24 build/copy, then the .NET 10 ASP.NET runtime with Node, Nginx, `tsx`, and ffmpeg |
+| `docker-compose.yml` | App + PostgreSQL, `/data` volume, `APP_PORT` / `DB_PORT` |
+| `entrypoint.sh` | Writes CMS settings, renders the Nginx body-size limit, starts Nginx, runs Prisma `db push`, starts `tsx`, runs the .NET loop |
+| `nginx.conf` | Port 5000 gateway and route table |
+| `build-fast.sh` | Builds workspaces locally, publishes the external .NET app, then runs `docker build` |
+| `reload.sh` | Recreates the `app` service and publishes it on **port 8001** |
+| `reload_zen.sh` | Recreates a `zen` Compose project on **port 8000**, PostgreSQL on `5433` |
+| `404.html` | Static 404 page |
+
+There is **no** `build.sh` and **no** `Dockerfile.fast` in this checkout. Older docs referenced both; use `build-fast.sh` and `Dockerfile`.
+
+---
+
+## 4. Building the image locally
+
+### 4.1 Fast build
 
 ```bash
-# Build and start
 ./build-fast.sh
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Reload after changes
 ./reload.sh
 ```
 
-### Production Deployment
+`build-fast.sh` performs these steps:
 
-**1. Build multi-architecture image:**
+1. `cd "$REPO_ROOT/CMS"` and `npm install`.
+2. Build `@cms/shared`, `@cms/app`, `@cms/admin`, `@cms/portal`, and `@cms/stash`.
+3. `cd packages/service`, install dependencies, run `npx prisma generate`, and `npm run build`.
+4. `dotnet publish server/CMS.MonoApp/CMS.MonoApp.csproj -c Release -o ./publish` in the external CMS checkout.
+5. `docker build -t cms-mono-deploy:latest -f Dockerfile "$REPO_ROOT"`.
+
+Requirements:
+
+- Node.js 24 and npm;
+- the .NET 10 SDK;
+- a sibling `CMS` checkout containing `server/CMS.MonoApp`;
+- enough disk space for the Node and .NET artifacts.
+
+### 4.2 Path assumptions (read before building)
+
+The scripts and the Dockerfile assume a layout like this:
+
+```text
+<parent>/
+├── CMS/                     ← repository folder, uppercase
+│   ├── packages/
+│   ├── publish/             ← dotnet publish output
+│   └── mono-deploy-local/
+└── ...
+```
+
+`build-fast.sh` computes:
+
 ```bash
-docker buildx create --use
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t senthil455/cms-mono:latest \
-  -f Dockerfile \
-  --push \
-  ../..
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$SCRIPT_DIR/../.."
+cd "$REPO_ROOT/CMS"
 ```
 
-**2. Deploy to server:**
-```bash
-# Pull image
-docker pull senthil455/cms-mono:latest
+If the checkout folder is named `formmate`, the script looks for `<parent>/CMS`, not `<parent>/formmate`. Either rename the checkout to `CMS` for the build, create a symlink, or use the published image.
 
-# Run with docker-compose
-docker-compose up -d
-```
+The Dockerfile uses `COPY CMS/package.json`, `COPY CMS/packages/...`, and `COPY CMS/publish`, so the Docker build context must be the **parent** directory that contains `CMS/`.
 
----
+Compose is stricter on case-sensitive systems:
 
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│         Nginx (Port 5000)               │
-│  ┌───────────────────────────────────┐  │
-│  │  /          → CMS (.NET:5001) │  │
-│  │  /app/     → CMS (Node:3001)│  │
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
-         │                    │
-         ▼                    ▼
-   ┌──────────┐        ┌──────────┐
-   │ CMS  │        │ CMS │
-   │ (.NET 10)│        │ (Node 24)│
-   └──────────┘        └──────────┘
-         │                    │
-         └────────┬───────────┘
-                  ▼
-          ┌──────────────┐
-          │  PostgreSQL  │
-          │  (Port 5432) │
-          └──────────────┘
-```
-
----
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `build-fast.sh` | Fast build script (local build + Docker) |
-| `build.sh` | Production build script (all in Docker) |
-| `Dockerfile.fast` | Fast build Dockerfile |
-| `Dockerfile` | Production multi-stage Dockerfile |
-| `docker-compose.yml` | Container orchestration |
-| `entrypoint.sh` | Container startup script |
-| `nginx.conf` | Nginx reverse proxy configuration |
-| `reload.sh` | Reload container with latest image |
-
----
-
-## Troubleshooting
-
-### Build fails with "dist not found"
-
-**Issue:** `.dockerignore` is excluding dist directories
-
-**Fix:** Ensure `.dockerignore` allows dist directories:
-```bash
-# Comment out these lines in ../../.dockerignore
-# **/dist
-# cms/packages/*/dist
-```
-
-### .NET version mismatch
-
-**Issue:** Container has .NET 8.0 but app needs 10.0
-
-**Fix:** Update base image in Dockerfile:
-```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
-```
-
-### Database connection fails
-
-**Issue:** App tries to connect to localhost instead of Docker service
-
-**Fix:** Verify `CONNECTION_STRING` uses service name:
 ```yaml
-CONNECTION_STRING=Host=db;Port=5432;...  # Use 'db', not 'localhost'
+build:
+  context: ../../
+  dockerfile: cms/mono-deploy-local/Dockerfile
 ```
 
----
+It expects a lowercase `cms/` directory in the parent, while `build-fast.sh` expects uppercase `CMS/`. On Linux, at most one of the two paths can resolve. On Windows and macOS the filesystem is usually case-insensitive, so both may appear to work.
 
-## First-Time Setup
+If you do not need a local build, use the published image and skip this section.
 
-1. **Start the application:**
-   ```bash
-   ./build-fast.sh
-   docker-compose up -d
-   ```
+### 4.3 Multi-architecture publishing
 
-2. **Access system settings:**
-   - Navigate to `http://localhost:5000/app/settings`
-   - The system will automatically check database connectivity.
+Use [`mono-deploy-hub/build-multiarch.sh`](../mono-deploy-hub/build-multiarch.sh):
 
-3. **Create first admin:**
-   - Since the database is pre-configured via environment variables, you will be redirected to create the Super Admin.
-   - Enter your email and password.
-   - Click "Create Admin".
-   - Log in and start using CMS.
+```bash
+cd ../mono-deploy-hub
+./build-multiarch.sh
+```
 
-4. **Reconfiguration (if needed):**
-   - If you need to change the database connection later:
-     - Delete the persistent config file: `docker exec -it <container> rm /config/cms.settings.json`
-     - Restart the container.
-     - The app will re-enter setup mode (or regenerate config from env vars).
+It has the same sibling-`CMS` assumptions, creates a Buildx builder named `cms-multiarch`, and pushes `senthil455/cms-mono` for `linux/amd64,linux/arm64` by default.
 
 ---
 
-## Performance Comparison
+## 5. Nginx routes
 
-| Build Method | First Build | Incremental Build | Multi-Arch Support |
-|--------------|-------------|-------------------|-------------------|
-| Fast Build   | ~2-3 min    | ~30-60 sec       | ❌ No             |
-| Production   | ~5-10 min   | ~3-5 min         | ✅ Yes            |
+`nginx.conf` listens on `5000`:
 
-**Recommendation:**
-- **Development:** Use `build-fast.sh` for rapid iteration
-- **Production:** Use `build.sh` with Buildx for deployment
+| Location | Upstream | Notes |
+|---|---|---|
+| `~ ^/(app\|admin\|portal\|stash\|cmsapi\|static)/` | Node `127.0.0.1:3001` | Trailing slash required |
+| `~ ^/files/` | .NET `127.0.0.1:5001` | Uploaded assets |
+| `/api/` | .NET `127.0.0.1:5001` | CMS REST API; 502 is converted to 503 |
+| `/` | .NET `127.0.0.1:5001` | CMS UI, setup, generated pages, `/graphql` |
+
+WebSocket upgrade headers are configured globally, so Socket.IO works at `/cmsapi/socket.io`.
+
+Consequences:
+
+- `/app` without a trailing slash falls through to the CMS, not the Studio.
+- `/graphql` is served directly by the CMS in this image; the Fastify proxy is only used during local development.
+- During a .NET restart, `/api` returns `503` with `Retry-After: 3` instead of a raw 502.
+
+---
+
+## 6. Environment variables
+
+| Variable | Default | Used by |
+|---|---|---|
+| `DATABASE_PROVIDER` | `0` in entrypoint, `1` in Compose | CMS: `0`=SQLite, `1`=Postgres, `2`=SqlServer, `3`=MySQL |
+| `CONNECTION_STRING` | `Data Source=cms.db` | CMS |
+| `CMS_DATA_PATH` | unset → `/app/cms/cms.settings.json` | Entrypoint config path |
+| `CMS_MAX_REQUEST_SIZE` | `50000000` | Nginx `client_max_body_size` |
+| `MASTER_PASSWORD` | empty | Optional CMS setup password |
+| `PORT` | `3001` | Fastify |
+| `NODE_ENV` | `production` in Compose | Fastify |
+| `CMS_BASE_URL` | `http://127.0.0.1:5001` | Fastify upstream |
+| `DATABASE_URL` | `file:/app/packages/service/sessions.db` | Prisma and sessions |
+| `FRONTEND_URL` | `http://127.0.0.1:3001` | CORS / Socket.IO allowlist |
+| `SESSION_SECRET` | development fallback | Session signing; set it in production |
+
+The browser reaches the app through Nginx on `5000`. In production, set `FRONTEND_URL` to the public origin (for example `https://cms.example.com`), not `127.0.0.1:3001`.
+
+---
+
+## 7. Start sequence and volumes
+
+`entrypoint.sh`:
+
+1. defaults the environment variables;
+2. writes `$CMS_DATA_PATH/config/cms.settings.json` if missing;
+3. substitutes `__MAX_REQUEST_SIZE__` in `/etc/nginx/nginx.conf`;
+4. starts Nginx;
+5. runs `npx prisma db push --accept-data-loss` and starts `tsx src/index.ts &`;
+6. runs `dotnet CMS.MonoApp.dll --urls http://127.0.0.1:5001` in a loop, restarting after one second.
+
+The `/data` volume holds:
+
+| Path | Contents |
+|---|---|
+| `config/cms.settings.json` | CMS database configuration |
+| `cms.db` | CMS SQLite database (when configured here) |
+| `app/sqlite.db` | Fastify service database |
+| `files/` | Uploaded assets |
+| `apps/` | Uploaded SPA bundles |
+
+Service sessions live in `/app/packages/service/sessions.db`, outside `/data`, and are lost when the container is recreated.
+
+Reset behavior:
+
+```bash
+docker compose down       # keeps volumes
+docker compose down -v    # deletes volumes
+```
+
+Reset only the CMS configuration:
+
+```bash
+docker compose exec app rm /data/config/cms.settings.json
+docker compose restart app
+```
+
+`--accept-data-loss` means Prisma can drop service columns or data during an upgrade. Back up `/data/app/sqlite.db` first.
+
+---
+
+## 8. Reload scripts
+
+`reload.sh`:
+
+```bash
+docker compose stop app
+docker compose rm -f app
+docker compose up -d app
+```
+
+It exports `APP_PORT=8001`, so the reloaded stack is available at `http://localhost:8001`, not `5000`.
+
+`reload_zen.sh` sets:
+
+```bash
+COMPOSE_PROJECT_NAME=zen
+APP_PORT=8000
+DB_PORT=5433
+```
+
+and is intended for a second, isolated environment.
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | Cause | Action |
+|---|---|---|
+| `COPY failed: ... CMS/package.json not found` | Build context does not contain a sibling `CMS/` checkout | Build from the parent with the checkout present, or use the published image |
+| `dotnet: CMS.MonoApp.dll not found` | `CMS/publish` was not produced | Publish the external CMS project before building |
+| `/app` shows the CMS UI | Missing trailing slash | Use `/app/` |
+| 502 on `/api` | .NET crashed or is restarting | `docker compose logs app`; wait for the loop |
+| 503 "system is restarting" | Nginx intercepted a 502 on `/api` | Refresh after a few seconds |
+| Chat unauthorized | Cookie/host mismatch or missing `FRONTEND_URL` | Use one origin; set `FRONTEND_URL` to it |
+| Prisma error on start | Service DB permissions or schema drift | Check `/data` ownership; back up before rerunning |
+| Uploads fail with 413 | Body exceeds `CMS_MAX_REQUEST_SIZE` | Raise it and restart |
+| Setup wizard repeats | Config not persisted | Mount `/data` and keep `CMS_DATA_PATH` stable |
+| `reload.sh` opens the wrong port | It sets `APP_PORT=8001` | Use `http://localhost:8001` or unset the override |
+
+---
+
+## 10. Security
+
+- Set `SESSION_SECRET` explicitly.
+- Terminate TLS in front of port `5000`; the service cookie is `secure: false` by default.
+- Change the default PostgreSQL credentials.
+- Restrict access to `/app/` and `/cmsapi`; the service authenticates but does not enforce CMS roles.
+- AI keys are stored in plaintext in `/data/app/sqlite.db`.
+- Do not publish port `5001`; it is the internal .NET listener.
+
+---
+
+## 11. Related documentation
+
+- [Docker Deployment](../docs/wiki/Docker-Deployment.md)
+- [Migration Guide](../docs/migration-guide.md)
+- [Architecture](../docs/wiki/Architecture.md)
+- [Repository Structure](../docs/wiki/Repository-Structure.md)
