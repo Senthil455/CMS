@@ -1,499 +1,248 @@
-# Antigravity + CMS Integration Workflow
+# AI Coding Agents and CMS
 
-This document outlines how developers can use Antigravity (AI code agent) with CMS to build full-stack applications, and proposes enhancements for seamless integration.
+This page describes how an AI coding agent such as Antigravity can work with CMS **today**, what the repository actually exposes, and which integrations are still proposals.
 
-## Current Workflow (Manual)
-
-### How It Works Today
-
-**Step 1: Generate Backend in CMS UI**
-```
-1. Developer opens CMS UI (http://localhost:5000/app)
-2. Uses AI to generate schema: "Create a blog with posts and authors"
-3. CMS generates entities, relationships, queries
-4. Developer gets API endpoints: /api/posts, /api/authors
-```
-
-**Step 2: Build Frontend with Antigravity**
-```
-1. Developer opens Antigravity
-2. Tells Antigravity: "Build a React blog that calls these APIs:
-   - GET /api/posts
-   - POST /api/posts
-   - GET /api/authors"
-3. Antigravity generates React components
-4. Developer has working full-stack app
-```
-
-### Pros & Cons
-
-**Pros:**
-- ✅ Works today with no changes
-- ✅ Developer has full control over each step
-- ✅ Can review backend schema before generating frontend
-- ✅ Separation of concerns
-
-**Cons:**
-- ❌ Manual copy-paste of API endpoints
-- ❌ Context switching between UIs
-- ❌ Slower iteration cycle
-- ❌ Antigravity doesn't know backend schema details
+> **Short version:** CMS already contains an in-product AI builder (the Studio at `/app/`). An external coding agent can build a frontend against the CMS REST/GraphQL APIs and can read the schemas those APIs expose. There is **no** public "generate a schema from a prompt" REST endpoint, **no** published npm SDK, and **no** MCP server in this repository.
 
 ---
 
-## Proposed Workflow (Integrated)
+## 1. What ships today
 
-### Vision: One Conversation, Full-Stack App
+### 1.1 In-product AI builder (Studio)
 
-**User tells Antigravity:**
-```
-"Build me a blog app with posts, authors, and categories.
-Users should be able to create posts, view posts, and filter by category."
-```
+The AI workflow is implemented inside this repository as the Fastify service plus the Studio UI:
 
-**Antigravity orchestrates everything:**
-```typescript
-// 1. Generate backend schema via CMS API
-const schema = await cms.generateSchema({
-  prompt: "Blog with posts, authors, categories"
-});
+| Capability | Where it lives | Status |
+|---|---|---|
+| Chat with specialist agents | `packages/service/src/agent/` + Socket.IO | ✅ Shipped |
+| Entity design and relationship changes | `entity_designer` agent, CMS `/api/schemas*` | ✅ Shipped |
+| Sample-data generation | `data_synthesizer` agent, `/cmsapi/ai/generate-data` | ✅ Shipped |
+| GraphQL query generation and REST endpoint creation | `query_builder` agent | ✅ Shipped |
+| Page planning, layout, and component HTML | `page_planner`, `page_architect`, page-component agents | ✅ Shipped |
+| Multi-step app planning | `system_architect` agent, global task queue | ✅ Shipped |
+| Replay and manual task execution | `@replay`, `@execute-task` chat commands | ✅ Shipped |
 
-// 2. Generate queries via CMS API
-const queries = await cms.generateQueries({
-  schemaId: schema.id,
-  operations: ["create", "read", "update", "delete", "filter"]
-});
+The browser talks to the service over REST and Socket.IO under `/cmsapi`. The service validates the upstream CMS session cookie and calls the CMS `/api` routes on the user's behalf. See [API Reference](./wiki/API-Reference.md) for the full route and event inventory.
 
-// 3. Generate React frontend (Antigravity's expertise)
-const components = await antigravity.generateComponents({
-  apiEndpoint: cms.getEndpoint(schema.id),
-  schema: schema,
-  queries: queries
-});
+The agents do **not** expose a stable, documented generation API. They are driven by the Studio chat protocol:
 
-// 4. Deploy everything
-await deploy({ backend: schema, frontend: components });
+```text
+POST /cmsapi/chat/...          (history, status, cancel)
+Socket.IO /cmsapi/socket.io    (chat:send_message, chat:message_received, ...)
 ```
 
-**Result:** Working full-stack app in one conversation
+An external agent can technically speak this protocol if it has a valid CMS session cookie, but it is an internal studio contract, not a public API. Prefer the route below.
 
-### Benefits
+### 1.2 External frontend workflow (recommended)
 
-- ✅ No context switching
-- ✅ Faster iteration (minutes vs hours)
-- ✅ Antigravity has full backend context
-- ✅ Consistent API usage across frontend
-- ✅ Better error handling (Antigravity knows schema constraints)
+This is the supported integration path and does not require any CMS code changes:
+
+1. Run CMS (Docker image or your own deployment) on port `5000`.
+2. Create entities, records, and queries in the Studio.
+3. Start an external frontend (Vite, Next.js, etc.) and proxy `/api`, `/graphql`, and `/files` to CMS.
+4. Give your coding agent the concrete API contract:
+   - entity name and field list,
+   - endpoint (`/api/entities/<name>`, `/api/queries/<id>`),
+   - GraphQL schema (introspection),
+   - authentication requirements (`credentials: 'include'`).
+
+```text
+GET  /api/entities/:schemaName
+POST /api/entities/:schemaName/insert
+POST /api/entities/:schemaName/update
+POST /api/entities/:schemaName/delete
+GET  /api/queries/:id
+POST /graphql
+```
+
+The full walkthrough, including login and Vite proxy configuration, is in [Building an External Frontend](./wiki/Vite-React-Antigravity-Example.md).
+
+### 1.3 Schema discovery for agents
+
+The CMS exposes enough information for an agent to discover the data model without reading backend source:
+
+| Source | What it returns |
+|---|---|
+| `GET /api/schemas?type=` | Schema list |
+| `GET /api/schemas/entity/:entityName` | Entity schema by name |
+| `GET /api/schemas/:id` | Schema by ID |
+| `POST /graphql` (introspection) | Full GraphQL type system |
+| Studio API tester / GraphiQL | Interactive inspection |
+
+A useful agent prompt looks like this:
+
+> *"Read the CMS schema for the `book` entity via `/api/schemas/entity/book`. Then build a `BookList` page using `/api/entities/book`. Fields are `id`, `title`, `price`, `coverImage.url`. Use `credentials: 'include'` and handle loading, empty, and error states."*
+
+The exact response envelope is owned by the CMS, which is not in this repository. Inspect a real response before hard-coding types.
+
+### 1.4 Repository-local agent configuration
+
+The repository contains agent-facing notes and a skill:
+
+| Path | Purpose | Accuracy |
+|---|---|---|
+| `.agent/skills/cms-react-app/SKILL.md` | Patterns for external React apps: auth, entity APIs, named queries | ✅ Matches the API constants |
+| `.antigravity/monorepo.structure.yaml` | Workspace map for agents | ✅ Updated to the real packages |
+| `.antigravity/shared.contracts.md` | Endpoint and socket-event ownership | ✅ Updated to `packages/shared/src` |
+| `.antigravity/backend.fastify.md` | Fastify layering rules | ✅ Updated to `packages/service` |
+
+These files are guidance, not executable tooling. They do not give an external agent access to the CMS by themselves.
+
+### 1.5 `@cms/sdk`
+
+`packages/sdk` is an internal React integration layer:
+
+- consumed directly as TypeScript source by Admin, Portal, and Stash;
+- `package.json` points `main` and `types` at `index.ts`;
+- it has **no build script** and is **not published to npm**.
+
+An external project can copy patterns from it, but should not expect `npm install @cms/sdk` to resolve to this workspace.
 
 ---
 
-## Implementation Options
+## 2. What does not exist
 
-### Option 1: CMS REST API (Recommended)
+Be explicit about these gaps when planning agent integration:
 
-**Add these endpoints to CMS:**
+| Proposal | Reality |
+|---|---|
+| `POST /api/ai/schema/generate` | Not implemented. Schema generation runs through the Studio chat pipeline. |
+| `POST /api/ai/query/generate` | Not implemented as a standalone route. Query generation runs through the `query_builder` agent. |
+| Public SDK package | `@cms/sdk` is a private, source-only workspace. |
+| MCP server | No MCP server, manifest, or tool schema exists in this repository. |
+| Stable agent-generation REST contract | The Studio's `/cmsapi` routes and socket events are internal and can change. |
+| Automatic full-stack deployment | No deploy orchestration. Pages are stored by the CMS; frontend source stays in your repository. |
 
-#### Generate Schema
-```http
-POST /api/ai/schema/generate
-Content-Type: application/json
-
-{
-  "prompt": "Blog with posts, authors, and categories",
-  "geminiApiKey": "optional-override"
-}
-
-Response:
-{
-  "success": true,
-  "data": {
-    "schemaId": "post-123",
-    "name": "Post",
-    "fields": [
-      { "name": "title", "type": "string", "required": true },
-      { "name": "content", "type": "text", "required": true },
-      { "name": "authorId", "type": "reference", "ref": "Author" }
-    ],
-    "endpoints": {
-      "list": "/api/posts",
-      "get": "/api/posts/:id",
-      "create": "/api/posts",
-      "update": "/api/posts/:id",
-      "delete": "/api/posts/:id"
-    }
-  }
-}
-```
-
-#### Generate Query
-```http
-POST /api/ai/query/generate
-Content-Type: application/json
-
-{
-  "schemaId": "post-123",
-  "prompt": "Get all posts with author, sorted by date descending"
-}
-
-Response:
-{
-  "success": true,
-  "data": {
-    "queryId": "recent-posts",
-    "endpoint": "/api/queries/recent-posts",
-    "graphql": "query { posts(orderBy: createdAt_DESC) { id title author { name } } }"
-  }
-}
-```
-
-#### Get Schema Details
-```http
-GET /api/schemas/:schemaId
-
-Response:
-{
-  "success": true,
-  "data": {
-    "id": "post-123",
-    "name": "Post",
-    "fields": [...],
-    "relationships": [...],
-    "endpoints": {...}
-  }
-}
-```
-
-**Antigravity Integration:**
-```typescript
-// Antigravity can call these APIs directly
-const response = await fetch('http://localhost:5000/api/ai/schema/generate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    prompt: userRequest
-  })
-});
-
-const { schemaId, endpoints } = await response.json();
-
-// Now generate React code using these endpoints
-```
+The upstream CMS owns `/api/schemas*`, `/api/entities*`, `/api/queries*`, and `/graphql`. Those routes are consumed by the Studio, but their implementation and response envelopes cannot be verified from this checkout.
 
 ---
 
-### Option 2: CMS TypeScript SDK
+## 3. Integrating an external agent, step by step
 
-**Create an npm package:**
+### Step 1 — Provision the backend
+
+Use the published image or your own CMS deployment:
 
 ```bash
-npm install @cms/sdk
+docker run -d \
+  --name cms \
+  -p 5000:5000 \
+  -v cms_data:/data \
+  -e DATABASE_PROVIDER=0 \
+  -e "CONNECTION_STRING=Data Source=/data/cms.db" \
+  -e CMS_DATA_PATH=/data \
+  -e "DATABASE_URL=file:/data/app/sqlite.db" \
+  senthil455/cms-mono:latest
 ```
 
-**SDK Usage:**
-```typescript
-import { CMS } from '@cms/sdk';
+Open `http://localhost:5000/app/`, create the Super Admin, add an AI key under **Settings → AI Providers**, and build the data model.
 
-const cms = new CMS({
-  baseUrl: 'http://localhost:5000',
-  apiKey: process.env.CMS_API_KEY
-});
+### Step 2 — Create the schema (Studio, not an API call)
 
-// Generate schema
-const schema = await cms.ai.generateSchema({
-  prompt: "Blog with posts and authors"
-});
+Use the Studio chat or the visual editors. For example:
 
-// Generate query
-const query = await cms.ai.generateQuery({
-  schemaId: schema.id,
-  prompt: "Get recent posts with authors"
-});
+> *"Design a library system with books, authors, and loans. Add sample data for books. Create a query that lists available books."*
 
-// Get endpoints
-const endpoints = cms.getEndpoints(schema.id);
-// { list: '/api/posts', create: '/api/posts', ... }
+The agents write through the CMS API and sync the resulting schemas back to the Studio.
+
+### Step 3 — Export the contract
+
+Record the parts the external agent needs:
+
+```text
+Entity: book
+Fields: id, title, price, coverImage { url }, authorId
+List:   GET /api/entities/book
+Query:  GET /api/queries/<queryId>
+GraphQL: POST /graphql
+Auth:   cookie session; send credentials on every request
 ```
 
-**Antigravity Integration:**
-```typescript
-// Antigravity uses the SDK
-import { CMS } from '@cms/sdk';
+You can obtain field names from the Studio, from `/api/schemas/entity/book`, or from GraphQL introspection.
 
-async function buildFullStackApp(userPrompt: string) {
-  const cms = new CMS({ 
-    baseUrl: process.env.CMS_URL 
-  });
-  
-  // Generate backend
-  const schema = await cms.ai.generateSchema({ prompt: userPrompt });
-  
-  // Generate React frontend
-  const components = await generateReactComponents({
-    apiEndpoint: cms.getEndpoints(schema.id),
-    schema: schema.toTypeScript() // Get TypeScript types
-  });
-  
-  return { backend: schema, frontend: components };
+### Step 4 — Generate the frontend
+
+Point the coding agent at a local proxy so cookies stay same-origin:
+
+```typescript
+// vite.config.ts
+server: {
+  proxy: {
+    '/api': { target: 'http://127.0.0.1:5000', changeOrigin: true },
+    '/graphql': { target: 'http://127.0.0.1:5000', changeOrigin: true },
+    '/files': { target: 'http://127.0.0.1:5000', changeOrigin: true },
+  },
 }
 ```
 
----
+Then give it the contract from Step 3. Keep the agent focused on the frontend; the backend already exists.
 
-### Option 3: MCP Server (Model Context Protocol)
+### Step 5 — Iterate
 
-**CMS exposes an MCP server:**
-
-```typescript
-// CMS MCP Server
-const cmsMCP = {
-  name: "cms",
-  version: "1.0.0",
-  
-  tools: [
-    {
-      name: "generate_schema",
-      description: "Generate a database schema from natural language",
-      inputSchema: {
-        type: "object",
-        properties: {
-          prompt: { type: "string", description: "Natural language description" }
-        }
-      }
-    },
-    {
-      name: "generate_query",
-      description: "Generate a query for a schema",
-      inputSchema: {
-        type: "object",
-        properties: {
-          schemaId: { type: "string" },
-          prompt: { type: "string" }
-        }
-      }
-    },
-    {
-      name: "get_endpoints",
-      description: "Get REST API endpoints for a schema",
-      inputSchema: {
-        type: "object",
-        properties: {
-          schemaId: { type: "string" }
-        }
-      }
-    }
-  ]
-};
+```text
+Studio: change schema or query
+  → re-read the schema contract
+  → update frontend types and components
+  → rebuild and deploy the frontend
 ```
 
-**Antigravity uses MCP:**
-```
-User: "Build a blog app with posts and authors"
-
-Antigravity thinks: I need to create the backend first
-Antigravity: [Calls cms.generate_schema("blog with posts and authors")]
-CMS MCP: Returns { schemaId: "blog-123", fields: [...], endpoints: {...} }
-
-Antigravity thinks: Now I'll generate the React frontend
-Antigravity: [Generates React code using the endpoints]
-
-Antigravity: "I've created a full-stack blog app. The backend is ready at 
-              http://localhost:5000/api/posts and I've generated React 
-              components in src/components/Blog/"
-```
+Schema and content live in CMS. React source lives in your repository.
 
 ---
 
-## Recommended Implementation Path
+## 4. Design proposals (not implemented)
 
-### Phase 1: REST API Endpoints (Week 1-2)
+The following ideas are reasonable next steps, but none of them are shipped. They are recorded here so they are not mistaken for current behavior.
 
-**Add to CMS:**
-1. `POST /api/ai/schema/generate` - Generate schema from prompt
-2. `POST /api/ai/query/generate` - Generate query from prompt
-3. `GET /api/schemas/:id` - Get schema details
+### Proposal A — Read-only schema export endpoint
 
-**Benefits:**
-- Simple to implement
-- Works with any HTTP client
-- No new dependencies
-- Antigravity can use it immediately
+Add a small, versioned endpoint that returns a machine-readable bundle:
 
-### Phase 2: TypeScript SDK (Week 3-4)
+```json
+{
+  "entities": [{ "name": "book", "fields": ["id", "title", "price"] }],
+  "queries": [{ "id": "available-books", "endpoint": "/api/queries/available-books" }],
+  "graphqlEndpoint": "/graphql"
+}
+```
 
-**Create `@cms/sdk`:**
-1. Wrapper around REST API
-2. TypeScript types for schemas
-3. Helper methods for common operations
-4. Better developer experience
+This would let an external agent bootstrap without scraping the Studio. It would need to live in the CMS (which owns schemas) or be a thin read-only aggregation in the Fastify service.
 
-**Benefits:**
-- Type safety
-- Better autocomplete
-- Easier to use than raw HTTP
-- Can be used in any Node.js/TypeScript project
+### Proposal B — Generation endpoint
 
-### Phase 3: MCP Server (Month 2)
+Wrap the existing orchestrator behind a REST route, for example:
 
-**Implement MCP protocol:**
-1. MCP server in CMS
-2. Tool definitions for AI agents
-3. Documentation for AI integration
+```text
+POST /cmsapi/agent/run
+{ "agent": "entity_designer", "prompt": "Blog with posts and authors" }
+```
 
-**Benefits:**
-- Standard protocol for AI agents
-- Works with any MCP-compatible agent
-- Future-proof
-- Better AI understanding of capabilities
+Risks: long-running work, partial failures, idempotency, and the existing global task queue. This needs a job model and cancellation semantics before it is safe to expose.
+
+### Proposal C — MCP server
+
+An MCP server could expose tools such as `list_schemas`, `get_entity`, `run_query`, and `create_entity`. Nothing in this repository implements MCP today. The CMS REST/GraphQL APIs are the natural backing layer.
+
+### Proposal D — Publish `@cms/sdk`
+
+Publishing would require a build step, a public package name, semver, and a decision about React peer dependencies. The current workspace intentionally avoids all of that.
 
 ---
 
-## Example: Full Workflow
+## 5. Guardrails
 
-### User Request
-```
-"Build a recipe sharing app where users can post recipes, 
-rate them, and search by ingredients"
-```
-
-### Antigravity Execution
-
-**1. Generate Backend (via CMS API)**
-```typescript
-// Antigravity calls CMS
-const schemas = await Promise.all([
-  cms.generateSchema({ prompt: "Recipe with title, instructions, ingredients" }),
-  cms.generateSchema({ prompt: "Rating with stars and comment" }),
-  cms.generateSchema({ prompt: "User with name and email" })
-]);
-
-// CMS returns endpoints
-// /api/recipes, /api/ratings, /api/users
-```
-
-**2. Generate Queries (via CMS API)**
-```typescript
-const queries = await Promise.all([
-  cms.generateQuery({ 
-    schemaId: schemas[0].id, 
-    prompt: "Search recipes by ingredient name" 
-  }),
-  cms.generateQuery({ 
-    schemaId: schemas[0].id, 
-    prompt: "Get top rated recipes" 
-  })
-]);
-
-// CMS returns custom endpoints
-// /api/queries/search-by-ingredient
-// /api/queries/top-rated
-```
-
-**3. Generate React Frontend (Antigravity)**
-```typescript
-// Antigravity generates components
-const components = [
-  'src/components/RecipeCard.tsx',
-  'src/components/RecipeForm.tsx',
-  'src/components/SearchBar.tsx',
-  'src/components/RatingStars.tsx',
-  'src/pages/HomePage.tsx',
-  'src/pages/RecipePage.tsx'
-];
-
-// All components use the CMS API endpoints
-```
-
-**4. Result**
-```
-✅ Backend: CMS with 3 entities, 2 custom queries
-✅ Frontend: React app with 6 components
-✅ Time: ~5 minutes (vs ~5 hours manually)
-```
+- **Authentication:** every CMS call needs a valid session cookie. The service validates it and forwards it upstream; it does not create CMS users.
+- **Authorization:** the Fastify service checks authentication only. It does **not** enforce CMS roles on `/cmsapi` routes. Do not expose the Studio to untrusted users.
+- **Secrets:** AI provider keys are stored in the service SQLite database as plaintext. Never let an agent read `.env` or the database and echo keys into logs.
+- **Destructive actions:** schema deletion, entity deletion, and `prisma db push --accept-data-loss` at container start can destroy data. Require human confirmation.
+- **Generated code:** review it. The agents generate plausible code, not guaranteed-correct code.
 
 ---
 
-## Developer Experience Comparison
+## 6. Related pages
 
-### Manual Workflow
-```
-Time: ~5 hours
-
-1. Open CMS UI (5 min)
-2. Generate schema (10 min)
-3. Test API endpoints (10 min)
-4. Copy endpoint URLs (2 min)
-5. Open code editor (1 min)
-6. Tell Antigravity about APIs (5 min)
-7. Review generated code (15 min)
-8. Fix API integration issues (30 min)
-9. Test full-stack app (20 min)
-10. Deploy (30 min)
-
-Total: ~2 hours (optimistic)
-```
-
-### Integrated Workflow
-```
-Time: ~5 minutes
-
-1. Tell Antigravity: "Build a recipe app with [requirements]"
-2. Antigravity generates everything
-3. Review and deploy
-
-Total: ~5 minutes
-```
-
----
-
-## Next Steps
-
-### For CMS Team
-
-1. **Add REST API endpoints** (Option 1)
-   - Start with `/api/ai/schema/generate`
-   - Add authentication
-   - Document API
-
-2. **Create TypeScript SDK** (Option 2)
-   - Publish to npm as `@cms/sdk`
-   - Add examples
-   - Write documentation
-
-3. **Consider MCP Server** (Option 3)
-   - Research MCP protocol
-   - Implement if beneficial
-   - Integrate with AI agents
-
-### For Antigravity Users
-
-**Today (Manual):**
-```
-1. Use CMS UI to generate backend
-2. Copy API endpoints
-3. Tell Antigravity to build frontend using those endpoints
-```
-
-**Future (Integrated):**
-```
-1. Tell Antigravity to build full-stack app
-2. Antigravity calls CMS API
-3. Done
-```
-
----
-
-## Conclusion
-
-**Best Approach:** Start with **Option 1 (REST API)** because:
-- ✅ Simple to implement
-- ✅ Works immediately with Antigravity
-- ✅ No new dependencies
-- ✅ Foundation for SDK and MCP later
-
-**Impact:**
-- 🚀 10x faster full-stack development
-- 🎯 Better developer experience
-- 🤖 True AI-powered app building
-- 💡 Unique competitive advantage
-
-The combination of CMS (AI backend generation) + Antigravity (AI frontend generation) = **No-code full-stack development** 🎉
+- [Building an External Frontend](./wiki/Vite-React-Antigravity-Example.md) — supported frontend workflow
+- [API Reference](./wiki/API-Reference.md) — `/cmsapi`, Socket.IO, and upstream routes
+- [Repository Structure](./wiki/Repository-Structure.md) — where agents, prompts, and components live
+- [Architecture](./wiki/Architecture.md) — runtime boundary and data ownership
+- [Orchestrator Strategy](./wiki/Orchestrator-Strategy.md) — how the in-product agents actually run

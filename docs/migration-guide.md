@@ -1,160 +1,274 @@
-# Data Migration & Deployment Guide
+# Migration and Host-to-Host Deployment
 
-This guide explains how to migrate your data from a local Docker environment to a remote server and how to deploy the application. This process involves backing up your data from local Docker volumes, transferring the backup files to your server, and restoring them.
+This guide moves a CMS deployment from one Docker host to another. It covers the two data stores that matter and the image itself.
 
-## Overview
+> **Important:** the image build expects an ASP.NET Core CMS checkout that is **not in this repository**. If you use the published image (`senthil455/cms-mono:latest`), you can skip the build section entirely.
 
-A full deployment transfers **three things** to the remote server:
+---
 
-| Artifact | What it contains | How it's transferred |
+## 1. What has to move
+
+| Artifact | Contains | Transfer method |
 |---|---|---|
-| **Docker Image** (`app_image.tar.gz`) | The application code & runtime | `docker save` → SCP → `docker load` |
-| **Data Volume** (`cms_data.tar.gz`) | SQLite DB, uploaded files, config | `tar` from volume → SCP → `tar` into volume |
-| **Postgres Dump** (`cms.sql`) | All Postgres tables & data | `pg_dump` → SCP → `psql` restore |
+| Docker image | Node/Fastify service, .NET CMS, Nginx, ffmpeg | `docker save` → copy → `docker load`, or pull from Docker Hub |
+| CMS data volume | CMS config, uploads, generated apps, SQLite databases | `tar` from a helper container → copy → extract |
+| PostgreSQL dump | CMS relational data when `DATABASE_PROVIDER=1` | `pg_dump` → copy → `psql` restore |
+| Service `sessions.db` | Login sessions for the Fastify service | **Do not migrate**; users sign in again |
 
-## Prerequisites
+`sessions.db` is created in the service working directory (`/app/packages/service` in the image) and is not part of the `/data` volume. Treat it as disposable.
 
-- Local machine with Docker installed and running.
-- Remote server with Docker installed and running.
-- SSH access to the remote server.
-- `rsync` or `scp` for file transfer.
+---
 
-## Step-by-Step Flow
+## 2. Identify the real volume names
 
-```mermaid
-graph TD
-    A[Local Machine] --> B[1. pg_dump Postgres]
-    A --> C[2. tar Data Volume]
-    A --> D[3. Build & Save Image]
-    B --> E[SCP to Server]
-    C --> E
-    D --> E
-    E --> F[4. docker load Image]
-    F --> G[5. Restore Data Volume]
-    G --> H[6. Start DB Container]
-    H --> I[7. dropdb + createdb + psql restore]
-    I --> J[8. Start App Container]
+Compose prefixes volume names with the project name. The default project name is the directory containing the Compose file, unless `COMPOSE_PROJECT_NAME` is set.
+
+```bash
+docker compose ls
+docker volume ls
 ```
 
-### 1. Dump Postgres (`pg_dump`)
-```bash
-docker exec zen-db-1 pg_dump -U postgres cms > cms.sql
-```
-Produces a portable SQL text file of all tables, data, and schema.
+Examples:
 
-### 2. Archive Data Volume
-```bash
-docker run --rm -v zen_cms_data:/volume -v $(pwd)/tmp:/backup \
-  alpine tar cvzf /backup/cms_data.tar.gz -C /volume .
-```
-This volume contains:
-- `app/sqlite.db` — CMS's SQLite database
-- `files/` — User-uploaded images
-- `config/` — Application settings
-- `apps/` — Deployed frontend apps (Zen, Hello, etc.)
+| How it was started | Likely volume names |
+|---|---|
+| `docker compose up` in `mono-deploy-local/` | `mono-deploy-local_cms_data`, `mono-deploy-local_postgres_data` |
+| `COMPOSE_PROJECT_NAME=zen ./reload_zen.sh` | `zen_cms_data`, `zen_postgres_data` |
+| `docker run -v cms_data:/data ...` | `cms_data` |
 
-### 3. Build & Save Image
+Use the names that `docker volume ls` actually shows. The commands below use `CMS_VOLUME` and `PG_VOLUME` variables so you can substitute them once.
+
 ```bash
-./build-fast.sh                                    # Build locally (fast)
+CMS_VOLUME=mono-deploy-local_cms_data
+PG_VOLUME=mono-deploy-local_postgres_data
+```
+
+---
+
+## 3. Back up the source host
+
+### 3.1 PostgreSQL (only if used)
+
+```bash
+docker compose exec -T db pg_dump -U postgres cms > cms.sql
+```
+
+`pg_dump` produces a logical SQL file that is portable across hosts and architectures. Do not copy the PostgreSQL data directory; it is binary, version-specific, and unsafe to snapshot while the server is running.
+
+If your database name or user differs, adjust `-U` and the database argument.
+
+### 3.2 CMS data volume
+
+```bash
+docker run --rm \
+  -v "$CMS_VOLUME":/volume \
+  -v "$PWD":/backup \
+  alpine tar czf /backup/cms_data.tar.gz -C /volume .
+```
+
+The archive can include:
+
+| Path inside `/data` | Contents |
+|---|---|
+| `config/cms.settings.json` | Database provider and connection string written by `entrypoint.sh` |
+| `cms.db` | CMS database when `DATABASE_PROVIDER=0` and the connection string points here |
+| `app/sqlite.db` | Fastify service database (chat history, AI logs, settings, tasks) |
+| `files/` | Uploaded assets |
+| `apps/` | SPA bundles uploaded through **Settings → Frontend Apps** |
+
+The exact SQLite filenames depend on `CONNECTION_STRING` and `DATABASE_URL`. Inspect the volume before assuming:
+
+```bash
+docker run --rm -v "$CMS_VOLUME":/volume alpine ls -laR /volume
+```
+
+### 3.3 Service sessions
+
+Skip `sessions.db`. It lives outside `/data` and contains only session records.
+
+### 3.4 Image
+
+Published image:
+
+```bash
+docker pull senthil455/cms-mono:latest
+```
+
+Self-built image:
+
+```bash
+./build-fast.sh
 docker save cms-mono-deploy:latest | gzip > app_image.tar.gz
 ```
 
-### 4. Load Docker Image on Server
+`build-fast.sh` requires:
+
+- Node 24 and npm;
+- the .NET 10 SDK;
+- a sibling `CMS` checkout with `server/CMS.MonoApp/CMS.MonoApp.csproj`;
+- a repository folder literally named `CMS` (the script does `cd "$REPO_ROOT/CMS"`).
+- the Docker build context to contain `CMS/package.json` and `CMS/publish` (the Dockerfile uses `COPY CMS/...`).
+
+If your checkout is named differently, use the published image or fix the paths before building. See [Docker Deployment](./wiki/Docker-Deployment.md#build-scripts-and-path-assumptions).
+
+### 3.5 Bundle for transfer
+
+```bash
+tar czf cms-transfer.tar.gz cms.sql cms_data.tar.gz app_image.tar.gz
+scp cms-transfer.tar.gz user@server:/srv/cms/
+```
+
+Omit `cms.sql` in SQLite mode and omit `app_image.tar.gz` when pulling the published image.
+
+---
+
+## 4. Restore on the target host
+
+All commands assume the files are in the current directory on the server.
+
+### 4.1 Load the image
+
 ```bash
 docker load -i app_image.tar.gz
+docker images | grep cms-mono
 ```
-`docker load` reads the tar archive and registers it as a local image on the server. After this, `docker images` will show `cms-mono-deploy:latest`.
 
-### 5. Restore Data Volume
+When using Docker Hub instead:
+
 ```bash
-# Stop running containers first
-docker compose down || true
-
-# Create volume if it doesn't exist
-docker volume create zen_cms_data
-
-# Clear and extract
-docker run --rm \
-  -v zen_cms_data:/volume \
-  -v $(pwd):/backup \
-  alpine sh -c "rm -rf /volume/* && tar xvzf /backup/cms_data.tar.gz -C /volume"
+docker pull senthil455/cms-mono:latest
 ```
 
-We use a throwaway Alpine container to mount both the Docker volume and the backup directory, then extract the tar into the volume. The `rm -rf /volume/*` ensures a clean slate.
+### 4.2 Create or reuse the data volume
 
-> [!NOTE]
-> This volume contains only **file-based data** (SQLite, uploads, config). It's safe to copy raw files because these formats are platform-independent. Postgres data is **not** in this volume.
+```bash
+docker volume create "$CMS_VOLUME"
+docker run --rm \
+  -v "$CMS_VOLUME":/volume \
+  -v "$PWD":/backup \
+  alpine sh -c "rm -rf /volume/* && tar xzf /backup/cms_data.tar.gz -C /volume"
+```
 
-### 6. Start Database Container
+`rm -rf /volume/*` gives you a clean target. Do not run it against a volume that already contains data you need.
+
+### 4.3 Start PostgreSQL first (only if used)
+
 ```bash
 docker compose up -d db
-```
-This starts **only** the Postgres container first because we need it running to restore the SQL dump.
-
-### 7. Wait for Postgres & Restore SQL Dump
-```bash
-# Wait until Postgres accepts connections
 until docker compose exec -T db pg_isready -U postgres; do
-    sleep 2
+  sleep 2
 done
+```
 
-# Drop old database, create fresh one, restore dump
+### 4.4 Restore the dump
+
+```bash
 docker compose exec -T db dropdb -U postgres --if-exists cms
 docker compose exec -T db createdb -U postgres cms
 docker compose exec -T db psql -U postgres cms < cms.sql
 ```
 
-**Why `dropdb` + `createdb`?** The `pg_dump` output assumes a clean database. Dropping and recreating guarantees a clean target.
+Notes:
 
-**Why `-T` flag?** Disables pseudo-TTY allocation, which is necessary when running inside an SSH heredoc to prevent consuming the rest of the script as stdin.
+- `-T` disables pseudo-TTY allocation, which is required when restoring over SSH or from a script.
+- `dropdb` + `createdb` guarantees a clean target. Back up the target first if it already has data.
+- Ensure the PostgreSQL major version on the target is the same or newer than the source.
 
-### 8. Start Application Container
+### 4.5 Start the app
+
 ```bash
 docker compose up -d app
+docker compose logs -f app
 ```
-Now that the database is restored and the data volume is in place, start the app container.
+
+The entrypoint:
+
+1. writes `${CMS_DATA_PATH}/config/cms.settings.json` if it is missing;
+2. starts Nginx on port `5000`;
+3. runs `prisma db push --accept-data-loss` and starts the Fastify service on `3001`;
+4. starts the .NET CMS on `5001` in a restart loop.
+
+Because of `--accept-data-loss`, the service database schema can change on startup. Back up `/data/app/sqlite.db` before upgrading an image.
 
 ---
 
-## Why Can't We Simply Copy the Postgres Volume?
+## 5. SQLite-only migration
 
-Postgres stores data in a **binary format** inside its volume (`/var/lib/postgresql/data`). This leads to several issues:
+If you run with `DATABASE_PROVIDER=0`:
 
-1. **Platform-Dependent Binary Format**: Tied to CPU architecture, OS, and version. Copying between Mac Docker VM and a Linux server often causes corruption.
-2. **Consistency**: Copying a volume from a running database can result in partially written transactions.
-3. **The Safe Alternative**: `pg_dump` produces a **logical, portable SQL dump** that is consistent and works across platforms.
+1. Back up the `/data` volume as shown above.
+2. Skip every PostgreSQL step.
+3. Restore the volume.
+4. Start the app.
+
+Keep `CMS_DATA_PATH=/data` and `CONNECTION_STRING=Data Source=/data/cms.db` consistent between hosts. If the old container used a different path, edit `config/cms.settings.json` or delete it and let the entrypoint regenerate it from environment variables.
 
 ---
 
-## The "Bundle" Strategy (Dumping Image & Volume Together)
+## 6. Verification
 
-Docker treats **Images** and **Volumes** as separate entities. While there is no single native command to dump both, you can script a bundled backup:
+Run these checks after the restore:
 
-1.  **Save the Image**: Use `docker save`.
-2.  **Archive the Volume**: Use `tar` in a temporary container.
-3.  **Combine**: Zip them into a single archive.
-
-### Manual Bundle Example
 ```bash
-# 1. Save Image
-docker save -o my-image.tar cms-mono-deploy:latest
+# Gateway and Studio
+curl -I http://localhost:5000/app/
 
-# 2. Backup Volume
-docker run --rm -v zen_cms_data:/volume -v $(pwd):/backup alpine tar cvf /backup/my-volume.tar /volume
+# CMS API through Nginx
+curl -I http://localhost:5000/api/system/is-ready
 
-# 3. Archive Both
-tar cvzf full-backup.tar.gz my-image.tar my-volume.tar
+# Service chat status (may require auth)
+curl -I http://localhost:5000/cmsapi/chat/status
+
+# Container health
+docker compose ps
+docker compose logs --tail=100 app
 ```
+
+Then in a browser:
+
+1. Open `http://<host>:5000/app/`.
+2. Sign in. A fresh session is expected.
+3. Confirm schemas and records are present.
+4. Open a record with an uploaded image and confirm `/files/...` loads.
+5. Run one AI prompt only after confirming the AI provider key survived (it is stored in the service SQLite database).
+6. Confirm uploaded frontend apps still resolve at their configured paths.
 
 ---
 
-## Troubleshooting
+## 7. Rollback
 
-- **Permission Denied**: Ensure the user running the restore command has write permissions in the target directory inside the container.
-- **Version Mismatch**: Ensure the PostgreSQL version on the server matches or is newer than the local version.
-- **SSH Heredoc Issues**: Ensure the `-T` flag is used with `docker compose exec` if restoring over SSH scripts.
+Keep the previous image tag and a copy of the volume archive until verification passes.
 
-## Reference
+```bash
+docker compose down
+docker tag senthil455/cms-mono:previous senthil455/cms-mono:latest
+docker compose up -d
+```
 
-- [docker-compose.yml](../mono-deploy/docker-compose.yml) — Service definitions
-- [build-fast.sh](../mono-deploy/build-fast.sh) — Local build script
+For PostgreSQL, restore the pre-migration dump rather than attempting a partial rollback.
+
+---
+
+## 8. Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `volume not found` | Wrong Compose project prefix | List volumes and set `CMS_VOLUME` / `PG_VOLUME` |
+| App starts but data is empty | Wrong volume, or config points at a different SQLite file | Inspect `/data` and `config/cms.settings.json` |
+| `COPY CMS/... not found` during a source build | Build context does not contain a sibling `CMS/` checkout | Use the published image or fix the build context |
+| `dotnet: CMS.MonoApp.dll not found` | `CMS/publish` was not produced | Publish the external CMS project before building |
+| `psql: error: connection refused` | Database not ready | Wait for `pg_isready`, then retry |
+| 502 on `/api` | .NET process crashed or is restarting | Check `docker compose logs app` |
+| Login loop after migration | Cookies scoped to a different host | Use one hostname consistently; set `FRONTEND_URL` to the public origin |
+| Uploads missing | `files/` not in the archived volume | Re-archive the full volume, not just the database |
+| Uploads fail with 413 | Body exceeds `CMS_MAX_REQUEST_SIZE` | Raise it and restart |
+
+---
+
+## 9. Reference
+
+- [`mono-deploy-local/docker-compose.yml`](../mono-deploy-local/docker-compose.yml) — local app + PostgreSQL
+- [`mono-deploy-hub/docker-compose.prod.yml`](../mono-deploy-hub/docker-compose.prod.yml) — pull-based production Compose
+- [`mono-deploy-local/build-fast.sh`](../mono-deploy-local/build-fast.sh) — local build script
+- [`mono-deploy-local/entrypoint.sh`](../mono-deploy-local/entrypoint.sh) — startup sequence
+- [Docker Deployment](./wiki/Docker-Deployment.md) — image layout, routes, and path assumptions
