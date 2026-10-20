@@ -11,57 +11,41 @@ For a detailed overview of the system architecture, please refer to the [CMS Arc
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (latest LTS recommended)
-- [pnpm](https://pnpm.io/)
+- npm
 
 ### Installation
 
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/Senthil455/CMS/CMS Admin.git
-    cd CMS Admin
+    git clone https://github.com/Senthil455/CMS.git
+    cd CMS
     ```
 
-2.  **Initialize Submodules:**
-
-    The core logic of the application resides in the `libs` submodule. You must initialize it before proceeding.
+2.  **Install dependencies from the repository root:**
 
     ```bash
-    git submodule update --init --recursive
+    npm install
     ```
 
-    > **Note:** The `libs/cms-admin-sdk` submodule contains the main business logic and reusable components.
-
-3.  **Install Dependencies:**
+3.  **Start the admin development server:**
 
     ```bash
-    pnpm install
+    npm run dev:admin
     ```
+
+    This starts the Vite development server for the admin app. The production base path is `/admin/`.
 
 ## Features
 
 -   **Customizable Branding:** The app allows users to change the logo and other branding elements to match their organization's identity.
 -   **Schema Management:** Create and modify content schemas visually.
--   **Content Management:** efficient tools for creating and editing content.
+-   **Content Management:** Efficient tools for creating and editing content.
 
-## Build and Publish
+## Build
 
-Scripts for building and publishing are defined in `package.json`.
-
-### Build
-
-To build the application for production:
+To build the admin app for production from the repository root:
 
 ```bash
-npm run build
-```
-
-This will compile the TypeScript code and bundle the application using Vite.
-
-### Publish to Library
-
-To publish the package to the library:
-
-```bash
-npm run publish-to-lib
+npm run build --workspace=@cms/admin
 ```

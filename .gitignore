@@ -29,6 +29,7 @@ Thumbs.db
 *.swo
 
 # Project specific
+debug.log
 packages/backend/dev.db
 packages/backend/dev.db-journal
 packages/shared/dist/
